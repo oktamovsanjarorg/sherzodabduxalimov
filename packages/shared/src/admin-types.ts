@@ -31,11 +31,25 @@ export const reorderInput = z.object({
   ids: z.array(z.string()).min(1).max(500),
 });
 
-export const QUESTION_TYPES = ["SINGLE", "MULTIPLE", "TEXT"] as const;
+export const QUESTION_TYPES = ["SINGLE", "MULTIPLE", "TEXT", "ESSAY"] as const;
+
+export const passageInput = z.object({
+  title: z.string().trim().max(200).nullable().optional(),
+  body: z.string().trim().min(1, "Matn kerak").max(30_000),
+});
+export type PassageInput = z.infer<typeof passageInput>;
+
+export interface AdminPassage {
+  id: string;
+  title: string | null;
+  body: string;
+  questionCount: number;
+}
 
 export const questionInput = z
   .object({
     topicId: z.string().nullable().optional(),
+    passageId: z.string().nullable().optional(),
     type: z.enum(QUESTION_TYPES),
     text: z.string().trim().min(1, "Savol matni kerak").max(5000),
     explanation: optText,
@@ -49,6 +63,7 @@ export const questionInput = z
   })
   .superRefine((q, ctx) => {
     const correct = q.options.filter((o) => o.isCorrect).length;
+    if (q.type === "ESSAY") return; // esse: variant ham, kalit ham yo'q, ustoz baholaydi
     if (q.type === "TEXT") {
       if (!q.correctText) ctx.addIssue({ code: "custom", path: ["correctText"], message: "To'g'ri javobni yozing" });
       return;
@@ -68,6 +83,7 @@ export const testInput = z.object({
   topicId: z.string().nullable().optional(),
   timeLimitSec: z.number().int().min(60).max(4 * 3600).nullable().optional(),
   shuffle: z.boolean().optional(),
+  gradingScale: z.enum(["NONE", "MILLIY_SERTIFIKAT"]).optional(),
   isFree: z.boolean().optional(),
   isPublished: z.boolean().optional(),
   questions: z
@@ -138,7 +154,11 @@ export interface AdminQuestion {
   id: string;
   topicId: string | null;
   topicTitle: string | null;
-  type: "SINGLE" | "MULTIPLE" | "MATCHING" | "TEXT";
+  type: "SINGLE" | "MULTIPLE" | "MATCHING" | "TEXT" | "ESSAY";
+  passageId: string | null;
+  passageTitle: string | null;
+  /** Import qilingan savollarda javob kaliti ustoz tasdig'ini kutadi */
+  keyStatus: "proposed" | "uncertain" | null;
   text: string;
   explanation: string | null;
   imageUrl: string | null;
@@ -151,6 +171,7 @@ export interface AdminQuestion {
 export interface AdminTestDetail extends AdminTestRow {
   description: string | null;
   shuffle: boolean;
+  gradingScale: "NONE" | "MILLIY_SERTIFIKAT";
   questions: { questionId: string; points: number; question: AdminQuestion }[];
 }
 
@@ -162,3 +183,24 @@ export interface Paged<T> {
 /** Video bo'laklab yuklash: har bir bo'lak hajmi */
 export const UPLOAD_CHUNK_BYTES = 8 * 1024 * 1024;
 export const MAX_VIDEO_BYTES = 8 * 1024 * 1024 * 1024; // 8 GB
+
+/** Esse tekshirish navbati */
+export interface AdminEssay {
+  attemptId: string;
+  questionId: string;
+  student: { name: string; username: string | null };
+  testTitle: string;
+  prompt: string; // esse topshirig'i (markdown)
+  text: string;
+  words: number;
+  maxPoints: number;
+  points: number | null;
+  reviewComment: string | null;
+  submittedAt: string;
+  reviewedAt: string | null;
+}
+
+export const essayReviewInput = z.object({
+  points: z.number().min(0).max(100),
+  comment: z.string().trim().max(5000).nullable().optional(),
+});

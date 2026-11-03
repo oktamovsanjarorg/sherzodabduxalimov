@@ -2,6 +2,7 @@ import { BadRequestException, ConflictException, Injectable, NotFoundException }
 import type { Prisma } from "@onatili/db";
 import {
   ERROR_CODES,
+  milliyLevel,
   type AttemptQuestion,
   type AttemptResult,
   type AttemptState,
@@ -15,13 +16,15 @@ import { ParentsService } from "../parents/parents.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { DEADLINE_GRACE_MS, isAnswerCorrect, isPastDeadline, seededShuffle } from "./grading";
 
-const SUPPORTED = ["SINGLE", "MULTIPLE", "TEXT"] as const;
+const SUPPORTED = ["SINGLE", "MULTIPLE", "TEXT", "ESSAY"] as const;
+/** 1,1 + 1,7 kabi kasr ballar yig'indisidagi suzuvchi nuqta xatosini yo'qotish */
+const round1 = (x: number) => Math.round(x * 10) / 10;
 type SupportedType = (typeof SUPPORTED)[number];
 
 const testWithQuestions = {
   questions: {
     orderBy: { order: "asc" },
-    include: { question: { include: { options: { orderBy: { order: "asc" } } } } },
+    include: { question: { include: { options: { orderBy: { order: "asc" } }, passage: true } } },
   },
 } satisfies Prisma.TestInclude;
 
@@ -96,9 +99,12 @@ export class AttemptsService {
     if (optionIds.some((id) => !validIds.has(id))) throw new BadRequestException("Noto'g'ri variant");
     if (q.type === "SINGLE" && optionIds.length > 1) throw new BadRequestException("Faqat bitta variant tanlanadi");
 
+    const isText = q.type === "TEXT" || q.type === "ESSAY";
+    const text = isText ? body.textAnswer?.trim() || null : null;
+    if (q.type === "TEXT" && text && text.length > 500) throw new BadRequestException("Javob juda uzun");
     const data = {
-      optionIds: q.type === "TEXT" ? [] : optionIds,
-      textAnswer: q.type === "TEXT" ? body.textAnswer?.trim() || null : null,
+      optionIds: isText ? [] : optionIds,
+      textAnswer: text,
       answeredAt: new Date(),
     };
     await this.prisma.attemptAnswer.upsert({
@@ -156,11 +162,16 @@ export class AttemptsService {
     const answers = new Map(a.answers.map((x) => [x.questionId, x]));
     const graded = this.questions(a.test).map((q) => {
       const given = answers.get(q.id);
+      // Yozilgan esse ustoz baholaguncha "kutilmoqda" (null); bo'sh esse darhol 0
+      if (q.type === "ESSAY") {
+        const pending = Boolean(given?.textAnswer?.trim());
+        return { q, given, ok: null, points: pending ? null : 0 };
+      }
       const ok = isAnswerCorrect(q, given);
       return { q, given, ok, points: ok ? q.points : 0 };
     });
-    const score = graded.reduce((s, g) => s + g.points, 0);
-    const maxScore = graded.reduce((s, g) => s + g.q.points, 0);
+    const score = round1(graded.reduce((s, g) => s + (g.points ?? 0), 0));
+    const maxScore = round1(graded.reduce((s, g) => s + g.q.points, 0));
 
     await this.prisma.$transaction(async (tx) => {
       const { count } = await tx.attempt.updateMany({
@@ -184,6 +195,8 @@ export class AttemptsService {
       type: q.type,
       text: q.text,
       imageUrl: q.imageUrl,
+      passage: q.passage ? { id: q.passage.id, title: q.passage.title, body: q.passage.body } : null,
+      points: q.points,
       options: q.options.map((o) => ({ id: o.id, text: o.text })), // isCorrect yo'q
     }));
     return {
@@ -204,24 +217,29 @@ export class AttemptsService {
     const answers = new Map(a.answers.map((x) => [x.questionId, x]));
     const questions = this.questions(a.test, a.id).map((q) => {
       const given = answers.get(q.id);
+      const pending = q.type === "ESSAY" && Boolean(given?.textAnswer?.trim()) && given?.points == null;
       return {
         id: q.id,
         type: q.type,
         text: q.text,
         imageUrl: q.imageUrl,
+        passage: q.passage ? { id: q.passage.id, title: q.passage.title, body: q.passage.body } : null,
         options: q.options.map((o) => ({ id: o.id, text: o.text })),
         correctOptionIds: q.options.filter((o) => o.isCorrect).map((o) => o.id),
         correctText: q.type === "TEXT" ? q.correctText?.split("|")[0] ?? null : null,
         explanation: q.explanation,
         yourOptionIds: given?.optionIds ?? [],
         yourText: given?.textAnswer ?? null,
-        isCorrect: given?.isCorrect ?? false,
-        points: given?.points ?? 0,
+        isCorrect: q.type === "ESSAY" ? (given?.points ?? 0) > 0 : given?.isCorrect ?? false,
+        points: pending ? null : given?.points ?? 0,
         maxPoints: q.points,
+        pending,
+        reviewComment: given?.reviewComment ?? null,
       };
     });
-    const score = a.score ?? 0;
-    const maxScore = a.maxScore ?? 0;
+    const score = round1(a.score ?? 0);
+    const maxScore = round1(a.maxScore ?? 0);
+    const pendingPoints = round1(questions.filter((q) => q.pending).reduce((s, q) => s + q.maxPoints, 0));
     return {
       id: a.id,
       testId: a.testId,
@@ -230,6 +248,9 @@ export class AttemptsService {
       score,
       maxScore,
       percent: maxScore ? Math.round((score / maxScore) * 100) : 0,
+      pendingPoints,
+      gradingScale: a.test.gradingScale,
+      level: a.test.gradingScale === "MILLIY_SERTIFIKAT" ? milliyLevel(score) : null,
       correctCount: questions.filter((q) => q.isCorrect).length,
       totalCount: questions.length,
       startedAt: a.startedAt.toISOString(),

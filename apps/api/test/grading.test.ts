@@ -51,6 +51,21 @@ describe("isAnswerCorrect", () => {
   });
 });
 
+describe("tinish belgilari javobi (Milliy sertifikat 37-topshiriq)", () => {
+  const q = { type: "TEXT" as const, correctText: '"":",".', options: [] };
+  it("bo'sh joy va qo'shtirnoq turlari farqi hisobga olinmaydi", () => {
+    expect(isAnswerCorrect(q, { optionIds: [], textAnswer: '" " : " , " .' })).toBe(true);
+    expect(isAnswerCorrect(q, { optionIds: [], textAnswer: "«»:„,“." })).toBe(true);
+  });
+  it("oxirgi nuqta olib tashlanmaydi: nuqtasiz javob xato", () => {
+    expect(isAnswerCorrect(q, { optionIds: [], textAnswer: '"":","' })).toBe(false);
+    expect(isAnswerCorrect(q, { optionIds: [], textAnswer: '"":";".' })).toBe(false);
+  });
+  it("esse avtomatik baholanmaydi", () => {
+    expect(isAnswerCorrect({ type: "ESSAY", correctText: null, options: [] }, { optionIds: [], textAnswer: "uzun matn" })).toBe(false);
+  });
+});
+
 describe("normalizeUz", () => {
   it("barcha tutuq belgilarini birxillashtiradi", () => {
     expect(normalizeUz("gʻoʻza")).toBe(normalizeUz("g'o'za"));

@@ -164,6 +164,17 @@ enum QuestionType {
   MULTIPLE
   MATCHING
   TEXT
+  ESSAY // ustoz baholaydi
+}
+
+/// Bir nechta savol tayanadigan umumiy matn (o'qish matni, she'r, g'azal, drama parchasi)
+model Passage {
+  id        String     @id @default(cuid())
+  title     String?
+  body      String // markdown
+  questions Question[]
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
 }
 
 model Question {
@@ -171,6 +182,8 @@ model Question {
   topicId     String?
   topic       Topic?       @relation(fields: [topicId], references: [id], onDelete: SetNull)
   type        QuestionType @default(SINGLE)
+  passageId   String?
+  passage     Passage?     @relation(fields: [passageId], references: [id], onDelete: SetNull)
   text        String
   imageUrl    String?
   explanation String?
@@ -199,6 +212,11 @@ enum TestType {
   MOCK
 }
 
+enum GradingScale {
+  NONE
+  MILLIY_SERTIFIKAT // 100 ballik, A+ ... C darajalar
+}
+
 model Test {
   id           String         @id @default(cuid())
   type         TestType
@@ -208,6 +226,7 @@ model Test {
   topic        Topic?         @relation(fields: [topicId], references: [id], onDelete: SetNull)
   timeLimitSec Int?
   shuffle      Boolean        @default(true)
+  gradingScale GradingScale   @default(NONE)
   isFree       Boolean        @default(false)
   isPublished  Boolean        @default(false)
   questions    TestQuestion[]
@@ -258,8 +277,11 @@ model AttemptAnswer {
   optionIds   String[]
   textAnswer  String?
   isCorrect   Boolean?
-  points      Float?
+  points      Float? // ESSAY uchun ustoz baholaguncha null
   answeredAt  DateTime @default(now())
+  reviewComment String?
+  reviewedById  String?
+  reviewedAt    DateTime?
 
   @@id([attemptId, questionId])
 }

@@ -1,6 +1,8 @@
 import { BadRequestException, ConflictException, Injectable, NotFoundException } from "@nestjs/common";
-import type { Prisma } from "@onatili/db";
+import { Prisma } from "@onatili/db";
 import type {
+  AdminPassage,
+  PassageInput,
   AdminCourse,
   AdminLesson,
   AdminQuestion,
@@ -23,6 +25,7 @@ type T = z.output<typeof testInput>;
 const questionInclude = {
   options: { orderBy: { order: "asc" } },
   topic: { select: { title: true } },
+  passage: { select: { title: true, body: true } },
   _count: { select: { tests: true } },
 } satisfies Prisma.QuestionInclude;
 
@@ -178,15 +181,16 @@ export class AdminContentService {
 
   // ---------------- Savollar banki ----------------
 
-  async listQuestions(f: { topicId?: string; search?: string; page?: number; pageSize?: number }): Promise<Paged<AdminQuestion>> {
+  async listQuestions(f: { topicId?: string; search?: string; page?: number; pageSize?: number; passageId?: string }): Promise<Paged<AdminQuestion>> {
     const where: Prisma.QuestionWhereInput = {
+      ...(f.passageId ? { passageId: f.passageId } : {}),
       ...(f.topicId === "none" ? { topicId: null } : f.topicId ? { topicId: f.topicId } : {}),
       ...(f.search ? { text: { contains: f.search, mode: "insensitive" } } : {}),
     };
     const take = Math.min(100, Math.max(1, f.pageSize ?? 30));
     const skip = Math.max(0, (f.page ?? 1) - 1) * take;
     const [items, total] = await Promise.all([
-      this.prisma.question.findMany({ where, include: questionInclude, orderBy: { createdAt: "desc" }, take, skip }),
+      this.prisma.question.findMany({ where, include: questionInclude, orderBy: [{ createdAt: "desc" }, { id: "asc" }], take, skip }),
       this.prisma.question.count({ where }),
     ]);
     return { items: items.map((q) => this.toQuestion(q)), total };
@@ -223,7 +227,8 @@ export class AdminContentService {
           ? this.prisma.option.update({ where: { id: o.id }, data: { text: o.text, isCorrect: o.isCorrect, order: i + 1 } })
           : this.prisma.option.create({ data: { questionId: id, text: o.text, isCorrect: o.isCorrect, order: i + 1 } }),
       ),
-      this.prisma.question.update({ where: { id }, data: this.questionData(d) }),
+      // Ustoz savolni saqlasa, import qilingan kalit "tasdiqlangan" hisoblanadi
+      this.prisma.question.update({ where: { id }, data: { ...this.questionData(d), aiReview: Prisma.DbNull } }),
     ]);
     await this.audit(actorId, "update", "Question", id);
     return this.getQuestion(id);
@@ -235,6 +240,34 @@ export class AdminContentService {
     if (answered > 0) throw new ConflictException("Bu savolga o'quvchilar javob bergan. O'chirish o'rniga testdan olib tashlang.");
     await this.prisma.question.delete({ where: { id } });
     await this.audit(actorId, "delete", "Question", id);
+    return { ok: true };
+  }
+
+  // ---------------- Matnlar (umumiy o'qish matnlari) ----------------
+
+  async listPassages(): Promise<AdminPassage[]> {
+    const ps = await this.prisma.passage.findMany({ orderBy: { createdAt: "desc" }, include: { _count: { select: { questions: true } } } });
+    return ps.map((p) => ({ id: p.id, title: p.title, body: p.body, questionCount: p._count.questions }));
+  }
+
+  async createPassage(actorId: string, d: PassageInput) {
+    const p = await this.prisma.passage.create({ data: { title: d.title ?? null, body: d.body } });
+    await this.audit(actorId, "create", "Passage", p.id);
+    return { id: p.id, title: p.title, body: p.body, questionCount: 0 };
+  }
+
+  async updatePassage(actorId: string, id: string, d: Partial<PassageInput>) {
+    await this.mustExist(this.prisma.passage.findUnique({ where: { id } }), "Matn");
+    await this.prisma.passage.update({ where: { id }, data: d });
+    await this.audit(actorId, "update", "Passage", id);
+    return { ok: true };
+  }
+
+  async deletePassage(actorId: string, id: string) {
+    const p = await this.mustExist(this.prisma.passage.findUnique({ where: { id }, include: { _count: { select: { questions: true } } } }), "Matn");
+    if (p._count.questions > 0) throw new ConflictException("Matnga savollar biriktirilgan. Avval ularni boshqa matnga o'tkazing yoki o'chiring.");
+    await this.prisma.passage.delete({ where: { id } });
+    await this.audit(actorId, "delete", "Passage", id);
     return { ok: true };
   }
 
@@ -261,6 +294,7 @@ export class AdminContentService {
       ...this.toTestRow(t),
       description: t.description,
       shuffle: t.shuffle,
+      gradingScale: t.gradingScale,
       questions: t.questions.map((tq) => ({ questionId: tq.questionId, points: tq.points, question: this.toQuestion(tq.question) })),
     };
   }
@@ -343,6 +377,7 @@ export class AdminContentService {
   private questionData(d: Q) {
     return {
       topicId: d.topicId ?? null,
+      passageId: d.passageId ?? null,
       type: d.type,
       text: d.text,
       explanation: d.explanation ?? null,
@@ -360,6 +395,7 @@ export class AdminContentService {
       topicId: d.type === "TOPIC" ? d.topicId ?? null : d.topicId ?? null,
       timeLimitSec: d.timeLimitSec ?? null,
       shuffle: d.shuffle ?? true,
+      gradingScale: d.gradingScale ?? "NONE",
       isFree: d.isFree ?? false,
       isPublished: d.isPublished ?? false,
     };
@@ -386,6 +422,9 @@ export class AdminContentService {
       id: q.id,
       topicId: q.topicId,
       topicTitle: q.topic?.title ?? null,
+      passageId: q.passageId,
+      passageTitle: q.passage ? q.passage.title ?? q.passage.body.slice(0, 60) : null,
+      keyStatus: ((q.aiReview as { keyStatus?: "proposed" | "uncertain" } | null)?.keyStatus ?? null),
       type: q.type,
       text: q.text,
       explanation: q.explanation,

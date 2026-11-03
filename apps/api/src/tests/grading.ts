@@ -1,7 +1,7 @@
 /** Test baholash va tartiblash: toza funksiyalar, DB'ga bog'liq emas. */
 
 export interface GradableQuestion {
-  type: "SINGLE" | "MULTIPLE" | "MATCHING" | "TEXT";
+  type: "SINGLE" | "MULTIPLE" | "MATCHING" | "TEXT" | "ESSAY";
   correctText: string | null;
   options: { id: string; isCorrect: boolean }[];
 }
@@ -27,6 +27,23 @@ export function normalizeUz(s: string): string {
     .trim();
 }
 
+/** Javob faqat tinish belgilaridan iboratmi (masalan, 37-topshiriq: ":",""...) */
+const isPunctuationOnly = (s: string) => s.trim().length > 0 && !/[\p{L}\p{N}]/u.test(s);
+
+/**
+ * Tinish belgilari ketma-ketligi: bo'sh joylar e'tiborsiz, qo'shtirnoq va tire turlari birxillashtiriladi.
+ * Nuqta va boshqa belgilar OLIB TASHLANMAYDI (ular javobning o'zi).
+ */
+export function normalizePunctuation(s: string): string {
+  return s
+    .normalize("NFC")
+    .replace(/[“”„«»‟″"]/g, '"')
+    .replace(/[‘’‚‛`´]/g, "'")
+    .replace(/[–—−‒]/g, "-")
+    .replace(/…/g, "...")
+    .replace(/\s+/g, "");
+}
+
 export function isAnswerCorrect(q: GradableQuestion, a: GivenAnswer | undefined): boolean {
   if (!a) return false;
   switch (q.type) {
@@ -41,11 +58,13 @@ export function isAnswerCorrect(q: GradableQuestion, a: GivenAnswer | undefined)
     case "TEXT": {
       if (!q.correctText || !a.textAnswer) return false;
       // Bir nechta to'g'ri variant "|" bilan ajratiladi: "oʻn besh|15"
-      const variants = q.correctText.split("|").map(normalizeUz).filter(Boolean);
-      return variants.includes(normalizeUz(a.textAnswer));
+      const raw = q.correctText.split("|").map((v) => v.trim()).filter(Boolean);
+      return raw.some((v) =>
+        isPunctuationOnly(v) ? normalizePunctuation(v) === normalizePunctuation(a.textAnswer!) : normalizeUz(v) === normalizeUz(a.textAnswer!),
+      );
     }
     default:
-      return false; // MATCHING keyingi bosqichda
+      return false; // ESSAY: ustoz baholaydi; MATCHING: hozircha yo'q
   }
 }
 

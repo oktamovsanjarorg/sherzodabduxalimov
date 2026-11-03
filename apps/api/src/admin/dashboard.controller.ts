@@ -4,6 +4,7 @@ import { PrismaService } from "../prisma/prisma.service";
 
 export interface AdminDashboard {
   pendingParents: number;
+  pendingEssays: number;
   videos: { processing: number; failed: number };
   students: { total: number; withoutApprovedParent: number };
   attendanceToday: { groups: { id: string; name: string; schedule: string | null; marked: number; total: number }[] };
@@ -19,6 +20,9 @@ export class DashboardController {
   @Get()
   async get(): Promise<AdminDashboard> {
     const today = new Date(`${new Date(Date.now() + 5 * 3600_000).toISOString().slice(0, 10)}T00:00:00.000Z`);
+    const pendingEssays = await this.prisma.attemptAnswer.count({
+      where: { question: { type: "ESSAY" }, points: null, textAnswer: { not: null }, attempt: { status: { in: ["SUBMITTED", "EXPIRED"] } } },
+    });
     const [pendingParents, processing, failed, total, withApproved, groups, lp, ld, tests, questions] = await Promise.all([
       this.prisma.parentLink.count({ where: { status: "PENDING" } }),
       this.prisma.video.count({ where: { status: { in: ["PROCESSING", "UPLOADING"] }, lesson: { isNot: null } } }),
@@ -37,6 +41,7 @@ export class DashboardController {
     ]);
     return {
       pendingParents,
+      pendingEssays,
       videos: { processing, failed },
       students: { total, withoutApprovedParent: total - withApproved },
       attendanceToday: { groups: groups.map((g) => ({ id: g.id, name: g.name, schedule: g.schedule, marked: g.attendance.length, total: g._count.students })) },

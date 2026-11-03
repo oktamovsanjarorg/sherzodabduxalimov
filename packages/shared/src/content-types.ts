@@ -69,11 +69,20 @@ export interface AttemptOption {
   text: string;
 }
 
+export interface PassageView {
+  id: string;
+  title: string | null;
+  body: string; // markdown
+}
+
 export interface AttemptQuestion {
   id: string;
-  type: "SINGLE" | "MULTIPLE" | "TEXT";
-  text: string;
+  type: "SINGLE" | "MULTIPLE" | "TEXT" | "ESSAY";
+  text: string; // markdown (qalin, kursiv)
   imageUrl: string | null;
+  /** Savol tayanadigan umumiy matn (bir nechta savolga bitta) */
+  passage: PassageView | null;
+  points: number;
   options: AttemptOption[]; // isCorrect YUBORILMAYDI
 }
 
@@ -96,15 +105,18 @@ export interface AttemptState {
   answers: SavedAnswer[];
 }
 
-export interface ResultQuestion extends AttemptQuestion {
+export interface ResultQuestion extends Omit<AttemptQuestion, "points"> {
   correctOptionIds: string[];
   correctText: string | null;
   explanation: string | null;
   yourOptionIds: string[];
   yourText: string | null;
   isCorrect: boolean;
-  points: number;
+  /** ESSAY ustoz baholamaguncha null */
+  points: number | null;
   maxPoints: number;
+  pending: boolean;
+  reviewComment: string | null;
 }
 
 export interface AttemptResult {
@@ -115,6 +127,11 @@ export interface AttemptResult {
   score: number;
   maxScore: number;
   percent: number;
+  /** Ustoz tekshirishi kutilayotgan ballar (esse) */
+  pendingPoints: number;
+  gradingScale: "NONE" | "MILLIY_SERTIFIKAT";
+  /** Milliy sertifikat darajasi (esse tekshirilmagan bo'lsa, taxminiy) */
+  level: { code: string; label: string } | null;
   correctCount: number;
   totalCount: number;
   startedAt: string;
@@ -124,8 +141,27 @@ export interface AttemptResult {
 
 export const saveAnswerBody = z.object({
   optionIds: z.array(z.string()).max(20).default([]),
-  textAnswer: z.string().max(500).nullable().default(null),
+  // Esse uchun uzun matn (taxminan 2000 so'zgacha)
+  textAnswer: z.string().max(20_000).nullable().default(null),
 });
+
+/**
+ * Milliy sertifikat darajalari (100 ballik). Chegaralar shu yerda bitta joyda:
+ * rasmiy talab o'zgarsa, faqat shu jadvalni yangilash kifoya.
+ */
+export const MILLIY_LEVELS = [
+  { code: "A+", min: 70 },
+  { code: "A", min: 65 },
+  { code: "B+", min: 60 },
+  { code: "B", min: 55 },
+  { code: "C+", min: 50 },
+  { code: "C", min: 46 },
+] as const;
+
+export function milliyLevel(score: number): { code: string; label: string } {
+  const l = MILLIY_LEVELS.find((x) => score >= x.min);
+  return l ? { code: l.code, label: `${l.code} daraja` } : { code: "—", label: "Sertifikat berilmaydi (46 balldan kam)" };
+}
 export type SaveAnswerBody = z.infer<typeof saveAnswerBody>;
 
 export interface StudentStats {

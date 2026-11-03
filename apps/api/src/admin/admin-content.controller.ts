@@ -1,5 +1,5 @@
 import { Body, Controller, Delete, Get, HttpCode, Param, Patch, Post, Query } from "@nestjs/common";
-import { courseInput, lessonInput, questionInput, reorderInput, testInput, topicInput } from "@onatili/shared";
+import { courseInput, lessonInput, passageInput, questionInput, reorderInput, testInput, topicInput } from "@onatili/shared";
 import { CurrentUser, Roles, type JwtUser } from "../auth/decorators";
 import { AdminContentService } from "./admin-content.service";
 import { parse } from "./zod";
@@ -59,8 +59,23 @@ export class AdminContentController {
     @Query("search") search?: string,
     @Query("page") page?: string,
     @Query("pageSize") pageSize?: string,
+    @Query("passageId") passageId?: string,
   ) {
-    return this.svc.listQuestions({ topicId, search, page: Number(page) || 1, pageSize: Number(pageSize) || 30 });
+    return this.svc.listQuestions({ topicId, search, passageId, page: Number(page) || 1, pageSize: Number(pageSize) || 30 });
+  }
+
+  // Matnlar
+  @Get("passages") passages() {
+    return this.svc.listPassages();
+  }
+  @Post("passages") createPassage(@CurrentUser() u: JwtUser, @Body() b: unknown) {
+    return this.svc.createPassage(u.sub, parse(passageInput, b));
+  }
+  @Patch("passages/:id") updatePassage(@CurrentUser() u: JwtUser, @Param("id") id: string, @Body() b: unknown) {
+    return this.svc.updatePassage(u.sub, id, parse(passageInput.partial(), b));
+  }
+  @Delete("passages/:id") deletePassage(@CurrentUser() u: JwtUser, @Param("id") id: string) {
+    return this.svc.deletePassage(u.sub, id);
   }
   @Get("questions/:id") question(@Param("id") id: string) {
     return this.svc.getQuestion(id);
