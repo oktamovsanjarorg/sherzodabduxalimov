@@ -2,7 +2,7 @@ import Hls from "hls.js";
 import { Loader2, Maximize, Minimize, Pause, Play, RotateCcw, RotateCw } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { formatClock } from "../lib/hooks";
-import { enterImmersive, isTelegramMobile } from "../lib/telegram";
+import { enterImmersive, isTelegramAndroid, isTelegramMobile } from "../lib/telegram";
 
 const SPEEDS = [1, 1.25, 1.5, 2];
 
@@ -150,14 +150,22 @@ export function ProtectedPlayer({ src, onExpired }: { src: string; onExpired?: (
     if (mode === "native") return void document.exitFullscreen().catch(() => setMode("none"));
     if (mode === "pseudo") return setMode("none");
     const el = wrap.current!;
-    // Telegram mobil webview'larida Fullscreen API ishonchsiz (iPhone'da umuman yo'q), shuning uchun o'zimiz
-    if (!isTelegramMobile() && el.requestFullscreen) {
+    // iPhone'da Fullscreen API yo'q. Android Telegram webview'ida ba'zan ishlaydi (status panel ham yashirinadi),
+    // ba'zan esa jimgina e'tiborsiz qoladi: shuning uchun 600ms kutamiz, bo'lmasa o'zimizning rejimga o'tamiz.
+    const tryNative = typeof el.requestFullscreen === "function" && (!isTelegramMobile() || isTelegramAndroid());
+    if (tryNative) {
       try {
-        await el.requestFullscreen();
-        setMode("native");
-        return;
+        await Promise.race([
+          el.requestFullscreen({ navigationUI: "hide" }),
+          new Promise((_, rej) => setTimeout(() => rej(new Error("timeout")), 600)),
+        ]);
+        if (document.fullscreenElement === el) {
+          setMode("native");
+          await (screen.orientation as ScreenOrientation & { lock?: (o: string) => Promise<void> })?.lock?.("landscape").catch(() => {});
+          return;
+        }
       } catch {
-        /* rad etildi: pseudo rejimga o'tamiz */
+        if (document.fullscreenElement) await document.exitFullscreen().catch(() => {});
       }
     }
     setMode("pseudo");
@@ -211,7 +219,7 @@ export function ProtectedPlayer({ src, onExpired }: { src: string; onExpired?: (
         onLoadedMetadata={(e) => setDuration(e.currentTarget.duration)}
       />
 
-      <Watermark />
+      <Watermark offsetTop={mode === "pseudo" && !rotate} />
 
       {hidden && <div className="absolute inset-0 z-20 bg-black/90 backdrop-blur-xl" />}
 
@@ -296,12 +304,16 @@ function Btn({ onClick, label, children }: { onClick: () => void; label: string;
 /** Ustoz talabi bilan: doimiy brend yozuvi, o'ng yuqori burchakda, qimirlamaydi */
 const WATERMARK_TEXT = "Sherzod-Abduxalimov";
 
-function Watermark() {
+function Watermark({ offsetTop }: { offsetTop?: boolean }) {
   return (
     <div className="pointer-events-none absolute inset-0 z-10" aria-hidden>
       <span
         className="absolute right-3 top-2 whitespace-nowrap text-[11px] font-bold text-white/50 sm:text-sm"
-        style={{ textShadow: "0 0 3px rgba(0,0,0,.6)" }}
+        style={{
+          textShadow: "0 0 3px rgba(0,0,0,.6)",
+          // Telegram to'liq ekranida tepada status panel va Telegram tugmalari turadi
+          ...(offsetTop ? { top: "calc(8px + var(--tg-safe-area-inset-top, 0px) + var(--tg-content-safe-area-inset-top, 0px))" } : {}),
+        }}
       >
         {WATERMARK_TEXT}
       </span>

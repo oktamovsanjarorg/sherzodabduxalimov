@@ -152,6 +152,7 @@ export function openExternal(url: string) {
 
 /** Telegram'ning mobil ilovasi ichidami (Android/iOS webview) */
 export const isTelegramMobile = () => isInTelegram && /^(android|ios)$/.test(tg?.platform ?? "");
+export const isTelegramAndroid = () => isInTelegram && tg?.platform === "android";
 
 /**
  * Video uchun "immersiv" rejim: Telegram panelini yashiradi (Bot API 8.0) va vertikal swipe'ni o'chiradi
