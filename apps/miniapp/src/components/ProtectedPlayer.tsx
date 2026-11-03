@@ -2,8 +2,32 @@ import Hls from "hls.js";
 import { Loader2, Maximize, Minimize, Pause, Play, RotateCcw, RotateCw } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { formatClock } from "../lib/hooks";
+import { enterImmersive, isTelegramMobile } from "../lib/telegram";
 
 const SPEEDS = [1, 1.25, 1.5, 2];
+
+/** Faol pseudo-fullscreen'dan chiqish (Telegram "Orqaga" tugmasi uchun) */
+let activeExit: (() => void) | null = null;
+export function exitPlayerFullscreen(): boolean {
+  if (!activeExit) return false;
+  activeExit();
+  return true;
+}
+
+function useViewport() {
+  const read = () => ({ w: window.innerWidth, h: window.innerHeight });
+  const [v, setV] = useState(read);
+  useEffect(() => {
+    const on = () => setV(read());
+    window.addEventListener("resize", on);
+    window.addEventListener("orientationchange", on);
+    return () => {
+      window.removeEventListener("resize", on);
+      window.removeEventListener("orientationchange", on);
+    };
+  }, []);
+  return v;
+}
 
 /**
  * Himoyalangan video pleyer:
@@ -20,7 +44,10 @@ export function ProtectedPlayer({ src, onExpired }: { src: string; onExpired?: (
   const [time, setTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [speed, setSpeed] = useState(1);
-  const [full, setFull] = useState(false);
+  // native: brauzer Fullscreen API (kompyuter); pseudo: o'zimiz (Telegram mobil webview, iPhone)
+  const [mode, setMode] = useState<"none" | "native" | "pseudo">("none");
+  const full = mode !== "none";
+  const viewport = useViewport();
   const [hidden, setHidden] = useState(false);
   const [controls, setControls] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -66,20 +93,32 @@ export function ProtectedPlayer({ src, onExpired }: { src: string; onExpired?: (
       setHidden(h);
       if (h) video.current?.pause();
     };
-    const onBlur = () => video.current?.pause();
+    // window "blur" ishlatilmaydi: Telegram fullscreen'ga o'tganda yoki ekran burilganda ham ishga tushib, videoni to'xtatib qo'yardi
     document.addEventListener("visibilitychange", onVis);
-    window.addEventListener("blur", onBlur);
-    return () => {
-      document.removeEventListener("visibilitychange", onVis);
-      window.removeEventListener("blur", onBlur);
-    };
+    return () => document.removeEventListener("visibilitychange", onVis);
   }, []);
 
   useEffect(() => {
-    const onFs = () => setFull(document.fullscreenElement === wrap.current);
+    const onFs = () => {
+      if (!document.fullscreenElement) setMode((m) => (m === "native" ? "none" : m));
+    };
     document.addEventListener("fullscreenchange", onFs);
     return () => document.removeEventListener("fullscreenchange", onFs);
   }, []);
+
+  // Pseudo-fullscreen: Telegram panelini yashirish, swipe'ni o'chirish, sahifa scroll'ini qotirish
+  useEffect(() => {
+    if (mode !== "pseudo") return;
+    const restore = enterImmersive();
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    activeExit = () => setMode("none");
+    return () => {
+      restore();
+      document.body.style.overflow = prevOverflow;
+      activeExit = null;
+    };
+  }, [mode]);
 
   const poke = useCallback(() => {
     setControls(true);
@@ -107,26 +146,47 @@ export function ProtectedPlayer({ src, onExpired }: { src: string; onExpired?: (
     poke();
   };
   const toggleFull = async () => {
-    const el = wrap.current!;
-    if (document.fullscreenElement) await document.exitFullscreen().catch(() => {});
-    else if (el.requestFullscreen) {
-      await el.requestFullscreen().catch(() => setFull((f) => !f));
-      // Telefonni yotiq holatga burish (Android)
-      await (screen.orientation as ScreenOrientation & { lock?: (o: string) => Promise<void> })?.lock?.("landscape").catch(() => {});
-    } else setFull((f) => !f); // Fullscreen API yo'q (iPhone): CSS orqali butun ekran
     poke();
+    if (mode === "native") return void document.exitFullscreen().catch(() => setMode("none"));
+    if (mode === "pseudo") return setMode("none");
+    const el = wrap.current!;
+    // Telegram mobil webview'larida Fullscreen API ishonchsiz (iPhone'da umuman yo'q), shuning uchun o'zimiz
+    if (!isTelegramMobile() && el.requestFullscreen) {
+      try {
+        await el.requestFullscreen();
+        setMode("native");
+        return;
+      } catch {
+        /* rad etildi: pseudo rejimga o'tamiz */
+      }
+    }
+    setMode("pseudo");
   };
 
-  const cssFull = full && !document.fullscreenElement;
+  // Telefon tik turgan bo'lsa, pleyerni 90° buramiz: yonboshga qo'yganda video butun ekranni egallaydi
+  const rotate = mode === "pseudo" && viewport.h > viewport.w;
+  const pseudoStyle: React.CSSProperties | undefined =
+    mode !== "pseudo"
+      ? undefined
+      : rotate
+        ? {
+            position: "fixed",
+            top: "50%",
+            left: "50%",
+            width: viewport.h,
+            height: viewport.w,
+            transform: "translate(-50%, -50%) rotate(90deg)",
+            zIndex: 60,
+          }
+        : { position: "fixed", inset: 0, zIndex: 60 };
 
   return (
     <div
       ref={wrap}
       onContextMenu={(e) => e.preventDefault()}
       onMouseMove={poke}
-      className={`relative select-none overflow-hidden bg-black ${
-        cssFull ? "fixed inset-0 z-50 flex items-center" : full ? "flex items-center" : "aspect-video w-full rounded-card"
-      }`}
+      style={pseudoStyle}
+      className={`relative select-none overflow-hidden bg-black ${full ? "flex items-center" : "aspect-video w-full rounded-card"}`}
     >
       <video
         ref={video}
@@ -169,7 +229,14 @@ export function ProtectedPlayer({ src, onExpired }: { src: string; onExpired?: (
             className={`absolute inset-x-0 bottom-0 z-30 bg-gradient-to-t from-black/80 to-transparent px-3 pb-2 pt-8 text-white transition-opacity ${
               controls ? "opacity-100" : "pointer-events-none opacity-0"
             }`}
-            style={full ? { paddingBottom: "max(8px, env(safe-area-inset-bottom, 0px))" } : undefined}
+            style={
+              rotate
+                ? // burilganda pleyerning chap tomoni = telefonning tepasi (Telegram tugmalari, notch)
+                  { paddingLeft: "calc(12px + var(--tg-safe-area-inset-top, 0px) + var(--tg-content-safe-area-inset-top, 0px))", paddingRight: 12 }
+                : full
+                  ? { paddingBottom: "max(8px, env(safe-area-inset-bottom, 0px))" }
+                  : undefined
+            }
           >
             <input
               type="range"

@@ -4,7 +4,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { Markdown } from "../components/Markdown";
 import { Paywall } from "../components/Paywall";
 import { TestCard } from "../components/TestCard";
-import { ProtectedPlayer } from "../components/ProtectedPlayer";
+import { ProtectedPlayer, exitPlayerFullscreen } from "../components/ProtectedPlayer";
 import { VideoPlayer } from "../components/VideoPlayer";
 import { ApiError, api } from "../lib/api";
 import { useBackButton } from "../lib/hooks";
@@ -15,7 +15,10 @@ export function LessonPage() {
   const { id = "" } = useParams();
   const navigate = useNavigate();
   const qc = useQueryClient();
-  useBackButton(() => navigate("/lessons"));
+  // Video to'liq ekranda bo'lsa, "Orqaga" avval undan chiqaradi
+  useBackButton(() => {
+    if (!exitPlayerFullscreen()) navigate("/lessons");
+  });
 
   const lesson = useQuery({ queryKey: ["lesson", id], queryFn: () => api.lesson(id), retry: false });
   const complete = useMutation({

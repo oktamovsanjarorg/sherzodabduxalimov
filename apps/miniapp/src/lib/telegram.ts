@@ -20,7 +20,15 @@ interface TgWebApp {
   expand(): void;
   setHeaderColor(color: string): void;
   setBackgroundColor(color: string): void;
-  onEvent(event: "themeChanged", cb: () => void): void;
+  platform?: string;
+  isFullscreen?: boolean;
+  requestFullscreen?(): void;
+  exitFullscreen?(): void;
+  isVerticalSwipesEnabled?: boolean;
+  disableVerticalSwipes?(): void;
+  enableVerticalSwipes?(): void;
+  onEvent(event: "themeChanged" | "fullscreenChanged" | "fullscreenFailed", cb: () => void): void;
+  offEvent?(event: "themeChanged" | "fullscreenChanged" | "fullscreenFailed", cb: () => void): void;
   HapticFeedback?: {
     selectionChanged(): void;
     impactOccurred(s: "light" | "medium"): void;
@@ -140,4 +148,31 @@ export function openExternal(url: string) {
   if (/^https:\/\/t\.me\//.test(url) && tg?.openTelegramLink) tg.openTelegramLink(url);
   else if (tg?.openLink && isInTelegram) tg.openLink(url);
   else window.open(url, "_blank", "noopener");
+}
+
+/** Telegram'ning mobil ilovasi ichidami (Android/iOS webview) */
+export const isTelegramMobile = () => isInTelegram && /^(android|ios)$/.test(tg?.platform ?? "");
+
+/**
+ * Video uchun "immersiv" rejim: Telegram panelini yashiradi (Bot API 8.0) va vertikal swipe'ni o'chiradi
+ * (pastga surganda Mini App yopilib ketmasligi uchun). Qaytargan funksiya holatni avvalgidek tiklaydi.
+ */
+export function enterImmersive(): () => void {
+  if (!tg || !isInTelegram) return () => {};
+  const wasFull = Boolean(tg.isFullscreen);
+  const wasSwipes = tg.isVerticalSwipesEnabled !== false;
+  try {
+    if (!wasFull && supports("8.0")) tg.requestFullscreen?.();
+    if (wasSwipes && supports("7.7")) tg.disableVerticalSwipes?.();
+  } catch {
+    /* eski klient */
+  }
+  return () => {
+    try {
+      if (!wasFull && supports("8.0")) tg.exitFullscreen?.();
+      if (wasSwipes && supports("7.7")) tg.enableVerticalSwipes?.();
+    } catch {
+      /* eski klient */
+    }
+  };
 }
