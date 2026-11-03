@@ -2,6 +2,7 @@ import { ATTENDANCE_LABELS, ATTENDANCE_STATUSES, type AdminGroup, type AdminStud
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { CheckCheck, Clock, Plus, Search, Settings2, ShieldAlert, ShieldCheck, Trash2, UserPlus, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { Badge, ConfirmButton, Empty, Field, Modal, PageHeader, Spinner } from "../components/ui";
 import { api, errMsg } from "../lib/api";
 import { useToast } from "../lib/toast";
@@ -26,7 +27,8 @@ const CELL: Record<AttendanceStatusName, string> = {
 
 export function AttendancePage() {
   const groups = useQuery({ queryKey: ["groups"], queryFn: api.groups });
-  const [groupId, setGroupId] = useState<string>(() => localStorage.getItem(GROUP_KEY) ?? "");
+  const [params] = useSearchParams();
+  const [groupId, setGroupId] = useState<string>(() => params.get("group") ?? localStorage.getItem(GROUP_KEY) ?? "");
   const [date, setDate] = useState(todayTashkent());
   const [view, setView] = useState<"day" | "month">("day");
   const [managing, setManaging] = useState(false);
@@ -192,8 +194,8 @@ function DayView({ groupId, date }: { groupId: string; date: string }) {
 
       {/* Telefonda ham doim ko'rinadigan saqlash paneli */}
       <div
-        className="fixed inset-x-0 bottom-0 z-20 border-t border-slate-200 bg-white/95 px-4 py-3 backdrop-blur md:left-60"
-        style={{ paddingBottom: "max(12px, env(safe-area-inset-bottom, 0px))" }}
+        // Telefonda pastki navigatsiya (64px) ustida turadi
+        className="fixed inset-x-0 bottom-[calc(64px+env(safe-area-inset-bottom,0px))] z-20 border-t border-slate-200 bg-white/95 px-4 py-3 backdrop-blur md:bottom-0"
       >
         <div className="mx-auto flex max-w-6xl items-center gap-3">
           <span className="text-sm text-slate-500">{changed.length ? `${changed.length} ta o'zgarish` : "O'zgarish yo'q"}</span>

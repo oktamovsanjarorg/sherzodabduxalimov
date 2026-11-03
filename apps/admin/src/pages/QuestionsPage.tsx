@@ -58,7 +58,7 @@ export function QuestionsPage() {
               <div className="mt-2 flex flex-wrap gap-1.5">
                 <Badge tone="blue">{TYPE_LABELS[q.type]}</Badge>
                 {q.topicTitle && <Badge>{q.topicTitle}</Badge>}
-                <Badge>{q.type === "TEXT" ? `Javob: ${q.correctText}` : `${q.options.length} variant`}</Badge>
+                <Badge>{q.type === "TEXT" ? `Javob: ${(q.correctText ?? "").split("|").join(" / ")}` : `${q.options.length} variant`}</Badge>
                 {q.usedInTests > 0 && <Badge tone="green">{q.usedInTests} ta testda</Badge>}
               </div>
             </div>

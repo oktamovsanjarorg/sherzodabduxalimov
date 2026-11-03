@@ -56,14 +56,14 @@ function Editor({ lesson, onChanged }: { lesson: AdminLesson; onChanged: () => v
     onSuccess: () => {
       toast("Dars o'chirildi");
       onChanged();
-      navigate("/");
+      navigate("/content");
     },
     onError: (e) => toast(errMsg(e), "error"),
   });
 
   return (
     <>
-      <Link to="/" className="mb-3 inline-flex items-center gap-1 text-sm font-semibold text-slate-500 hover:text-slate-800">
+      <Link to="/content" className="mb-3 inline-flex items-center gap-1 text-sm font-semibold text-slate-500 hover:text-slate-800">
         <ArrowLeft size={16} /> Darslar
       </Link>
       <PageHeader

@@ -14,7 +14,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   return (
     <Ctx.Provider value={push}>
       {children}
-      <div className="fixed bottom-24 left-4 right-4 z-[100] flex flex-col items-end gap-2 sm:bottom-4 sm:left-auto">
+      <div className="fixed bottom-[calc(140px+env(safe-area-inset-bottom,0px))] left-4 right-4 z-[100] flex flex-col items-end gap-2 sm:bottom-4 sm:left-auto">
         {items.map((t) => (
           <div
             key={t.id}

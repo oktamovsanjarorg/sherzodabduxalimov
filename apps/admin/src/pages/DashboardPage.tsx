@@ -1,0 +1,120 @@
+import { useQuery } from "@tanstack/react-query";
+import { AlertTriangle, BookOpen, CalendarCheck, CheckCircle2, ChevronRight, ClipboardList, Film, LibraryBig, Plus, ShieldCheck, Users } from "lucide-react";
+import type { ReactNode } from "react";
+import { Link } from "react-router-dom";
+import { Spinner } from "../components/ui";
+import { api, errMsg } from "../lib/api";
+import { loadSession } from "../lib/session";
+
+export function DashboardPage() {
+  const d = useQuery({ queryKey: ["dashboard"], queryFn: api.dashboard, refetchInterval: 30_000 });
+  const name = loadSession()?.user.firstName ?? "";
+
+  if (d.isPending) return <Spinner className="text-slate-400" />;
+  if (d.isError) return <p className="text-sm text-red-600">{errMsg(d.error)}</p>;
+  const x = d.data;
+  const unmarked = x.attendanceToday.groups.filter((g) => g.total > 0 && g.marked < g.total);
+  const todo = (x.pendingParents ? 1 : 0) + (unmarked.length ? 1 : 0) + (x.videos.failed ? 1 : 0);
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <p className="text-sm text-slate-500">Assalomu alaykum</p>
+        <h1 className="text-2xl font-extrabold tracking-tight">{name}</h1>
+      </div>
+
+      {/* Bugun nima qilish kerak */}
+      <section className="space-y-2">
+        <h2 className="label">Bugun</h2>
+        {x.pendingParents > 0 && (
+          <Todo to="/parents" tone="amber" Icon={ShieldCheck} title={`${x.pendingParents} ta ota-ona so'rovi kutmoqda`} hint="Raqamga qo'ng'iroq qilib tasdiqlang" />
+        )}
+        {unmarked.map((g) => (
+          <Todo
+            key={g.id}
+            to={`/attendance?group=${g.id}`}
+            tone="brand"
+            Icon={CalendarCheck}
+            title={`${g.name}: davomat olinmagan`}
+            hint={`${g.marked}/${g.total} belgilangan${g.schedule ? ` · ${g.schedule}` : ""}`}
+          />
+        ))}
+        {x.videos.failed > 0 && (
+          <Todo to="/content" tone="red" Icon={AlertTriangle} title={`${x.videos.failed} ta videoni tayyorlab bo'lmadi`} hint="Dars sahifasida «Qayta urinish»ni bosing" />
+        )}
+        {x.videos.processing > 0 && (
+          <Todo to="/content" tone="gray" Icon={Film} title={`${x.videos.processing} ta video tayyorlanmoqda`} hint="Tayyor bo'lgach o'quvchilarga ko'rinadi" />
+        )}
+        {todo === 0 && (
+          <div className="card flex items-center gap-3 p-4 text-sm font-semibold text-emerald-700">
+            <CheckCircle2 size={20} /> Hammasi joyida, kutayotgan ish yo'q
+          </div>
+        )}
+      </section>
+
+      {/* Tezkor amallar */}
+      <section>
+        <h2 className="label mb-2">Tezkor amallar</h2>
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+          <Quick to="/content" Icon={Plus} label="Dars qo'shish" />
+          <Quick to="/questions" Icon={LibraryBig} label="Savollar banki" />
+          <Quick to="/tests/new?type=MOCK" Icon={ClipboardList} label="Mock test" />
+          <Quick to="/attendance" Icon={CalendarCheck} label="Davomat" />
+        </div>
+      </section>
+
+      {/* Ko'rsatkichlar */}
+      <section>
+        <h2 className="label mb-2">Ko'rsatkichlar</h2>
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+          <Stat Icon={Users} value={x.students.total} label="O'quvchi" hint={x.students.withoutApprovedParent ? `${x.students.withoutApprovedParent} tasida ota-ona tasdiqlanmagan` : "Hammasida ota-ona tasdiqlangan"} />
+          <Stat Icon={BookOpen} value={x.content.lessonsPublished} label="Nashr qilingan dars" hint={x.content.lessonsDraft ? `${x.content.lessonsDraft} ta qoralama` : undefined} />
+          <Stat Icon={ClipboardList} value={x.content.tests} label="Test" />
+          <Stat Icon={LibraryBig} value={x.content.questions} label="Savol" />
+        </div>
+      </section>
+    </div>
+  );
+}
+
+const TONES = {
+  amber: "border-amber-300 bg-amber-50 text-amber-900",
+  brand: "border-brand/30 bg-brand-soft/40 text-brand-dark",
+  red: "border-red-300 bg-red-50 text-red-800",
+  gray: "border-slate-200 bg-white text-slate-700",
+};
+
+function Todo({ to, tone, Icon, title, hint }: { to: string; tone: keyof typeof TONES; Icon: typeof Users; title: string; hint: string }) {
+  return (
+    <Link to={to} className={`flex items-center gap-3 rounded-2xl border p-4 transition hover:shadow-sm ${TONES[tone]}`}>
+      <Icon size={22} className="shrink-0" />
+      <span className="min-w-0 flex-1">
+        <span className="block font-bold">{title}</span>
+        <span className="block text-xs opacity-80">{hint}</span>
+      </span>
+      <ChevronRight size={18} className="shrink-0 opacity-60" />
+    </Link>
+  );
+}
+
+function Quick({ to, Icon, label }: { to: string; Icon: typeof Users; label: string }) {
+  return (
+    <Link to={to} className="card flex items-center gap-3 p-4 text-sm font-bold transition hover:border-brand">
+      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-brand-soft text-brand">
+        <Icon size={18} />
+      </span>
+      {label}
+    </Link>
+  );
+}
+
+function Stat({ Icon, value, label, hint }: { Icon: typeof Users; value: number; label: string; hint?: ReactNode }) {
+  return (
+    <div className="card p-4">
+      <Icon size={18} className="text-slate-400" />
+      <p className="mt-2 text-2xl font-extrabold tabular-nums">{value}</p>
+      <p className="text-sm font-semibold text-slate-600">{label}</p>
+      {hint && <p className="mt-1 text-xs text-slate-500">{hint}</p>}
+    </div>
+  );
+}

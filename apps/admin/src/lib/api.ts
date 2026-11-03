@@ -50,6 +50,14 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
 
 const json = (method: string, body?: unknown): RequestInit => ({ method, body: body === undefined ? undefined : JSON.stringify(body) });
 
+export interface AdminDashboard {
+  pendingParents: number;
+  videos: { processing: number; failed: number };
+  students: { total: number; withoutApprovedParent: number };
+  attendanceToday: { groups: { id: string; name: string; schedule: string | null; marked: number; total: number }[] };
+  content: { lessonsPublished: number; lessonsDraft: number; tests: number; questions: number };
+}
+
 export interface StaffList {
   staff: { id: string; firstName: string; lastName: string | null; username: string | null; role: "TEACHER" | "ASSISTANT"; isOwner: boolean }[];
   invites: { username: string; role: string; createdAt: string }[];
@@ -117,6 +125,7 @@ export const api = {
   approveParent: (id: string) => request(`/admin/parent-links/${id}/approve`, json("POST")),
   rejectParent: (id: string, reason: string) => request(`/admin/parent-links/${id}/reject`, json("POST", { reason })),
 
+  dashboard: () => request<AdminDashboard>("/admin/dashboard"),
   staff: () => request<StaffList>("/admin/staff"),
   addStaff: (username: string) => request<{ status: "added" | "invited" }>("/admin/staff", json("POST", { username })),
   removeStaff: (id: string) => request(`/admin/staff/${id}`, json("DELETE")),

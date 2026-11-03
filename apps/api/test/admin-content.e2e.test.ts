@@ -37,6 +37,13 @@ describe("Admin: kontent (e2e)", () => {
     await app?.close();
   });
 
+  it("dashboard: o'quvchiga yopiq, ega uchun hisoblar", async () => {
+    expect((await req("GET", "/admin/dashboard", undefined, S)).statusCode).toBe(403);
+    const d = (await req("GET", "/admin/dashboard")).json();
+    expect(d).toMatchObject({ pendingParents: expect.any(Number), videos: { processing: expect.any(Number) }, attendanceToday: { groups: expect.any(Array) } });
+    expect(d.students.total).toBeGreaterThanOrEqual(1);
+  });
+
   it("o'quvchi admin API'ga kira olmaydi", async () => {
     expect((await req("GET", "/admin/courses", undefined, S)).statusCode).toBe(403);
     expect((await req("POST", "/admin/courses", { title: "x" }, S)).statusCode).toBe(403);
