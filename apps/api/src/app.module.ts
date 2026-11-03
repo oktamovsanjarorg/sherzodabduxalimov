@@ -5,6 +5,7 @@ import { ContentModule } from "./content/content.module";
 import { ENV, type Env } from "./config/env";
 import { HealthController } from "./health/health.controller";
 import { PrismaModule } from "./prisma/prisma.module";
+import { StaffModule } from "./staff/staff.module";
 import { TestsModule } from "./tests/tests.module";
 import { UsersModule } from "./users/users.module";
 
@@ -21,7 +22,7 @@ export class AppModule {
   static forRoot(env: Env): DynamicModule {
     return {
       module: AppModule,
-      imports: [EnvModule.forRoot(env), PrismaModule, AccessModule, UsersModule, AuthModule, ContentModule, TestsModule],
+      imports: [EnvModule.forRoot(env), PrismaModule, AccessModule, UsersModule, AuthModule, StaffModule, ContentModule, TestsModule],
       controllers: [HealthController],
     };
   }

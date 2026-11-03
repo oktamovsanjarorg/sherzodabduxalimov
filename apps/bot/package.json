@@ -8,6 +8,13 @@
     "start": "node dist/main.js",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
-  "dependencies": { "grammy": "^1.31.0" },
-  "devDependencies": { "@types/node": "^22.9.0", "tsx": "^4.19.2", "typescript": "^5.6.3" }
+  "dependencies": {
+    "grammy": "^1.31.0",
+    "@onatili/shared": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^22.9.0",
+    "tsx": "^4.19.2",
+    "typescript": "^5.6.3"
+  }
 }

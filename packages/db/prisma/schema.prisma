@@ -46,6 +46,9 @@ model User {
   attendanceMarked Attendance[]  @relation("AttendanceMarker")
   lessonProgress LessonProgress[]
   auditLogs     AuditLog[]
+  loginTokens   LoginToken[]
+  videos        Video[]
+  invitesSent   StaffInvite[]
 }
 
 model StudentProfile {
@@ -112,7 +115,9 @@ model Lesson {
   topicId     String
   topic       Topic    @relation(fields: [topicId], references: [id], onDelete: Cascade)
   title       String
-  videoUrl    String?
+  videoUrl    String? // tashqi havola (YouTube va h.k.)
+  videoId     String?  @unique // serverga yuklangan himoyalangan video
+  video       Video?   @relation(fields: [videoId], references: [id], onDelete: SetNull)
   content     String? // konspekt (markdown)
   attachments Json     @default("[]") // [{name,url}]
   durationSec Int?
@@ -390,4 +395,51 @@ model AuditLog {
   createdAt DateTime @default(now())
 
   @@index([entity, entityId])
+}
+
+// ===================== Video =====================
+
+enum VideoStatus {
+  UPLOADING
+  PROCESSING
+  READY
+  FAILED
+}
+
+model Video {
+  id            String      @id @default(cuid())
+  status        VideoStatus @default(UPLOADING)
+  originalName  String
+  sizeBytes     BigInt
+  receivedBytes BigInt      @default(0)
+  durationSec   Int?
+  variants      String[] // tayyor sifatlar: ["720p","480p"]
+  error         String?
+  createdById   String?
+  createdBy     User?       @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  lesson        Lesson?
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+}
+
+// ===================== Admin kirishi =====================
+
+/// Bot /admin buyrug'i orqali beriladigan bir martalik kirish havolasi (faqat xeshi saqlanadi)
+model LoginToken {
+  id        String    @id @default(cuid())
+  tokenHash String    @unique
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+}
+
+/// Hali botga kirmagan odamni username bo'yicha yordamchi qilib qo'yish
+model StaffInvite {
+  username    String   @id // kichik harflarda, @ belgisisiz
+  role        Role     @default(ASSISTANT)
+  invitedById String?
+  invitedBy   User?    @relation(fields: [invitedById], references: [id], onDelete: SetNull)
+  createdAt   DateTime @default(now())
 }

@@ -9,6 +9,13 @@ const schema = z.object({
   JWT_TTL: z.string().default("1h"),
   INIT_DATA_MAX_AGE_SEC: z.coerce.number().default(86400),
   CORS_ORIGINS: z.string().default("http://localhost:5180"),
+  // Ega (TEACHER) bo'ladigan Telegram username'lar, vergul bilan, @ belgisisiz
+  OWNER_USERNAMES: z.string().default(""),
+  // Admin panel manzili (bot yuboradigan kirish havolasi uchun)
+  ADMIN_URL: z.string().default("http://127.0.0.1:5181/admin"),
+  ADMIN_JWT_TTL: z.string().default("12h"),
+  MEDIA_DIR: z.string().default("./.media"),
+  REDIS_URL: z.string().default("redis://localhost:6381"),
 });
 
 export type Env = z.infer<typeof schema>;

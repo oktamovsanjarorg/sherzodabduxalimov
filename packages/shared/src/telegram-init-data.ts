@@ -76,3 +76,8 @@ export function signInitData(
   const hash = createHmac("sha256", secret).update(dataCheckString).digest("hex");
   return new URLSearchParams({ ...fields, hash }).toString();
 }
+
+/** Bot va API o'rtasidagi ichki so'rovlar kaliti (ikkalasida ham BOT_TOKEN bor) */
+export function internalKey(botToken: string): string {
+  return createHmac("sha256", "onatili-internal").update(botToken).digest("hex");
+}

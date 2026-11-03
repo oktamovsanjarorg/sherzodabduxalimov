@@ -11,6 +11,7 @@ import { AuthService } from "./auth.service";
   imports: [
     UsersModule,
     JwtModule.registerAsync({
+      global: true,
       inject: [ENV],
       useFactory: (env: Env) => ({ secret: env.JWT_SECRET, signOptions: { expiresIn: env.JWT_TTL } }),
     }),
