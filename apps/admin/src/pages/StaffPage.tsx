@@ -38,7 +38,7 @@ export function StaffPage() {
           if (username.trim()) add.mutate();
         }}
       >
-        <div className="min-w-[240px] flex-1">
+        <div className="w-full min-w-0 flex-1 sm:w-auto sm:min-w-[240px]">
           <label className="label">Yordamchi qo'shish</label>
           <input className="input" placeholder="@telegram_username" value={username} onChange={(e) => setUsername(e.target.value)} />
           <p className="mt-1 text-xs text-slate-500">U botga /admin deb yozib kiradi. Hali botga kirmagan bo'lsa ham qo'shsa bo'ladi.</p>
@@ -49,8 +49,8 @@ export function StaffPage() {
       {staff.isPending && <Spinner className="text-slate-400" />}
       <div className="card divide-y divide-slate-100 overflow-hidden">
         {staff.data?.staff.map((s) => (
-          <div key={s.id} className="flex items-center gap-3 px-5 py-4">
-            <span className="flex h-10 w-10 items-center justify-center rounded-full bg-brand text-sm font-bold text-white">{s.firstName[0]}</span>
+          <div key={s.id} className="flex flex-wrap items-center gap-3 px-4 py-4 sm:px-5">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brand text-sm font-bold text-white">{s.firstName[0]}</span>
             <div className="min-w-0 flex-1">
               <p className="font-bold">{s.firstName} {s.lastName ?? ""} {s.id === me.id && <span className="text-xs font-semibold text-slate-400">(siz)</span>}</p>
               <p className="text-xs text-slate-500">{s.username ? `@${s.username}` : "username yo'q"}</p>
@@ -60,8 +60,8 @@ export function StaffPage() {
           </div>
         ))}
         {staff.data?.invites.map((i) => (
-          <div key={i.username} className="flex items-center gap-3 px-5 py-4">
-            <span className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-slate-400"><Clock size={18} /></span>
+          <div key={i.username} className="flex flex-wrap items-center gap-3 px-4 py-4 sm:px-5">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-400"><Clock size={18} /></span>
             <div className="min-w-0 flex-1">
               <p className="font-bold">@{i.username}</p>
               <p className="text-xs text-slate-500">Taklif qilingan: botga hali kirmagan</p>

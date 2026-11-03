@@ -37,13 +37,13 @@ export function QuestionsPage() {
         actions={<button className="btn-primary" onClick={() => setEditing("new")}><Plus size={16} /> Savol qo'shish</button>}
       />
       <div className="mb-4 flex flex-wrap gap-2">
-        <select className="input w-auto min-w-[220px]" value={topicId} onChange={(e) => { setTopicId(e.target.value); setPage(1); }}>
+        <select className="input w-full sm:w-auto sm:min-w-[220px]" value={topicId} onChange={(e) => { setTopicId(e.target.value); setPage(1); }}>
           <option value="">Barcha mavzular</option>
           {topics.map((t) => <option key={t.id} value={t.id}>{t.title}</option>)}
           <option value="none">Mavzusiz</option>
         </select>
-        <div className="relative min-w-[240px] flex-1">
-          <Search size={16} className="absolute left-3 top-3 text-slate-400" />
+        <div className="relative w-full min-w-0 flex-1 sm:w-auto sm:min-w-[240px]">
+          <Search size={16} className="absolute left-3 top-3.5 text-slate-400 sm:top-3" />
           <input className="input pl-9" placeholder="Savol matni bo'yicha qidirish" value={search} onChange={(e) => { setSearch(e.target.value); setPage(1); }} />
         </div>
       </div>

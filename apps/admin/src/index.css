@@ -3,19 +3,21 @@
 @tailwind utilities;
 
 @layer base {
-  body { @apply bg-slate-50 font-sans text-slate-900 antialiased; }
+  body { @apply bg-slate-50 font-sans text-slate-900 antialiased; -webkit-tap-highlight-color: transparent; }
+  /* Bitta element ekrandan chiqib ketsa ham butun sahifa yonga surilmasin */
+  html, body { overflow-x: hidden; }
 }
 
 @layer components {
   .card { @apply rounded-2xl border border-slate-200 bg-white; }
   .input {
-    @apply h-10 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm outline-none transition
+    @apply h-11 w-full rounded-lg border border-slate-300 bg-white px-3 text-[16px] outline-none transition sm:h-10 sm:text-sm
       placeholder:text-slate-400 focus:border-brand focus:ring-2 focus:ring-brand/20 disabled:bg-slate-100;
   }
   .textarea { @apply input h-auto py-2 leading-relaxed; }
   .label { @apply mb-1 block text-xs font-bold uppercase tracking-wide text-slate-500; }
   .btn {
-    @apply inline-flex h-10 items-center justify-center gap-2 whitespace-nowrap rounded-lg px-4 text-sm font-bold transition
+    @apply inline-flex h-11 items-center justify-center gap-2 whitespace-nowrap rounded-lg px-4 text-sm font-bold transition sm:h-10
       disabled:cursor-not-allowed disabled:opacity-50;
   }
   .btn-primary { @apply btn bg-brand text-white hover:bg-brand-dark; }

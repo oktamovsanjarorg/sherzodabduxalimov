@@ -3,9 +3,9 @@ import { useEffect, useState, type ReactNode } from "react";
 
 export function PageHeader({ title, subtitle, actions }: { title: string; subtitle?: string; actions?: ReactNode }) {
   return (
-    <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
-      <div>
-        <h1 className="text-2xl font-extrabold tracking-tight">{title}</h1>
+    <div className="mb-5 flex flex-wrap items-end justify-between gap-3 sm:mb-6">
+      <div className="min-w-0">
+        <h1 className="break-words text-xl font-extrabold tracking-tight sm:text-2xl">{title}</h1>
         {subtitle && <p className="mt-1 text-sm text-slate-500">{subtitle}</p>}
       </div>
       {actions && <div className="flex flex-wrap gap-2">{actions}</div>}
@@ -20,22 +20,26 @@ export function Modal({ title, onClose, children, footer, wide }: { title: strin
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-slate-900/40 p-4 sm:p-8" onMouseDown={onClose}>
+    <div className="fixed inset-0 z-50 flex items-start justify-center bg-slate-900/40 sm:overflow-y-auto sm:p-8" onMouseDown={onClose}>
       <div
         role="dialog"
         aria-modal="true"
         aria-label={title}
-        className={`card w-full ${wide ? "max-w-4xl" : "max-w-xl"} shadow-xl`}
+        className={`flex h-full w-full flex-col bg-white shadow-xl sm:h-auto sm:rounded-2xl sm:border sm:border-slate-200 ${wide ? "sm:max-w-4xl" : "sm:max-w-xl"}`}
         onMouseDown={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4">
+        <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3 sm:px-5 sm:py-4" style={{ paddingTop: "max(12px, env(safe-area-inset-top, 0px))" }}>
           <h2 className="text-lg font-extrabold">{title}</h2>
-          <button className="btn-ghost h-8 w-8 p-0" onClick={onClose} aria-label="Yopish">
-            <X size={18} />
+          <button className="btn-ghost h-10 w-10 p-0" onClick={onClose} aria-label="Yopish">
+            <X size={20} />
           </button>
         </div>
-        <div className="max-h-[70vh] overflow-y-auto px-5 py-4">{children}</div>
-        {footer && <div className="flex justify-end gap-2 border-t border-slate-200 px-5 py-3">{footer}</div>}
+        <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4 sm:max-h-[70vh] sm:flex-none sm:px-5">{children}</div>
+        {footer && (
+          <div className="flex flex-wrap justify-end gap-2 border-t border-slate-200 px-4 py-3 sm:px-5" style={{ paddingBottom: "max(12px, env(safe-area-inset-bottom, 0px))" }}>
+            {footer}
+          </div>
+        )}
       </div>
     </div>
   );
@@ -70,7 +74,7 @@ const tones = {
   brand: "bg-brand-soft text-brand-dark",
 };
 export function Badge({ tone = "gray", children }: { tone?: keyof typeof tones; children: ReactNode }) {
-  return <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-bold ${tones[tone]}`}>{children}</span>;
+  return <span className={`inline-flex shrink-0 items-center gap-1 whitespace-nowrap rounded-full px-2 py-0.5 text-[11px] font-bold ${tones[tone]}`}>{children}</span>;
 }
 
 /** Ikki bosqichli o'chirish tugmasi: birinchi bosishda tasdiq so'raydi */

@@ -60,9 +60,9 @@ function InlineTitle({ value, onSave, className = "" }: { value: string; onSave:
   const [v, setV] = useState(value);
   if (!edit)
     return (
-      <button className={`group flex items-center gap-2 text-left ${className}`} onClick={() => { setV(value); setEdit(true); }}>
-        {value}
-        <Pencil size={14} className="text-slate-300 group-hover:text-slate-500" />
+      <button className={`group flex min-w-0 items-center gap-2 text-left ${className}`} onClick={() => { setV(value); setEdit(true); }}>
+        <span className="min-w-0 break-words">{value}</span>
+        <Pencil size={14} className="shrink-0 text-slate-300 group-hover:text-slate-500" />
       </button>
     );
   const save = () => {
@@ -91,7 +91,7 @@ function CourseCard({ course }: { course: AdminCourse }) {
 
   return (
     <section className="card">
-      <div className="flex flex-wrap items-center gap-4 border-b border-slate-200 px-5 py-4">
+      <div className="flex flex-wrap items-center gap-3 border-b border-slate-200 px-4 py-4 sm:gap-4 sm:px-5">
         <InlineTitle value={course.title} onSave={(title) => update.mutate({ title })} className="text-lg font-extrabold" />
         <span className="flex-1" />
         <Toggle checked={course.isPublished} onChange={(isPublished) => update.mutate({ isPublished })} label={course.isPublished ? "Nashr qilingan" : "Yashirin"} />
@@ -105,13 +105,13 @@ function CourseCard({ course }: { course: AdminCourse }) {
       </div>
 
       <form
-        className="flex gap-2 border-t border-slate-200 px-5 py-3"
+        className="flex gap-2 border-t border-slate-200 px-4 py-3 sm:px-5"
         onSubmit={(e) => {
           e.preventDefault();
           if (newTopic.trim()) addTopic.mutate();
         }}
       >
-        <input className="input max-w-sm" placeholder="Yangi mavzu nomi, masalan: Morfologiya" value={newTopic} onChange={(e) => setNewTopic(e.target.value)} />
+        <input className="input min-w-0 sm:max-w-sm" placeholder="Yangi mavzu nomi" value={newTopic} onChange={(e) => setNewTopic(e.target.value)} />
         <button className="btn-secondary" disabled={!newTopic.trim() || addTopic.isPending}>
           <Plus size={16} /> Mavzu
         </button>
@@ -143,17 +143,17 @@ function TopicBlock({ topic, index, topicIds }: { topic: AdminTopic; index: numb
   const lessonIds = topic.lessons.map((l) => l.id);
 
   return (
-    <div className="px-5 py-4">
-      <div className="mb-2 flex items-center gap-2">
-        <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-slate-100 text-xs font-extrabold text-slate-500">{index + 1}</span>
+    <div className="px-3 py-4 sm:px-5">
+      <div className="mb-2 flex items-center gap-1 sm:gap-2">
+        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-xs font-extrabold text-slate-500">{index + 1}</span>
         <InlineTitle value={topic.title} onSave={(t) => rename.mutate(t)} className="font-bold" />
         <span className="flex-1" />
-        <button className="btn-ghost h-8 w-8 p-0" disabled={index === 0} onClick={() => reorder.mutate({ kind: "topic", ids: move(topicIds, index, -1) })} aria-label="Yuqoriga"><ArrowUp size={15} /></button>
-        <button className="btn-ghost h-8 w-8 p-0" disabled={index === topicIds.length - 1} onClick={() => reorder.mutate({ kind: "topic", ids: move(topicIds, index, 1) })} aria-label="Pastga"><ArrowDown size={15} /></button>
-        <ConfirmButton onConfirm={() => del.mutate()} className="btn-ghost h-8 w-8 p-0 text-slate-400 hover:text-red-600"><Trash2 size={15} /></ConfirmButton>
+        <button className="btn-ghost h-9 w-9 shrink-0 p-0" disabled={index === 0} onClick={() => reorder.mutate({ kind: "topic", ids: move(topicIds, index, -1) })} aria-label="Yuqoriga"><ArrowUp size={15} /></button>
+        <button className="btn-ghost h-9 w-9 shrink-0 p-0" disabled={index === topicIds.length - 1} onClick={() => reorder.mutate({ kind: "topic", ids: move(topicIds, index, 1) })} aria-label="Pastga"><ArrowDown size={15} /></button>
+        <ConfirmButton onConfirm={() => del.mutate()} className="btn-ghost h-9 w-9 shrink-0 p-0 text-slate-400 hover:text-red-600"><Trash2 size={15} /></ConfirmButton>
       </div>
 
-      <ul className="ml-9 space-y-1">
+      <ul className="space-y-0.5 sm:ml-9">
         {topic.lessons.map((l, i) => (
           <LessonRow
             key={l.id}
@@ -165,17 +165,19 @@ function TopicBlock({ topic, index, topicIds }: { topic: AdminTopic; index: numb
         ))}
         {topic.tests.map((t) => (
           <li key={t.id}>
-            <Link to={`/tests/${t.id}`} className="flex h-11 items-center gap-3 rounded-lg px-3 text-sm hover:bg-slate-50">
-              <FileText size={16} className="text-sky-600" />
-              <span className="flex-1 truncate font-semibold">{t.title}</span>
-              <Badge tone="blue">Test · {t.questionCount} savol</Badge>
-              {t.isPublished ? <Badge tone="green">Nashr</Badge> : <Badge>Qoralama</Badge>}
-              <span className="w-16" aria-hidden />
+            <Link to={`/tests/${t.id}`} className="flex flex-wrap items-center gap-x-2 gap-y-1.5 rounded-lg px-2 py-2 text-sm hover:bg-slate-50 sm:px-3">
+              <FileText size={16} className="shrink-0 text-sky-600" />
+              <span className="min-w-0 flex-1 font-semibold sm:truncate">{t.title}</span>
+              <span className="order-last flex w-full flex-wrap gap-1 pl-6 sm:order-none sm:w-auto sm:pl-0">
+                <Badge tone="blue">Test · {t.questionCount} savol</Badge>
+                {t.isPublished ? <Badge tone="green">Nashr</Badge> : <Badge>Qoralama</Badge>}
+              </span>
+              <span className="hidden w-[72px] sm:block" aria-hidden />
             </Link>
           </li>
         ))}
       </ul>
-      <div className="ml-9 mt-2 flex gap-2">
+      <div className="mt-2 flex flex-wrap gap-2 sm:ml-9">
         <button className="btn-ghost btn-sm text-brand" onClick={() => addLesson.mutate()} disabled={addLesson.isPending}>
           <Plus size={14} /> Dars qo'shish
         </button>
@@ -199,17 +201,20 @@ export function VideoBadge({ lesson }: { lesson: AdminLesson }) {
 
 function LessonRow({ lesson, first, last, onMove }: { lesson: AdminLesson; first: boolean; last: boolean; onMove: (d: -1 | 1) => void }) {
   return (
-    <li className="group flex h-11 items-center gap-2 rounded-lg px-3 hover:bg-slate-50">
+    <li className="group flex flex-wrap items-center gap-x-2 gap-y-1.5 rounded-lg px-2 py-2 hover:bg-slate-50 sm:px-3">
       <Film size={16} className="shrink-0 text-brand" />
-      <Link to={`/lessons/${lesson.id}`} className="min-w-0 flex-1 truncate text-sm font-semibold hover:text-brand">
+      <Link to={`/lessons/${lesson.id}`} className="min-w-0 flex-1 text-sm font-semibold hover:text-brand sm:truncate">
         {lesson.title}
       </Link>
-      <VideoBadge lesson={lesson} />
-      {lesson.isFree && <Badge tone="brand">Bepul</Badge>}
-      {lesson.isPublished ? <Badge tone="green">Nashr</Badge> : <Badge>Qoralama</Badge>}
-      <span className="flex opacity-0 transition group-hover:opacity-100">
-        <button className="btn-ghost h-8 w-8 p-0" disabled={first} onClick={() => onMove(-1)} aria-label="Yuqoriga"><ArrowUp size={14} /></button>
-        <button className="btn-ghost h-8 w-8 p-0" disabled={last} onClick={() => onMove(1)} aria-label="Pastga"><ArrowDown size={14} /></button>
+      {/* Telefonda: nom tagida alohida qator; kompyuterda: o'ng tomonda */}
+      <span className="order-last flex w-full flex-wrap items-center gap-1 pl-6 sm:order-none sm:w-auto sm:pl-0">
+        <VideoBadge lesson={lesson} />
+        {lesson.isFree && <Badge tone="brand">Bepul</Badge>}
+        {lesson.isPublished ? <Badge tone="green">Nashr</Badge> : <Badge>Qoralama</Badge>}
+      </span>
+      <span className="flex transition md:opacity-0 md:group-hover:opacity-100">
+        <button className="btn-ghost h-9 w-9 p-0" disabled={first} onClick={() => onMove(-1)} aria-label="Yuqoriga"><ArrowUp size={15} /></button>
+        <button className="btn-ghost h-9 w-9 p-0" disabled={last} onClick={() => onMove(1)} aria-label="Pastga"><ArrowDown size={15} /></button>
       </span>
     </li>
   );

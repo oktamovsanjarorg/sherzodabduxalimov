@@ -99,7 +99,7 @@ function Editor({ initial }: { initial: AdminTestDetail | null }) {
       />
       {err && <p className="mb-4 rounded-lg bg-red-50 px-3 py-2 text-sm font-semibold text-red-700">{err}</p>}
 
-      <div className="grid gap-6 lg:grid-cols-[320px_1fr]">
+      <div className="grid min-w-0 gap-6 lg:grid-cols-[320px_minmax(0,1fr)]">
         <aside className="card h-fit space-y-4 p-5">
           <Field label="Turi">
             <select className="input" value={type} onChange={(e) => setType(e.target.value as "TOPIC" | "MOCK")}>
@@ -128,7 +128,7 @@ function Editor({ initial }: { initial: AdminTestDetail | null }) {
         </aside>
 
         <section className="card">
-          <div className="flex flex-wrap items-center gap-2 border-b border-slate-200 px-5 py-4">
+          <div className="flex flex-wrap items-center gap-2 border-b border-slate-200 px-4 py-4 sm:px-5">
             <h2 className="font-extrabold">Savollar</h2>
             <Badge>{items.length} ta · {total} ball</Badge>
             <span className="flex-1" />
@@ -138,19 +138,21 @@ function Editor({ initial }: { initial: AdminTestDetail | null }) {
           {items.length === 0 && <p className="px-5 py-10 text-center text-sm text-slate-500">Testga hali savol qo'shilmagan</p>}
           <ol className="divide-y divide-slate-100">
             {items.map((it, i) => (
-              <li key={it.question.id} className="flex items-start gap-3 px-5 py-3">
-                <span className="mt-1 w-6 text-sm font-extrabold text-slate-400">{i + 1}.</span>
-                <div className="min-w-0 flex-1">
+              <li key={it.question.id} className="flex flex-wrap items-start gap-x-3 gap-y-2 px-4 py-3 sm:flex-nowrap sm:px-5">
+                <span className="mt-1 w-6 shrink-0 text-sm font-extrabold text-slate-400">{i + 1}.</span>
+                <div className="min-w-0 flex-1 basis-[calc(100%-3rem)] sm:basis-auto">
                   <p className="line-clamp-2 text-sm font-semibold">{it.question.text}</p>
                   <div className="mt-1 flex gap-1.5">
                     <Badge tone="blue">{TYPE_LABELS[it.question.type]}</Badge>
                     {it.question.topicTitle && <Badge>{it.question.topicTitle}</Badge>}
                   </div>
                 </div>
+                {/* Telefonda: matn tagida alohida qator */}
+                <div className="ml-9 flex items-center gap-1 sm:ml-0">
                 <label className="flex items-center gap-1 text-xs font-bold text-slate-500">
                   Ball
                   <input
-                    className="input h-8 w-16 px-2"
+                    className="input h-9 w-16 px-2"
                     inputMode="decimal"
                     value={it.points}
                     onChange={(e) => {
@@ -159,9 +161,10 @@ function Editor({ initial }: { initial: AdminTestDetail | null }) {
                     }}
                   />
                 </label>
-                <button className="btn-ghost h-8 w-8 p-0" disabled={i === 0} onClick={() => moveItem(i, -1)} aria-label="Yuqoriga"><ArrowUp size={14} /></button>
-                <button className="btn-ghost h-8 w-8 p-0" disabled={i === items.length - 1} onClick={() => moveItem(i, 1)} aria-label="Pastga"><ArrowDown size={14} /></button>
-                <button className="btn-ghost h-8 w-8 p-0 text-slate-400 hover:text-red-600" onClick={() => setItems((cur) => cur.filter((_, j) => j !== i))} aria-label="Olib tashlash"><X size={16} /></button>
+                <button className="btn-ghost h-9 w-9 p-0" disabled={i === 0} onClick={() => moveItem(i, -1)} aria-label="Yuqoriga"><ArrowUp size={14} /></button>
+                <button className="btn-ghost h-9 w-9 p-0" disabled={i === items.length - 1} onClick={() => moveItem(i, 1)} aria-label="Pastga"><ArrowDown size={14} /></button>
+                <button className="btn-ghost h-9 w-9 p-0 text-slate-400 hover:text-red-600" onClick={() => setItems((cur) => cur.filter((_, j) => j !== i))} aria-label="Olib tashlash"><X size={16} /></button>
+                </div>
               </li>
             ))}
           </ol>
@@ -196,12 +199,12 @@ function Picker({ defaultTopicId, exclude, onClose, onPick }: { defaultTopicId: 
       }
     >
       <div className="mb-3 flex flex-wrap gap-2">
-        <select className="input w-auto" value={topicId} onChange={(e) => setTopicId(e.target.value)}>
+        <select className="input w-full sm:w-auto" value={topicId} onChange={(e) => setTopicId(e.target.value)}>
           <option value="">Barcha mavzular</option>
           {topics.map((t) => <option key={t.id} value={t.id}>{t.title}</option>)}
         </select>
-        <div className="relative flex-1">
-          <Search size={16} className="absolute left-3 top-3 text-slate-400" />
+        <div className="relative min-w-0 flex-1">
+          <Search size={16} className="absolute left-3 top-3.5 text-slate-400 sm:top-3" />
           <input className="input pl-9" placeholder="Qidirish" value={search} onChange={(e) => setSearch(e.target.value)} />
         </div>
         {list.length > 0 && (
