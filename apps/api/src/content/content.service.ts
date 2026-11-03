@@ -1,7 +1,9 @@
-import { Injectable, NotFoundException } from "@nestjs/common";
-import type { CourseView, LessonDetail, StudentStats, TestSummary } from "@onatili/shared";
+import { Inject, Injectable, NotFoundException } from "@nestjs/common";
+import type { CourseView, LessonDetail, LessonVideo, StudentStats, TestSummary } from "@onatili/shared";
 import { AccessService } from "../access/access.service";
 import type { JwtUser } from "../auth/decorators";
+import { ENV, type Env } from "../config/env";
+import { signMediaToken } from "../media/media-token";
 import { PrismaService } from "../prisma/prisma.service";
 
 type TestRow = {
@@ -24,7 +26,30 @@ const testSelect = {
 
 @Injectable()
 export class ContentService {
-  constructor(private readonly prisma: PrismaService, private readonly access: AccessService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly access: AccessService,
+    @Inject(ENV) private readonly env: Env,
+  ) {}
+
+  /** Video uchun imzolangan manzil va suv belgisi. Faqat kirish huquqi tekshirilgandan keyin chaqiriladi. */
+  private async lessonVideo(userId: string, video: { id: string; status: string } | null): Promise<LessonVideo | null> {
+    if (!video || (video.status !== "READY" && video.status !== "PROCESSING")) return null;
+    const u = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { firstName: true, lastName: true, phone: true, telegramId: true },
+    });
+    const watermark = [
+      [u?.firstName, u?.lastName].filter(Boolean).join(" "),
+      `ID ${u?.telegramId ?? ""}`,
+      u?.phone ?? null,
+    ]
+      .filter(Boolean)
+      .join(" · ");
+    if (video.status !== "READY") return { status: "PROCESSING", hlsUrl: null, watermark };
+    const t = signMediaToken(this.env.JWT_SECRET, video.id, userId);
+    return { status: "READY", hlsUrl: `/api/media/${video.id}/master.m3u8?t=${encodeURIComponent(t)}`, watermark };
+  }
 
   /** Testlar ro'yxatiga foydalanuvchining eng yaxshi natijasi va tugallanmagan urinishini qo'shadi */
   async buildTestSummaries(userId: string, tests: TestRow[], paidOpen: boolean): Promise<TestSummary[]> {
@@ -115,6 +140,7 @@ export class ContentService {
     const lesson = await this.prisma.lesson.findFirst({
       where: { id, isPublished: true, topic: { course: { isPublished: true } } },
       include: {
+        video: { select: { id: true, status: true } },
         topic: {
           include: {
             lessons: { where: { isPublished: true }, orderBy: { order: "asc" }, select: { id: true } },
@@ -146,6 +172,7 @@ export class ContentService {
       topicId: lesson.topicId,
       topicTitle: lesson.topic.title,
       videoUrl: lesson.videoUrl,
+      video: await this.lessonVideo(user.sub, lesson.video),
       content: lesson.content,
       attachments: (lesson.attachments as { name: string; url: string }[]) ?? [],
       completed: Boolean(progress?.completedAt),

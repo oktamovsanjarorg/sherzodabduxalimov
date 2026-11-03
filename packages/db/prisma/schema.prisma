@@ -414,6 +414,7 @@ model Video {
   receivedBytes BigInt      @default(0)
   durationSec   Int?
   variants      String[] // tayyor sifatlar: ["720p","480p"]
+  processingPct Int? // ffmpeg jarayoni, 0..100
   error         String?
   createdById   String?
   createdBy     User?       @relation(fields: [createdById], references: [id], onDelete: SetNull)

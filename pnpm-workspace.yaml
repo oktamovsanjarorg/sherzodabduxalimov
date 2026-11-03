@@ -8,3 +8,5 @@ allowBuilds:
   '@swc/core': true
   esbuild: true
   prisma: true
+  # BullMQ'ning ixtiyoriy native tezlashtirgichi: kerak emas, JS fallback ishlaydi
+  msgpackr-extract: false

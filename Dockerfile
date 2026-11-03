@@ -15,13 +15,15 @@ RUN pnpm install --frozen-lockfile
 COPY . .
 RUN pnpm build
 
-# --- api va bot uchun umumiy runtime ---
+# --- api, bot va video worker uchun umumiy runtime ---
 FROM node:22-bookworm-slim AS app
-RUN apt-get update && apt-get install -y --no-install-recommends openssl ca-certificates && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y --no-install-recommends openssl ca-certificates ffmpeg && rm -rf /var/lib/apt/lists/*
 ENV NODE_ENV=production
 WORKDIR /app
 COPY --from=build /app /app
-RUN rm -rf apps/miniapp
+RUN rm -rf apps/miniapp apps/admin
+# Video volume uchun: named volume birinchi ulanishda shu egalikni oladi
+RUN mkdir -p /data/media && chown -R node:node /data/media
 USER node
 
 # --- Mini App statik fayllari ---

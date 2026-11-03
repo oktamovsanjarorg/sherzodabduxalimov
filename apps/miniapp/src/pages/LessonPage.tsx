@@ -4,6 +4,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { Markdown } from "../components/Markdown";
 import { Paywall } from "../components/Paywall";
 import { TestCard } from "../components/TestCard";
+import { ProtectedPlayer } from "../components/ProtectedPlayer";
 import { VideoPlayer } from "../components/VideoPlayer";
 import { ApiError, api } from "../lib/api";
 import { useBackButton } from "../lib/hooks";
@@ -57,7 +58,21 @@ export function LessonPage() {
       <p className="px-1 text-xs font-semibold text-brand">{l.topicTitle}</p>
       <h1 className="mb-4 px-1 text-xl font-extrabold leading-tight">{l.title}</h1>
 
-      {l.videoUrl && <VideoPlayer url={l.videoUrl} />}
+      {l.video?.status === "READY" && l.video.hlsUrl ? (
+        <ProtectedPlayer
+          src={l.video.hlsUrl}
+          watermark={l.video.watermark}
+          // Token muddati (3 soat) tugasa: darsni qayta yuklab yangi token olamiz
+          onExpired={() => qc.invalidateQueries({ queryKey: ["lesson", id] })}
+        />
+      ) : l.video?.status === "PROCESSING" ? (
+        <div className="flex aspect-video w-full flex-col items-center justify-center gap-2 rounded-card bg-section text-center">
+          <span className="h-8 w-8 animate-spin rounded-full border-4 border-brand-soft border-t-brand" />
+          <p className="text-sm font-semibold text-hint">Video tayyorlanmoqda, birozdan keyin oching</p>
+        </div>
+      ) : (
+        l.videoUrl && <VideoPlayer url={l.videoUrl} />
+      )}
 
       {l.content && (
         <div className="card mt-4">

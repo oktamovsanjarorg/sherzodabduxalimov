@@ -45,11 +45,21 @@ export interface LessonDetail {
   topicId: string;
   topicTitle: string;
   videoUrl: string | null;
+  /** Serverga yuklangan himoyalangan video */
+  video: LessonVideo | null;
   content: string | null;
   attachments: { name: string; url: string }[];
   completed: boolean;
   topicTests: TestSummary[];
   nextLessonId: string | null;
+}
+
+export interface LessonVideo {
+  status: "READY" | "PROCESSING";
+  /** Imzolangan HLS manzili (3 soat amal qiladi), faqat READY holatda */
+  hlsUrl: string | null;
+  /** Video ustida suzib yuradigan matn: ism, ID, telefon */
+  watermark: string;
 }
 
 // ===================== Test topshirish =====================

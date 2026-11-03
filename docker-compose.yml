@@ -6,10 +6,14 @@ name: onatili
 
 x-app-env: &app-env
   env_file: .env
-  environment:
+  environment: &app-environment
     NODE_ENV: production
     DATABASE_URL: postgresql://onatili:onatili@onatili-postgres:5432/onatili
     REDIS_URL: redis://onatili-redis:6379
+    MEDIA_DIR: /data/media
+    MEDIA_SEGMENT_BASE: /media-files/v
+    QUEUE_PREFIX: onatili
+    API_INTERNAL_URL: http://onatili-api:4100/api
 
 services:
   postgres:
@@ -43,10 +47,10 @@ services:
     restart: unless-stopped
     <<: *app-env
     environment:
-      NODE_ENV: production
-      DATABASE_URL: postgresql://onatili:onatili@onatili-postgres:5432/onatili
-      REDIS_URL: redis://onatili-redis:6379
+      <<: *app-environment
       API_HOST: 0.0.0.0
+    volumes:
+      - onatili_media:/data/media
     command: sh -c "cd packages/db && npx prisma migrate deploy && cd /app && node apps/api/dist/main.js"
     depends_on:
       postgres: { condition: service_healthy }
@@ -55,6 +59,19 @@ services:
       interval: 15s
       start_period: 30s
       retries: 5
+
+  worker:
+    image: onatili-app
+    container_name: onatili-worker
+    restart: unless-stopped
+    <<: *app-env
+    command: node apps/api/dist/worker.js
+    volumes:
+      - onatili_media:/data/media
+    depends_on:
+      api: { condition: service_healthy }
+    # ffmpeg 4 yadroning 3 tasidan oshmasin: API va DB sekinlashmasligi uchun
+    cpus: 3
 
   bot:
     image: onatili-app
@@ -70,12 +87,15 @@ services:
     image: onatili-web
     container_name: onatili-web
     restart: unless-stopped
+    volumes:
+      - onatili_media:/data/media:ro
     depends_on:
       api: { condition: service_healthy }
     networks: [default, edge]
 
 volumes:
   onatili_pg:
+  onatili_media:
 
 networks:
   edge:

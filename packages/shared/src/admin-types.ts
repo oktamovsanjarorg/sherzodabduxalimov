@@ -87,6 +87,7 @@ export interface AdminVideo {
   receivedBytes: number;
   durationSec: number | null;
   error: string | null;
+  processingPct: number | null;
 }
 
 export interface AdminLesson {

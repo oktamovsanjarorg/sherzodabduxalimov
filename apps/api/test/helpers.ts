@@ -5,6 +5,7 @@ import { Test } from "@nestjs/testing";
 import { signInitData } from "@onatili/shared/server";
 import { AppModule } from "../src/app.module";
 import { loadEnv } from "../src/config/env";
+import { configureApp } from "../src/setup";
 
 export const BOT_TOKEN = "123456:E2E_TEST_TOKEN";
 
@@ -18,13 +19,14 @@ export async function createApp(extraControllers: Type[] = []) {
     OWNER_USERNAMES: OWNER,
     ADMIN_URL: "https://test.local/admin",
     MEDIA_DIR: process.env.E2E_MEDIA_DIR ?? "/tmp/onatili-e2e-media",
+    QUEUE_PREFIX: "onatili-e2e",
   });
   const mod = await Test.createTestingModule({
     imports: [AppModule.forRoot(env)],
     controllers: extraControllers,
   }).compile();
   const app = mod.createNestApplication<NestFastifyApplication>(new FastifyAdapter());
-  app.setGlobalPrefix("api");
+  configureApp(app);
   await app.init();
   await app.getHttpAdapter().getInstance().ready();
   return app;
