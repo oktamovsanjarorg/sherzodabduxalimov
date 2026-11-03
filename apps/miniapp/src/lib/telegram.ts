@@ -39,6 +39,9 @@ interface TgWebApp {
     offClick(cb: () => void): void;
   };
   showConfirm?(message: string, cb: (ok: boolean) => void): void;
+  openLink?(url: string): void;
+  openTelegramLink?(url: string): void;
+  isVersionAtLeast?(v: string): boolean;
 }
 
 declare global {
@@ -101,8 +104,10 @@ export function initTelegram() {
   if (!tg) return;
   tg.ready();
   tg.expand();
-  tg.setHeaderColor("secondary_bg_color");
-  tg.setBackgroundColor("secondary_bg_color");
+  if (supports("6.1")) {
+    tg.setHeaderColor("secondary_bg_color");
+    tg.setBackgroundColor("secondary_bg_color");
+  }
   tg.onEvent("themeChanged", applyTheme);
 }
 
@@ -113,4 +118,26 @@ export function getInitData(): string | undefined {
   return undefined;
 }
 
-export const haptic = () => tg?.HapticFeedback?.selectionChanged();
+/** Telegram klienti shu Bot API versiyasini qo'llaydimi (eski klientlarda ba'zi metodlar yo'q) */
+const supports = (v: string) => isInTelegram && (tg?.isVersionAtLeast?.(v) ?? false);
+
+export const haptic = () => {
+  if (supports("6.1")) tg?.HapticFeedback?.selectionChanged();
+};
+export const hapticResult = (t: "success" | "error" | "warning") => {
+  if (supports("6.1")) tg?.HapticFeedback?.notificationOccurred(t);
+};
+
+/** Telegram ichida tasdiqlash oynasi, brauzerda window.confirm */
+export function confirmDialog(message: string): Promise<boolean> {
+  return new Promise((resolve) => {
+    if (tg?.showConfirm && supports("6.2")) tg.showConfirm(message, resolve);
+    else resolve(window.confirm(message));
+  });
+}
+
+export function openExternal(url: string) {
+  if (/^https:\/\/t\.me\//.test(url) && tg?.openTelegramLink) tg.openTelegramLink(url);
+  else if (tg?.openLink && isInTelegram) tg.openLink(url);
+  else window.open(url, "_blank", "noopener");
+}

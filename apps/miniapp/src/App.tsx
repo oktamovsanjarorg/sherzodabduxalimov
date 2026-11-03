@@ -3,9 +3,13 @@ import { Navigate, Route, Routes } from "react-router-dom";
 import { AppLayout } from "./components/AppLayout";
 import { api } from "./lib/api";
 import { getInitData } from "./lib/telegram";
+import { AttemptPage } from "./pages/AttemptPage";
 import { HomePage } from "./pages/HomePage";
+import { LessonPage } from "./pages/LessonPage";
 import { LessonsPage } from "./pages/LessonsPage";
+import { MocksPage } from "./pages/MocksPage";
 import { ProfilePage } from "./pages/ProfilePage";
+import { SubscribePage } from "./pages/SubscribePage";
 import { useAuth } from "./store/auth";
 
 export function App() {
@@ -34,6 +38,11 @@ export function App() {
         <Route path="lessons" element={<LessonsPage />} />
         <Route path="profile" element={<ProfilePage />} />
       </Route>
+      {/* Pastki navigatsiyasiz ichki sahifalar */}
+      <Route path="lesson/:id" element={<LessonPage />} />
+      <Route path="attempt/:id" element={<AttemptPage />} />
+      <Route path="mocks" element={<MocksPage />} />
+      <Route path="subscribe" element={<SubscribePage />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );

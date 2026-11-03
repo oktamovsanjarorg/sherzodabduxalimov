@@ -1,8 +1,18 @@
-import type { AuthResponse, Me } from "@onatili/shared";
+import type {
+  AttemptResult,
+  AttemptState,
+  AuthResponse,
+  CourseView,
+  LessonDetail,
+  Me,
+  SaveAnswerBody,
+  StudentStats,
+  TestSummary,
+} from "@onatili/shared";
 import { useAuth } from "../store/auth";
 
 export class ApiError extends Error {
-  constructor(public status: number, message: string) {
+  constructor(public status: number, message: string, public code?: string) {
     super(message);
   }
 }
@@ -12,20 +22,39 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   const res = await fetch(`/api${path}`, {
     ...init,
     headers: {
-      "Content-Type": "application/json",
+      ...(init.body ? { "Content-Type": "application/json" } : {}),
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...init.headers,
     },
   });
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
-    throw new ApiError(res.status, body.message ?? res.statusText);
+    throw new ApiError(res.status, body.message ?? res.statusText, body.code);
   }
   return res.json() as Promise<T>;
 }
 
+const post = <T>(path: string, body?: unknown) =>
+  request<T>(path, { method: "POST", body: body === undefined ? undefined : JSON.stringify(body) });
+
 export const api = {
-  loginTelegram: (initData: string) =>
-    request<AuthResponse>("/auth/telegram", { method: "POST", body: JSON.stringify({ initData }) }),
+  loginTelegram: (initData: string) => post<AuthResponse>("/auth/telegram", { initData }),
   me: () => request<Me>("/me"),
+  stats: () => request<StudentStats>("/me/stats"),
+
+  courses: () => request<CourseView[]>("/courses"),
+  lesson: (id: string) => request<LessonDetail>(`/lessons/${id}`),
+  completeLesson: (id: string) => post<{ ok: true }>(`/lessons/${id}/complete`),
+
+  mocks: () => request<TestSummary[]>("/mocks"),
+  startTest: (testId: string) => post<AttemptState>(`/tests/${testId}/attempts`),
+  attempt: (id: string) => request<AttemptState | AttemptResult>(`/attempts/${id}`),
+  saveAnswer: (attemptId: string, questionId: string, body: Partial<SaveAnswerBody>) =>
+    request<{ ok: true }>(`/attempts/${attemptId}/answers/${questionId}`, {
+      method: "PUT",
+      body: JSON.stringify(body),
+    }),
+  submit: (attemptId: string) => post<AttemptResult>(`/attempts/${attemptId}/submit`),
 };
+
+export const isFinished = (a: AttemptState | AttemptResult): a is AttemptResult => a.status !== "IN_PROGRESS";
