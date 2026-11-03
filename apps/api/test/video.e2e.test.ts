@@ -158,5 +158,10 @@ describe("Video: yuklash va himoyalangan ko'rish (e2e)", () => {
 
     // Darsga biriktirilgan videoni o'chirib bo'lmaydi
     expect((await req("DELETE", `/admin/videos/${v.id}`)).statusCode).toBe(409);
+
+    // Dars o'chirilsa, video ham bazadan, ham diskdan o'chadi
+    expect((await req("DELETE", `/admin/lessons/${P}-lesson`)).statusCode).toBe(200);
+    expect(await prisma.video.findUnique({ where: { id: v.id } })).toBeNull();
+    await expect(readFile(paths.key(v.id))).rejects.toThrow();
   });
 });

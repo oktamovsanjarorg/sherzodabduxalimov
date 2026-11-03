@@ -1,7 +1,7 @@
 import { BadRequestException, ConflictException, Inject, Injectable, NotFoundException, OnModuleDestroy } from "@nestjs/common";
 import { MAX_VIDEO_BYTES, UPLOAD_CHUNK_BYTES, type AdminVideo } from "@onatili/shared";
 import { mkdir, open, rm } from "node:fs/promises";
-import { toAdminVideo } from "../admin/admin-content.service";
+import { toAdminVideo } from "./video-dto";
 import { ENV, type Env } from "../config/env";
 import { PrismaService } from "../prisma/prisma.service";
 import { MediaPaths } from "./paths";
@@ -88,6 +88,12 @@ export class VideosService implements OnModuleDestroy {
     await this.prisma.video.delete({ where: { id } });
     await rm(this.paths.dir(id), { recursive: true, force: true });
     return { ok: true };
+  }
+
+  /** Videoni so'zsiz o'chiradi (dars o'chirilganda). Fayl xatolari dars o'chirilishiga to'sqinlik qilmaydi. */
+  async purge(id: string) {
+    await this.prisma.video.deleteMany({ where: { id } });
+    await rm(this.paths.dir(id), { recursive: true, force: true }).catch(() => {});
   }
 
   private enqueue(videoId: string) {

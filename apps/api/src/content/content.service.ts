@@ -160,7 +160,7 @@ export class ContentService {
     // "Oxirgi ochilgan dars" uchun belgi (completedAt o'zgarmaydi)
     await this.prisma.lessonProgress.upsert({
       where: { userId_lessonId: { userId: user.sub, lessonId: id } },
-      update: {},
+      update: { updatedAt: new Date() }, // bo'sh update updatedAt'ni yangilamaydi
       create: { userId: user.sub, lessonId: id },
     });
 

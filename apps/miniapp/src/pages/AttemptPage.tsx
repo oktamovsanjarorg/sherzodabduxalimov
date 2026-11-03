@@ -30,7 +30,15 @@ export function AttemptPage() {
       </FullPage>
     );
   }
-  return isFinished(attempt.data) ? <ResultView result={attempt.data} /> : <Runner key={attempt.data.id} state={attempt.data} />;
+  if (isFinished(attempt.data)) return <ResultView result={attempt.data} />;
+  if (attempt.data.questions.length === 0) {
+    return (
+      <FullPage>
+        <p className="card text-center text-sm text-hint">Bu testda hozircha savollar yo'q</p>
+      </FullPage>
+    );
+  }
+  return <Runner key={attempt.data.id} state={attempt.data} />;
 }
 
 type Answer = { optionIds: string[]; textAnswer: string | null };

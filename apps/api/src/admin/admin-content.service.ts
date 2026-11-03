@@ -13,6 +13,8 @@ import type {
 } from "@onatili/shared";
 import { questionInput, testInput } from "@onatili/shared";
 import type { z } from "zod";
+import { toAdminVideo } from "../media/video-dto";
+import { VideosService } from "../media/videos.service";
 import { PrismaService } from "../prisma/prisma.service";
 
 type Q = z.output<typeof questionInput>;
@@ -29,25 +31,13 @@ const testRowInclude = {
   _count: { select: { questions: true, attempts: true } },
 } satisfies Prisma.TestInclude;
 
-export function toAdminVideo(
-  v: { id: string; status: AdminVideo["status"]; originalName: string; sizeBytes: bigint; receivedBytes: bigint; durationSec: number | null; error: string | null; processingPct: number | null } | null,
-): AdminVideo | null {
-  if (!v) return null;
-  return {
-    id: v.id,
-    status: v.status,
-    originalName: v.originalName,
-    sizeBytes: Number(v.sizeBytes),
-    receivedBytes: Number(v.receivedBytes),
-    durationSec: v.durationSec,
-    error: v.error,
-    processingPct: v.processingPct,
-  };
-}
 
 @Injectable()
 export class AdminContentService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly videos: VideosService,
+  ) {}
 
   private audit(actorId: string, action: string, entity: string, entityId: string, meta?: object) {
     return this.prisma.auditLog.create({ data: { actorId, action, entity, entityId, meta } });
@@ -171,6 +161,8 @@ export class AdminContentService {
   async deleteLesson(actorId: string, id: string) {
     const l = await this.mustExist(this.prisma.lesson.findUnique({ where: { id } }), "Dars");
     await this.prisma.lesson.delete({ where: { id } });
+    // Darsga biriktirilgan video boshqa joyda ishlatilmaydi: bazadan ham, diskdan ham o'chiramiz
+    if (l.videoId) await this.videos.purge(l.videoId);
     await this.audit(actorId, "delete", "Lesson", id, { title: l.title, videoId: l.videoId });
     return { ok: true };
   }

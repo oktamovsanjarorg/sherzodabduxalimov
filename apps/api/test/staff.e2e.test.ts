@@ -92,5 +92,13 @@ describe("Xodimlar va admin kirishi (e2e)", () => {
     expect((await inject({ method: "DELETE", url: `/api/admin/staff/${helper.userId}`, headers: owner.headers })).statusCode).toBe(200);
     const after = await prisma.user.findUnique({ where: { id: helper.userId } });
     expect(after?.role).toBe("STUDENT");
+
+    // Muhim: olib tashlangan yordamchining eski (hali muddati tugamagan) tokeni darhol ishlamay qoladi
+    expect((await inject({ method: "GET", url: "/api/admin/courses", headers: helper.headers })).statusCode).toBe(403);
+
+    // Bloklangan egada ham token darhol kuchini yo'qotadi
+    await prisma.user.update({ where: { id: owner.userId }, data: { isBlocked: true } });
+    expect((await inject({ method: "GET", url: "/api/admin/courses", headers: owner.headers })).statusCode).toBe(401);
+    await prisma.user.update({ where: { id: owner.userId }, data: { isBlocked: false } });
   });
 });
