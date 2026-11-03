@@ -57,8 +57,8 @@ docker compose logs -f bot api
 - Yuklash 8 MB'lik bo'laklarda bajariladi. Internet uzilsa, yuklash qolgan joyidan davom etadi (`apps/admin/src/lib/uploader.ts`).
 - Worker videoni 720p/480p HLS'ga aylantiradi va AES-128 bilan shifrlaydi. Kalit `videos/<id>/enc.key` da saqlanadi, `hls/` ichiga tushmaydi.
 - Kalit va pleylistlar faqat 3 soatlik HMAC token bilan beriladi. Token dars ochilganda, obuna tekshirilgandan keyin chiqariladi.
-- Pleyer o'quvchining ismi, ID va telefonini suzuvchi suv belgisi qilib ko'rsatadi. Ilova fonga o'tganda video pauza qilinadi.
-- Cheklov: web-ilovada skrinshot va ekran yozuvini 100% to'sib bo'lmaydi. Suv belgisi videoni tarqatgan odamni aniqlash uchun xizmat qiladi.
+- Pleyerning o'ng yuqori burchagida doimiy «Sherzod-Abduxalimov» belgisi turadi (ustozning talabi). Ilova fonga o'tganda video pauza qilinadi.
+- Cheklov: web-ilovada skrinshot va ekran yozuvini 100% to'sib bo'lmaydi. Belgi doimiy bo'lgani uchun video tarqalsa, kim tarqatganini aniqlab bo'lmaydi.
 
 ## Dev va prod bazalari
 - Lokal dev va testlar `onatili_dev` bazasidan foydalanadi (`.env`). Production `onatili` bazasida ishlaydi, compose `DATABASE_URL` ni o'zi beradi.

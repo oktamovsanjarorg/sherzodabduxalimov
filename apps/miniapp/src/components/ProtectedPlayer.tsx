@@ -8,11 +8,11 @@ const SPEEDS = [1, 1.25, 1.5, 2];
 /**
  * Himoyalangan video pleyer:
  * - AES-128 HLS (kalit faqat imzolangan token bilan beriladi)
- * - o'quvchi ismi/ID/telefoni bilan suzuvchi suv belgisi (to'liq ekranda ham)
+ * - doimiy "Sherzod-Abduxalimov" suv belgisi (to'liq ekranda ham)
  * - o'z boshqaruv paneli (tizim pleyerining to'liq ekrani suv belgisini yashirmasligi uchun)
  * - ilova fonga o'tganda pauza va xiralashtirish; yuklab olish va kontekst menyusi o'chirilgan
  */
-export function ProtectedPlayer({ src, watermark, onExpired }: { src: string; watermark: string; onExpired?: () => void }) {
+export function ProtectedPlayer({ src, onExpired }: { src: string; onExpired?: () => void }) {
   const wrap = useRef<HTMLDivElement>(null);
   const video = useRef<HTMLVideoElement>(null);
   const [playing, setPlaying] = useState(false);
@@ -151,7 +151,7 @@ export function ProtectedPlayer({ src, watermark, onExpired }: { src: string; wa
         onLoadedMetadata={(e) => setDuration(e.currentTarget.duration)}
       />
 
-      <Watermark text={watermark} />
+      <Watermark />
 
       {hidden && <div className="absolute inset-0 z-20 bg-black/90 backdrop-blur-xl" />}
 
@@ -226,26 +226,18 @@ function Btn({ onClick, label, children }: { onClick: () => void; label: string;
   );
 }
 
-/**
- * Suzuvchi suv belgisi: har 5 soniyada tasodifiy joyga ko'chadi.
- * Ekran yozib olingan video tarqalsa, kim tarqatgani ko'rinib qoladi.
- * Qo'shimcha ravishda burchakda doimiy xira belgi turadi.
- */
-function Watermark({ text }: { text: string }) {
-  const [pos, setPos] = useState({ x: 10, y: 12 });
-  useEffect(() => {
-    const id = setInterval(() => setPos({ x: 5 + Math.random() * 55, y: 8 + Math.random() * 70 }), 5000);
-    return () => clearInterval(id);
-  }, []);
+/** Ustoz talabi bilan: doimiy brend yozuvi, o'ng yuqori burchakda, qimirlamaydi */
+const WATERMARK_TEXT = "Sherzod-Abduxalimov";
+
+function Watermark() {
   return (
-    <div className="pointer-events-none absolute inset-0 z-10 overflow-hidden" aria-hidden>
+    <div className="pointer-events-none absolute inset-0 z-10" aria-hidden>
       <span
-        className="absolute whitespace-nowrap text-[11px] font-bold text-white/40 transition-all duration-[1500ms] ease-in-out sm:text-sm"
-        style={{ left: `${pos.x}%`, top: `${pos.y}%`, textShadow: "0 0 3px rgba(0,0,0,.6)" }}
+        className="absolute right-3 top-2 whitespace-nowrap text-[11px] font-bold text-white/50 sm:text-sm"
+        style={{ textShadow: "0 0 3px rgba(0,0,0,.6)" }}
       >
-        {text}
+        {WATERMARK_TEXT}
       </span>
-      <span className="absolute right-2 top-2 text-[10px] font-bold text-white/20">{text}</span>
     </div>
   );
 }

@@ -118,7 +118,7 @@ function Editor({ lesson, onChanged }: { lesson: AdminLesson; onChanged: () => v
             <p className="mb-2 font-bold text-slate-900">Video himoyasi</p>
             <ul className="list-disc space-y-1 pl-5">
               <li>Video shifrlanadi, yuklab olib bo'lmaydi</li>
-              <li>Ustida o'quvchining ismi, ID va telefoni suzib yuradi</li>
+              <li>Burchakda «Sherzod-Abduxalimov» belgisi turadi</li>
               <li>Havola 3 soatda eskiradi, boshqaga ulashib bo'lmaydi</li>
             </ul>
           </section>

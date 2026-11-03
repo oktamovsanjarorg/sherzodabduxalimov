@@ -61,7 +61,6 @@ export function LessonPage() {
       {l.video?.status === "READY" && l.video.hlsUrl ? (
         <ProtectedPlayer
           src={l.video.hlsUrl}
-          watermark={l.video.watermark}
           // Token muddati (3 soat) tugasa: darsni qayta yuklab yangi token olamiz
           onExpired={() => qc.invalidateQueries({ queryKey: ["lesson", id] })}
         />
