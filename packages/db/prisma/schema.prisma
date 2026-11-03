@@ -1,0 +1,393 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ===================== Foydalanuvchilar =====================
+
+enum Role {
+  STUDENT
+  PARENT
+  ASSISTANT
+  TEACHER
+}
+
+enum StudyMode {
+  ONLINE
+  OFFLINE
+}
+
+model User {
+  id           String   @id @default(cuid())
+  telegramId   BigInt   @unique
+  username     String?
+  firstName    String
+  lastName     String?
+  phone        String?
+  photoUrl     String?
+  languageCode String?
+  role         Role     @default(STUDENT)
+  isBlocked    Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  student       StudentProfile?
+  parentLinks   ParentLink[]     @relation("ParentOf")
+  attempts      Attempt[]
+  essays        Essay[]
+  essayReviews  EssayReview[]    @relation("Reviewer")
+  subscriptions Subscription[]
+  payments      Payment[]
+  paymentsReviewed Payment[]     @relation("PaymentReviewer")
+  attendanceMarked Attendance[]  @relation("AttendanceMarker")
+  lessonProgress LessonProgress[]
+  auditLogs     AuditLog[]
+}
+
+model StudentProfile {
+  id             String     @id @default(cuid())
+  userId         String     @unique
+  user           User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  mode           StudyMode  @default(ONLINE)
+  groupId        String?
+  group          Group?     @relation(fields: [groupId], references: [id], onDelete: SetNull)
+  parentLinkCode String     @unique // ota-ona botga shu kod bilan ulanadi
+  parents        ParentLink[]
+  attendance     Attendance[]
+  createdAt      DateTime   @default(now())
+}
+
+model ParentLink {
+  id        String         @id @default(cuid())
+  parentId  String
+  parent    User           @relation("ParentOf", fields: [parentId], references: [id], onDelete: Cascade)
+  studentId String
+  student   StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  createdAt DateTime       @default(now())
+
+  @@unique([parentId, studentId])
+}
+
+model Group {
+  id        String           @id @default(cuid())
+  name      String
+  schedule  String? // masalan: "Du/Chor/Ju 14:00"
+  isActive  Boolean          @default(true)
+  students  StudentProfile[]
+  attendance Attendance[]
+  createdAt DateTime         @default(now())
+}
+
+// ===================== Kontent =====================
+
+model Course {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  coverUrl    String?
+  order       Int      @default(0)
+  isPublished Boolean  @default(false)
+  topics      Topic[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Topic {
+  id        String     @id @default(cuid())
+  courseId  String
+  course    Course     @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  title     String
+  order     Int        @default(0)
+  lessons   Lesson[]
+  questions Question[]
+  tests     Test[]
+}
+
+model Lesson {
+  id          String   @id @default(cuid())
+  topicId     String
+  topic       Topic    @relation(fields: [topicId], references: [id], onDelete: Cascade)
+  title       String
+  videoUrl    String?
+  content     String? // konspekt (markdown)
+  attachments Json     @default("[]") // [{name,url}]
+  durationSec Int?
+  order       Int      @default(0)
+  isFree      Boolean  @default(false)
+  isPublished Boolean  @default(false)
+  progress    LessonProgress[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model LessonProgress {
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lessonId    String
+  lesson      Lesson    @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  completedAt DateTime?
+  updatedAt   DateTime  @updatedAt
+
+  @@id([userId, lessonId])
+}
+
+// ===================== Savollar va testlar =====================
+
+enum QuestionType {
+  SINGLE
+  MULTIPLE
+  MATCHING
+  TEXT
+}
+
+model Question {
+  id          String       @id @default(cuid())
+  topicId     String?
+  topic       Topic?       @relation(fields: [topicId], references: [id], onDelete: SetNull)
+  type        QuestionType @default(SINGLE)
+  text        String
+  imageUrl    String?
+  explanation String?
+  difficulty  Int          @default(2) // 1..5
+  correctText String? // TEXT turi uchun
+  aiReview    Json? // AI tekshiruv natijasi
+  options     Option[]
+  tests       TestQuestion[]
+  answers     AttemptAnswer[]
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+}
+
+model Option {
+  id         String   @id @default(cuid())
+  questionId String
+  question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  text       String
+  isCorrect  Boolean  @default(false)
+  matchKey   String? // MATCHING uchun juftlik
+  order      Int      @default(0)
+}
+
+enum TestType {
+  TOPIC
+  MOCK
+}
+
+model Test {
+  id           String         @id @default(cuid())
+  type         TestType
+  title        String
+  description  String?
+  topicId      String?
+  topic        Topic?         @relation(fields: [topicId], references: [id], onDelete: SetNull)
+  timeLimitSec Int?
+  shuffle      Boolean        @default(true)
+  isFree       Boolean        @default(false)
+  isPublished  Boolean        @default(false)
+  questions    TestQuestion[]
+  attempts     Attempt[]
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+}
+
+model TestQuestion {
+  testId     String
+  test       Test     @relation(fields: [testId], references: [id], onDelete: Cascade)
+  questionId String
+  question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  order      Int      @default(0)
+  points     Float    @default(1)
+
+  @@id([testId, questionId])
+}
+
+enum AttemptStatus {
+  IN_PROGRESS
+  SUBMITTED
+  EXPIRED
+}
+
+model Attempt {
+  id         String          @id @default(cuid())
+  userId     String
+  user       User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  testId     String
+  test       Test            @relation(fields: [testId], references: [id], onDelete: Cascade)
+  status     AttemptStatus   @default(IN_PROGRESS)
+  startedAt  DateTime        @default(now())
+  deadlineAt DateTime? // server vaqti bo'yicha
+  finishedAt DateTime?
+  score      Float?
+  maxScore   Float?
+  answers    AttemptAnswer[]
+
+  @@index([userId, testId])
+}
+
+model AttemptAnswer {
+  attemptId   String
+  attempt     Attempt  @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+  questionId  String
+  question    Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  optionIds   String[]
+  textAnswer  String?
+  isCorrect   Boolean?
+  points      Float?
+  answeredAt  DateTime @default(now())
+
+  @@id([attemptId, questionId])
+}
+
+// ===================== Esse =====================
+
+enum EssayStatus {
+  SUBMITTED
+  AI_CHECKING
+  AI_CHECKED
+  REVIEWED
+}
+
+model Essay {
+  id        String        @id @default(cuid())
+  userId    String
+  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  prompt    String // esse mavzusi
+  text      String?
+  imageUrls String[]
+  status    EssayStatus   @default(SUBMITTED)
+  reviews   EssayReview[]
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+}
+
+enum ReviewSource {
+  AI
+  TEACHER
+}
+
+model EssayReview {
+  id         String       @id @default(cuid())
+  essayId    String
+  essay      Essay        @relation(fields: [essayId], references: [id], onDelete: Cascade)
+  source     ReviewSource
+  reviewerId String?
+  reviewer   User?        @relation("Reviewer", fields: [reviewerId], references: [id], onDelete: SetNull)
+  provider   String? // deepseek | claude
+  criteria   Json // [{key,score,max,comment}]
+  totalScore Float
+  feedback   String?
+  createdAt  DateTime     @default(now())
+}
+
+// ===================== Davomat =====================
+
+enum AttendanceStatus {
+  PRESENT
+  ABSENT
+  LATE
+  EXCUSED
+}
+
+model Attendance {
+  id         String           @id @default(cuid())
+  groupId    String
+  group      Group            @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  studentId  String
+  student    StudentProfile   @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  date       DateTime         @db.Date
+  status     AttendanceStatus
+  note       String?
+  markedById String?
+  markedBy   User?            @relation("AttendanceMarker", fields: [markedById], references: [id], onDelete: SetNull)
+  notifiedAt DateTime? // ota-onaga yuborilgan vaqt
+  createdAt  DateTime         @default(now())
+
+  @@unique([studentId, date])
+  @@index([groupId, date])
+}
+
+// ===================== To'lov va obuna =====================
+
+model Plan {
+  id            String         @id @default(cuid())
+  name          String
+  priceUzs      Int
+  durationDays  Int            @default(30)
+  isActive      Boolean        @default(true)
+  subscriptions Subscription[]
+  payments      Payment[]
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  EXPIRED
+  CANCELLED
+}
+
+model Subscription {
+  id        String             @id @default(cuid())
+  userId    String
+  user      User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  planId    String
+  plan      Plan               @relation(fields: [planId], references: [id])
+  startsAt  DateTime
+  endsAt    DateTime
+  status    SubscriptionStatus @default(ACTIVE)
+  payment   Payment?
+  createdAt DateTime           @default(now())
+
+  @@index([userId, endsAt])
+}
+
+enum PaymentMethod {
+  MANUAL
+  CLICK
+  PAYME
+}
+
+enum PaymentStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model Payment {
+  id             String        @id @default(cuid())
+  userId         String
+  user           User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  planId         String
+  plan           Plan          @relation(fields: [planId], references: [id])
+  method         PaymentMethod
+  amountUzs      Int
+  status         PaymentStatus @default(PENDING)
+  receiptUrl     String? // qo'lda to'lov cheki
+  externalId     String? // Click/Payme tranzaksiya id
+  reviewedById   String?
+  reviewedBy     User?         @relation("PaymentReviewer", fields: [reviewedById], references: [id], onDelete: SetNull)
+  reviewNote     String?
+  subscriptionId String?       @unique
+  subscription   Subscription? @relation(fields: [subscriptionId], references: [id])
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  @@unique([method, externalId])
+}
+
+// ===================== Audit =====================
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  actorId   String?
+  actor     User?    @relation(fields: [actorId], references: [id], onDelete: SetNull)
+  action    String
+  entity    String
+  entityId  String?
+  meta      Json?
+  createdAt DateTime @default(now())
+
+  @@index([entity, entityId])
+}

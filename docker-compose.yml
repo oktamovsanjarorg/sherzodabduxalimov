@@ -1,0 +1,22 @@
+name: onatili
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: onatili-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: onatili
+      POSTGRES_PASSWORD: onatili
+      POSTGRES_DB: onatili
+    ports:
+      - "127.0.0.1:5434:5432"
+    volumes:
+      - onatili_pg:/var/lib/postgresql/data
+  redis:
+    image: redis:7-alpine
+    container_name: onatili-redis
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:6381:6379"
+volumes:
+  onatili_pg:

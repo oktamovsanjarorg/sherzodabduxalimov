@@ -1,0 +1,25 @@
+name: CI
+on: [push, pull_request]
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env: { POSTGRES_USER: onatili, POSTGRES_PASSWORD: onatili, POSTGRES_DB: onatili }
+        ports: ["5434:5432"]
+        options: --health-cmd pg_isready --health-interval 5s --health-retries 10
+    env:
+      DATABASE_URL: postgresql://onatili:onatili@localhost:5434/onatili
+      BOT_TOKEN: "000000:CI"
+      JWT_SECRET: ci-secret-ci-secret-ci
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - run: corepack enable
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @onatili/db deploy
+      - run: pnpm build
+      - run: pnpm typecheck
+      - run: pnpm test

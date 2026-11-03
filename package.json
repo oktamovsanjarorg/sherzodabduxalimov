@@ -1,0 +1,22 @@
+{
+  "name": "onatili",
+  "private": true,
+  "packageManager": "pnpm@12.16.1",
+  "scripts": {
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "typecheck": "turbo run typecheck",
+    "test": "turbo run test",
+    "db:up": "docker compose up -d postgres redis",
+    "db:migrate": "pnpm --filter @onatili/db migrate",
+    "db:generate": "pnpm --filter @onatili/db generate",
+    "db:seed": "pnpm --filter @onatili/db seed",
+    "dev:init-data": "tsx --env-file=.env scripts/dev-init-data.ts"
+  },
+  "devDependencies": {
+    "turbo": "^2.3.0",
+    "typescript": "^5.6.3",
+    "tsx": "^4.19.2",
+    "@onatili/shared": "workspace:*"
+  }
+}
