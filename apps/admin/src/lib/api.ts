@@ -1,4 +1,11 @@
 import type {
+  AdminGroup,
+  AdminParentLink,
+  AdminStudent,
+  AttendanceDay,
+  AttendanceMonth,
+  AttendanceSaveInput,
+  GroupInput,
   AdminCourse,
   AdminLesson,
   AdminQuestion,
@@ -92,6 +99,23 @@ export const api = {
     }),
   retryVideo: (id: string) => request<AdminVideo>(`/admin/videos/${id}/retry`, json("POST")),
   deleteVideo: (id: string) => request(`/admin/videos/${id}`, json("DELETE")),
+
+  groups: () => request<AdminGroup[]>("/admin/groups"),
+  createGroup: (d: GroupInput) => request<AdminGroup>("/admin/groups", json("POST", d)),
+  updateGroup: (id: string, d: Partial<GroupInput>) => request<AdminGroup>(`/admin/groups/${id}`, json("PATCH", d)),
+  deleteGroup: (id: string) => request(`/admin/groups/${id}`, json("DELETE")),
+  groupStudents: (id: string) => request<AdminStudent[]>(`/admin/groups/${id}/students`),
+  addToGroup: (id: string, studentIds: string[]) => request(`/admin/groups/${id}/students`, json("POST", { studentIds })),
+  removeFromGroup: (id: string, studentId: string) => request(`/admin/groups/${id}/students/${studentId}`, json("DELETE")),
+  searchStudents: (q: string) => request<AdminStudent[]>(`/admin/students?search=${encodeURIComponent(q)}`),
+  attendanceDay: (groupId: string, date: string) => request<AttendanceDay>(`/admin/groups/${groupId}/attendance?date=${date}`),
+  saveAttendance: (groupId: string, d: AttendanceSaveInput) =>
+    request<{ saved: number; notified: number }>(`/admin/groups/${groupId}/attendance`, json("PUT", d)),
+  attendanceMonth: (groupId: string, month: string) => request<AttendanceMonth>(`/admin/groups/${groupId}/attendance/month?month=${month}`),
+
+  parentLinks: (status: "PENDING" | "APPROVED" | "REJECTED") => request<AdminParentLink[]>(`/admin/parent-links?status=${status}`),
+  approveParent: (id: string) => request(`/admin/parent-links/${id}/approve`, json("POST")),
+  rejectParent: (id: string, reason: string) => request(`/admin/parent-links/${id}/reject`, json("POST", { reason })),
 
   staff: () => request<StaffList>("/admin/staff"),
   addStaff: (username: string) => request<{ status: "added" | "invited" }>("/admin/staff", json("POST", { username })),

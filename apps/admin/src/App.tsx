@@ -1,7 +1,9 @@
 import { Navigate, Route, Routes } from "react-router-dom";
 import { Layout } from "./components/Layout";
 import { loadSession } from "./lib/session";
+import { AttendancePage } from "./pages/AttendancePage";
 import { ContentPage } from "./pages/ContentPage";
+import { ParentsPage } from "./pages/ParentsPage";
 import { LessonEditorPage } from "./pages/LessonEditorPage";
 import { LoginPage } from "./pages/LoginPage";
 import { QuestionsPage } from "./pages/QuestionsPage";
@@ -32,6 +34,8 @@ export function App() {
         <Route path="questions" element={<QuestionsPage />} />
         <Route path="tests" element={<TestsPage />} />
         <Route path="tests/:id" element={<TestEditorPage />} />
+        <Route path="attendance" element={<AttendancePage />} />
+        <Route path="parents" element={<ParentsPage />} />
         <Route
           path="staff"
           element={

@@ -8,6 +8,9 @@ import { HomePage } from "./pages/HomePage";
 import { LessonPage } from "./pages/LessonPage";
 import { LessonsPage } from "./pages/LessonsPage";
 import { MocksPage } from "./pages/MocksPage";
+import { ParentGatePage } from "./pages/ParentGatePage";
+import { ParentHomePage } from "./pages/ParentHomePage";
+import { ParentsPage } from "./pages/ParentsPage";
 import { ProfilePage } from "./pages/ProfilePage";
 import { SubscribePage } from "./pages/SubscribePage";
 import { useAuth } from "./store/auth";
@@ -15,6 +18,7 @@ import { useAuth } from "./store/auth";
 export function App() {
   const initData = getInitData();
   const setSession = useAuth((s) => s.setSession);
+  const user = useAuth((s) => s.user);
 
   const session = useQuery({
     queryKey: ["session"],
@@ -30,6 +34,9 @@ export function App() {
   if (!initData) return <FullScreen title="Ilovani Telegram ichida oching" text="Bot orqali «Ilovani ochish» tugmasini bosing." />;
   if (session.isPending) return <Splash />;
   if (session.isError) return <FullScreen title="Kirishda xatolik" text={session.error.message} />;
+  // Ota-onasi ulanmagan o'quvchi: majburiy qadam (server ham kontentni yopiq tutadi)
+  if (user?.role === "STUDENT" && user.parentStatus === "NONE") return <ParentGatePage />;
+  if (user?.role === "PARENT") return <ParentHomePage />;
 
   return (
     <Routes>
@@ -43,6 +50,7 @@ export function App() {
       <Route path="attempt/:id" element={<AttemptPage />} />
       <Route path="mocks" element={<MocksPage />} />
       <Route path="subscribe" element={<SubscribePage />} />
+      <Route path="parents" element={<ParentsPage />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );

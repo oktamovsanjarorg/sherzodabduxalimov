@@ -1,4 +1,5 @@
 import type {
+  ChildView,
   AttemptResult,
   AttemptState,
   AuthResponse,
@@ -10,6 +11,13 @@ import type {
   TestSummary,
 } from "@onatili/shared";
 import { useAuth } from "../store/auth";
+
+export interface MyParents {
+  inviteUrl: string;
+  shareUrl: string;
+  maxParents: number;
+  parents: { id: string; name: string; status: "PENDING" | "APPROVED" | "REJECTED"; relation: string | null; rejectReason: string | null }[];
+}
 
 export class ApiError extends Error {
   constructor(public status: number, message: string, public code?: string) {
@@ -40,6 +48,8 @@ const post = <T>(path: string, body?: unknown) =>
 export const api = {
   loginTelegram: (initData: string) => post<AuthResponse>("/auth/telegram", { initData }),
   me: () => request<Me>("/me"),
+  myParents: () => request<MyParents>("/me/parents"),
+  myChildren: () => request<ChildView[]>("/me/children"),
   stats: () => request<StudentStats>("/me/stats"),
 
   courses: () => request<CourseView[]>("/courses"),

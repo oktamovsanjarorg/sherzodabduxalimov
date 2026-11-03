@@ -48,6 +48,8 @@ interface TgWebApp {
   };
   showConfirm?(message: string, cb: (ok: boolean) => void): void;
   openLink?(url: string): void;
+  /** Bot API 6.9: foydalanuvchidan raqamini botga ulashishni so'raydi */
+  requestContact?(cb?: (shared: boolean) => void): void;
   openTelegramLink?(url: string): void;
   isVersionAtLeast?(v: string): boolean;
 }
@@ -176,4 +178,15 @@ export function enterImmersive(): () => void {
       /* eski klient */
     }
   };
+}
+
+/** O'z raqamini ulashish: Telegram oynasi (6.9+) yoki eski klientlarda bot orqali */
+export function requestOwnPhone(botStartPhoneUrl: string): Promise<boolean> {
+  return new Promise((resolve) => {
+    if (tg?.requestContact && supports("6.9")) tg.requestContact((ok) => resolve(ok));
+    else {
+      openExternal(botStartPhoneUrl);
+      resolve(true);
+    }
+  });
 }

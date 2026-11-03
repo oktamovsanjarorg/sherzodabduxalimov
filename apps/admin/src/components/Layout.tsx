@@ -1,5 +1,5 @@
 import { ROLE_LABELS } from "@onatili/shared";
-import { BookOpen, ClipboardList, LibraryBig, LogOut, Menu, Users, X } from "lucide-react";
+import { BookOpen, CalendarCheck, ClipboardList, LibraryBig, LogOut, Menu, ShieldCheck, Users, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { clearSession, loadSession } from "../lib/session";
@@ -10,6 +10,8 @@ function useLinks() {
     { to: "/", label: "Darslar", Icon: BookOpen, end: true },
     { to: "/questions", label: "Savollar banki", Icon: LibraryBig },
     { to: "/tests", label: "Testlar", Icon: ClipboardList },
+    { to: "/attendance", label: "Davomat", Icon: CalendarCheck },
+    { to: "/parents", label: "Ota-onalar", Icon: ShieldCheck },
     ...(isTeacher ? [{ to: "/staff", label: "Xodimlar", Icon: Users }] : []),
   ];
 }

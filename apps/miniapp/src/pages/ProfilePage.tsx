@@ -1,8 +1,10 @@
 import { ROLE_LABELS } from "@onatili/shared";
-import { ChevronRight, CreditCard, BarChart3, CalendarCheck, Settings } from "lucide-react";
+import { ChevronRight, CreditCard, BarChart3, CalendarCheck, Settings, Users } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "../store/auth";
 
 const items = [
+  { Icon: Users, label: "Ota-onam", to: "/parents" },
   { Icon: BarChart3, label: "Statistika" },
   { Icon: CreditCard, label: "To'lov va obuna" },
   { Icon: CalendarCheck, label: "Davomat" },
@@ -11,6 +13,7 @@ const items = [
 
 export function ProfilePage() {
   const user = useAuth((s) => s.user)!;
+  const navigate = useNavigate();
   return (
     <div className="mx-auto max-w-md">
       <div className="card flex flex-col items-center gap-1 py-6 text-center">
@@ -26,9 +29,9 @@ export function ProfilePage() {
         </p>
       </div>
       <ul className="card mt-4 divide-y divide-hint/15 p-0">
-        {items.map(({ Icon, label }) => (
+        {items.map(({ Icon, label, to }) => (
           <li key={label}>
-            <button className="tap flex h-14 w-full items-center gap-3 px-4 text-left">
+            <button className="tap flex h-14 w-full items-center gap-3 px-4 text-left" onClick={() => to && navigate(to)}>
               <Icon size={20} className="text-brand" />
               <span className="flex-1 text-sm font-semibold">{label}</span>
               <ChevronRight size={18} className="text-hint" />
