@@ -48,9 +48,19 @@ export class StaffService {
       photoUrl: tg.photo_url ?? null,
       languageCode: tg.language_code ?? null,
     };
+    // Faqat kelgan maydonlarni yangilaymiz: bot so'rovlarida photo_url yo'q, u Mini App'dan kelgan rasmni o'chirmasligi kerak
+    const update = Object.fromEntries(
+      Object.entries({
+        username: tg.username,
+        firstName: tg.first_name,
+        lastName: tg.last_name,
+        photoUrl: tg.photo_url,
+        languageCode: tg.language_code,
+      }).filter(([, v]) => v !== undefined),
+    );
     let user = await this.prisma.user.upsert({
       where: { telegramId: BigInt(tg.id) },
-      update: profile,
+      update,
       create: {
         telegramId: BigInt(tg.id),
         ...profile,

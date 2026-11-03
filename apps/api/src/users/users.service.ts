@@ -10,6 +10,7 @@ export class UsersService {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
       include: {
+        student: { select: { parents: { where: { status: { in: ["PENDING", "APPROVED"] } }, select: { status: true } } } },
         subscriptions: {
           where: { status: "ACTIVE", endsAt: { gt: new Date() } },
           orderBy: { endsAt: "desc" },
@@ -20,6 +21,8 @@ export class UsersService {
     });
     if (!user) throw new NotFoundException("Foydalanuvchi topilmadi");
     const sub = user.subscriptions[0];
+    const links = user.student?.parents ?? [];
+    const parentStatus = links.some((l) => l.status === "APPROVED") ? "APPROVED" : links.length ? "PENDING" : "NONE";
     return {
       id: user.id,
       firstName: user.firstName,
@@ -27,6 +30,8 @@ export class UsersService {
       username: user.username,
       photoUrl: user.photoUrl,
       role: user.role,
+      phone: user.phone,
+      parentStatus,
       subscription: sub ? { planName: sub.plan.name, endsAt: sub.endsAt.toISOString() } : null,
     };
   }

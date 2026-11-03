@@ -3,3 +3,4 @@ export * from "./roles";
 export * from "./api-types";
 export * from "./content-types";
 export * from "./admin-types";
+export * from "./attendance-types";

@@ -11,6 +11,7 @@ import {
 import { AccessService } from "../access/access.service";
 import type { JwtUser } from "../auth/decorators";
 import { ContentService } from "../content/content.service";
+import { ParentsService } from "../parents/parents.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { DEADLINE_GRACE_MS, isAnswerCorrect, isPastDeadline, seededShuffle } from "./grading";
 
@@ -33,9 +34,11 @@ export class AttemptsService {
     private readonly prisma: PrismaService,
     private readonly access: AccessService,
     private readonly content: ContentService,
+    private readonly parents: ParentsService,
   ) {}
 
   async listMocks(user: JwtUser): Promise<TestSummary[]> {
+    await this.parents.assertStudentLinked(user.sub, user.role);
     const tests = await this.prisma.test.findMany({
       where: { isPublished: true, type: "MOCK" },
       orderBy: { createdAt: "desc" },
@@ -46,6 +49,7 @@ export class AttemptsService {
 
   /** Testni boshlaydi. Tugallanmagan urinish bo'lsa, o'shani davom ettiradi. */
   async start(user: JwtUser, testId: string): Promise<AttemptState> {
+    await this.parents.assertStudentLinked(user.sub, user.role);
     const test = await this.prisma.test.findFirst({ where: { id: testId, isPublished: true } });
     if (!test) throw new NotFoundException("Test topilmadi");
     this.access.assertAccess(test.isFree, await this.access.canAccessPaid(user));

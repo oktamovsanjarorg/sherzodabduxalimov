@@ -11,6 +11,8 @@ const schema = z.object({
   CORS_ORIGINS: z.string().default("http://localhost:5180"),
   // Ega (TEACHER) bo'ladigan Telegram username'lar, vergul bilan, @ belgisisiz
   OWNER_USERNAMES: z.string().default(""),
+  // Bot username (@ belgisisiz): ota-onaga yuboriladigan t.me havolasi uchun
+  BOT_USERNAME: z.string().default("sherzodabduxalimovbot"),
   // Admin panel manzili (bot yuboradigan kirish havolasi uchun)
   ADMIN_URL: z.string().default("http://127.0.0.1:5181/admin"),
   ADMIN_JWT_TTL: z.string().default("12h"),

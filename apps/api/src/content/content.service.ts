@@ -4,6 +4,7 @@ import { AccessService } from "../access/access.service";
 import type { JwtUser } from "../auth/decorators";
 import { ENV, type Env } from "../config/env";
 import { signMediaToken } from "../media/media-token";
+import { ParentsService } from "../parents/parents.service";
 import { PrismaService } from "../prisma/prisma.service";
 
 type TestRow = {
@@ -30,6 +31,7 @@ export class ContentService {
     private readonly prisma: PrismaService,
     private readonly access: AccessService,
     @Inject(ENV) private readonly env: Env,
+    private readonly parents: ParentsService,
   ) {}
 
   /** Video uchun imzolangan manzil va suv belgisi. Faqat kirish huquqi tekshirilgandan keyin chaqiriladi. */
@@ -79,6 +81,7 @@ export class ContentService {
   }
 
   async listCourses(user: JwtUser): Promise<CourseView[]> {
+    await this.parents.assertStudentLinked(user.sub, user.role);
     const paidOpen = await this.access.canAccessPaid(user);
     const courses = await this.prisma.course.findMany({
       where: { isPublished: true },
@@ -137,6 +140,7 @@ export class ContentService {
   }
 
   async getLesson(user: JwtUser, id: string): Promise<LessonDetail> {
+    await this.parents.assertStudentLinked(user.sub, user.role);
     const lesson = await this.prisma.lesson.findFirst({
       where: { id, isPublished: true, topic: { course: { isPublished: true } } },
       include: {

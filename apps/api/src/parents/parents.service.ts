@@ -1,0 +1,220 @@
+import { BadRequestException, ConflictException, ForbiddenException, Inject, Injectable, NotFoundException } from "@nestjs/common";
+import type { Prisma } from "@onatili/db";
+import { ERROR_CODES, type AdminParentLink, type ChildView } from "@onatili/shared";
+import { ENV, type Env } from "../config/env";
+import { esc } from "../notify/telegram";
+import { NotifyService } from "../notify/notify.service";
+import { PrismaService } from "../prisma/prisma.service";
+import { StaffService, type TelegramProfile } from "../staff/staff.service";
+
+/** Bitta o'quvchiga ulanishi mumkin bo'lgan faol (kutilayotgan yoki tasdiqlangan) ota-onalar soni */
+export const MAX_PARENTS = 2;
+const MANY_CHILDREN = 3;
+
+export const normPhone = (p: string) => {
+  const d = p.replace(/\D/g, "");
+  return d ? `+${d}` : "";
+};
+const fullName = (u: { firstName: string; lastName: string | null }) => [u.firstName, u.lastName].filter(Boolean).join(" ");
+
+export type ParentLinkResult =
+  | { status: "created" | "exists"; studentName: string; linkStatus?: string }
+  | { status: "invalid_code" | "not_own_contact" | "self" | "limit" | "rejected_before" };
+
+const linkInclude = {
+  parent: { select: { id: true, firstName: true, lastName: true, username: true, telegramId: true } },
+  reviewedBy: { select: { firstName: true, lastName: true } },
+  student: {
+    select: {
+      group: { select: { name: true } },
+      user: { select: { id: true, firstName: true, lastName: true, username: true, phone: true, telegramId: true } },
+    },
+  },
+} satisfies Prisma.ParentLinkInclude;
+
+@Injectable()
+export class ParentsService {
+  constructor(
+    @Inject(ENV) private readonly env: Env,
+    private readonly prisma: PrismaService,
+    private readonly staff: StaffService,
+    private readonly notify: NotifyService,
+  ) {}
+
+  // ---------------- Bot (ichki) ----------------
+
+  /** O'quvchi (yoki istalgan foydalanuvchi) bot orqali o'z raqamini ulashdi */
+  async saveOwnPhone(from: TelegramProfile, contact: { phone_number: string; user_id?: number }) {
+    // Faqat o'z kontakti: boshqaning kontaktini forward qilib bo'lmaydi
+    if (!contact.user_id || BigInt(contact.user_id) !== BigInt(from.id)) return { status: "not_own_contact" as const };
+    const user = await this.staff.upsertTelegramUser(from);
+    await this.prisma.user.update({ where: { id: user.id }, data: { phone: normPhone(contact.phone_number) } });
+    return { status: "saved" as const };
+  }
+
+  /**
+   * Ota-ona havola orqali botga kirib, o'z raqamini ulashdi.
+   * Firibgarlikka qarshi: o'z akkaunti bo'lmasa rad etiladi; shubhali holatlar belgilanadi va ustoz ko'radi.
+   */
+  async linkParent(code: string, from: TelegramProfile, contact: { phone_number: string; user_id?: number }, relation?: string | null): Promise<ParentLinkResult> {
+    const student = await this.prisma.studentProfile.findUnique({
+      where: { parentLinkCode: code.toUpperCase() },
+      include: { user: true, parents: { where: { status: { in: ["PENDING", "APPROVED"] } } } },
+    });
+    if (!student) return { status: "invalid_code" };
+    if (!contact.user_id || BigInt(contact.user_id) !== BigInt(from.id)) return { status: "not_own_contact" };
+    if (student.user.telegramId === BigInt(from.id)) return { status: "self" };
+
+    const parent = await this.staff.upsertTelegramUser(from);
+    const phone = normPhone(contact.phone_number);
+    const existing = await this.prisma.parentLink.findUnique({ where: { parentId_studentId: { parentId: parent.id, studentId: student.id } } });
+    if (existing?.status === "REJECTED") return { status: "rejected_before" };
+    if (existing) return { status: "exists", studentName: fullName(student.user), linkStatus: existing.status };
+    if (student.parents.length >= MAX_PARENTS) return { status: "limit" };
+
+    // Shubhali belgilar (ustoz tekshirishi uchun)
+    const [activity, children] = await Promise.all([
+      this.prisma.attempt.count({ where: { userId: parent.id } }).then(async (a) => a + (await this.prisma.lessonProgress.count({ where: { userId: parent.id } }))),
+      this.prisma.parentLink.count({ where: { parentId: parent.id, status: { in: ["PENDING", "APPROVED"] } } }),
+    ]);
+    const flags: string[] = [];
+    if (!student.user.phone) flags.push("no_student_phone");
+    else if (normPhone(student.user.phone) === phone) flags.push("same_phone");
+    if (activity > 0) flags.push("student_activity");
+    if (children + 1 > MANY_CHILDREN) flags.push("many_children");
+
+    await this.prisma.$transaction([
+      this.prisma.parentLink.create({
+        data: { parentId: parent.id, studentId: student.id, phone, relation: relation?.slice(0, 30) ?? null, flags },
+      }),
+      this.prisma.user.update({
+        where: { id: parent.id },
+        // Ilovada o'quvchi sifatida ishlamagan oddiy akkaunt ota-ona roliga o'tadi (xodimlarga tegilmaydi)
+        data: { phone, ...(parent.role === "STUDENT" && activity === 0 ? { role: "PARENT" } : {}) },
+      }),
+    ]);
+    await this.notify.send(
+      student.user.telegramId,
+      `👨‍👩‍👦 <b>${esc(fullName(parent))}</b> sizning ota-onangiz sifatida ulanish so'rovini yubordi. Ustoz tasdiqlagach, davomat xabarlari unga boradi.`,
+    );
+    return { status: "created", studentName: fullName(student.user) };
+  }
+
+  // ---------------- O'quvchi ----------------
+
+  async myParents(userId: string) {
+    const sp = await this.prisma.studentProfile.findUnique({
+      where: { userId },
+      include: { parents: { include: { parent: { select: { firstName: true, lastName: true } } }, orderBy: { createdAt: "asc" } } },
+    });
+    if (!sp) throw new NotFoundException();
+    const start = `p_${sp.parentLinkCode}`;
+    const botUrl = `https://t.me/${this.env.BOT_USERNAME}?start=${start}`;
+    const text = "Assalomu alaykum! Ona tili darslarimdagi davomatim haqida xabar olib turishingiz uchun shu havolani bosing:";
+    return {
+      inviteUrl: botUrl,
+      shareUrl: `https://t.me/share/url?url=${encodeURIComponent(botUrl)}&text=${encodeURIComponent(text)}`,
+      maxParents: MAX_PARENTS,
+      parents: sp.parents.map((l) => ({ id: l.id, name: fullName(l.parent), status: l.status, relation: l.relation, rejectReason: l.rejectReason })),
+    };
+  }
+
+  // ---------------- Ota-ona ----------------
+
+  async myChildren(userId: string): Promise<ChildView[]> {
+    const links = await this.prisma.parentLink.findMany({
+      where: { parentId: userId, status: { in: ["PENDING", "APPROVED"] } },
+      include: {
+        student: {
+          include: {
+            user: { select: { firstName: true, lastName: true } },
+            group: { select: { name: true } },
+            attendance: { orderBy: { date: "desc" }, take: 14, select: { date: true, status: true } },
+          },
+        },
+      },
+    });
+    return links.map((l) => ({
+      name: fullName(l.student.user),
+      status: l.status,
+      groupName: l.student.group?.name ?? null,
+      // Tasdiqlanmagan ota-onaga davomat ko'rsatilmaydi
+      recent: l.status === "APPROVED" ? l.student.attendance.map((a) => ({ date: a.date.toISOString().slice(0, 10), status: a.status })) : [],
+    }));
+  }
+
+  // ---------------- Admin ----------------
+
+  async list(status?: "PENDING" | "APPROVED" | "REJECTED"): Promise<AdminParentLink[]> {
+    const rows = await this.prisma.parentLink.findMany({
+      where: status ? { status } : {},
+      include: linkInclude,
+      orderBy: [{ createdAt: status === "PENDING" ? "asc" : "desc" }],
+      take: 300,
+    });
+    return rows.map((l) => this.toAdmin(l));
+  }
+
+  async approve(actorId: string, id: string) {
+    const l = await this.prisma.parentLink.findUnique({ where: { id }, include: linkInclude });
+    if (!l) throw new NotFoundException("So'rov topilmadi");
+    if (l.status !== "PENDING") throw new ConflictException("So'rov allaqachon ko'rib chiqilgan");
+    await this.prisma.parentLink.update({ where: { id }, data: { status: "APPROVED", reviewedById: actorId, reviewedAt: new Date() } });
+    await this.prisma.auditLog.create({ data: { actorId, action: "parent.approve", entity: "ParentLink", entityId: id } });
+    await this.notify.send(
+      l.parent.telegramId,
+      `✅ Siz <b>${esc(fullName(l.student.user))}</b>ning ota-onasi sifatida tasdiqlandingiz.\n\nEndi farzandingizning davomati haqidagi xabarlar shu yerga keladi.`,
+    );
+    return { ok: true };
+  }
+
+  async reject(actorId: string, id: string, reason: string) {
+    const r = reason.trim();
+    if (!r) throw new BadRequestException("Rad etish sababini yozing");
+    const l = await this.prisma.parentLink.findUnique({ where: { id }, include: linkInclude });
+    if (!l) throw new NotFoundException("So'rov topilmadi");
+    if (l.status === "REJECTED") throw new ConflictException("Allaqachon rad etilgan");
+    await this.prisma.parentLink.update({
+      where: { id },
+      data: { status: "REJECTED", reviewedById: actorId, reviewedAt: new Date(), rejectReason: r.slice(0, 300) },
+    });
+    await this.prisma.auditLog.create({ data: { actorId, action: "parent.reject", entity: "ParentLink", entityId: id, meta: { reason: r } } });
+    await this.notify.send(
+      l.student.user.telegramId,
+      `❌ Ota-ona ulanish so'rovi rad etildi.\nSabab: ${esc(r)}\n\nIlovani ochib, haqiqiy ota-onangizni qayta ulang.`,
+    );
+    return { ok: true };
+  }
+
+  /** O'quvchi uchun: ota-ona ulanmagan bo'lsa (kamida bitta kutilayotgan yoki tasdiqlangan), kontent yopiq */
+  async assertStudentLinked(userId: string, role: string) {
+    if (role !== "STUDENT") return;
+    const ok = await this.prisma.parentLink.count({
+      where: { student: { userId }, status: { in: ["PENDING", "APPROVED"] } },
+    });
+    if (!ok) throw new ForbiddenException({ code: ERROR_CODES.PARENT_REQUIRED, message: "Avval ota-onangizni ulang" });
+  }
+
+  private toAdmin(l: Prisma.ParentLinkGetPayload<{ include: typeof linkInclude }>): AdminParentLink {
+    return {
+      id: l.id,
+      status: l.status,
+      relation: l.relation,
+      phone: l.phone,
+      flags: l.flags,
+      createdAt: l.createdAt.toISOString(),
+      reviewedAt: l.reviewedAt?.toISOString() ?? null,
+      reviewedBy: l.reviewedBy ? fullName(l.reviewedBy) : null,
+      rejectReason: l.rejectReason,
+      parent: { id: l.parent.id, name: fullName(l.parent), username: l.parent.username, telegramId: String(l.parent.telegramId) },
+      student: {
+        userId: l.student.user.id,
+        name: fullName(l.student.user),
+        username: l.student.user.username,
+        phone: l.student.user.phone,
+        telegramId: String(l.student.user.telegramId),
+        groupName: l.student.group?.name ?? null,
+      },
+    };
+  }
+}

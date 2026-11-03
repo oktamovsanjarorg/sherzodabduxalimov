@@ -9,6 +9,8 @@ import { loadEnv } from "./config/env";
 import { MediaPaths } from "./media/paths";
 import { VIDEO_QUEUE, redisConnection, type TranscodeJob } from "./media/queue";
 import { transcode } from "./media/transcode";
+import { NOTIFY_QUEUE, type NotifyJob } from "./notify/notify.service";
+import { sendTelegramMessage } from "./notify/telegram";
 
 const env = loadEnv();
 const prisma = new PrismaClient();
@@ -63,7 +65,30 @@ worker.on("failed", async (job, err) => {
 
 worker.on("ready", () => console.log(`[worker] tayyor, navbat: ${env.QUEUE_PREFIX}:${VIDEO_QUEUE}`));
 
+/** Telegram xabarlari (davomat, tasdiqlash). Telegram limiti: ~30 xabar/s, biz 20 dan oshirmaymiz. */
+const notifier = new Worker<NotifyJob>(
+  NOTIFY_QUEUE,
+  async (job) => {
+    const r = await sendTelegramMessage(env.BOT_TOKEN, job.data.chatId, job.data.text);
+    if (r.ok) {
+      if (job.data.attendanceId) {
+        await prisma.attendance.update({ where: { id: job.data.attendanceId }, data: { notifiedAt: new Date() } }).catch(() => {});
+      }
+      return;
+    }
+    // 403: foydalanuvchi botni bloklagan yoki hech qachon /start bosmagan: qayta urinish befoyda
+    if (r.status === 403 || r.status === 400) {
+      console.warn(`[notify] ${job.data.chatId}: ${r.status} ${r.description}`);
+      return;
+    }
+    throw new Error(`Telegram ${r.status}: ${r.description ?? ""}${r.retryAfter ? ` (retry ${r.retryAfter}s)` : ""}`);
+  },
+  { connection: redisConnection(env.REDIS_URL), prefix: env.QUEUE_PREFIX, concurrency: 5, limiter: { max: 20, duration: 1000 } },
+);
+notifier.on("failed", (job, err) => console.error(`[notify] ${job?.data.chatId} xato:`, err.message.replace(/bot\d+:[\w-]+/g, "bot***")));
+
 const shutdown = async () => {
+  await notifier.close();
   await worker.close();
   await prisma.$disconnect();
   process.exit(0);

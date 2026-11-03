@@ -1,6 +1,9 @@
 import { DynamicModule, Global, Module } from "@nestjs/common";
 import { AccessModule } from "./access/access.module";
 import { AdminModule } from "./admin/admin.module";
+import { AttendanceModule } from "./attendance/attendance.module";
+import { NotifyModule } from "./notify/notify.module";
+import { ParentsModule } from "./parents/parents.module";
 import { AuthModule } from "./auth/auth.module";
 import { ContentModule } from "./content/content.module";
 import { ENV, type Env } from "./config/env";
@@ -24,7 +27,7 @@ export class AppModule {
   static forRoot(env: Env): DynamicModule {
     return {
       module: AppModule,
-      imports: [EnvModule.forRoot(env), PrismaModule, AccessModule, UsersModule, AuthModule, StaffModule, ContentModule, TestsModule, AdminModule, MediaModule],
+      imports: [EnvModule.forRoot(env), PrismaModule, AccessModule, UsersModule, AuthModule, StaffModule, ContentModule, TestsModule, AdminModule, MediaModule, NotifyModule, ParentsModule, AttendanceModule],
       controllers: [HealthController],
     };
   }

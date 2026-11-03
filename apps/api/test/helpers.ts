@@ -2,6 +2,7 @@ import "reflect-metadata";
 import type { Type } from "@nestjs/common";
 import { FastifyAdapter, type NestFastifyApplication } from "@nestjs/platform-fastify";
 import { Test } from "@nestjs/testing";
+import { PrismaClient } from "@onatili/db";
 import { signInitData } from "@onatili/shared/server";
 import { AppModule } from "../src/app.module";
 import { loadEnv } from "../src/config/env";
@@ -36,8 +37,15 @@ export function initData(user: object, botToken = BOT_TOKEN) {
   return signInitData({ auth_date: String(Math.floor(Date.now() / 1000)), user: JSON.stringify(user) }, botToken);
 }
 
-/** Telegram orqali kirib, Authorization sarlavhasini qaytaradi */
-export async function login(app: NestFastifyApplication, tgId: number, firstName = "Test", username?: string) {
+const prisma = new PrismaClient();
+/** Test ota-onasining telegramId'si: o'quvchinikidan aniq farq qiladi */
+export const parentTgId = (tgId: number) => BigInt(tgId) + 1_000_000_000n;
+
+/**
+ * Telegram orqali kirib, Authorization sarlavhasini qaytaradi.
+ * O'quvchiga avtomatik "kutilayotgan" ota-ona ulanadi (aks holda kontent yopiq). withParent: false bilan o'chiriladi.
+ */
+export async function login(app: NestFastifyApplication, tgId: number, firstName = "Test", username?: string, opts: { withParent?: boolean } = {}) {
   const res = await app.inject({
     method: "POST",
     url: "/api/auth/telegram",
@@ -45,5 +53,18 @@ export async function login(app: NestFastifyApplication, tgId: number, firstName
   });
   if (res.statusCode !== 200) throw new Error(`login failed: ${res.body}`);
   const { token, user } = res.json();
+  if (user.role === "STUDENT" && opts.withParent !== false) {
+    const parent = await prisma.user.upsert({
+      where: { telegramId: parentTgId(tgId) },
+      update: {},
+      create: { telegramId: parentTgId(tgId), firstName: "Ota", role: "PARENT" },
+    });
+    const sp = await prisma.studentProfile.findUniqueOrThrow({ where: { userId: user.id } });
+    await prisma.parentLink.upsert({
+      where: { parentId_studentId: { parentId: parent.id, studentId: sp.id } },
+      update: {},
+      create: { parentId: parent.id, studentId: sp.id },
+    });
+  }
   return { headers: { authorization: `Bearer ${token}` }, userId: user.id as string, role: user.role as string };
 }

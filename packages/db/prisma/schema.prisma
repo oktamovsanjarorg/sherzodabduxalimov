@@ -37,6 +37,7 @@ model User {
 
   student       StudentProfile?
   parentLinks   ParentLink[]     @relation("ParentOf")
+  parentLinksReviewed ParentLink[] @relation("ParentLinkReviewer")
   attempts      Attempt[]
   essays        Essay[]
   essayReviews  EssayReview[]    @relation("Reviewer")
@@ -64,15 +65,31 @@ model StudentProfile {
   createdAt      DateTime   @default(now())
 }
 
+enum ParentLinkStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+/// O'quvchi va ota-ona bog'lanishi. Ota-ona bot orqali o'z raqamini ulashadi, ustoz/yordamchi tasdiqlaydi.
 model ParentLink {
-  id        String         @id @default(cuid())
-  parentId  String
-  parent    User           @relation("ParentOf", fields: [parentId], references: [id], onDelete: Cascade)
-  studentId String
-  student   StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  createdAt DateTime       @default(now())
+  id           String           @id @default(cuid())
+  parentId     String
+  parent       User             @relation("ParentOf", fields: [parentId], references: [id], onDelete: Cascade)
+  studentId    String
+  student      StudentProfile   @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  status       ParentLinkStatus @default(PENDING)
+  phone        String? // Telegram tasdiqlagan raqam (request_contact)
+  relation     String? // ota, ona, boshqa
+  flags        String[] // shubhali belgilar: same_phone, student_activity, many_children
+  reviewedById String?
+  reviewedBy   User?            @relation("ParentLinkReviewer", fields: [reviewedById], references: [id], onDelete: SetNull)
+  reviewedAt   DateTime?
+  rejectReason String?
+  createdAt    DateTime         @default(now())
 
   @@unique([parentId, studentId])
+  @@index([status])
 }
 
 model Group {

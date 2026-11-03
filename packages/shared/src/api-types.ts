@@ -11,6 +11,10 @@ export const meSchema = z.object({
   username: z.string().nullable(),
   photoUrl: z.string().nullable(),
   role: z.enum(ROLES),
+  /** Telegram orqali tasdiqlangan telefon (request_contact) */
+  phone: z.string().nullable(),
+  /** O'quvchi uchun: ota-ona ulanganmi (NONE bo'lsa ilova yopiq) */
+  parentStatus: z.enum(["NONE", "PENDING", "APPROVED"]),
   subscription: z
     .object({ planName: z.string(), endsAt: z.string() })
     .nullable(),
