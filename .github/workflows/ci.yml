@@ -1,25 +1,87 @@
-name: CI
-on: [push, pull_request]
+name: CI/CD
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+# Bir branch'da yangi push kelsa, eski tekshiruv bekor qilinadi
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
 jobs:
   check:
+    name: Build, typecheck, test
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     services:
       postgres:
         image: postgres:16-alpine
         env: { POSTGRES_USER: onatili, POSTGRES_PASSWORD: onatili, POSTGRES_DB: onatili }
         ports: ["5434:5432"]
-        options: --health-cmd pg_isready --health-interval 5s --health-retries 10
+        options: --health-cmd "pg_isready -U onatili" --health-interval 5s --health-retries 20
+      redis:
+        image: redis:7-alpine
+        ports: ["6381:6379"]
+        options: --health-cmd "redis-cli ping" --health-interval 5s --health-retries 20
     env:
       DATABASE_URL: postgresql://onatili:onatili@localhost:5434/onatili
-      BOT_TOKEN: "000000:CI"
-      JWT_SECRET: ci-secret-ci-secret-ci
+      REDIS_URL: redis://localhost:6381
+      BOT_TOKEN: "000000:CI_ONLY"
+      JWT_SECRET: ci-secret-ci-secret-ci-secret
     steps:
       - uses: actions/checkout@v4
+
+      - name: Enable pnpm (corepack)
+        run: corepack enable
+
       - uses: actions/setup-node@v4
-        with: { node-version: 22 }
-      - run: corepack enable
-      - run: pnpm install --frozen-lockfile
-      - run: pnpm --filter @onatili/db deploy
-      - run: pnpm build
-      - run: pnpm typecheck
-      - run: pnpm test
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Build
+        run: pnpm build
+
+      - name: Migrate and seed database
+        run: |
+          pnpm --filter @onatili/db run deploy
+          pnpm --filter @onatili/db run seed
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Test
+        run: pnpm test
+
+  docker:
+    name: Docker images
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - name: Build app image (api, bot, worker)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          target: app
+          push: false
+          cache-from: type=gha,scope=app
+          cache-to: type=gha,mode=max,scope=app
+      - name: Build web image (Mini App, admin)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          target: web
+          push: false
+          cache-from: type=gha,scope=web
+          cache-to: type=gha,mode=max,scope=web
