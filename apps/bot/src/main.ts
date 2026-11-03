@@ -1,11 +1,16 @@
+import { Agent } from "node:https";
 import { Bot, InlineKeyboard } from "grammy";
+
+// Serverda IPv6 ishlamaydi (ENETUNREACH), standart ulanish esa ETIMEDOUT bilan osilib qoladi.
+// Shuning uchun Telegram API'ga faqat IPv4 orqali ulanamiz.
+const ipv4Agent = new Agent({ keepAlive: true, family: 4 });
 
 const token = process.env.BOT_TOKEN;
 const miniAppUrl = process.env.MINIAPP_URL;
 if (!token) throw new Error("BOT_TOKEN kerak");
 if (!miniAppUrl?.startsWith("https://")) throw new Error("MINIAPP_URL https:// bilan boshlanishi kerak");
 
-const bot = new Bot(token);
+const bot = new Bot(token, { client: { baseFetchConfig: { agent: ipv4Agent } } });
 
 const openAppKeyboard = () => new InlineKeyboard().webApp("📚 Ilovani ochish", miniAppUrl);
 
@@ -23,7 +28,10 @@ bot.command("help", (ctx) =>
   ctx.reply("Savollar bo'lsa, ustozning yordamchisiga yozing. Ilovani ochish uchun /start bosing."),
 );
 
-bot.catch((err) => console.error("Bot xatosi:", err.error));
+// Xato xabarlarida URL bilan birga bot tokeni chiqmasligi uchun uni yashiramiz
+const redact = (e: unknown) => String(e instanceof Error ? e.message : e).replace(/bot\d+:[\w-]+/g, "bot***");
+
+bot.catch((err) => console.error("Bot xatosi:", redact(err.error)));
 
 async function main() {
   // Chat pastidagi "menu" tugmasini ham Mini App'ga bog'laymiz
@@ -37,4 +45,7 @@ async function main() {
   await bot.start({ onStart: (me) => console.log(`Bot ishga tushdi: @${me.username}`) });
 }
 
-main();
+main().catch((e) => {
+  console.error("Bot ishga tushmadi:", redact(e));
+  process.exit(1);
+});
