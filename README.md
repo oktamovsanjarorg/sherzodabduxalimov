@@ -8,6 +8,8 @@ Ustoz Sherzod Abduxalimov uchun ona tili va adabiyot ta'lim platformasi. Reja va
 | `apps/api` | NestJS (Fastify) REST API, port 4100 |
 | `apps/bot` | grammY Telegram bot |
 | `apps/miniapp` | O'quvchi Mini App: React, Vite, Tailwind. Port 5180 |
+| `apps/admin` | Admin panel (ustoz, yordamchilar): `/admin`, port 5181 |
+| `apps/api/src/worker.ts` | Video worker: ffmpeg orqali AES-128 HLS |
 | `packages/db` | Prisma sxema, migratsiyalar, seed |
 | `packages/shared` | Umumiy tiplar, Zod sxemalar, initData tekshiruvi (`/server`) |
 
@@ -46,3 +48,19 @@ docker compose logs -f bot api
 - Caddyfile o'zgarganda: `docker exec mb-caddy caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile && docker exec mb-caddy caddy reload --config /etc/caddy/Caddyfile --adapter caddyfile`
 - Serverda IPv6 ishlamaydi. Tashqi API'larga (Telegram, AI) ulanishda IPv4 majburiy qilinadi.
 - Bot faqat bitta nusxada ishlashi kerak. Konteyner ishlayotganda `pnpm --filter @onatili/bot dev` ni ishga tushirmang, aks holda Telegram 409 xatosini beradi.
+
+## Admin panel
+- Kirish: botga `/admin` yoziladi. Bot 5 daqiqalik bir martalik havola yuboradi.
+- Egalar (TEACHER) `.env` dagi `OWNER_USERNAMES` orqali belgilanadi. Egalar yordamchilarni (ASSISTANT) "Xodimlar" sahifasidan qo'shadi.
+
+## Video himoyasi
+- Yuklash 8 MB'lik bo'laklarda bajariladi. Internet uzilsa, yuklash qolgan joyidan davom etadi (`apps/admin/src/lib/uploader.ts`).
+- Worker videoni 720p/480p HLS'ga aylantiradi va AES-128 bilan shifrlaydi. Kalit `videos/<id>/enc.key` da saqlanadi, `hls/` ichiga tushmaydi.
+- Kalit va pleylistlar faqat 3 soatlik HMAC token bilan beriladi. Token dars ochilganda, obuna tekshirilgandan keyin chiqariladi.
+- Pleyer o'quvchining ismi, ID va telefonini suzuvchi suv belgisi qilib ko'rsatadi. Ilova fonga o'tganda video pauza qilinadi.
+- Cheklov: web-ilovada skrinshot va ekran yozuvini 100% to'sib bo'lmaydi. Suv belgisi videoni tarqatgan odamni aniqlash uchun xizmat qiladi.
+
+## Dev va prod bazalari
+- Lokal dev va testlar `onatili_dev` bazasidan foydalanadi (`.env`). Production `onatili` bazasida ishlaydi, compose `DATABASE_URL` ni o'zi beradi.
+- Navbat prefikslari ham alohida: dev uchun `onatili-dev`, e2e testlar uchun `onatili-e2e`, prod uchun `onatili`.
+- Yangi migratsiya qo'shish: `prisma migrate diff --from-schema-datasource ... --to-schema-datamodel ... --script` bilan SQL yasaladi, keyin `prisma migrate deploy` bilan qo'llanadi (muhit interaktiv emas).

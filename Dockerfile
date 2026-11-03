@@ -9,6 +9,7 @@ COPY package.json pnpm-lock.yaml pnpm-workspace.yaml turbo.json tsconfig.base.js
 COPY apps/api/package.json apps/api/
 COPY apps/bot/package.json apps/bot/
 COPY apps/miniapp/package.json apps/miniapp/
+COPY apps/admin/package.json apps/admin/
 COPY packages/db/package.json packages/db/
 COPY packages/shared/package.json packages/shared/
 RUN pnpm install --frozen-lockfile
@@ -30,3 +31,4 @@ USER node
 FROM nginx:1.27-alpine AS web
 COPY deploy/nginx.conf /etc/nginx/conf.d/default.conf
 COPY --from=build /app/apps/miniapp/dist /usr/share/nginx/html
+COPY --from=build /app/apps/admin/dist /usr/share/nginx/html/admin
