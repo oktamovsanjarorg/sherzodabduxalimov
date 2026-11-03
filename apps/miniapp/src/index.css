@@ -2,12 +2,47 @@
 @tailwind components;
 @tailwind utilities;
 
-html, body, #root { height: 100%; }
-body {
-  @apply bg-surface text-text font-sans antialiased;
-  -webkit-tap-highlight-color: transparent;
-  overscroll-behavior: none;
+@layer base {
+  /* JS ishga tushguncha ham sahifa to'g'ri ranglarda chiqishi uchun */
+  :root {
+    --c-bg: 255 255 255;
+    --c-surface: 243 244 246;
+    --c-section: 255 255 255;
+    --c-text: 17 24 39;
+    --c-hint: 107 114 128;
+    --c-link: 15 118 110;
+    --c-danger: 220 38 38;
+  }
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+  body {
+    @apply bg-surface font-sans text-text antialiased;
+    -webkit-tap-highlight-color: transparent;
+    overscroll-behavior: none;
+  }
 }
-.card { @apply bg-section rounded-card p-4; }
-.tap { @apply transition active:scale-[0.98] active:opacity-80; }
-.skeleton { @apply animate-pulse rounded-lg bg-hint/20; }
+
+/* @layer components ichida: shunda utility klasslar (bg-brand va h.k.) ularni bosib keta oladi */
+@layer components {
+  .card {
+    @apply rounded-card bg-section p-4;
+  }
+  .tap {
+    @apply transition active:scale-[0.98] active:opacity-80;
+  }
+  .skeleton {
+    @apply animate-pulse rounded-lg bg-hint/20;
+  }
+  .btn {
+    @apply tap flex h-12 w-full items-center justify-center gap-2 rounded-xl px-4 text-[15px] font-bold disabled:opacity-50;
+  }
+  .btn-primary {
+    @apply btn bg-brand text-white;
+  }
+  .btn-ghost {
+    @apply btn bg-brand-soft text-brand;
+  }
+}

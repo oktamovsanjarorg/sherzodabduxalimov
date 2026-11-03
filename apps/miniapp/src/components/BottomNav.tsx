@@ -13,7 +13,7 @@ export function BottomNav() {
   return (
     <nav
       className="fixed inset-x-0 bottom-0 z-20 border-t border-hint/15 bg-section/95 backdrop-blur"
-      style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
+      style={{ paddingBottom: "max(var(--tg-safe-area-inset-bottom, 0px), env(safe-area-inset-bottom, 0px))" }}
     >
       <ul className="mx-auto grid max-w-md grid-cols-3">
         {tabs.map(({ to, label, Icon, end }) => (
