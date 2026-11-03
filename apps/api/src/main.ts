@@ -14,8 +14,8 @@ async function bootstrap() {
   const app = await NestFactory.create<NestFastifyApplication>(AppModule.forRoot(env), new FastifyAdapter());
   app.setGlobalPrefix("api");
   app.enableCors({ origin: env.CORS_ORIGINS.split(",").map((s) => s.trim()) });
-  await app.listen(env.API_PORT, "127.0.0.1");
-  console.log(`API: http://127.0.0.1:${env.API_PORT}/api`);
+  await app.listen(env.API_PORT, env.API_HOST);
+  console.log(`API: http://${env.API_HOST}:${env.API_PORT}/api`);
 }
 
 bootstrap();

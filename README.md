@@ -34,3 +34,15 @@ pnpm --filter @onatili/miniapp dev   # http://127.0.0.1:5180
 - Ruxsatlar faqat backend'da tekshiriladi (`@Roles()`, global `AuthGuard`). Ochiq endpoint'lar `@Public()` bilan belgilanadi.
 - API dev rejimda swc orqali ishlaydi. tsx ishlatilmaydi, chunki u NestJS uchun kerakli decorator metadata'ni chiqarmaydi.
 - Server portlari boshqa loyihalar bilan to'qnashmaydi: 5432, 5433, 6380, 80 va 443 band.
+
+## Production (shu server)
+```bash
+docker compose up -d --build     # postgres, redis, api, bot, web
+docker compose logs -f bot api
+```
+- Tashqi trafik: `mb-caddy` (`/home/ubuntu/mb-platform/Caddyfile`), keyin `sherzodabduxalimov.uzbek-talim.uz` → `onatili-web:80` (`mb-platform_default` tarmog'i orqali).
+- `onatili-web` (nginx) Mini App statik fayllarini beradi va `/api/` ni `onatili-api:4100` ga yo'naltiradi.
+- Migratsiyalar API konteyneri ishga tushganda avtomatik qo'llanadi (`prisma migrate deploy`).
+- Caddyfile o'zgarganda: `docker exec mb-caddy caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile && docker exec mb-caddy caddy reload --config /etc/caddy/Caddyfile --adapter caddyfile`
+- Serverda IPv6 ishlamaydi. Tashqi API'larga (Telegram, AI) ulanishda IPv4 majburiy qilinadi.
+- Bot faqat bitta nusxada ishlashi kerak. Konteyner ishlayotganda `pnpm --filter @onatili/bot dev` ni ishga tushirmang, aks holda Telegram 409 xatosini beradi.

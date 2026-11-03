@@ -1,4 +1,16 @@
 name: onatili
+
+# Dev:  pnpm db:up  (faqat postgres + redis)
+# Prod: docker compose up -d --build  (hammasi)
+# Tashqi trafik: mb-caddy (mb-platform) -> onatili-web:80 (mb-platform_default tarmog'i orqali)
+
+x-app-env: &app-env
+  env_file: .env
+  environment:
+    NODE_ENV: production
+    DATABASE_URL: postgresql://onatili:onatili@onatili-postgres:5432/onatili
+    REDIS_URL: redis://onatili-redis:6379
+
 services:
   postgres:
     image: postgres:16-alpine
@@ -12,11 +24,60 @@ services:
       - "127.0.0.1:5434:5432"
     volumes:
       - onatili_pg:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U onatili"]
+      interval: 5s
+      retries: 10
+
   redis:
     image: redis:7-alpine
     container_name: onatili-redis
     restart: unless-stopped
     ports:
       - "127.0.0.1:6381:6379"
+
+  api:
+    build: { context: ., target: app }
+    image: onatili-app
+    container_name: onatili-api
+    restart: unless-stopped
+    <<: *app-env
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://onatili:onatili@onatili-postgres:5432/onatili
+      REDIS_URL: redis://onatili-redis:6379
+      API_HOST: 0.0.0.0
+    command: sh -c "cd packages/db && npx prisma migrate deploy && cd /app && node apps/api/dist/main.js"
+    depends_on:
+      postgres: { condition: service_healthy }
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:4100/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 15s
+      start_period: 30s
+      retries: 5
+
+  bot:
+    image: onatili-app
+    container_name: onatili-bot
+    restart: unless-stopped
+    <<: *app-env
+    command: node apps/bot/dist/main.js
+    depends_on:
+      api: { condition: service_healthy }
+
+  web:
+    build: { context: ., target: web }
+    image: onatili-web
+    container_name: onatili-web
+    restart: unless-stopped
+    depends_on:
+      api: { condition: service_healthy }
+    networks: [default, edge]
+
 volumes:
   onatili_pg:
+
+networks:
+  edge:
+    name: mb-platform_default
+    external: true

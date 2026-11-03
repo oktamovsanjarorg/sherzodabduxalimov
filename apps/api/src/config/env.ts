@@ -3,6 +3,7 @@ import { z } from "zod";
 const schema = z.object({
   NODE_ENV: z.string().default("development"),
   API_PORT: z.coerce.number().default(4100),
+  API_HOST: z.string().default("127.0.0.1"),
   BOT_TOKEN: z.string().min(1, "BOT_TOKEN kerak"),
   JWT_SECRET: z.string().min(16, "JWT_SECRET kamida 16 belgi"),
   JWT_TTL: z.string().default("1h"),
