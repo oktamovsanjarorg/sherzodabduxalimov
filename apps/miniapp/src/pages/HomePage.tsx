@@ -56,7 +56,7 @@ export function HomePage() {
       <SectionTitle>Tezkor kirish</SectionTitle>
       <div className="grid grid-cols-2 gap-3">
         <QuickAction Icon={PlayCircle} label="Videodarslar" hint="Mavzular bo'yicha" onClick={go("/lessons")} />
-        <QuickAction Icon={ListChecks} label="Mavzu testlari" hint="Mustahkamlash" onClick={go("/lessons")} />
+        <QuickAction Icon={ListChecks} label="Mavzu testlari" hint="Mustahkamlash" onClick={go("/tests")} />
         <QuickAction Icon={ClipboardCheck} label="Mock test" hint="Milliy sertifikat" onClick={go("/mocks")} />
         <QuickAction Icon={FileText} label="Esse yozish" hint="AI yoki ustoz tekshiradi" onClick={go("/essays")} />
       </div>

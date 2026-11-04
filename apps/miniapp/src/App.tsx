@@ -18,6 +18,7 @@ import { MyAttendancePage } from "./pages/MyAttendancePage";
 import { SettingsPage } from "./pages/SettingsPage";
 import { StatsPage } from "./pages/StatsPage";
 import { SubscribePage } from "./pages/SubscribePage";
+import { TopicTestsPage } from "./pages/TopicTestsPage";
 import { useAuth } from "./store/auth";
 
 export function App() {
@@ -54,6 +55,7 @@ export function App() {
       <Route path="lesson/:id" element={<LessonPage />} />
       <Route path="attempt/:id" element={<AttemptPage />} />
       <Route path="mocks" element={<MocksPage />} />
+      <Route path="tests" element={<TopicTestsPage />} />
       <Route path="essays" element={<EssaysPage />} />
       <Route path="essays/new" element={<NewEssayPage />} />
       <Route path="essays/:id" element={<EssayPage />} />

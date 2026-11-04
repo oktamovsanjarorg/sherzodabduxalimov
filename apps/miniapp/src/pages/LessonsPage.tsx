@@ -3,7 +3,6 @@ import { useQuery } from "@tanstack/react-query";
 import { CheckCircle2, ChevronDown, Lock, PlayCircle } from "lucide-react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { TestCard } from "../components/TestCard";
 import { api } from "../lib/api";
 import { formatDuration } from "../lib/hooks";
 import { haptic } from "../lib/telegram";
@@ -13,35 +12,37 @@ export function LessonsPage() {
 
   return (
     <div className="mx-auto max-w-md">
-      <h1 className="px-1 text-xl font-extrabold">Darslar</h1>
-      <p className="mb-4 px-1 text-sm text-hint">Mavzular bo'yicha videodarslar va testlar</p>
+      <h1 className="px-1 text-xl font-extrabold">Videodarslar</h1>
+      <p className="mb-4 px-1 text-sm text-hint">Mavzular bo'yicha</p>
 
       {courses.isPending && <ListSkeleton />}
       {courses.isError && <p className="card text-sm text-danger">Yuklab bo'lmadi: {courses.error.message}</p>}
-      {courses.data?.length === 0 && <p className="card text-center text-sm text-hint">Hozircha darslar yo'q</p>}
-      {courses.data?.map((c) => <CourseBlock key={c.id} course={c} />)}
+      {courses.data && !courses.data.some((c) => c.topics.some((t) => t.lessons.length)) && <p className="card text-center text-sm text-hint">Hozircha darslar yo'q</p>}
+      {courses.data?.map((c) => <CourseBlock key={c.id} course={c} showTitle={courses.data.length > 1} />)}
     </div>
   );
 }
 
-function CourseBlock({ course }: { course: CourseView }) {
+/** Bitta kurs: faqat darsi bor mavzular. Kurs nomi bir nechta kurs bo'lsagina ko'rsatiladi */
+function CourseBlock({ course, showTitle }: { course: CourseView; showTitle: boolean }) {
+  const topics = course.topics.filter((t) => t.lessons.length > 0);
+  if (!topics.length) return null;
   const pct = course.progress.total ? Math.round((course.progress.completed / course.progress.total) * 100) : 0;
   return (
     <section className="mb-6">
-      <div className="card mb-3">
-        <h2 className="text-base font-extrabold">{course.title}</h2>
-        {course.description && <p className="mt-1 text-sm text-hint">{course.description}</p>}
-        <div className="mt-3 flex items-center gap-3">
+      <div className="mb-3 px-1">
+        {showTitle && <h2 className="mb-1 text-base font-extrabold">{course.title}</h2>}
+        <div className="flex items-center gap-3">
           <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-hint/20">
             <div className="h-full rounded-full bg-brand transition-all" style={{ width: `${pct}%` }} />
           </div>
           <span className="text-xs font-bold text-hint">
-            {course.progress.completed}/{course.progress.total}
+            {course.progress.completed}/{course.progress.total} dars
           </span>
         </div>
       </div>
       <div className="space-y-2">
-        {course.topics.map((t, i) => (
+        {topics.map((t, i) => (
           <TopicBlock key={t.id} topic={t} index={i + 1} defaultOpen={i === 0} />
         ))}
       </div>
@@ -78,15 +79,6 @@ function TopicBlock({ topic, index, defaultOpen }: { topic: TopicView; index: nu
           {topic.lessons.map((l) => (
             <LessonRow key={l.id} lesson={l} />
           ))}
-          {topic.tests.length > 0 && (
-            <div className="mt-2 space-y-2 px-2">
-              {topic.tests.map((t) => (
-                <div key={t.id} className="[&>button]:bg-surface">
-                  <TestCard test={t} />
-                </div>
-              ))}
-            </div>
-          )}
         </div>
       )}
     </div>
