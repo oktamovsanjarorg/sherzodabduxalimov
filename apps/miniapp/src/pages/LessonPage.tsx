@@ -3,7 +3,6 @@ import { ArrowRight, Check, FileDown } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Markdown } from "../components/Markdown";
 import { Paywall } from "../components/Paywall";
-import { TestCard } from "../components/TestCard";
 import { ProtectedPlayer, exitPlayerFullscreen } from "../components/ProtectedPlayer";
 import { VideoPlayer } from "../components/VideoPlayer";
 import { ApiError, api } from "../lib/api";
@@ -108,17 +107,6 @@ export function LessonPage() {
           </button>
         )}
       </div>
-
-      {l.topicTests.length > 0 && (
-        <>
-          <h2 className="mb-2 mt-6 px-1 text-[15px] font-bold">Mavzu bo'yicha testlar</h2>
-          <div className="space-y-2">
-            {l.topicTests.map((t) => (
-              <TestCard key={t.id} test={t} />
-            ))}
-          </div>
-        </>
-      )}
 
       {l.nextLessonId && (
         <button className="btn-ghost mt-4" onClick={() => navigate(`/lesson/${l.nextLessonId}`, { replace: true })}>

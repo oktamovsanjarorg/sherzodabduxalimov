@@ -73,6 +73,8 @@ export interface EssayConfig {
   /** Ustoz tekshiruvi narxi; null bo'lsa hali yoqilmagan */
   teacherPriceUzs: number | null;
   card: BillingCard | null;
+  /** Xodim sinab ko'rmoqda: ustoz tekshiruvi to'lovsiz */
+  staffPreview: boolean;
 }
 
 export const createEssayInput = z

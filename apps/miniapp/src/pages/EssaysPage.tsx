@@ -1,12 +1,14 @@
-import { ESSAY_STATUS_LABELS, formatSum, type EssayModeName, type MyEssaySummary } from "@onatili/shared";
-import { useMutation, useQuery } from "@tanstack/react-query";
-import { Bot, Camera, ChevronRight, GraduationCap, Info, Loader2, Plus } from "lucide-react";
-import { useState } from "react";
+import { ESSAY_STATUS_LABELS, MAX_ESSAY_PAGES, formatSum, type EssayModeName, type MyEssaySummary } from "@onatili/shared";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Bot, ChevronRight, GraduationCap, Info, Loader2, Plus } from "lucide-react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { FullPage } from "../components/FullPage";
+import { PhotoPicker, type PickedPhoto } from "../components/PhotoPicker";
 import { api, ApiError } from "../lib/api";
 import { formatDate, useBackButton } from "../lib/hooks";
-import { haptic } from "../lib/telegram";
+import { compressImage } from "../lib/image";
+import { haptic, hapticResult } from "../lib/telegram";
 
 const fmt = (n: number) => String(Math.round(n * 10) / 10).replace(".", ",");
 const words = (t: string) => (t.trim().match(/\S+/g) ?? []).length;
@@ -74,32 +76,71 @@ function EssayRow({ e }: { e: MyEssaySummary }) {
   );
 }
 
-/** Yangi esse: kim tekshiradi, mavzu, matn */
+/** Yangi esse: kim tekshiradi -> mavzu -> varoq rasmlari (yoki matn) -> yuborish. Hammasi bitta sahifada */
 export function NewEssayPage() {
   const navigate = useNavigate();
   useBackButton(() => navigate("/essays"));
+  const qc = useQueryClient();
   const cfg = useQuery({ queryKey: ["essay-config"], queryFn: api.essayConfig });
   const [mode, setMode] = useState<EssayModeName | null>(null);
   const [prompt, setPrompt] = useState("");
   const [text, setText] = useState("");
-  /** AI: qo'lyozma rasmi (asosiy) yoki matnni yozish */
   const [typed, setTyped] = useState(false);
+  const [photos, setPhotos] = useState<PickedPhoto[]>([]);
+  const [preparing, setPreparing] = useState(false);
+  const [progress, setProgress] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
 
-  const create = useMutation({
-    mutationFn: () => api.createEssay({ mode: mode!, prompt: prompt.trim(), text: aiTyped ? text : null }),
-    onSuccess: (e) => navigate(`/essays/${e.id}`, { replace: true }),
-    onError: (e) => setErr(e instanceof ApiError ? e.message : "Yuborib bo'lmadi, internetni tekshiring"),
-  });
+  useEffect(() => () => photos.forEach((p) => URL.revokeObjectURL(p.url)), []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const c = cfg.data;
   const aiLeft = c ? c.aiDailyLimit - c.aiUsedToday : 0;
   const aiOk = !!c?.aiEnabled && aiLeft > 0;
-  const teacherOk = !!c?.teacherPriceUzs;
-  const n = words(text);
+  const teacherOk = !!c?.teacherPriceUzs || !!c?.staffPreview;
   // Qo'lyozma o'qish sozlanmagan bo'lsa AI faqat yozilgan matn bilan
   const aiTyped = mode === "AI" && (typed || !c?.aiPhotoEnabled);
-  const canSend = mode && prompt.trim().length >= 3 && (!aiTyped || n >= 30) && !create.isPending;
+  const needPhotos = !!mode && !aiTyped;
+  const n = words(text);
+
+  const addPhotos = async (files: File[]) => {
+    setErr(null);
+    setPreparing(true);
+    try {
+      const next: PickedPhoto[] = [];
+      for (const f of files) {
+        const blob = await compressImage(f, 2200, 0.85);
+        next.push({ blob, url: URL.createObjectURL(blob) });
+      }
+      setPhotos((p) => [...p, ...next].slice(0, MAX_ESSAY_PAGES));
+    } catch (e) {
+      setErr((e as Error).message);
+    } finally {
+      setPreparing(false);
+    }
+  };
+
+  const send = useMutation({
+    mutationFn: async () => {
+      setProgress("Yuborilmoqda…");
+      const e = await api.createEssay({ mode: mode!, prompt: prompt.trim(), text: aiTyped ? text : null });
+      if (!needPhotos) return e;
+      for (let i = 0; i < photos.length; i++) {
+        setProgress(`Rasm yuklanmoqda: ${i + 1}/${photos.length}`);
+        await api.addEssayPage(e.id, photos[i].blob);
+      }
+      return api.finishEssay(e.id);
+    },
+    onSuccess: (e) => {
+      hapticResult("success");
+      qc.invalidateQueries({ queryKey: ["essays"] });
+      qc.invalidateQueries({ queryKey: ["essay-config"] });
+      navigate(`/essays/${e.id}`, { replace: true });
+    },
+    onError: (e) => setErr(e instanceof ApiError ? e.message : "Yuborib bo'lmadi, internetni tekshiring"),
+    onSettled: () => setProgress(null),
+  });
+
+  const canSend = !!mode && prompt.trim().length >= 3 && (aiTyped ? n >= 30 : photos.length > 0) && !send.isPending && !preparing;
 
   return (
     <FullPage>
@@ -107,7 +148,7 @@ export function NewEssayPage() {
       {cfg.isPending && <div className="skeleton mt-4 h-48" />}
       {c && (
         <>
-          <p className="mb-2 mt-4 px-1 text-sm font-bold text-hint">1. Kim tekshirsin?</p>
+          <Step n={1} title="Kim tekshirsin?" />
           <div className="grid grid-cols-2 gap-3">
             <ModeCard
               on={mode === "AI"}
@@ -123,15 +164,15 @@ export function NewEssayPage() {
               disabled={!teacherOk}
               Icon={GraduationCap}
               title="Ustoz"
-              price={teacherOk ? `${formatSum(c.teacherPriceUzs!)} so'm` : "Tez orada"}
-              hint="Qo'lyozma rasmi"
+              price={c.teacherPriceUzs ? `${formatSum(c.teacherPriceUzs)} so'm` : c.staffPreview ? "Sinov (to'lovsiz)" : "Tez orada"}
+              hint="Aniq baho va izoh"
               onClick={() => setMode("TEACHER")}
             />
           </div>
 
           {mode && (
             <>
-              <p className="mb-2 mt-6 px-1 text-sm font-bold text-hint">2. Esse mavzusi</p>
+              <Step n={2} title="Esse mavzusi" />
               <input
                 value={prompt}
                 onChange={(e) => setPrompt(e.target.value)}
@@ -142,21 +183,22 @@ export function NewEssayPage() {
             </>
           )}
 
-          {mode === "AI" && !aiTyped && (
-            <div className="card mt-4 flex gap-3 text-sm text-hint">
-              <Camera size={20} className="mt-0.5 shrink-0 text-brand" />
-              <div>
-                <p>Esseni varoqqa ruchka bilan yozing. Keyingi qadamda varoq rasmlarini yuklaysiz (1–4 bet): AI qo'lyozmani o'qib, xatolaringiz bilan birga tekshiradi.</p>
-                <button className="mt-2 font-semibold text-brand" onClick={() => setTyped(true)}>
+          {needPhotos && (
+            <>
+              <Step n={3} title={`Varoq rasmlari (${photos.length}/${MAX_ESSAY_PAGES})`} />
+              <PhotoPicker photos={photos} max={MAX_ESSAY_PAGES} busy={preparing} onAdd={addPhotos} onRemove={(i) => setPhotos((p) => p.filter((_, j) => j !== i))} />
+              <p className="mt-2 px-1 text-xs text-hint">Varoqni yorug' joyda, tekis qilib, butun sahifa ko'rinadigan qilib suratga oling.</p>
+              {mode === "AI" && c.aiPhotoEnabled && (
+                <button className="mt-2 px-1 text-sm font-semibold text-brand" onClick={() => setTyped(true)}>
                   Yoki matnni telefonda yozaman
                 </button>
-              </div>
-            </div>
+              )}
+            </>
           )}
 
           {aiTyped && (
             <>
-              <p className="mb-2 mt-6 px-1 text-sm font-bold text-hint">3. Esse matni</p>
+              <Step n={3} title="Esse matni" />
               {c.aiPhotoEnabled ? (
                 <button className="mb-3 px-1 text-sm font-semibold text-brand" onClick={() => setTyped(false)}>
                   ← Varoqqa yozganman: rasmini yuklayman
@@ -164,7 +206,7 @@ export function NewEssayPage() {
               ) : (
                 <div className="card mb-3 flex gap-3 text-sm">
                   <Info size={20} className="mt-0.5 shrink-0 text-brand" />
-                  <p className="text-hint">AI hozircha faqat yozilgan matnni tekshiradi. Varoqqa yozgan bo'lsangiz, matnni rasmdan nusxalang (iPhone: rasmdagi matnni bosib turib «Nusxalash»; Android: Google Lens → «Matn») va shu yerga qo'ying.</p>
+                  <p className="text-hint">AI hozircha faqat yozilgan matnni tekshiradi.</p>
                 </div>
               )}
               <textarea
@@ -177,23 +219,29 @@ export function NewEssayPage() {
             </>
           )}
 
-          {mode === "TEACHER" && (
-            <div className="card mt-4 flex gap-3 text-sm text-hint">
-              <Camera size={20} className="mt-0.5 shrink-0 text-brand" />
-              <p>Keyingi qadamda varoq rasmlarini yuklaysiz (1–4 bet), so'ng to'lov chekini yuborasiz. To'lov tasdiqlangach ustoz tekshiradi va natija bot orqali keladi.</p>
-            </div>
-          )}
-
           {err && <p className="mt-3 px-1 text-sm text-danger">{err}</p>}
           {mode && (
-            <button className="btn-primary mt-4" disabled={!canSend} onClick={() => create.mutate()}>
-              {create.isPending && <Loader2 size={18} className="animate-spin" />}
-              {aiTyped ? "AI'ga tekshirishga yuborish" : "Davom etish: varoq rasmlarini yuklash"}
+            <button className="btn-primary mt-5" disabled={!canSend} onClick={() => send.mutate()}>
+              {send.isPending && <Loader2 size={18} className="animate-spin" />}
+              {progress ?? (mode === "AI" ? "AI'ga tekshirishga yuborish" : c.staffPreview && !c.teacherPriceUzs ? "Ustozga yuborish" : "Davom etish: to'lov")}
             </button>
           )}
+          {mode === "TEACHER" && !c.staffPreview && (
+            <p className="mt-2 px-1 text-center text-xs text-hint">Keyingi qadamda to'lov chekini yuborasiz. Tasdiqlangach ustoz tekshiradi, natija bot orqali keladi.</p>
+          )}
+          {c.staffPreview && <p className="mt-2 px-1 text-center text-xs text-hint">Siz xodimsiz: sinov uchun ustoz tekshiruvi to'lovsiz.</p>}
         </>
       )}
     </FullPage>
+  );
+}
+
+function Step({ n, title }: { n: number; title: string }) {
+  return (
+    <p className="mb-2 mt-6 flex items-center gap-2 px-1 text-sm font-bold">
+      <span className="flex h-6 w-6 items-center justify-center rounded-full bg-brand text-xs text-white">{n}</span>
+      {title}
+    </p>
   );
 }
 

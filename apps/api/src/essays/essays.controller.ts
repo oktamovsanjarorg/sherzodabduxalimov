@@ -19,7 +19,7 @@ export class EssaysController {
     return this.svc.list(u.sub);
   }
 
-  @Roles("STUDENT")
+  /** Xodimlar ham sinab ko'ra oladi (ustoz tekshiruvida to'lovsiz) */
   @Post()
   create(@CurrentUser() u: JwtUser, @Body() b: unknown) {
     return this.svc.create(u.sub, parse(createEssayInput, b));

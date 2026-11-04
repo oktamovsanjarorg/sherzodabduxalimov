@@ -215,7 +215,7 @@ function PayForm({ b }: { b: BillingView }) {
       </div>
 
       <p className="mb-2 mt-6 px-1 text-sm font-bold text-hint">3. Chek rasmini yuklang</p>
-      <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={(e) => pick(e.target.files?.[0]).finally(() => (e.target.value = ""))} />
+      <input ref={fileRef} type="file" accept="image/*" className="sr-only" onChange={(e) => pick(e.target.files?.[0]).finally(() => (e.target.value = ""))} />
       {file ? (
         <div className="card">
           <img src={file.url} alt="Chek" className="max-h-80 w-full rounded-xl object-contain" />

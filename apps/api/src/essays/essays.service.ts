@@ -103,8 +103,22 @@ export class EssaysService implements OnModuleDestroy {
   }
 
   async config(userId: string): Promise<EssayConfig> {
-    const [used, price, card] = await Promise.all([this.aiUsedToday(userId), this.teacherPrice(), this.billing.card()]);
-    return { aiEnabled: this.aiEnabled, aiPhotoEnabled: this.aiPhotoEnabled, aiDailyLimit: AI_ESSAY_DAILY_LIMIT, aiUsedToday: used, teacherPriceUzs: price && card ? price : null, card };
+    const [used, price, card, me] = await Promise.all([
+      this.aiUsedToday(userId),
+      this.teacherPrice(),
+      this.billing.card(),
+      this.prisma.user.findUnique({ where: { id: userId }, select: { role: true } }),
+    ]);
+    const staff = !!me && STAFF_ROLES.includes(me.role);
+    return {
+      aiEnabled: this.aiEnabled,
+      aiPhotoEnabled: this.aiPhotoEnabled,
+      aiDailyLimit: AI_ESSAY_DAILY_LIMIT,
+      aiUsedToday: used,
+      teacherPriceUzs: price && card ? price : null,
+      card,
+      staffPreview: staff,
+    };
   }
 
   async list(userId: string): Promise<MyEssaySummary[]> {
@@ -128,7 +142,9 @@ export class EssaysService implements OnModuleDestroy {
       return this.detail(userId, e.id);
     }
     const price = await this.teacherPrice();
-    if (!price || !(await this.billing.card())) throw new ConflictException("Ustoz tekshiruvi hali yoqilmagan");
+    const author = await this.prisma.user.findUnique({ where: { id: userId }, select: { role: true } });
+    const staff = !!author && STAFF_ROLES.includes(author.role);
+    if (!staff && (!price || !(await this.billing.card()))) throw new ConflictException("Ustoz tekshiruvi hali yoqilmagan");
     await this.assertFewDrafts(userId);
     const e = await this.prisma.essay.create({ data: { userId, mode: "TEACHER", prompt: d.prompt, text: d.text, priceUzs: price, status: "DRAFT" } });
     return this.detail(userId, e.id);
@@ -172,7 +188,10 @@ export class EssaysService implements OnModuleDestroy {
       await this.queue.add("grade", { essayId: id }, { jobId: id });
       return this.detail(userId, id);
     }
-    await this.prisma.essay.update({ where: { id }, data: { status: "AWAITING_PAYMENT" } });
+    // Xodim sinab ko'rayotgan bo'lsa: to'lovsiz, to'g'ridan-to'g'ri ustoz navbatiga
+    const author = await this.prisma.user.findUnique({ where: { id: userId }, select: { role: true } });
+    const staff = !!author && STAFF_ROLES.includes(author.role);
+    await this.prisma.essay.update({ where: { id }, data: { status: staff ? "SUBMITTED" : "AWAITING_PAYMENT" } });
     return this.detail(userId, id);
   }
 

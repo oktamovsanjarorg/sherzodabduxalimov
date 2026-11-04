@@ -232,7 +232,7 @@ function DraftPages({ e, onChange }: { e: MyEssayDetail; onChange: (e: MyEssayDe
           </button>
         )}
       </div>
-      <input ref={fileRef} type="file" accept="image/*" multiple className="hidden" onChange={(x) => add(x.target.files).finally(() => (x.target.value = ""))} />
+      <input ref={fileRef} type="file" accept="image/*" multiple className="sr-only" onChange={(x) => add(x.target.files).finally(() => (x.target.value = ""))} />
       <p className="mt-2 px-1 text-xs text-hint">Varoqni yorug' joyda, tekis qilib, butun sahifa ko'rinadigan qilib suratga oling.</p>
       {err && <p className="mt-2 px-1 text-sm text-danger">{err}</p>}
       <button className="btn-primary mt-4" disabled={!e.pages || finish.isPending || busy} onClick={() => finish.mutate()}>
@@ -293,7 +293,7 @@ function PayBox({ e, card, onDone }: { e: MyEssayDetail; card: EssayConfig["card
         ref={fileRef}
         type="file"
         accept="image/*"
-        className="hidden"
+        className="sr-only"
         onChange={async (x) => {
           const f = x.target.files?.[0];
           x.target.value = "";

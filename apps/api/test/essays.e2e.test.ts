@@ -127,6 +127,12 @@ describe("Esse: AI (bepul) va ustoz (pullik, qo'lyozma) (e2e)", () => {
   it("ustoz: narx va karta sozlanmaguncha yopiq; rasmlar, to'lov, tasdiq, baholash", async () => {
     await prisma.appSetting.deleteMany({ where: { key: "essay" } });
     expect((await req("POST", "/essays", { mode: "TEACHER", prompt: "Vatan" }, S)).statusCode).toBe(409);
+    // Xodim narx kiritilmagan bo'lsa ham sinab ko'ra oladi: to'lovsiz ustoz navbatiga
+    expect((await req("GET", "/essays/config")).json().staffPreview).toBe(true);
+    const se = (await req("POST", "/essays", { mode: "TEACHER", prompt: "Sinov" })).json();
+    await img(`/essays/${se.id}/pages`, H);
+    expect((await req("POST", `/essays/${se.id}/finish`)).json().status).toBe("SUBMITTED");
+    await prisma.essay.delete({ where: { id: se.id } });
     await req("PUT", "/admin/billing-settings", { number: "8600 1234 5678 9012", holder: "Sherzod Abduxalimov" });
     expect((await req("PUT", "/admin/essay-settings", { priceUzs: 25000 })).statusCode).toBe(200);
     expect((await req("GET", "/essays/config", undefined, S)).json().teacherPriceUzs).toBe(25000);
