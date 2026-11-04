@@ -105,6 +105,8 @@ export function isMostlyCyrillic(text: string) {
 export const countWords = (t: string) => (t.trim().match(/[\p{L}\p{N}'ʻʼ`-]+/gu) ?? []).length;
 
 export const MAX_ESSAY_PAGES = 4;
+/** AI varoq rasmida esse matnini topmadi (boshqa narsaning rasmi, xira yoki bo'sh varoq). Limitga hisoblanmaydi */
+export const NO_ESSAY_ERROR = "Rasmda esse matni topilmadi. Varoqni yorug' joyda, tekis va aniq qilib suratga oling.";
 export const AI_ESSAY_DAILY_LIMIT = 2;
 export const ESSAY_STATUS_LABELS: Record<EssayStatusName, string> = {
   DRAFT: "Qoralama",

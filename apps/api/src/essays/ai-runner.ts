@@ -1,5 +1,5 @@
 import type { PrismaClient } from "@onatili/db";
-import { ESSAY_MAX_SCORE, ESSAY_SPECIAL, countWords, isMostlyCyrillic, rubricScore, type EssaySpecialKey } from "@onatili/shared";
+import { ESSAY_MAX_SCORE, ESSAY_SPECIAL, NO_ESSAY_ERROR, countWords, isMostlyCyrillic, rubricScore, type EssaySpecialKey } from "@onatili/shared";
 import type { AiEssayResult } from "../ai/deepseek";
 import type { SendFn } from "../billing/reminders";
 import { esc } from "../notify/telegram";
@@ -8,7 +8,7 @@ export type GradeFn = (topic: string, text: string, handwritten: boolean) => Pro
 /** Varoq rasmlarini matnga aylantiradi (nisbiy yo'llar: essays/<id>/<n>.jpg) */
 export type ReadFn = (imagePaths: string[]) => Promise<string>;
 
-export const NO_ESSAY_ERROR = "Rasmda esse matni topilmadi. Varoqni yorug' joyda, tekis va aniq qilib suratga oling.";
+export { NO_ESSAY_ERROR };
 
 /** Bitta esseni AI bilan baholaydi va natijani saqlaydi. Worker chaqiradi; testda grade soxta bo'ladi. */
 export async function gradeEssayJob(prisma: PrismaClient, essayId: string, grade: GradeFn, send: SendFn, miniAppUrl: string | undefined, read?: ReadFn) {

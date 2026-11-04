@@ -1,4 +1,4 @@
-import { ESSAY_STATUS_LABELS, MAX_ESSAY_PAGES, formatCard, formatSum, type EssayConfig, type EssayReviewView, type MyEssayDetail } from "@onatili/shared";
+import { ESSAY_STATUS_LABELS, MAX_ESSAY_PAGES, NO_ESSAY_ERROR, formatCard, formatSum, type EssayConfig, type EssayReviewView, type MyEssayDetail } from "@onatili/shared";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Bot, Clock, GraduationCap, ImagePlus, Loader2, RotateCcw, Trash2, X, XCircle } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
@@ -99,15 +99,28 @@ function Waiting({ icon, title, hint }: { icon: React.ReactNode; title: string; 
 }
 
 function Failed({ e, onChange }: { e: MyEssayDetail; onChange: (e: MyEssayDetail) => void }) {
+  const navigate = useNavigate();
   const retry = useMutation({ mutationFn: () => api.retryEssay(e.id), onSuccess: onChange });
+  // Rasmda esse yo'q: xuddi shu rasmni qayta yuborish befoyda, yangi rasm kerak
+  const noEssay = e.error === NO_ESSAY_ERROR;
   return (
     <div className="card mt-4 text-center">
       <XCircle size={36} className="mx-auto text-danger" />
-      <p className="mt-2 font-bold">{ESSAY_STATUS_LABELS.AI_FAILED}</p>
-      <p className="mt-1 text-sm text-hint">{e.error}</p>
-      <button className="btn-ghost mt-3" disabled={retry.isPending} onClick={() => retry.mutate()}>
-        <RotateCcw size={16} /> Qayta urinish
-      </button>
+      <p className="mt-2 font-bold">{noEssay ? "Rasmda esse topilmadi" : ESSAY_STATUS_LABELS.AI_FAILED}</p>
+      <p className="mt-1 text-sm text-hint">
+        {noEssay
+          ? "Yuklangan rasmda esse matni ko'rinmadi (boshqa material, xira yoki bo'sh varoq bo'lishi mumkin). Esse yozilgan varoqni yorug' joyda, tekis qilib suratga oling. Bu urinish kunlik limitga hisoblanmadi."
+          : e.error}
+      </p>
+      {noEssay ? (
+        <button className="btn-primary mt-3" onClick={() => navigate("/essays/new", { replace: true })}>
+          Yangi rasm bilan yuborish
+        </button>
+      ) : (
+        <button className="btn-ghost mt-3" disabled={retry.isPending} onClick={() => retry.mutate()}>
+          <RotateCcw size={16} /> Qayta urinish
+        </button>
+      )}
       {retry.isError && <p className="mt-2 text-sm text-danger">{errText(retry.error)}</p>}
     </div>
   );
