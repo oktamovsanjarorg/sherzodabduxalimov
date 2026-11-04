@@ -58,6 +58,12 @@ export class StaffService {
         languageCode: tg.language_code,
       }).filter(([, v]) => v !== undefined),
     );
+    // Ustoz yozgan ism-familiya Telegram'dagisi bilan almashtirilmaydi
+    const locked = await this.prisma.user.findUnique({ where: { telegramId: BigInt(tg.id) }, select: { nameLocked: true } });
+    if (locked?.nameLocked) {
+      delete update.firstName;
+      delete update.lastName;
+    }
     let user = await this.prisma.user.upsert({
       where: { telegramId: BigInt(tg.id) },
       update,

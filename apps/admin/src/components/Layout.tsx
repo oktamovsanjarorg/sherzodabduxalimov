@@ -1,6 +1,6 @@
 import { ROLE_LABELS } from "@onatili/shared";
 import { useQuery } from "@tanstack/react-query";
-import { BookOpen, CalendarCheck, Home, MoreHorizontal, ShieldCheck, type LucideIcon } from "lucide-react";
+import { BookOpen, GraduationCap, Home, MoreHorizontal, ShieldCheck, type LucideIcon } from "lucide-react";
 import { NavLink, Outlet, useLocation } from "react-router-dom";
 import { api } from "../lib/api";
 import { loadSession } from "../lib/session";
@@ -35,7 +35,16 @@ export function useNavGroups(): NavGroup[] {
         { to: "/essays", label: `Esselar${dash.data?.pendingEssays ? ` (${dash.data.pendingEssays})` : ""}`, match: /^\/essays/ },
       ],
     },
-    { to: "/attendance", label: "Davomat", Icon: CalendarCheck, match: /^\/attendance/ },
+    {
+      to: "/students",
+      label: "O'quvchilar",
+      Icon: GraduationCap,
+      match: /^\/(students|attendance)/,
+      sub: [
+        { to: "/students", label: "O'quvchilar", match: /^\/students/ },
+        { to: "/attendance", label: "Davomat", match: /^\/attendance/ },
+      ],
+    },
     { to: "/parents", label: "Ota-onalar", Icon: ShieldCheck, match: /^\/parents/, badge: dash.data?.pendingParents },
     {
       to: "/more",

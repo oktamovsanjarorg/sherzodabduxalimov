@@ -60,6 +60,25 @@ bot.command("start", async (ctx) => {
     return;
   }
 
+  // O'quvchi: ustoz qo'lda kiritgan, shaxsiy havola orqali keldi
+  const sm = /^s_([A-Za-z0-9_-]{6,16})$/.exec(payload);
+  if (sm) {
+    try {
+      const r = await internal<{ status: string; name?: string; groupName?: string }>("claim-student", { code: sm[1], from: fromOf(ctx.from) });
+      const msg: Record<string, string> = {
+        claimed: `✅ Xush kelibsiz, <b>${esc(r.name ?? "")}</b>!${r.groupName ? ` Siz <b>${esc(r.groupName)}</b> guruhidasiz.` : ""}\n\nIlovani oching: darslar, testlar va natijalaringiz shu yerda.`,
+        used: "Bu havola boshqa Telegram hisobiga bog'langan. Xato bo'lsa, ustozga yozing.",
+        staff: "Siz xodimsiz: bu havola o'quvchi uchun.",
+        invalid: "Havola eskirgan. Ustozdan yangisini so'rang.",
+      };
+      await ctx.reply(msg[r.status] ?? msg.invalid, { parse_mode: "HTML", reply_markup: r.status === "claimed" ? openAppKeyboard() : undefined });
+    } catch (e) {
+      console.error("claim-student:", redact(e));
+      await ctx.reply("Hozir bog'lab bo'lmadi, birozdan keyin havolani qayta bosing.");
+    }
+    return;
+  }
+
   // O'quvchi: offline guruh havolasi orqali keldi
   const g = /^g_([A-Za-z0-9_-]{6,16})$/.exec(payload);
   if (g) {
@@ -154,10 +173,14 @@ Ustoz yoki yordamchi tasdiqlagach, sizga xabar keladi.`,
       return;
     }
     const r = await internal<{ status: string }>("user-phone", { from: fromOf(from), contact: { phone_number: c.phone_number, user_id: c.user_id } });
-    await ctx.reply(r.status === "saved" ? "✅ Raqamingiz saqlandi. Ilovaga qaytishingiz mumkin." : "Iltimos, o'z raqamingizni ulashing.", {
-      ...done,
-      ...(r.status === "saved" ? { reply_markup: openAppKeyboard() } : {}),
-    });
+    const ok = r.status === "saved" || r.status === "merged";
+    const text =
+      r.status === "merged"
+        ? "✅ Raqamingiz saqlandi. Ustoz sizni ro'yxatga kiritgan ekan: guruhingiz, davomat va to'lovlaringiz hisobingizga bog'landi. Ilovaga qaytishingiz mumkin."
+        : ok
+          ? "✅ Raqamingiz saqlandi. Ilovaga qaytishingiz mumkin."
+          : "Iltimos, o'z raqamingizni ulashing.";
+    await ctx.reply(text, { ...done, ...(ok ? { reply_markup: openAppKeyboard() } : {}) });
   } catch (e) {
     console.error("contact:", redact(e));
     await ctx.reply("Hozir saqlab bo'lmadi, birozdan keyin qayta urinib ko'ring.", done);

@@ -6,3 +6,4 @@ export * from "./admin-types";
 export * from "./attendance-types";
 export * from "./billing-types";
 export * from "./essay-types";
+export * from "./students-types";

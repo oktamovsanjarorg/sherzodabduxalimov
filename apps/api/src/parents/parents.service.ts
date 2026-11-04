@@ -5,6 +5,7 @@ import { ENV, type Env } from "../config/env";
 import { esc } from "../notify/telegram";
 import { NotifyService } from "../notify/notify.service";
 import { PrismaService } from "../prisma/prisma.service";
+import { StudentsService } from "../students/students.service";
 import { StaffService, type TelegramProfile } from "../staff/staff.service";
 
 /** Bitta o'quvchiga ulanishi mumkin bo'lgan faol (kutilayotgan yoki tasdiqlangan) ota-onalar soni */
@@ -39,6 +40,7 @@ export class ParentsService {
     private readonly prisma: PrismaService,
     private readonly staff: StaffService,
     private readonly notify: NotifyService,
+    private readonly students: StudentsService,
   ) {}
 
   // ---------------- Bot (ichki) ----------------
@@ -48,8 +50,11 @@ export class ParentsService {
     // Faqat o'z kontakti: boshqaning kontaktini forward qilib bo'lmaydi
     if (!contact.user_id || BigInt(contact.user_id) !== BigInt(from.id)) return { status: "not_own_contact" as const };
     const user = await this.staff.upsertTelegramUser(from);
-    await this.prisma.user.update({ where: { id: user.id }, data: { phone: normPhone(contact.phone_number) } });
-    return { status: "saved" as const };
+    const phone = normPhone(contact.phone_number);
+    // Ustoz shu raqam bilan qo'lda kiritgan o'quvchi bo'lsa: guruh, davomat, to'lovlar shu hisobga o'tadi
+    const merged = await this.students.claimByPhone(user.id, phone).catch(() => false);
+    await this.prisma.user.update({ where: { id: user.id }, data: { phone } });
+    return { status: merged ? ("merged" as const) : ("saved" as const) };
   }
 
   /**

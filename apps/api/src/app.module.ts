@@ -3,6 +3,7 @@ import { AccessModule } from "./access/access.module";
 import { AdminModule } from "./admin/admin.module";
 import { BillingModule } from "./billing/billing.module";
 import { EssaysModule } from "./essays/essays.module";
+import { StudentsModule } from "./students/students.module";
 import { AttendanceModule } from "./attendance/attendance.module";
 import { NotifyModule } from "./notify/notify.module";
 import { ParentsModule } from "./parents/parents.module";
@@ -29,7 +30,7 @@ export class AppModule {
   static forRoot(env: Env): DynamicModule {
     return {
       module: AppModule,
-      imports: [EnvModule.forRoot(env), PrismaModule, AccessModule, UsersModule, AuthModule, StaffModule, ContentModule, TestsModule, AdminModule, MediaModule, NotifyModule, ParentsModule, AttendanceModule, BillingModule, EssaysModule],
+      imports: [EnvModule.forRoot(env), PrismaModule, AccessModule, UsersModule, AuthModule, StaffModule, ContentModule, TestsModule, AdminModule, MediaModule, NotifyModule, ParentsModule, AttendanceModule, BillingModule, EssaysModule, StudentsModule],
       controllers: [HealthController],
     };
   }

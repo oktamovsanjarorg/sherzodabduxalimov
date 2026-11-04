@@ -31,10 +31,13 @@ export class NotifyService implements OnModuleDestroy {
   async onModuleDestroy() {
     await this.queue.close();
   }
-  send(chatId: bigint | string, text: string, attendanceId?: string) {
+  /** chatId null: o'quvchi hali botga kirmagan (ustoz qo'lda kiritgan), xabar yuborilmaydi */
+  async send(chatId: bigint | string | null, text: string, attendanceId?: string) {
+    if (chatId === null) return null;
     return this.queue.add("send", { chatId: String(chatId), text, attendanceId });
   }
-  sendWithButton(chatId: bigint | string, text: string, button?: NotifyJob["button"]) {
+  async sendWithButton(chatId: bigint | string | null, text: string, button?: NotifyJob["button"]) {
+    if (chatId === null) return null;
     return this.queue.add("send", { chatId: String(chatId), text, button });
   }
 }

@@ -37,7 +37,7 @@ export async function gradeEssayJob(prisma: PrismaClient, essayId: string, grade
   const { count } = await prisma.essay.updateMany({ where: { id: essayId, status: "AI_CHECKING" }, data: { status: "AI_CHECKED", error: null } });
   if (!count) return null;
   await prisma.essayReview.create({ data: { essayId, source: "AI", provider: "deepseek", criteria, mistakes: r.mistakes, totalScore: total, feedback: r.feedback || null } });
-  await send(
+  if (e.user.telegramId !== null) await send(
     e.user.telegramId,
     `🤖 <b>AI essengizni tekshirdi</b>\n«${esc(e.prompt.slice(0, 80))}»\nTaxminiy ball: <b>${total} / ${ESSAY_MAX_SCORE}</b>`,
     miniAppUrl ? { text: "Natija va xatolarni ko'rish", webAppUrl: `${miniAppUrl.replace(/\/$/, "")}/essays/${essayId}` } : undefined,

@@ -23,7 +23,8 @@ enum StudyMode {
 
 model User {
   id           String   @id @default(cuid())
-  telegramId   BigInt   @unique
+  /// Ustoz qo'lda kiritgan o'quvchida null: botga kirganda (telefon yoki shaxsiy havola orqali) bog'lanadi
+  telegramId   BigInt?  @unique
   username     String?
   firstName    String
   lastName     String?
@@ -31,6 +32,8 @@ model User {
   photoUrl     String?
   languageCode String?
   role         Role     @default(STUDENT)
+  /// Ism-familiyani ustoz yozgan: Telegram'dan kirganda ustiga yozilmaydi
+  nameLocked   Boolean  @default(false)
   isBlocked    Boolean  @default(false)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
@@ -61,6 +64,8 @@ model StudentProfile {
   groupId        String?
   group          Group?     @relation(fields: [groupId], references: [id], onDelete: SetNull)
   parentLinkCode String     @unique // ota-ona botga shu kod bilan ulanadi
+  /// Qo'lda kiritilgan o'quvchining shaxsiy havolasi (t.me/bot?start=s_<kod>): bosganda Telegram hisobi shu yozuvga bog'lanadi
+  inviteCode     String?    @unique
   parents        ParentLink[]
   attendance     Attendance[]
   offlinePayments OfflinePayment[]

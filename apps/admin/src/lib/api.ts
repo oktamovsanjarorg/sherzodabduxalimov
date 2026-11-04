@@ -2,6 +2,9 @@ import type {
   AdminPayment,
   AdminPlan,
   AdminSubscriptions,
+  RosterRow,
+  StudentCreateInput,
+  StudentDetail,
   AdminHwEssay,
   TeacherEssayReviewInput,
   OfflineLedger,
@@ -80,6 +83,13 @@ export interface StaffList {
 }
 
 export const api = {
+  roster: (groupId: string, q: string) => request<RosterRow[]>(`/admin/roster?${new URLSearchParams({ ...(groupId ? { groupId } : {}), ...(q ? { q } : {}) })}`),
+  student: (id: string) => request<StudentDetail>(`/admin/students/${id}`),
+  createStudent: (d: StudentCreateInput) => request<{ studentId: string }>("/admin/students", json("POST", d)),
+  bulkStudents: (groupId: string | null, text: string) => request<{ added: number; skipped: { line: string; reason: string }[] }>("/admin/students/bulk", json("POST", { groupId, text })),
+  updateStudent: (id: string, d: Partial<StudentCreateInput>) => request<StudentDetail>(`/admin/students/${id}`, json("PATCH", d)),
+  deleteStudent: (id: string) => request(`/admin/students/${id}`, json("DELETE")),
+  resetStudentInvite: (id: string) => request<{ inviteUrl: string }>(`/admin/students/${id}/invite`, json("POST")),
   payments: (status: PaymentStatusName) => request<AdminPayment[]>(`/admin/payments?status=${status}`),
   approvePayment: (id: string) => request<{ ok: true; endsAt: string | null }>(`/admin/payments/${id}/approve`, json("POST")),
   rejectPayment: (id: string, reason: string) => request(`/admin/payments/${id}/reject`, json("POST", { reason })),
