@@ -43,11 +43,8 @@ Vazifang: matnni AYNAN yozilganidek, so'zma-so'z ko'chirib ber.
 - Rasmda esse bo'lmasa, faqat NO_ESSAY deb yoz.
 Javobda faqat esse matni bo'lsin, boshqa hech qanday izoh yozma.`;
 
-let resolvedModel: string | null = null;
-
 /** Sozlangan model topilmasa (nomi o'zgargan), mavjud "flash" modellardan birini tanlaydi */
 async function pickModel(apiKey: string, preferred: string): Promise<string> {
-  if (resolvedModel) return resolvedModel;
   const r = await call("GET", "/v1beta/models?pageSize=200", apiKey, undefined, 20_000);
   const models: { name: string; supportedGenerationMethods?: string[] }[] = r.json?.models ?? [];
   const ok = models.filter((m) => m.supportedGenerationMethods?.includes("generateContent")).map((m) => m.name.replace(/^models\//, ""));
@@ -56,23 +53,44 @@ async function pickModel(apiKey: string, preferred: string): Promise<string> {
     ok.filter((m) => /flash/.test(m) && !/lite|image|tts|live|preview|exp/.test(m)).sort().reverse()[0] ??
     ok.find((m) => /flash/.test(m));
   if (!pick) throw new Error(`Gemini: mos model topilmadi (${r.status})`);
-  resolvedModel = pick;
   return pick;
 }
+
+/** Asosiy model band (503/429) yoki yo'q (404) bo'lsa, navbatdagi modelga o'tiladi */
+const FALLBACK_MODELS = ["gemini-3.7-flash", "gemini-3.5-flash", "gemini-flash-latest", "gemini-2.5-flash"];
+const RETRYABLE = new Set([404, 429, 500, 502, 503, 504]);
+
+const textOf = (j: any): string => (j?.candidates?.[0]?.content?.parts ?? []).map((p: { text?: string }) => p.text ?? "").join("").trim();
 
 export async function transcribeHandwriting(opts: { apiKey: string; model: string; images: { mime: string; data: Buffer }[] }): Promise<string> {
   const body = {
     contents: [{ parts: [...opts.images.map((i) => ({ inline_data: { mime_type: i.mime, data: i.data.toString("base64") } })), { text: OCR_PROMPT }] }],
     generationConfig: { temperature: 0, maxOutputTokens: 8192 },
   };
-  let model = resolvedModel ?? opts.model;
-  let r = await call("POST", `/v1beta/models/${encodeURIComponent(model)}:generateContent`, opts.apiKey, body);
-  if (r.status === 404) {
-    model = await pickModel(opts.apiKey, opts.model);
-    r = await call("POST", `/v1beta/models/${encodeURIComponent(model)}:generateContent`, opts.apiKey, body);
+  const tried = new Set<string>();
+  let last = "";
+  const attempt = async (model: string) => {
+    tried.add(model);
+    const r = await call("POST", `/v1beta/models/${encodeURIComponent(model)}:generateContent`, opts.apiKey, body, 75_000).catch((e: Error) => ({ status: 504, json: { error: { message: e.message } } }));
+    if (r.status === 200) {
+      const text = textOf(r.json);
+      if (!text) throw new Error(`Gemini bo'sh javob (${r.json?.candidates?.[0]?.finishReason ?? r.json?.promptFeedback?.blockReason ?? "?"})`);
+      return text;
+    }
+    last = `Gemini ${model} ${r.status}: ${r.json?.error?.message ?? "javob yo'q"}`;
+    if (!RETRYABLE.has(r.status)) throw new Error(last);
+    return null;
+  };
+  for (const model of [opts.model, ...FALLBACK_MODELS]) {
+    if (tried.has(model)) continue;
+    const text = await attempt(model);
+    if (text) return text;
   }
-  if (r.status !== 200) throw new Error(`Gemini ${r.status}: ${r.json?.error?.message ?? "javob yo'q"}`);
-  const text: string = (r.json?.candidates?.[0]?.content?.parts ?? []).map((p: { text?: string }) => p.text ?? "").join("").trim();
-  if (!text) throw new Error(`Gemini bo'sh javob (${r.json?.candidates?.[0]?.finishReason ?? r.json?.promptFeedback?.blockReason ?? "?"})`);
-  return text;
+  // Hammasi band yoki nomlar o'zgargan: ro'yxatdan mavjud modelni topib bir marta urinamiz
+  const picked = await pickModel(opts.apiKey, opts.model).catch(() => null);
+  if (picked && !tried.has(picked)) {
+    const text = await attempt(picked);
+    if (text) return text;
+  }
+  throw new Error(last);
 }

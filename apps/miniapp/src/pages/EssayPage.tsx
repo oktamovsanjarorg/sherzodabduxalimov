@@ -170,7 +170,7 @@ function PageThumb({ id, n, onRemove }: { id: string; n: number; onRemove?: () =
   const img = useQuery({ queryKey: ["essay-page", id, n], queryFn: () => api.essayPage(id, n), staleTime: Infinity });
   return (
     <div className="relative aspect-[3/4] overflow-hidden rounded-xl bg-section">
-      {img.data ? <img src={img.data} alt={`${n + 1}-varoq`} className="h-full w-full object-cover" /> : <div className="skeleton h-full w-full" />}
+      {img.data ? <img src={img.data} alt={`${n + 1}-varoq`} className="h-full w-full object-contain" /> : <div className="skeleton h-full w-full" />}
       <span className="absolute left-2 top-2 rounded-full bg-black/60 px-2 py-0.5 text-[11px] font-bold text-white">{n + 1}</span>
       {onRemove && (
         <button onClick={onRemove} className="absolute right-2 top-2 flex h-8 w-8 items-center justify-center rounded-full bg-black/60 text-white" aria-label="O'chirish">

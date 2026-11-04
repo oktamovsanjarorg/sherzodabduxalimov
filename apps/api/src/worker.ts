@@ -143,7 +143,8 @@ const essayAi = new Worker<EssayAiJob>(
     );
     if (total !== null) console.log(`[essay-ai] ${job.data.essayId}: ${total} ball`);
   },
-  { connection: redisConnection(env.REDIS_URL), prefix: env.QUEUE_PREFIX, concurrency: 3, lockDuration: 180_000 },
+  // Qo'lyozma o'qish band modellarda bir necha daqiqa olishi mumkin
+  { connection: redisConnection(env.REDIS_URL), prefix: env.QUEUE_PREFIX, concurrency: 3, lockDuration: 600_000 },
 );
 essayAi.on("failed", async (job, err) => {
   if (!job) return;
