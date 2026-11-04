@@ -131,7 +131,7 @@ function Editor({ initial }: { initial: AdminTestDetail | null }) {
             <textarea className="textarea min-h-[60px]" value={description} onChange={(e) => setDescription(e.target.value)} />
           </Field>
           {type === "MOCK" && (
-            <Toggle checked={milliy} onChange={setMilliy} label="Milliy sertifikat shkalasi" hint="Natijada 100 ballik baho va daraja (A+ … C) chiqadi" />
+            <Toggle checked={milliy} onChange={setMilliy} label="Milliy sertifikat shkalasi" hint="Rasmiy mezon bo'yicha: test qismi va esse 75 ballik shkalaga o'tkaziladi, umumiy ball o'rtachasi; daraja (A+ … C) va oliygoh bali chiqadi" />
           )}
           <Toggle checked={shuffle} onChange={setShuffle} label="Aralashtirish" hint="Har bir o'quvchida savol va variantlar tartibi boshqacha" />
           <Toggle checked={isFree} onChange={setIsFree} label="Bepul" hint="Obunasiz ham ochiq" />

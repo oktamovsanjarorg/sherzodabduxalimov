@@ -132,8 +132,10 @@ export interface AttemptResult {
   /** Ustoz tekshirishi kutilayotgan ballar (esse) */
   pendingPoints: number;
   gradingScale: "NONE" | "MILLIY_SERTIFIKAT";
-  /** Milliy sertifikat darajasi (esse tekshirilmagan bo'lsa, taxminiy) */
+  /** Milliy sertifikat darajasi (esse tekshirilmaguncha null) */
   level: { code: string; label: string } | null;
+  /** Milliy sertifikat: test qismi, yozma ish, umumiy ball, oliygoh bali */
+  milliy: MilliyBreakdown | null;
   correctCount: number;
   totalCount: number;
   startedAt: string;
@@ -163,6 +165,54 @@ export const MILLIY_LEVELS = [
 export function milliyLevel(score: number): { code: string; label: string } {
   const l = MILLIY_LEVELS.find((x) => score >= x.min);
   return l ? { code: l.code, label: `${l.code} daraja` } : { code: "—", label: "Sertifikat berilmaydi (46 balldan kam)" };
+}
+
+/**
+ * Yozma ish (24 ballik mezon) -> 75 ballik shkala. Rasmiy jadval: 24→75, 23,5→74, …, 12→51, …, 0,5→28, 0→0
+ * (har 0,5 ball = 1 ball; ya'ni 27 + 2×ball). Jadvalda faqat 0,5 qadamlar bor: oraliq ball pastga yaxlitlanadi.
+ */
+export function essayTo75(score24: number): number {
+  const x = Math.floor(Math.max(0, Math.min(24, score24)) * 2) / 2;
+  return x <= 0 ? 0 : 27 + 2 * x;
+}
+
+export interface MilliyBreakdown {
+  /** Test qismi: to'plangan/maksimal ball va 75 ballik shkalaga keltirilgani (taxminiy: Rasch o'rniga foiz × 75) */
+  test: { score: number; max: number; scaled: number };
+  /** Yozma ish: 24 ballik baho va 75 ballik shkaladagisi. Testda esse bo'lmasa null */
+  essay: { score24: number; scaled: number } | null;
+  /** Esse ustoz tekshiruvini kutmoqda: umumiy ball hali chiqmaydi */
+  essayPending: boolean;
+  /** Umumiy ball = ikki qismning o'rtacha arifmetigi (esse bo'lmasa test qismi) */
+  total: number | null;
+  level: { code: string; label: string } | null;
+  /** Oliygohga kirish: mutaxassislik blokida 1-fan (max 93) va 2-fan (max 63) bo'lsa. 46 dan kam bo'lsa null */
+  university: { first: number; second: number } | null;
+}
+
+const r1 = (x: number) => Math.round(x * 10) / 10;
+const r2 = (x: number) => Math.round(x * 100) / 100;
+
+/** Milliy sertifikat: baholash mezonlari hujjati bo'yicha natija */
+export function milliyBreakdown(p: { testScore: number; testMax: number; essayScore: number | null; essayMax: number; essayPending: boolean }): MilliyBreakdown {
+  const testScaled = p.testMax > 0 ? r1((p.testScore / p.testMax) * 75) : 0;
+  const hasEssay = p.essayMax > 0;
+  const score24 = hasEssay ? r1(((p.essayScore ?? 0) / p.essayMax) * 24) : 0;
+  const essay = hasEssay ? { score24, scaled: essayTo75(score24) } : null;
+  const total = p.essayPending ? null : r1(essay ? (testScaled + essay.scaled) / 2 : testScaled);
+  return {
+    test: { score: r1(p.testScore), max: r1(p.testMax), scaled: testScaled },
+    essay: p.essayPending ? null : essay,
+    essayPending: p.essayPending,
+    total,
+    level: total === null ? null : milliyLevel(total),
+    university:
+      total === null || total < 46
+        ? null
+        : total >= 65
+          ? { first: 93, second: 63 }
+          : { first: r2((total * 93) / 65), second: r2((total * 63) / 65) },
+  };
 }
 export type SaveAnswerBody = z.infer<typeof saveAnswerBody>;
 

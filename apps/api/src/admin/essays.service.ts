@@ -1,8 +1,9 @@
 import { ConflictException, Injectable, NotFoundException } from "@nestjs/common";
-import { milliyLevel, type AdminEssay } from "@onatili/shared";
+import type { AdminEssay } from "@onatili/shared";
 import { NotifyService } from "../notify/notify.service";
 import { esc } from "../notify/telegram";
 import { PrismaService } from "../prisma/prisma.service";
+import { milliySelect, milliyOf } from "../tests/milliy";
 
 const round1 = (x: number) => Math.round(x * 10) / 10;
 const words = (t: string) => (t.trim().match(/\S+/g) ?? []).length;
@@ -72,10 +73,14 @@ export class EssaysService {
     });
     await this.prisma.auditLog.create({ data: { actorId, action: "essay.review", entity: "AttemptAnswer", entityId: `${attemptId}:${questionId}`, meta: { points: p } } });
 
-    const level = ans.attempt.test.gradingScale === "MILLIY_SERTIFIKAT" ? ` · ${milliyLevel(score).label}` : "";
+    const row = await this.prisma.attempt.findUniqueOrThrow({ where: { id: attemptId }, select: milliySelect });
+    const m = milliyOf(row);
+    const level = m?.total != null ? `\nUmumiy ball: <b>${m.total}</b> / 75 · ${m.level!.label}` : "";
     await this.notify.send(
       ans.attempt.user.telegramId,
-      `📝 <b>${esc(ans.attempt.test.title)}</b>: esse tekshirildi.\nEsse: ${p} / ${max} ball\nUmumiy natija: <b>${score}</b> / ${round1(ans.attempt.maxScore ?? 0)} ball${level}${
+      `📝 <b>${esc(ans.attempt.test.title)}</b>: esse tekshirildi.\nEsse: ${p} / ${max} ball${m?.essay ? ` → ${m.essay.scaled} / 75` : ""}${
+        m ? level : `\nUmumiy natija: <b>${score}</b> / ${round1(ans.attempt.maxScore ?? 0)} ball`
+      }${
         comment?.trim() ? `\n\nUstoz izohi: ${esc(comment.trim())}` : ""
       }`,
     );

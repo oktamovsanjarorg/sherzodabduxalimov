@@ -1,4 +1,4 @@
-import type { AttemptResult, ResultQuestion } from "@onatili/shared";
+import type { AttemptResult, MilliyBreakdown, ResultQuestion } from "@onatili/shared";
 import { useMutation } from "@tanstack/react-query";
 import { Check, Clock, Lightbulb, RotateCcw, X } from "lucide-react";
 import { Markdown } from "../components/Markdown";
@@ -21,8 +21,9 @@ export function ResultView({ result }: { result: AttemptResult }) {
 
   const spentSec = Math.round((new Date(result.finishedAt).getTime() - new Date(result.startedAt).getTime()) / 1000);
   const list = onlyMistakes ? result.questions.filter((q) => !q.isCorrect && !q.pending) : result.questions;
-  const milliy = result.gradingScale === "MILLIY_SERTIFIKAT";
-  const tone = result.percent >= 80 ? "text-success" : result.percent >= 50 ? "text-brand" : "text-danger";
+  const m = result.milliy;
+  const pct = m ? ((m.total ?? m.test.scaled) / 75) * 100 : result.percent;
+  const tone = pct >= 80 ? "text-success" : result.percent >= 50 ? "text-brand" : "text-danger";
   const verdict =
     result.percent >= 86 ? "A'lo natija!" : result.percent >= 70 ? "Yaxshi natija" : result.percent >= 50 ? "Yomon emas" : "Mavzuni takrorlang";
 
@@ -40,17 +41,24 @@ export function ResultView({ result }: { result: AttemptResult }) {
       }
     >
       <div className="card flex flex-col items-center py-6 text-center">
-        <ScoreRing percent={result.percent} className={tone} label={milliy ? fmtPoints(result.score) : undefined} />
-        {milliy && result.level ? (
+        {m ? (
           <>
-            <p className="mt-3 text-2xl font-extrabold">{result.level.code}</p>
-            <p className="text-sm font-semibold">
-              {result.level.label}
-              {result.pendingPoints > 0 && <span className="text-hint"> (taxminiy)</span>}
-            </p>
+            {/* Umumiy ball 75 ballik shkalada (esse tekshirilmaguncha: test qismi) */}
+            <ScoreRing percent={((m.total ?? m.test.scaled) / 75) * 100} className={tone} label={fmtPoints(m.total ?? m.test.scaled)} sub="/ 75" />
+            {m.level ? (
+              <>
+                {m.level.code !== "—" && <p className="mt-3 text-2xl font-extrabold">{m.level.code}</p>}
+                <p className={`text-sm font-semibold ${m.level.code === "—" ? "mt-3 text-danger" : ""}`}>{m.level.label}</p>
+              </>
+            ) : (
+              <p className="mt-3 text-sm font-semibold text-hint">Daraja yozma ish tekshirilgach chiqadi</p>
+            )}
           </>
         ) : (
-          <p className="mt-3 text-lg font-extrabold">{verdict}</p>
+          <>
+            <ScoreRing percent={result.percent} className={tone} />
+            <p className="mt-3 text-lg font-extrabold">{verdict}</p>
+          </>
         )}
         <p className="text-sm text-hint">{result.testTitle}</p>
         {result.status === "EXPIRED" && (
@@ -61,9 +69,10 @@ export function ResultView({ result }: { result: AttemptResult }) {
             Esse ({fmtPoints(result.pendingPoints)} ball) ustoz tomonidan tekshirilmoqda. Yakuniy natija bot orqali yuboriladi.
           </p>
         )}
+        {m && <MilliyCard m={m} />}
         <div className="mt-5 grid w-full grid-cols-3 divide-x divide-hint/15">
           <Stat value={`${result.correctCount}/${result.totalCount}`} label="To'g'ri" />
-          <Stat value={`${fmtPoints(result.score)}/${fmtPoints(result.maxScore)}`} label="Ball" />
+          <Stat value={`${fmtPoints(result.score)}/${fmtPoints(result.maxScore)}`} label={m ? "Xom ball" : "Ball"} />
           <Stat value={formatClock(Math.max(0, spentSec))} label="Vaqt" />
         </div>
       </div>
@@ -96,6 +105,29 @@ export function ResultView({ result }: { result: AttemptResult }) {
   );
 }
 
+/** Baholash mezonlari hujjati bo'yicha: test qismi va yozma ish 75 ballik shkalada, umumiy ball ularning o'rtachasi */
+function MilliyCard({ m }: { m: MilliyBreakdown }) {
+  const row = (label: string, value: string, hint?: string) => (
+    <div className="flex items-baseline justify-between gap-3 py-2">
+      <span className="text-sm">
+        {label}
+        {hint && <span className="block text-[11px] text-hint">{hint}</span>}
+      </span>
+      <span className="shrink-0 text-sm font-extrabold">{value}</span>
+    </div>
+  );
+  return (
+    <div className="mt-4 w-full divide-y divide-hint/10 rounded-xl bg-surface px-4 text-left">
+      {row("Test qismi", `${fmtPoints(m.test.scaled)} / 75`, `${fmtPoints(m.test.score)} / ${fmtPoints(m.test.max)} ball · taxminiy (rasmiy imtihonda Rasch modeli)`)}
+      {m.essayPending
+        ? row("Yozma ish (esse)", "tekshirilmoqda", "Ustoz baholagach bot orqali xabar keladi")
+        : m.essay && row("Yozma ish (esse)", `${fmtPoints(m.essay.scaled)} / 75`, `${fmtPoints(m.essay.score24)} / 24 ball`)}
+      {m.total !== null && row("Umumiy ball", `${fmtPoints(m.total)} / 75`, m.essay ? "Ikki qismning o'rtachasi" : undefined)}
+      {m.university && row("Oliygohga kirishda", `${fmtPoints(m.university.first)} · ${fmtPoints(m.university.second)}`, "Mutaxassislik bloki: 1-fan (max 93) · 2-fan (max 63)")}
+    </div>
+  );
+}
+
 const trim = (n: number) => (Number.isInteger(n) ? String(n) : n.toFixed(1));
 
 function Stat({ value, label }: { value: string; label: string }) {
@@ -107,7 +139,7 @@ function Stat({ value, label }: { value: string; label: string }) {
   );
 }
 
-function ScoreRing({ percent, className, label }: { percent: number; className: string; label?: string }) {
+function ScoreRing({ percent, className, label, sub }: { percent: number; className: string; label?: string; sub?: string }) {
   const r = 52;
   const c = 2 * Math.PI * r;
   return (
@@ -123,13 +155,13 @@ function ScoreRing({ percent, className, label }: { percent: number; className: 
           strokeLinecap="round"
           stroke="currentColor"
           strokeDasharray={c}
-          strokeDashoffset={c * (1 - percent / 100)}
+          strokeDashoffset={c * (1 - Math.min(100, Math.max(0, percent)) / 100)}
           className="transition-[stroke-dashoffset] duration-700"
         />
       </svg>
       <span className="absolute inset-0 flex flex-col items-center justify-center">
         <span className="text-3xl font-extrabold">{label ?? `${percent}%`}</span>
-        {label && <span className="text-[11px] font-bold text-hint">ball</span>}
+        {label && <span className="text-[11px] font-bold text-hint">{sub ?? "ball"}</span>}
       </span>
     </div>
   );

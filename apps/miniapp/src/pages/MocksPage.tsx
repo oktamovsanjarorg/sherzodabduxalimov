@@ -18,13 +18,16 @@ export function MocksPage() {
       <p className="mb-3 px-1 text-sm text-hint">Milliy sertifikat formatidagi sinov imtihonlari</p>
       <div className="card mb-4 space-y-1.5 text-sm">
         <p className="font-bold">Imtihon formati</p>
-        <p className="text-hint">45 ta topshiriq · 100 ball · 3 soat</p>
+        <p className="text-hint">45 ta topshiriq · 3 soat</p>
         <ul className="list-disc space-y-0.5 pl-5 text-hint">
           <li>1–35: test (javob variantli), matn va g'azalga tayangan savollar</li>
           <li>36–44: javobni o'zingiz yozasiz</li>
           <li>45: esse (24 ball), ustoz tekshiradi</li>
         </ul>
-        <p className="pt-1 text-xs text-hint">Natijada ball va daraja chiqadi: {MILLIY_LEVELS.map((l) => `${l.code} (${l.min}+)`).join(", ")}.</p>
+        <p className="pt-1 text-xs text-hint">
+          Baholash: test qismi va yozma ish alohida 75 ballik shkalaga o'tkaziladi, umumiy ball — ularning o'rtachasi. Daraja:{" "}
+          {MILLIY_LEVELS.map((l) => `${l.code} (${l.min}+)`).join(", ")}. Oliygohga kirish bali ham ko'rsatiladi.
+        </p>
       </div>
       {mocks.isPending && <ListSkeleton />}
       {mocks.data?.length === 0 && <p className="card text-center text-sm text-hint">Hozircha mock testlar yo'q</p>}

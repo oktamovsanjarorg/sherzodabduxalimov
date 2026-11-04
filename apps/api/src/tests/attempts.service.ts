@@ -2,7 +2,7 @@ import { BadRequestException, ConflictException, Injectable, NotFoundException }
 import type { Prisma } from "@onatili/db";
 import {
   ERROR_CODES,
-  milliyLevel,
+  milliyBreakdown,
   type AttemptQuestion,
   type AttemptResult,
   type AttemptState,
@@ -244,6 +244,19 @@ export class AttemptsService {
     const score = round1(a.score ?? 0);
     const maxScore = round1(a.maxScore ?? 0);
     const pendingPoints = round1(questions.filter((q) => q.pending).reduce((s, q) => s + q.maxPoints, 0));
+    // Milliy sertifikat: test qismi va yozma ish alohida 75 ballik shkalaga keltirilib, o'rtachasi olinadi
+    const essays = questions.filter((q) => q.type === "ESSAY");
+    const tests = questions.filter((q) => q.type !== "ESSAY");
+    const milliy =
+      a.test.gradingScale === "MILLIY_SERTIFIKAT"
+        ? milliyBreakdown({
+            testScore: tests.reduce((s, q) => s + (q.points ?? 0), 0),
+            testMax: tests.reduce((s, q) => s + q.maxPoints, 0),
+            essayScore: essays.reduce((s, q) => s + (q.points ?? 0), 0),
+            essayMax: essays.reduce((s, q) => s + q.maxPoints, 0),
+            essayPending: essays.some((q) => q.pending),
+          })
+        : null;
     return {
       id: a.id,
       testId: a.testId,
@@ -254,7 +267,8 @@ export class AttemptsService {
       percent: maxScore ? Math.round((score / maxScore) * 100) : 0,
       pendingPoints,
       gradingScale: a.test.gradingScale,
-      level: a.test.gradingScale === "MILLIY_SERTIFIKAT" ? milliyLevel(score) : null,
+      level: milliy?.level ?? null,
+      milliy,
       correctCount: questions.filter((q) => q.isCorrect).length,
       totalCount: questions.length,
       startedAt: a.startedAt.toISOString(),

@@ -101,7 +101,9 @@ describe("Milliy sertifikat formatidagi mock (e2e)", () => {
 
     const r = (await req("POST", `/attempts/${st.id}/submit`, undefined, S)).json();
     expect(r).toMatchObject({ score: 4.2, maxScore: 28.2, pendingPoints: 24, gradingScale: "MILLIY_SERTIFIKAT" });
-    expect(r.level.label).toMatch(/berilmaydi/); // 4,2 ball
+    // Baholash mezonlari: test qismi 75 ballik shkalaga (4,2/4,2 = 75), esse tekshirilmaguncha umumiy ball chiqmaydi
+    expect(r.milliy).toMatchObject({ test: { score: 4.2, max: 4.2, scaled: 75 }, essayPending: true, total: null, level: null });
+    expect(r.level).toBeNull();
     const essay = r.questions.find((q: { id: string }) => q.id === qEssay);
     expect(essay).toMatchObject({ pending: true, points: null, maxPoints: 24 });
   });
@@ -118,10 +120,12 @@ describe("Milliy sertifikat formatidagi mock (e2e)", () => {
     const r = (await req("GET", `/attempts/${e.attemptId}`, undefined, S)).json();
     expect(r.pendingPoints).toBe(0);
     expect(r.questions.find((q: { id: string }) => q.id === qEssay)).toMatchObject({ pending: false, points: 24, reviewComment: "Juda yaxshi" });
+    // Esse 24/24 -> 75; umumiy = (75 + 75) / 2 = 75 -> A+, oliygohda maksimal ball
+    expect(r.milliy).toMatchObject({ essay: { score24: 24, scaled: 75 }, total: 75, level: { code: "A+" }, university: { first: 93, second: 63 } });
 
     expect((await req("GET", "/admin/essays?status=pending")).json().some((x: { questionId: string }) => x.questionId === qEssay)).toBe(false);
     const jobs = (await queue.getJobs(["waiting", "delayed"])).map((j) => j.data.text);
-    expect(jobs.some((t) => t.includes("esse tekshirildi") && t.includes("28.2"))).toBe(true);
+    expect(jobs.some((t) => t.includes("esse tekshirildi") && t.includes("75 / 75") && t.includes("A+"))).toBe(true);
 
     // O'quvchi esse baholay olmaydi
     expect((await req("POST", `/admin/essays/${e.attemptId}/${qEssay}`, { points: 1 }, S)).statusCode).toBe(403);
@@ -142,5 +146,8 @@ describe("Milliy sertifikat formatidagi mock (e2e)", () => {
     const r = (await req("POST", `/attempts/${st.id}/submit`, undefined, S)).json();
     expect(r.pendingPoints).toBe(0);
     expect(r.questions.find((q: { id: string }) => q.id === qEssay)).toMatchObject({ pending: false, points: 0 });
+    // Hech narsa yozilmagan: test 0, esse 0 -> umumiy 0, sertifikat berilmaydi
+    expect(r.milliy).toMatchObject({ total: 0, essay: { score24: 0, scaled: 0 }, university: null });
+    expect(r.level.label).toMatch(/berilmaydi/);
   });
 });

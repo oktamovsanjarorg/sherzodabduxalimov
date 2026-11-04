@@ -1,11 +1,12 @@
 import { Inject, Injectable, NotFoundException } from "@nestjs/common";
-import { milliyLevel, type CourseView, type LessonDetail, type LessonVideo, type StudentStats, type TestSummary } from "@onatili/shared";
+import { type CourseView, type LessonDetail, type LessonVideo, type StudentStats, type TestSummary } from "@onatili/shared";
 import { AccessService } from "../access/access.service";
 import type { JwtUser } from "../auth/decorators";
 import { ENV, type Env } from "../config/env";
 import { signMediaToken } from "../media/media-token";
 import { ParentsService } from "../parents/parents.service";
 import { PrismaService } from "../prisma/prisma.service";
+import { milliySelect, milliyOf } from "../tests/milliy";
 
 type TestRow = {
   id: string;
@@ -204,8 +205,8 @@ export class ContentService {
       orderBy: { finishedAt: "desc" },
       take: 50,
       include: {
-        test: { select: { title: true, type: true, gradingScale: true } },
-        answers: { where: { points: null, textAnswer: { not: null }, question: { type: "ESSAY" } }, select: { questionId: true } },
+        test: { select: { title: true, type: true, ...milliySelect.test.select } },
+        answers: { select: { ...milliySelect.answers.select, question: { select: { type: true } } } },
       },
     });
     return rows.map((a) => {
@@ -218,8 +219,8 @@ export class ContentService {
         score,
         maxScore: max,
         percent: max ? Math.round((score / max) * 100) : 0,
-        level: a.test.gradingScale === "MILLIY_SERTIFIKAT" ? milliyLevel(score).code : null,
-        essayPending: a.answers.length > 0,
+        level: milliyOf(a)?.level?.code ?? null,
+        essayPending: a.answers.some((x) => x.question.type === "ESSAY" && x.points == null && !!x.textAnswer?.trim()),
         finishedAt: (a.finishedAt ?? a.startedAt).toISOString(),
       };
     });
