@@ -1,9 +1,10 @@
 import type { AttemptQuestion, AttemptResult, AttemptState } from "@onatili/shared";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { ChevronLeft, ChevronRight, Clock, Grid3x3, Loader2, X } from "lucide-react";
+import { BookOpenText, ChevronLeft, ChevronRight, Clock, Grid3x3, Loader2, X } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { FullPage } from "../components/FullPage";
+import { Markdown } from "../components/Markdown";
 import { ApiError, api, isFinished } from "../lib/api";
 import { useBackButton, useCountdown } from "../lib/hooks";
 import { confirmDialog, haptic, hapticResult } from "../lib/telegram";
@@ -160,10 +161,13 @@ function Runner({ state }: { state: AttemptState }) {
     if (t) clearTimeout(t);
     textTimers.current.set(
       q.id,
-      setTimeout(() => {
-        textTimers.current.delete(q.id);
-        persist(q.id, next);
-      }, 700),
+      setTimeout(
+        () => {
+          textTimers.current.delete(q.id);
+          persist(q.id, next);
+        },
+        q.type === "ESSAY" ? 1500 : 700,
+      ),
     );
   }
 
@@ -219,7 +223,14 @@ function Runner({ state }: { state: AttemptState }) {
 
       {saveError && <p className="mt-3 rounded-xl bg-danger/10 px-3 py-2 text-sm font-semibold text-danger">{saveError}</p>}
 
-      <QuestionView q={q} answer={a} onChoose={choose} onText={typeText} />
+      <QuestionView
+        key={q.id}
+        q={q}
+        answer={a}
+        onChoose={choose}
+        onText={typeText}
+        passageIsNew={Boolean(q.passage) && qs[index - 1]?.passage?.id !== q.passage?.id}
+      />
 
       {showMap && (
         <QuestionMap
@@ -238,26 +249,76 @@ function Runner({ state }: { state: AttemptState }) {
   );
 }
 
+export const fmtPoints = (n: number) => String(Math.round(n * 10) / 10).replace(".", ",");
+const countWords = (t: string) => (t.trim().match(/\S+/g) ?? []).length;
+
+/** Umumiy matn (o'qish matni, she'r, g'azal): yig'iladigan karta */
+function PassageCard({ title, body, defaultOpen }: { title: string | null; body: string; defaultOpen: boolean }) {
+  const [open, setOpen] = useState(defaultOpen);
+  return (
+    <div className="card mt-4 border border-brand/20 p-0">
+      <button className="tap flex w-full items-center gap-2 px-4 py-3 text-left" onClick={() => setOpen((o) => !o)} aria-expanded={open}>
+        <BookOpenText size={18} className="shrink-0 text-brand" />
+        <span className="min-w-0 flex-1 truncate text-sm font-bold">{title ?? "Matn"}</span>
+        <span className="text-xs font-semibold text-brand">{open ? "Yig'ish" : "Matnni ochish"}</span>
+      </button>
+      {open && (
+        <div className="max-h-[55vh] overflow-y-auto border-t border-hint/10 px-4 py-3">
+          <Markdown text={body} />
+        </div>
+      )}
+    </div>
+  );
+}
+
 function QuestionView({
   q,
   answer,
   onChoose,
   onText,
+  passageIsNew,
 }: {
   q: AttemptQuestion;
   answer: Answer | undefined;
   onChoose: (id: string) => void;
   onText: (v: string) => void;
+  /** Oldingi savol boshqa matnga tegishli bo'lsa, matn ochiq ko'rsatiladi */
+  passageIsNew: boolean;
 }) {
+  const [essayWords, setEssayWords] = useState(() => countWords(answer?.textAnswer ?? ""));
   return (
-    <div className="mt-4">
-      <div className="card">
-        {q.type === "MULTIPLE" && <p className="mb-2 text-xs font-bold text-brand">Bir nechta javob tanlang</p>}
-        <p className="whitespace-pre-line text-[16px] font-semibold leading-relaxed">{q.text}</p>
+    <div className="mt-2">
+      {q.passage && <PassageCard key={q.passage.id} title={q.passage.title} body={q.passage.body} defaultOpen={passageIsNew} />}
+      <div className="card mt-3">
+        <div className="mb-2 flex items-center gap-2">
+          {q.type === "MULTIPLE" && <span className="text-xs font-bold text-brand">Bir nechta javob tanlang</span>}
+          {q.type === "TEXT" && <span className="text-xs font-bold text-brand">Javobni yozing</span>}
+          {q.type === "ESSAY" && <span className="text-xs font-bold text-brand">Esse · ustoz baholaydi</span>}
+          <span className="flex-1" />
+          <span className="rounded-full bg-surface px-2 py-0.5 text-[11px] font-bold text-hint">{fmtPoints(q.points)} ball</span>
+        </div>
+        <div className="font-medium">
+          <Markdown text={q.text} />
+        </div>
         {q.imageUrl && <img src={q.imageUrl} alt="" className="mt-3 w-full rounded-xl" />}
       </div>
 
-      {q.type === "TEXT" ? (
+      {q.type === "ESSAY" ? (
+        <>
+          <textarea
+            key={q.id}
+            className="mt-3 min-h-[50vh] w-full resize-y rounded-card border-2 border-transparent bg-section px-4 py-3 text-[16px] leading-relaxed outline-none focus:border-brand"
+            placeholder="Esseni shu yerga yozing. Yozganingiz avtomatik saqlanib boradi."
+            defaultValue={answer?.textAnswer ?? ""}
+            onChange={(e) => {
+              setEssayWords(countWords(e.target.value));
+              onText(e.target.value);
+            }}
+            spellCheck={false}
+          />
+          <p className="mt-1 px-1 text-xs font-semibold text-hint">{essayWords} ta so'z</p>
+        </>
+      ) : q.type === "TEXT" ? (
         <input
           key={q.id}
           className="mt-3 h-14 w-full rounded-card border-2 border-transparent bg-section px-4 text-[16px] font-semibold outline-none focus:border-brand"
@@ -266,6 +327,8 @@ function QuestionView({
           onChange={(e) => onText(e.target.value)}
           autoComplete="off"
           autoCapitalize="off"
+          autoCorrect="off"
+          spellCheck={false}
           enterKeyHint="done"
         />
       ) : (

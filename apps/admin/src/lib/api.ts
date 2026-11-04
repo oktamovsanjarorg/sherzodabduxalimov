@@ -1,4 +1,7 @@
 import type {
+  AdminEssay,
+  AdminPassage,
+  PassageInput,
   AdminGroup,
   AdminParentLink,
   AdminStudent,
@@ -52,6 +55,7 @@ const json = (method: string, body?: unknown): RequestInit => ({ method, body: b
 
 export interface AdminDashboard {
   pendingParents: number;
+  pendingEssays: number;
   videos: { processing: number; failed: number };
   students: { total: number; withoutApprovedParent: number };
   attendanceToday: { groups: { id: string; name: string; schedule: string | null; marked: number; total: number }[] };
@@ -126,6 +130,13 @@ export const api = {
   rejectParent: (id: string, reason: string) => request(`/admin/parent-links/${id}/reject`, json("POST", { reason })),
 
   dashboard: () => request<AdminDashboard>("/admin/dashboard"),
+  passages: () => request<AdminPassage[]>("/admin/passages"),
+  createPassage: (d: PassageInput) => request<AdminPassage>("/admin/passages", json("POST", d)),
+  updatePassage: (id: string, d: Partial<PassageInput>) => request(`/admin/passages/${id}`, json("PATCH", d)),
+  deletePassage: (id: string) => request(`/admin/passages/${id}`, json("DELETE")),
+  essays: (status: "pending" | "reviewed") => request<AdminEssay[]>(`/admin/essays?status=${status}`),
+  reviewEssay: (attemptId: string, questionId: string, d: { points: number; comment: string | null }) =>
+    request<{ points: number; score: number }>(`/admin/essays/${attemptId}/${questionId}`, json("POST", d)),
   staff: () => request<StaffList>("/admin/staff"),
   addStaff: (username: string) => request<{ status: "added" | "invited" }>("/admin/staff", json("POST", { username })),
   removeStaff: (id: string) => request(`/admin/staff/${id}`, json("DELETE")),

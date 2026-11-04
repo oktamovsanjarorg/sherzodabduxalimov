@@ -6,7 +6,17 @@ import { Badge, ConfirmButton, Empty, Field, Modal, PageHeader, Spinner } from "
 import { api, errMsg } from "../lib/api";
 import { useToast } from "../lib/toast";
 
-export const TYPE_LABELS: Record<string, string> = { SINGLE: "Bitta javob", MULTIPLE: "Bir nechta javob", TEXT: "Yozma javob", MATCHING: "Moslashtirish" };
+export const TYPE_LABELS: Record<string, string> = { SINGLE: "Bitta javob", MULTIPLE: "Bir nechta javob", TEXT: "Yozma javob", ESSAY: "Esse", MATCHING: "Moslashtirish" };
+
+/** Import qilingan savol kaliti hali ustoz tomonidan ko'rilmagan */
+export function KeyBadge({ status }: { status: "proposed" | "uncertain" | null }) {
+  if (!status) return null;
+  return status === "uncertain" ? <Badge tone="red">Kalit shubhali</Badge> : <Badge tone="amber">Kalit tekshirilsin</Badge>;
+}
+
+export function usePassages() {
+  return useQuery({ queryKey: ["passages"], queryFn: api.passages });
+}
 
 export function useTopics() {
   const courses = useQuery({ queryKey: ["courses"], queryFn: api.courses });
@@ -58,6 +68,8 @@ export function QuestionsPage() {
               <div className="mt-2 flex flex-wrap gap-1.5">
                 <Badge tone="blue">{TYPE_LABELS[q.type]}</Badge>
                 {q.topicTitle && <Badge>{q.topicTitle}</Badge>}
+                {q.passageTitle && <Badge tone="brand">{q.passageTitle}</Badge>}
+                <KeyBadge status={q.keyStatus} />
                 <Badge>{q.type === "TEXT" ? `Javob: ${(q.correctText ?? "").split("|").join(" / ")}` : `${q.options.length} variant`}</Badge>
                 {q.usedInTests > 0 && <Badge tone="green">{q.usedInTests} ta testda</Badge>}
               </div>
@@ -84,7 +96,10 @@ export function QuestionModal({ question, defaultTopicId, onClose, onSaved }: { 
   const toast = useToast();
   const qc = useQueryClient();
   const topics = useTopics();
-  const [type, setType] = useState<"SINGLE" | "MULTIPLE" | "TEXT">((question?.type as "SINGLE") ?? "SINGLE");
+  const [type, setType] = useState<"SINGLE" | "MULTIPLE" | "TEXT" | "ESSAY">((question?.type as "SINGLE") ?? "SINGLE");
+  const [passageId, setPassageId] = useState(question?.passageId ?? "");
+  const [newPassage, setNewPassage] = useState(false);
+  const passages = usePassages();
   const [topicId, setTopicId] = useState(question?.topicId ?? defaultTopicId ?? "");
   const [text, setText] = useState(question?.text ?? "");
   const [explanation, setExplanation] = useState(question?.explanation ?? "");
@@ -100,12 +115,13 @@ export function QuestionModal({ question, defaultTopicId, onClose, onSaved }: { 
 
   const payload = (): QuestionInput => ({
     topicId: topicId || null,
+    passageId: passageId || null,
     type,
     text,
     explanation: explanation.trim() || null,
     correctText: type === "TEXT" ? correctText.trim() : null,
     difficulty: question?.difficulty ?? 2,
-    options: type === "TEXT" ? [] : options.filter((o) => o.text.trim()),
+    options: type === "TEXT" || type === "ESSAY" ? [] : options.filter((o) => o.text.trim()),
   });
 
   const save = useMutation({
@@ -164,6 +180,7 @@ export function QuestionModal({ question, defaultTopicId, onClose, onSaved }: { 
               <option value="SINGLE">{TYPE_LABELS.SINGLE}</option>
               <option value="MULTIPLE">{TYPE_LABELS.MULTIPLE}</option>
               <option value="TEXT">{TYPE_LABELS.TEXT}</option>
+              <option value="ESSAY">{TYPE_LABELS.ESSAY}</option>
             </select>
           </Field>
           <Field label="Mavzu">
@@ -174,12 +191,39 @@ export function QuestionModal({ question, defaultTopicId, onClose, onSaved }: { 
           </Field>
         </div>
 
-        <Field label="Savol matni">
+        {question?.keyStatus && (
+          <p className="rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-900">
+            Bu savol PDF'dan import qilingan, javob kaliti taklif sifatida qo'yilgan
+            {question.keyStatus === "uncertain" ? " va shubhali" : ""}. Tekshirib, «Saqlash»ni bossangiz, kalit tasdiqlangan hisoblanadi.
+          </p>
+        )}
+
+        <Field label="Umumiy matn (ixtiyoriy)" hint="Bir nechta savol tayanadigan o'qish matni, she'r yoki g'azal. Test paytida savol ustida ko'rinadi.">
+          <div className="flex gap-2">
+            <select className="input min-w-0" value={passageId} onChange={(e) => setPassageId(e.target.value)}>
+              <option value="">Matnsiz</option>
+              {passages.data?.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.title ?? p.body.slice(0, 50)} ({p.questionCount})
+                </option>
+              ))}
+            </select>
+            <button type="button" className="btn-secondary shrink-0" onClick={() => setNewPassage(true)}>
+              <Plus size={16} /> Yangi
+            </button>
+          </div>
+        </Field>
+
+        <Field label={type === "ESSAY" ? "Esse topshirig'i" : "Savol matni"} hint="Formatlash: **qalin**, *kursiv*; yangi qator bilan ro'yxat va she'r qatorlari">
           <textarea className="textarea min-h-[90px]" value={text} onChange={(e) => setText(e.target.value)} autoFocus />
         </Field>
 
-        {type === "TEXT" ? (
-          <Field label="To'g'ri javob" hint="Bir nechta to'g'ri variant bo'lsa, | bilan ajrating: «2|ikki». Katta-kichik harf va tutuq belgisi (ʻ ' `) farqi hisobga olinmaydi.">
+        {type === "ESSAY" ? (
+          <p className="rounded-lg bg-slate-50 px-3 py-2 text-sm text-slate-600">
+            Esse avtomatik baholanmaydi: o'quvchi yozgach, «Kontent → Esselar» bo'limida ustoz ball qo'yadi. Ballni testda belgilaysiz (Milliy sertifikatda 24).
+          </p>
+        ) : type === "TEXT" ? (
+          <Field label="To'g'ri javob" hint="Bir nechta to'g'ri variant bo'lsa, | bilan ajrating: «2|ikki». Katta-kichik harf va tutuq belgisi (ʻ ' `) farqi hisobga olinmaydi. Faqat tinish belgilaridan iborat javobda (masalan, ' &quot;&quot;:&quot;,&quot;. ') bo'sh joy va qo'shtirnoq turi farqlanmaydi, nuqta esa hisobga olinadi.">
             <input className="input" value={correctText} onChange={(e) => setCorrectText(e.target.value)} />
           </Field>
         ) : (
@@ -214,6 +258,53 @@ export function QuestionModal({ question, defaultTopicId, onClose, onSaved }: { 
           <textarea className="textarea min-h-[60px]" value={explanation} onChange={(e) => setExplanation(e.target.value)} placeholder="Nega bu javob to'g'ri?" />
         </Field>
         {err && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm font-semibold text-red-700">{err}</p>}
+      </div>
+      {newPassage && <PassageModal onClose={() => setNewPassage(false)} onSaved={(p) => setPassageId(p.id)} />}
+    </Modal>
+  );
+}
+
+export function PassageModal({ passage, onClose, onSaved }: { passage?: { id: string; title: string | null; body: string }; onClose: () => void; onSaved?: (p: { id: string }) => void }) {
+  const qc = useQueryClient();
+  const toast = useToast();
+  const [title, setTitle] = useState(passage?.title ?? "");
+  const [body, setBody] = useState(passage?.body ?? "");
+  const save = useMutation({
+    mutationFn: async () => {
+      if (passage) {
+        await api.updatePassage(passage.id, { title: title || null, body });
+        return { id: passage.id };
+      }
+      return api.createPassage({ title: title || null, body });
+    },
+    onSuccess: (p) => {
+      toast("Matn saqlandi");
+      qc.invalidateQueries({ queryKey: ["passages"] });
+      qc.invalidateQueries({ queryKey: ["questions"] });
+      onSaved?.(p);
+      onClose();
+    },
+    onError: (e) => toast(errMsg(e), "error"),
+  });
+  return (
+    <Modal
+      title={passage ? "Matnni tahrirlash" : "Yangi matn"}
+      wide
+      onClose={onClose}
+      footer={
+        <>
+          <button className="btn-secondary" onClick={onClose}>Bekor qilish</button>
+          <button className="btn-primary" disabled={!body.trim() || save.isPending} onClick={() => save.mutate()}>Saqlash</button>
+        </>
+      }
+    >
+      <div className="space-y-3">
+        <Field label="Sarlavha">
+          <input className="input" placeholder="Masalan: Matn: Merkuriy (18–22)" value={title} onChange={(e) => setTitle(e.target.value)} />
+        </Field>
+        <Field label="Matn" hint="Formatlash: # sarlavha, **qalin**, *kursiv*. Har bir she'r qatorini yangi qatorga yozing.">
+          <textarea className="textarea min-h-[300px] font-mono text-[13px]" value={body} onChange={(e) => setBody(e.target.value)} />
+        </Field>
       </div>
     </Modal>
   );

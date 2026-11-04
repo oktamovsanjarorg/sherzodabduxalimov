@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { AlertTriangle, BookOpen, CalendarCheck, CheckCircle2, ChevronRight, ClipboardList, Film, LibraryBig, Plus, ShieldCheck, Users } from "lucide-react";
+import { FileText, AlertTriangle, BookOpen, CalendarCheck, CheckCircle2, ChevronRight, ClipboardList, Film, LibraryBig, Plus, ShieldCheck, Users } from "lucide-react";
 import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { Spinner } from "../components/ui";
@@ -14,7 +14,7 @@ export function DashboardPage() {
   if (d.isError) return <p className="text-sm text-red-600">{errMsg(d.error)}</p>;
   const x = d.data;
   const unmarked = x.attendanceToday.groups.filter((g) => g.total > 0 && g.marked < g.total);
-  const todo = (x.pendingParents ? 1 : 0) + (unmarked.length ? 1 : 0) + (x.videos.failed ? 1 : 0);
+  const todo = (x.pendingEssays ? 1 : 0) + (x.pendingParents ? 1 : 0) + (unmarked.length ? 1 : 0) + (x.videos.failed ? 1 : 0);
 
   return (
     <div className="space-y-6">
@@ -26,6 +26,9 @@ export function DashboardPage() {
       {/* Bugun nima qilish kerak */}
       <section className="space-y-2">
         <h2 className="label">Bugun</h2>
+        {x.pendingEssays > 0 && (
+          <Todo to="/essays" tone="amber" Icon={FileText} title={`${x.pendingEssays} ta esse tekshirilmagan`} hint="O'quvchilar yakuniy natijani kutmoqda" />
+        )}
         {x.pendingParents > 0 && (
           <Todo to="/parents" tone="amber" Icon={ShieldCheck} title={`${x.pendingParents} ta ota-ona so'rovi kutmoqda`} hint="Raqamga qo'ng'iroq qilib tasdiqlang" />
         )}

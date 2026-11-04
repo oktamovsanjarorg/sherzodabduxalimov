@@ -4,6 +4,7 @@ import { loadSession } from "./lib/session";
 import { AttendancePage } from "./pages/AttendancePage";
 import { ContentPage } from "./pages/ContentPage";
 import { DashboardPage } from "./pages/DashboardPage";
+import { EssaysPage } from "./pages/EssaysPage";
 import { MorePage } from "./pages/MorePage";
 import { ParentsPage } from "./pages/ParentsPage";
 import { LessonEditorPage } from "./pages/LessonEditorPage";
@@ -34,6 +35,7 @@ export function App() {
         <Route index element={<DashboardPage />} />
         <Route path="content" element={<ContentPage />} />
         <Route path="more" element={<MorePage />} />
+        <Route path="essays" element={<EssaysPage />} />
         <Route path="lessons/:id" element={<LessonEditorPage />} />
         <Route path="questions" element={<QuestionsPage />} />
         <Route path="tests" element={<TestsPage />} />

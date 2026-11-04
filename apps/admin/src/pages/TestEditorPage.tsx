@@ -6,7 +6,7 @@ import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom"
 import { Badge, ConfirmButton, Field, Modal, PageHeader, Spinner, Toggle } from "../components/ui";
 import { api, errMsg } from "../lib/api";
 import { useToast } from "../lib/toast";
-import { QuestionModal, TYPE_LABELS, useTopics } from "./QuestionsPage";
+import { KeyBadge, QuestionModal, TYPE_LABELS, useTopics } from "./QuestionsPage";
 
 export function TestEditorPage() {
   const { id = "" } = useParams();
@@ -32,6 +32,7 @@ function Editor({ initial }: { initial: AdminTestDetail | null }) {
   const [topicId, setTopicId] = useState(initial?.topicId ?? params.get("topicId") ?? "");
   const [minutes, setMinutes] = useState(initial?.timeLimitSec ? String(Math.round(initial.timeLimitSec / 60)) : type === "MOCK" ? "60" : "");
   const [shuffle, setShuffle] = useState(initial?.shuffle ?? true);
+  const [milliy, setMilliy] = useState(initial?.gradingScale === "MILLIY_SERTIFIKAT");
   const [isFree, setIsFree] = useState(initial?.isFree ?? false);
   const [isPublished, setIsPublished] = useState(initial?.isPublished ?? false);
   const [items, setItems] = useState<Item[]>(initial?.questions.map((q) => ({ question: q.question, points: q.points })) ?? []);
@@ -46,6 +47,7 @@ function Editor({ initial }: { initial: AdminTestDetail | null }) {
     topicId: topicId || null,
     timeLimitSec: minutes ? Number(minutes) * 60 : null,
     shuffle,
+    gradingScale: milliy ? "MILLIY_SERTIFIKAT" : "NONE",
     isFree,
     isPublished,
     questions: items.map((i) => ({ questionId: i.question.id, points: i.points })),
@@ -97,6 +99,12 @@ function Editor({ initial }: { initial: AdminTestDetail | null }) {
           </>
         }
       />
+      {items.some((i) => i.question.keyStatus) && (
+        <p className="mb-4 rounded-lg bg-amber-50 px-3 py-2 text-sm font-semibold text-amber-900">
+          {items.filter((i) => i.question.keyStatus).length} ta savolning javob kaliti hali tasdiqlanmagan
+          ({items.filter((i) => i.question.keyStatus === "uncertain").length} tasi shubhali). Nashr qilishdan oldin har birini ochib tekshiring.
+        </p>
+      )}
       {err && <p className="mb-4 rounded-lg bg-red-50 px-3 py-2 text-sm font-semibold text-red-700">{err}</p>}
 
       <div className="grid min-w-0 gap-6 lg:grid-cols-[320px_minmax(0,1fr)]">
@@ -122,6 +130,9 @@ function Editor({ initial }: { initial: AdminTestDetail | null }) {
           <Field label="Tavsif (ixtiyoriy)">
             <textarea className="textarea min-h-[60px]" value={description} onChange={(e) => setDescription(e.target.value)} />
           </Field>
+          {type === "MOCK" && (
+            <Toggle checked={milliy} onChange={setMilliy} label="Milliy sertifikat shkalasi" hint="Natijada 100 ballik baho va daraja (A+ … C) chiqadi" />
+          )}
           <Toggle checked={shuffle} onChange={setShuffle} label="Aralashtirish" hint="Har bir o'quvchida savol va variantlar tartibi boshqacha" />
           <Toggle checked={isFree} onChange={setIsFree} label="Bepul" hint="Obunasiz ham ochiq" />
           <Toggle checked={isPublished} onChange={setIsPublished} label="Nashr qilish" hint="O'quvchilarga ko'rinadi" />
@@ -145,6 +156,7 @@ function Editor({ initial }: { initial: AdminTestDetail | null }) {
                   <div className="mt-1 flex gap-1.5">
                     <Badge tone="blue">{TYPE_LABELS[it.question.type]}</Badge>
                     {it.question.topicTitle && <Badge>{it.question.topicTitle}</Badge>}
+                    <KeyBadge status={it.question.keyStatus} />
                   </div>
                 </div>
                 {/* Telefonda: matn tagida alohida qator */}

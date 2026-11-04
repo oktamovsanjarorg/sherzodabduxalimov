@@ -1,6 +1,8 @@
 import type { AttemptResult, ResultQuestion } from "@onatili/shared";
 import { useMutation } from "@tanstack/react-query";
-import { Check, Lightbulb, RotateCcw, X } from "lucide-react";
+import { Check, Clock, Lightbulb, RotateCcw, X } from "lucide-react";
+import { Markdown } from "../components/Markdown";
+import { fmtPoints } from "./AttemptPage";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { FullPage } from "../components/FullPage";
@@ -18,7 +20,8 @@ export function ResultView({ result }: { result: AttemptResult }) {
   });
 
   const spentSec = Math.round((new Date(result.finishedAt).getTime() - new Date(result.startedAt).getTime()) / 1000);
-  const list = onlyMistakes ? result.questions.filter((q) => !q.isCorrect) : result.questions;
+  const list = onlyMistakes ? result.questions.filter((q) => !q.isCorrect && !q.pending) : result.questions;
+  const milliy = result.gradingScale === "MILLIY_SERTIFIKAT";
   const tone = result.percent >= 80 ? "text-success" : result.percent >= 50 ? "text-brand" : "text-danger";
   const verdict =
     result.percent >= 86 ? "A'lo natija!" : result.percent >= 70 ? "Yaxshi natija" : result.percent >= 50 ? "Yomon emas" : "Mavzuni takrorlang";
@@ -37,15 +40,30 @@ export function ResultView({ result }: { result: AttemptResult }) {
       }
     >
       <div className="card flex flex-col items-center py-6 text-center">
-        <ScoreRing percent={result.percent} className={tone} />
-        <p className="mt-3 text-lg font-extrabold">{verdict}</p>
+        <ScoreRing percent={result.percent} className={tone} label={milliy ? fmtPoints(result.score) : undefined} />
+        {milliy && result.level ? (
+          <>
+            <p className="mt-3 text-2xl font-extrabold">{result.level.code}</p>
+            <p className="text-sm font-semibold">
+              {result.level.label}
+              {result.pendingPoints > 0 && <span className="text-hint"> (taxminiy)</span>}
+            </p>
+          </>
+        ) : (
+          <p className="mt-3 text-lg font-extrabold">{verdict}</p>
+        )}
         <p className="text-sm text-hint">{result.testTitle}</p>
         {result.status === "EXPIRED" && (
           <p className="mt-2 rounded-full bg-danger/10 px-3 py-1 text-xs font-bold text-danger">Vaqt tugadi</p>
         )}
+        {result.pendingPoints > 0 && (
+          <p className="mt-3 rounded-xl bg-brand-soft px-3 py-2 text-xs font-semibold text-brand">
+            Esse ({fmtPoints(result.pendingPoints)} ball) ustoz tomonidan tekshirilmoqda. Yakuniy natija bot orqali yuboriladi.
+          </p>
+        )}
         <div className="mt-5 grid w-full grid-cols-3 divide-x divide-hint/15">
           <Stat value={`${result.correctCount}/${result.totalCount}`} label="To'g'ri" />
-          <Stat value={`${trim(result.score)}/${trim(result.maxScore)}`} label="Ball" />
+          <Stat value={`${fmtPoints(result.score)}/${fmtPoints(result.maxScore)}`} label="Ball" />
           <Stat value={formatClock(Math.max(0, spentSec))} label="Vaqt" />
         </div>
       </div>
@@ -89,7 +107,7 @@ function Stat({ value, label }: { value: string; label: string }) {
   );
 }
 
-function ScoreRing({ percent, className }: { percent: number; className: string }) {
+function ScoreRing({ percent, className, label }: { percent: number; className: string; label?: string }) {
   const r = 52;
   const c = 2 * Math.PI * r;
   return (
@@ -109,7 +127,10 @@ function ScoreRing({ percent, className }: { percent: number; className: string 
           className="transition-[stroke-dashoffset] duration-700"
         />
       </svg>
-      <span className="absolute inset-0 flex items-center justify-center text-3xl font-extrabold">{percent}%</span>
+      <span className="absolute inset-0 flex flex-col items-center justify-center">
+        <span className="text-3xl font-extrabold">{label ?? `${percent}%`}</span>
+        {label && <span className="text-[11px] font-bold text-hint">ball</span>}
+      </span>
     </div>
   );
 }
@@ -120,18 +141,41 @@ function QuestionReview({ q, n }: { q: ResultQuestion; n: number }) {
       <div className="flex items-start gap-2">
         <span
           className={`mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-white ${
-            q.isCorrect ? "bg-success" : "bg-danger"
+            q.pending ? "bg-hint" : q.isCorrect ? "bg-success" : "bg-danger"
           }`}
         >
-          {q.isCorrect ? <Check size={14} strokeWidth={3} /> : <X size={14} strokeWidth={3} />}
+          {q.pending ? <Clock size={13} strokeWidth={3} /> : q.isCorrect ? <Check size={14} strokeWidth={3} /> : <X size={14} strokeWidth={3} />}
         </span>
-        <p className="whitespace-pre-line text-[15px] font-semibold">
+        <div className="min-w-0 flex-1 text-[15px] font-semibold">
           <span className="text-hint">{n}. </span>
-          {q.text}
-        </p>
+          {q.type === "ESSAY" ? "Esse" : <Markdown text={q.text} />}
+        </div>
+        <span className="shrink-0 rounded-full bg-surface px-2 py-0.5 text-[11px] font-bold text-hint">
+          {q.points === null ? "?" : fmtPoints(q.points)}/{fmtPoints(q.maxPoints)}
+        </span>
       </div>
 
-      {q.type === "TEXT" ? (
+      {q.type === "ESSAY" && (
+        <div className="mt-3 space-y-2 text-sm">
+          {q.yourText ? (
+            <details>
+              <summary className="cursor-pointer font-semibold text-brand">Yozgan essengiz</summary>
+              <p className="mt-2 whitespace-pre-line rounded-xl bg-surface p-3">{q.yourText}</p>
+            </details>
+          ) : (
+            <p className="text-hint">Esse yozilmagan</p>
+          )}
+          {q.pending && <p className="font-semibold text-brand">Ustoz tekshirmoqda…</p>}
+          {q.reviewComment && (
+            <p className="rounded-xl bg-brand-soft px-3 py-2">
+              <span className="font-bold">Ustoz izohi: </span>
+              {q.reviewComment}
+            </p>
+          )}
+        </div>
+      )}
+
+      {q.type === "ESSAY" ? null : q.type === "TEXT" ? (
         <div className="mt-3 space-y-1 text-sm">
           <p>
             <span className="text-hint">Sizning javobingiz: </span>
