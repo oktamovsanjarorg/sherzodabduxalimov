@@ -38,6 +38,7 @@ export function TestCard({ test }: { test: TestSummary }) {
         <span className="block text-xs text-hint">
           {meta}
           {test.inProgressAttemptId && <span className="font-semibold text-brand"> · davom ettirish</span>}
+          {test.isDraft && <span className="font-semibold text-danger"> · qoralama (faqat siz ko'rasiz)</span>}
         </span>
       </span>
       {start.isPending ? (

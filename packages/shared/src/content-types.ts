@@ -21,6 +21,8 @@ export interface TestSummary {
   timeLimitSec: number | null;
   bestPercent: number | null; // eng yaxshi natija, %
   inProgressAttemptId: string | null;
+  /** Nashr qilinmagan: faqat ustoz/yordamchiga ko'rinadi (sinab ko'rish uchun) */
+  isDraft?: boolean;
 }
 
 export interface TopicView {

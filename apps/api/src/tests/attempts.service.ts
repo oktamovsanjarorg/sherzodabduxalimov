@@ -43,17 +43,21 @@ export class AttemptsService {
   async listMocks(user: JwtUser): Promise<TestSummary[]> {
     await this.parents.assertStudentLinked(user.sub, user.role);
     const tests = await this.prisma.test.findMany({
-      where: { isPublished: true, type: "MOCK" },
-      orderBy: { createdAt: "desc" },
-      select: { id: true, title: true, type: true, isFree: true, timeLimitSec: true, _count: { select: { questions: true } } },
+      // Xodimlar qoralamalarni ham ko'radi: nashrdan oldin o'quvchi ko'zi bilan sinab ko'rish uchun
+      where: { type: "MOCK", ...(this.access.isStaff(user.role) ? {} : { isPublished: true }) },
+      orderBy: [{ isPublished: "asc" }, { createdAt: "desc" }],
+      select: { id: true, title: true, type: true, isFree: true, isPublished: true, timeLimitSec: true, _count: { select: { questions: true } } },
     });
-    return this.content.buildTestSummaries(user.sub, tests, await this.access.canAccessPaid(user));
+    const summaries = await this.content.buildTestSummaries(user.sub, tests, await this.access.canAccessPaid(user));
+    return summaries.map((t, i) => ({ ...t, isDraft: !tests[i].isPublished }));
   }
 
   /** Testni boshlaydi. Tugallanmagan urinish bo'lsa, o'shani davom ettiradi. */
   async start(user: JwtUser, testId: string): Promise<AttemptState> {
     await this.parents.assertStudentLinked(user.sub, user.role);
-    const test = await this.prisma.test.findFirst({ where: { id: testId, isPublished: true } });
+    const test = await this.prisma.test.findFirst({
+      where: { id: testId, ...(this.access.isStaff(user.role) ? {} : { isPublished: true }) },
+    });
     if (!test) throw new NotFoundException("Test topilmadi");
     this.access.assertAccess(test.isFree, await this.access.canAccessPaid(user));
 

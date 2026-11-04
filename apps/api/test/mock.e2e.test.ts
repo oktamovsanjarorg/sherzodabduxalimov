@@ -127,6 +127,16 @@ describe("Milliy sertifikat formatidagi mock (e2e)", () => {
     expect((await req("POST", `/admin/essays/${e.attemptId}/${qEssay}`, { points: 1 }, S)).statusCode).toBe(403);
   });
 
+  it("qoralama mock: o'quvchiga ko'rinmaydi va ochilmaydi, ustoz sinab ko'ra oladi", async () => {
+    const draft = (await req("POST", "/admin/tests", { type: "MOCK", title: `${TAG} qoralama`, isFree: true, questions: [{ questionId: qMcq }] })).json();
+    const studentList = (await req("GET", "/mocks", undefined, S)).json();
+    expect(studentList.some((t: { id: string }) => t.id === draft.id)).toBe(false);
+    expect((await req("POST", `/tests/${draft.id}/attempts`, undefined, S)).statusCode).toBe(404);
+    const staffList = (await req("GET", "/mocks")).json();
+    expect(staffList.find((t: { id: string }) => t.id === draft.id).isDraft).toBe(true);
+    expect((await req("POST", `/tests/${draft.id}/attempts`)).statusCode).toBe(200);
+  });
+
   it("bo'sh esse darhol 0 ball (kutilmaydi)", async () => {
     const st = (await req("POST", `/tests/${testId}/attempts`, undefined, S)).json();
     const r = (await req("POST", `/attempts/${st.id}/submit`, undefined, S)).json();
