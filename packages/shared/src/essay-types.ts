@@ -64,7 +64,10 @@ export interface MyEssayDetail extends MyEssaySummary {
 }
 
 export interface EssayConfig {
+  /** AI yozilgan matnni tekshira oladi */
   aiEnabled: boolean;
+  /** AI qo'lyozma rasmini o'qiy oladi */
+  aiPhotoEnabled: boolean;
   aiDailyLimit: number;
   aiUsedToday: number;
   /** Ustoz tekshiruvi narxi; null bo'lsa hali yoqilmagan */
@@ -78,7 +81,8 @@ export const createEssayInput = z
     prompt: z.string().trim().min(3, "Esse mavzusini yozing").max(300),
     text: z.string().trim().max(20_000).nullable().default(null),
   })
-  .refine((d) => d.mode !== "AI" || (d.text?.match(/\S+/g)?.length ?? 0) >= 30, { message: "AI tekshiruvi uchun kamida 30 so'zli matn kerak", path: ["text"] });
+  // AI: matn yozilsa kamida 30 so'z; matnsiz bo'lsa varoq rasmlari yuklanadi
+  .refine((d) => d.mode !== "AI" || !d.text || (d.text.match(/\S+/g)?.length ?? 0) >= 30, { message: "AI tekshiruvi uchun kamida 30 so'zli matn kerak", path: ["text"] });
 export type CreateEssayInput = z.infer<typeof createEssayInput>;
 
 export const teacherEssayReviewInput = z.object({

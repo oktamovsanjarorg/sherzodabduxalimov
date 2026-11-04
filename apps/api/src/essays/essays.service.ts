@@ -76,6 +76,9 @@ export class EssaysService implements OnModuleDestroy {
   private get aiEnabled() {
     return this.env.AI_PROVIDER === "deepseek" && !!this.env.DEEPSEEK_API_KEY;
   }
+  private get aiPhotoEnabled() {
+    return this.aiEnabled && !!this.env.GEMINI_API_KEY;
+  }
 
   // ---------------- Sozlama: ustoz tekshiruvi narxi ----------------
 
@@ -95,12 +98,13 @@ export class EssaysService implements OnModuleDestroy {
   // ---------------- O'quvchi ----------------
 
   private aiUsedToday(userId: string) {
-    return this.prisma.essay.count({ where: { userId, mode: "AI", status: { not: "AI_FAILED" }, createdAt: { gte: tashkentDayStart() } } });
+    // Qoralama va muvaffaqiyatsiz tekshiruvlar hisoblanmaydi
+    return this.prisma.essay.count({ where: { userId, mode: "AI", status: { notIn: ["AI_FAILED", "DRAFT"] }, createdAt: { gte: tashkentDayStart() } } });
   }
 
   async config(userId: string): Promise<EssayConfig> {
     const [used, price, card] = await Promise.all([this.aiUsedToday(userId), this.teacherPrice(), this.billing.card()]);
-    return { aiEnabled: this.aiEnabled, aiDailyLimit: AI_ESSAY_DAILY_LIMIT, aiUsedToday: used, teacherPriceUzs: price && card ? price : null, card };
+    return { aiEnabled: this.aiEnabled, aiPhotoEnabled: this.aiPhotoEnabled, aiDailyLimit: AI_ESSAY_DAILY_LIMIT, aiUsedToday: used, teacherPriceUzs: price && card ? price : null, card };
   }
 
   async list(userId: string): Promise<MyEssaySummary[]> {
@@ -111,16 +115,21 @@ export class EssaysService implements OnModuleDestroy {
   async create(userId: string, d: CreateEssayInput): Promise<MyEssayDetail> {
     if (d.mode === "AI") {
       if (!this.aiEnabled) throw new ConflictException("AI tekshiruvi hozircha o'chirilgan");
-      if ((await this.aiUsedToday(userId)) >= AI_ESSAY_DAILY_LIMIT)
-        throw new ConflictException(`Bugungi bepul AI tekshiruvlar tugadi (kuniga ${AI_ESSAY_DAILY_LIMIT} ta). Ertaga yana urinib ko'ring yoki ustozga yuboring.`);
+      await this.assertAiLimit(userId);
+      if (!d.text) {
+        // Qo'lyozma: avval varoq rasmlari yuklanadi, keyin "finish"
+        if (!this.aiPhotoEnabled) throw new ConflictException("AI hozircha faqat yozilgan matnni tekshira oladi");
+        await this.assertFewDrafts(userId);
+        const e = await this.prisma.essay.create({ data: { userId, mode: "AI", prompt: d.prompt, status: "DRAFT" } });
+        return this.detail(userId, e.id);
+      }
       const e = await this.prisma.essay.create({ data: { userId, mode: "AI", prompt: d.prompt, text: d.text, status: "AI_CHECKING" } });
       await this.queue.add("grade", { essayId: e.id }, { jobId: e.id });
       return this.detail(userId, e.id);
     }
     const price = await this.teacherPrice();
     if (!price || !(await this.billing.card())) throw new ConflictException("Ustoz tekshiruvi hali yoqilmagan");
-    // Tugallanmagan qoralamalar to'planib qolmasin
-    if ((await this.prisma.essay.count({ where: { userId, status: "DRAFT" } })) >= 3) throw new ConflictException("Avval tugallanmagan esselaringizni yuboring yoki o'chiring");
+    await this.assertFewDrafts(userId);
     const e = await this.prisma.essay.create({ data: { userId, mode: "TEACHER", prompt: d.prompt, text: d.text, priceUzs: price, status: "DRAFT" } });
     return this.detail(userId, e.id);
   }
@@ -130,7 +139,7 @@ export class EssaysService implements OnModuleDestroy {
     const ext = sniffImage(body);
     if (!ext) throw new BadRequestException("Faqat rasm (JPG, PNG, WEBP) qabul qilinadi");
     const e = await this.own(userId, id);
-    if (e.mode !== "TEACHER" || e.status !== "DRAFT") throw new ConflictException("Bu essega rasm qo'shib bo'lmaydi");
+    if (e.status !== "DRAFT" || (e.mode === "AI" && e.text)) throw new ConflictException("Bu essega rasm qo'shib bo'lmaydi");
     if (e.imageUrls.length >= MAX_ESSAY_PAGES) throw new ConflictException(`Ko'pi bilan ${MAX_ESSAY_PAGES} ta varoq`);
     const rel = `essays/${id}/${Date.now()}.${ext}`;
     await mkdir(dirname(this.abs(rel)), { recursive: true });
@@ -150,19 +159,37 @@ export class EssaysService implements OnModuleDestroy {
     return this.detail(userId, id);
   }
 
-  /** Rasmlar yuklandi: endi to'lov */
+  /** Rasmlar yuklandi: AI bo'lsa tekshiruvga, ustoz bo'lsa to'lovga */
   async finish(userId: string, id: string): Promise<MyEssayDetail> {
     const e = await this.own(userId, id);
     if (e.status !== "DRAFT") throw new ConflictException("Esse allaqachon yuborilgan");
     if (!e.imageUrls.length) throw new BadRequestException("Kamida bitta varoq rasmini yuklang");
+    if (e.mode === "AI") {
+      if (!this.aiPhotoEnabled) throw new ConflictException("AI hozircha qo'lyozmani o'qiy olmaydi");
+      await this.assertAiLimit(userId);
+      // Limit bugun yuborilganlar bo'yicha: qoralama yaratilgan kun emas
+      await this.prisma.essay.update({ where: { id }, data: { status: "AI_CHECKING", createdAt: new Date() } });
+      await this.queue.add("grade", { essayId: id }, { jobId: id });
+      return this.detail(userId, id);
+    }
     await this.prisma.essay.update({ where: { id }, data: { status: "AWAITING_PAYMENT" } });
     return this.detail(userId, id);
+  }
+
+  private async assertAiLimit(userId: string) {
+    if ((await this.aiUsedToday(userId)) >= AI_ESSAY_DAILY_LIMIT)
+      throw new ConflictException(`Bugungi bepul AI tekshiruvlar tugadi (kuniga ${AI_ESSAY_DAILY_LIMIT} ta). Ertaga yana urinib ko'ring yoki ustozga yuboring.`);
+  }
+
+  /** Tugallanmagan qoralamalar to'planib qolmasin */
+  private async assertFewDrafts(userId: string) {
+    if ((await this.prisma.essay.count({ where: { userId, status: "DRAFT" } })) >= 3) throw new ConflictException("Avval tugallanmagan esselaringizni yuboring yoki o'chiring");
   }
 
   async retry(userId: string, id: string): Promise<MyEssayDetail> {
     const e = await this.own(userId, id);
     if (e.status !== "AI_FAILED") throw new ConflictException("Qayta tekshirish kerak emas");
-    if (!this.aiEnabled) throw new ConflictException("AI tekshiruvi hozircha o'chirilgan");
+    if (!this.aiEnabled || (!e.text && !this.aiPhotoEnabled)) throw new ConflictException("AI tekshiruvi hozircha o'chirilgan");
     await this.prisma.essay.update({ where: { id }, data: { status: "AI_CHECKING", error: null } });
     await this.queue.add("grade", { essayId: id }, { jobId: `${id}-${Date.now()}` });
     return this.detail(userId, id);
@@ -186,7 +213,7 @@ export class EssaysService implements OnModuleDestroy {
       text: e.text,
       pages: e.imageUrls.length,
       priceUzs: e.priceUzs,
-      error: e.status === "AI_FAILED" ? "AI hozir javob bermadi. Birozdan keyin qayta urinib ko'ring." : null,
+      error: e.status === "AI_FAILED" ? (e.error ?? "AI hozir javob bermadi. Birozdan keyin qayta urinib ko'ring.") : null,
       payment: p ? { id: p.id, planName: "Esse tekshiruvi", amountUzs: p.amountUzs, status: p.status, reviewNote: p.reviewNote, createdAt: p.createdAt.toISOString() } : null,
       reviews: e.reviews.map(toReviewView),
     };

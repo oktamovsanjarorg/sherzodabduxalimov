@@ -4,7 +4,7 @@ import { Queue } from "bullmq";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { normalize } from "../src/ai/deepseek";
 import { ESSAY_AI_QUEUE } from "../src/ai/queue";
-import { gradeEssayJob, markEssayFailed } from "../src/essays/ai-runner";
+import { NO_ESSAY_ERROR, gradeEssayJob, markEssayFailed } from "../src/essays/ai-runner";
 import { redisConnection } from "../src/media/queue";
 import { NOTIFY_QUEUE, type NotifyJob } from "../src/notify/notify.service";
 import { OWNER, createApp, login } from "./helpers";
@@ -36,6 +36,8 @@ describe("Esse: AI (bepul) va ustoz (pullik, qo'lyozma) (e2e)", () => {
     await cleanup();
     await notifyQ.obliterate({ force: true });
     await aiQ.obliterate({ force: true });
+    // Qo'lyozma oqimi yoqilgan bo'lsin (Gemini chaqirilmaydi: o'qish funksiyasi testda soxta)
+    process.env.GEMINI_API_KEY ||= "test-gemini-key";
     app = await createApp();
     H = (await login(app, TG.owner, "Ega", OWNER)).headers;
     S = (await login(app, TG.student, "Madina")).headers;
@@ -85,6 +87,41 @@ describe("Esse: AI (bepul) va ustoz (pullik, qo'lyozma) (e2e)", () => {
 
     expect((await req("POST", "/essays", { mode: "AI", prompt: "Uchinchi", text: TEXT }, S)).statusCode).toBe(409); // 2 ta ishlatildi
     expect((await req("GET", "/essays", undefined, S)).json()).toHaveLength(2);
+  });
+
+  it("AI qo'lyozma: varoq rasmlari -> o'qiladi (xatolari bilan) -> baholanadi; rasmda esse bo'lmasa xabar", async () => {
+    const cfg = (await req("GET", "/essays/config", undefined, S)).json();
+    if (!cfg.aiEnabled) return;
+    expect(cfg.aiPhotoEnabled).toBe(true);
+    // Oldingi testda 2 ta limit ishlatildi: bugungilarni "kecha"ga suramiz
+    await prisma.essay.updateMany({ where: { user: { telegramId: BigInt(TG.student) } }, data: { createdAt: new Date(Date.now() - 2 * 86_400_000) } });
+
+    const e = (await req("POST", "/essays", { mode: "AI", prompt: "Ona tilim — faxrim" }, S)).json();
+    expect(e).toMatchObject({ status: "DRAFT", mode: "AI", pages: 0 });
+    await img(`/essays/${e.id}/pages`);
+    await img(`/essays/${e.id}/pages`);
+    expect((await req("POST", `/essays/${e.id}/finish`, undefined, S)).json().status).toBe("AI_CHECKING");
+    expect((await req("GET", "/essays/config", undefined, S)).json().aiUsedToday).toBe(1);
+
+    const readPaths: string[][] = [];
+    const handwrittenFlags: boolean[] = [];
+    const read = async (p: string[]) => (readPaths.push(p), "Ona tilim mening faxrim. Men uni sevaman va [?] asrayman. ".repeat(5));
+    const grade = async (_t: string, _x: string, hw: boolean) => (handwrittenFlags.push(hw), normalize({ criteria: [{ key: "topic", score: 3, comment: null }], feedback: "", mistakes: [] }));
+    expect(await gradeEssayJob(prisma, e.id, grade, async () => {}, undefined, read)).toBe(3);
+    expect(readPaths[0]).toHaveLength(2);
+    expect(handwrittenFlags).toEqual([true]);
+    const d = (await req("GET", `/essays/${e.id}`, undefined, S)).json();
+    expect(d).toMatchObject({ status: "AI_CHECKED", pages: 2 });
+    expect(d.text).toContain("[?] asrayman"); // o'qilgan matn ko'rinadi
+
+    // Rasmda esse yo'q
+    const n = (await req("POST", "/essays", { mode: "AI", prompt: "Bo'sh varoq" }, S)).json();
+    await img(`/essays/${n.id}/pages`);
+    await req("POST", `/essays/${n.id}/finish`, undefined, S);
+    expect(await gradeEssayJob(prisma, n.id, grade, async () => {}, undefined, async () => "NO_ESSAY")).toBeNull();
+    const nd = (await req("GET", `/essays/${n.id}`, undefined, S)).json();
+    expect(nd).toMatchObject({ status: "AI_FAILED", error: NO_ESSAY_ERROR });
+    expect((await req("GET", "/essays/config", undefined, S)).json().aiUsedToday).toBe(1); // hisoblanmadi
   });
 
   it("ustoz: narx va karta sozlanmaguncha yopiq; rasmlar, to'lov, tasdiq, baholash", async () => {

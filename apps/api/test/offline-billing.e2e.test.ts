@@ -1,15 +1,16 @@
 import type { NestFastifyApplication } from "@nestjs/platform-fastify";
 import { PrismaClient } from "@onatili/db";
 import { currentMonth } from "@onatili/shared";
+import { internalKey } from "@onatili/shared/server";
 import { Queue } from "bullmq";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { reminderStageFor, runSubscriptionReminders } from "../src/billing/reminders";
 import { redisConnection } from "../src/media/queue";
 import { NOTIFY_QUEUE, type NotifyJob } from "../src/notify/notify.service";
-import { OWNER, createApp, login, parentTgId } from "./helpers";
+import { BOT_TOKEN, OWNER, createApp, login, parentTgId } from "./helpers";
 
 const prisma = new PrismaClient();
-const TG = { owner: 900000801, offline: 900000802, online: 900000803, paid: 900000804 };
+const TG = { owner: 900000801, offline: 900000802, online: 900000803, paid: 900000804, joiner: 900000805 };
 const TAG = "E2E-offline";
 const DAY = 86_400_000;
 const queue = new Queue<NotifyJob>(NOTIFY_QUEUE, { prefix: "onatili-e2e", connection: redisConnection(process.env.REDIS_URL ?? "redis://localhost:6381") });
@@ -82,6 +83,38 @@ describe("Offline guruh: kirish va oylik to'lov; online obuna eslatmalari (e2e)"
     await req("PATCH", `/admin/groups/${groupId}`, { isActive: false });
     expect((await req("GET", `/lessons/${lessonId}`, undefined, OFF)).statusCode).toBe(403);
     await req("PATCH", `/admin/groups/${groupId}`, { isActive: true });
+  });
+
+  it("guruh havolasi: o'quvchi botda bosib o'zi qo'shiladi; yangilansa eskisi ishlamaydi", async () => {
+    const join = (code: string, id: number) =>
+      app.inject({
+        method: "POST",
+        url: "/api/internal/join-group",
+        headers: { "x-internal-key": internalKey(BOT_TOKEN) },
+        payload: { code, from: { id, first_name: "Yangi", username: "yangi_e2e" } },
+      });
+    const url = (await req("POST", `/admin/groups/${groupId}/invite`)).json().inviteUrl as string;
+    expect(url).toMatch(/^https:\/\/t\.me\/\w+\?start=g_[A-Za-z0-9_-]{8}$/);
+    const code = url.split("g_")[1];
+    expect((await req("GET", "/admin/groups")).json().find((g: { id: string }) => g.id === groupId).inviteUrl).toBe(url);
+
+    // Hali botga kirmagan o'quvchi ham yaratiladi va guruhga tushadi
+    expect((await join(code, TG.joiner)).json()).toMatchObject({ status: "joined", groupName: `${TAG} 1-guruh`, parentLinked: false });
+    expect((await join(code, TG.joiner)).json().status).toBe("already");
+    const sp = await prisma.studentProfile.findFirstOrThrow({ where: { user: { telegramId: BigInt(TG.joiner) } } });
+    expect(sp).toMatchObject({ groupId, mode: "OFFLINE" });
+    expect((await join(code, TG.owner)).json().status).toBe("staff");
+    // Kalitsiz chaqirib bo'lmaydi
+    expect((await app.inject({ method: "POST", url: "/api/internal/join-group", payload: { code, from: { id: 1, first_name: "x" } } })).statusCode).toBe(401);
+
+    // Yangi havola: eskisi ishlamaydi; o'chirilsa ham
+    const url2 = (await req("POST", `/admin/groups/${groupId}/invite`)).json().inviteUrl as string;
+    expect(url2).not.toBe(url);
+    expect((await join(code, TG.joiner)).json().status).toBe("invalid");
+    await req("DELETE", `/admin/groups/${groupId}/invite`);
+    expect((await join(url2.split("g_")[1], TG.joiner)).json().status).toBe("invalid");
+    // Testning qolgan qismi uchun guruhdan chiqaramiz
+    await req("DELETE", `/admin/groups/${groupId}/students/${sp.id}`);
   });
 
   it("ega: oylik summa, to'lovni belgilash (ota-onaga xabar), qarzdorlarga eslatma", async () => {

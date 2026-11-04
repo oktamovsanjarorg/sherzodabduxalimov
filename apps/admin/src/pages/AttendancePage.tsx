@@ -1,6 +1,6 @@
 import { ATTENDANCE_LABELS, ATTENDANCE_STATUSES, type AdminGroup, type AdminStudent, type AttendanceStatusName } from "@onatili/shared";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { CheckCheck, Clock, Plus, Search, Settings2, ShieldAlert, ShieldCheck, Trash2, UserPlus, X } from "lucide-react";
+import { Check, CheckCheck, Clock, Copy, Link2, Plus, Search, Settings2, ShieldAlert, ShieldCheck, Trash2, UserPlus, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Badge, ConfirmButton, Empty, Field, Modal, PageHeader, Spinner } from "../components/ui";
@@ -352,9 +352,11 @@ function GroupManager({ groups, onClose }: { groups: AdminGroup[]; onClose: () =
                 </ConfirmButton>
               </div>
 
+              <InviteBox group={current} onChange={refresh} />
+
               <div className="relative mb-2">
                 <Search size={16} className="absolute left-3 top-3.5 text-slate-400 sm:top-3" />
-                <input className="input pl-9" placeholder="O'quvchi qo'shish: ism, @username yoki telefon" value={search} onChange={(e) => setSearch(e.target.value)} />
+                <input className="input pl-9" placeholder="Yoki qidirib qo'shish (botga kirganlar): ism, @username, telefon" value={search} onChange={(e) => setSearch(e.target.value)} />
               </div>
               {search.trim().length >= 2 && (
                 <div className="mb-4 max-h-56 space-y-1 overflow-y-auto rounded-xl border border-slate-200 p-2">
@@ -400,5 +402,48 @@ function GroupManager({ groups, onClose }: { groups: AdminGroup[]; onClose: () =
         </div>
       </div>
     </Modal>
+  );
+}
+
+/** Guruh havolasi: guruh chatiga tashlanadi, o'quvchi bosib o'zi qo'shiladi */
+function InviteBox({ group, onChange }: { group: AdminGroup; onChange: () => void }) {
+  const toast = useToast();
+  const [copied, setCopied] = useState(false);
+  const reset = useMutation({ mutationFn: () => api.resetGroupInvite(group.id), onSuccess: onChange, onError: (e) => toast(errMsg(e), "error") });
+  const off = useMutation({ mutationFn: () => api.disableGroupInvite(group.id), onSuccess: onChange, onError: (e) => toast(errMsg(e), "error") });
+  const copy = async (url: string) => {
+    await navigator.clipboard.writeText(url).catch(() => {});
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
+  };
+  if (!group.inviteUrl)
+    return (
+      <div className="mb-4 rounded-xl border border-dashed border-brand/40 bg-brand-soft/40 p-3">
+        <p className="text-sm font-bold">Guruh havolasi</p>
+        <p className="mt-1 text-xs text-slate-600">Havolani guruhning Telegram chatiga tashlang: o'quvchi bosadi, bot ochiladi va u shu guruhga avtomatik qo'shiladi. Qidirib o'tirish shart emas.</p>
+        <button className="btn-primary btn-sm mt-2" disabled={reset.isPending} onClick={() => reset.mutate()}>
+          <Link2 size={14} /> Havola yaratish
+        </button>
+      </div>
+    );
+  return (
+    <div className="mb-4 rounded-xl border border-brand/40 bg-brand-soft/40 p-3">
+      <p className="text-sm font-bold">Guruh havolasi</p>
+      <div className="mt-2 flex items-center gap-2">
+        <input readOnly className="input h-9 min-w-0 flex-1 bg-white text-xs" value={group.inviteUrl} onFocus={(e) => e.target.select()} />
+        <button className="btn-primary btn-sm shrink-0" onClick={() => copy(group.inviteUrl!)}>
+          {copied ? <Check size={14} /> : <Copy size={14} />} {copied ? "Nusxalandi" : "Nusxalash"}
+        </button>
+      </div>
+      <p className="mt-2 text-xs text-slate-600">Guruh chatiga tashlang. Havolani bosgan har bir o'quvchi shu guruhga qo'shiladi va unga barcha darslar ochiladi.</p>
+      <div className="mt-2 flex flex-wrap gap-3 text-xs font-semibold">
+        <button className="text-brand-dark hover:underline" disabled={reset.isPending} onClick={() => confirm("Yangi havola yaratilsinmi? Eskisi ishlamay qoladi.") && reset.mutate()}>
+          Yangi havola (eskisi ishlamaydi)
+        </button>
+        <button className="text-red-600 hover:underline" disabled={off.isPending} onClick={() => off.mutate()}>
+          Havolani o'chirish
+        </button>
+      </div>
+    </div>
   );
 }

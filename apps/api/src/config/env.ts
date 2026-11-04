@@ -26,6 +26,9 @@ const schema = z.object({
   AI_PROVIDER: z.preprocess((v) => (typeof v === "string" ? v.split("#")[0].trim() : v), z.enum(["deepseek", "none"]).catch("none")).default("none"),
   DEEPSEEK_API_KEY: z.preprocess((v) => (typeof v === "string" ? v.split("#")[0].trim() || undefined : v), z.string().optional()),
   DEEPSEEK_MODEL: z.string().default("deepseek-chat"),
+  // Qo'lyozma esseni o'qish (rasm -> matn). Bo'lmasa AI faqat yozilgan matnni tekshiradi
+  GEMINI_API_KEY: z.preprocess((v) => (typeof v === "string" ? v.split("#")[0].trim() || undefined : v), z.string().optional()),
+  GEMINI_MODEL: z.string().default("gemini-3.8-flash"),
   MINIAPP_URL: z.string().url().startsWith("https://").optional().catch(undefined),
 });
 

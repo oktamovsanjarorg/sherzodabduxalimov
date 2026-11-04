@@ -100,6 +100,8 @@ model Group {
   schedule  String? // masalan: "Du/Chor/Ju 14:00"
   /// Offline guruhning oylik to'lovi (so'm). To'lovni belgilashda standart summa
   monthlyFeeUzs Int?
+  /// Guruh havolasi (t.me/bot?start=g_<kod>): o'quvchi bosib, o'zi qo'shiladi. null = havola o'chiq
+  inviteCode String?         @unique
   isActive  Boolean          @default(true)
   students  StudentProfile[]
   attendance Attendance[]

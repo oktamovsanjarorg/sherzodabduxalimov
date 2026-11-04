@@ -1,4 +1,7 @@
-import { BadRequestException, ConflictException, Injectable, NotFoundException } from "@nestjs/common";
+import { BadRequestException, ConflictException, Inject, Injectable, NotFoundException } from "@nestjs/common";
+import { randomBytes } from "node:crypto";
+import { ENV, type Env } from "../config/env";
+import { StaffService, type TelegramProfile } from "../staff/staff.service";
 import type { Prisma } from "@onatili/db";
 import {
   type AdminGroup,
@@ -49,7 +52,16 @@ export function attendanceMessage(child: string, group: string, date: string, st
 
 @Injectable()
 export class AttendanceService {
-  constructor(private readonly prisma: PrismaService, private readonly notify: NotifyService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly notify: NotifyService,
+    private readonly staff: StaffService,
+    @Inject(ENV) private readonly env: Env,
+  ) {}
+
+  private inviteUrl(code: string | null) {
+    return code ? `https://t.me/${this.env.BOT_USERNAME}?start=g_${code}` : null;
+  }
 
   private toStudent(s: StudentRow): AdminStudent {
     return {
@@ -75,7 +87,7 @@ export class AttendanceService {
 
   async listGroups(): Promise<AdminGroup[]> {
     const gs = await this.prisma.group.findMany({ orderBy: [{ isActive: "desc" }, { name: "asc" }], include: { _count: { select: { students: true } } } });
-    return gs.map((g) => ({ id: g.id, name: g.name, schedule: g.schedule, isActive: g.isActive, studentCount: g._count.students }));
+    return gs.map((g) => ({ id: g.id, name: g.name, schedule: g.schedule, isActive: g.isActive, studentCount: g._count.students, inviteUrl: this.inviteUrl(g.inviteCode) }));
   }
 
   async createGroup(actorId: string, d: GroupInput) {
@@ -139,6 +151,41 @@ export class AttendanceService {
     return rows.map((r) => this.toStudent(r));
   }
 
+  // ---------------- Guruh havolasi ----------------
+
+  /** Yangi havola (eskisi bo'lsa ishlamay qoladi) */
+  async resetInvite(actorId: string, groupId: string) {
+    await this.mustGroup(groupId);
+    const code = randomBytes(6).toString("base64url"); // 8 belgi: [A-Za-z0-9_-]
+    await this.prisma.group.update({ where: { id: groupId }, data: { inviteCode: code } });
+    await this.prisma.auditLog.create({ data: { actorId, action: "group.invite", entity: "Group", entityId: groupId } });
+    return { inviteUrl: this.inviteUrl(code) };
+  }
+
+  async disableInvite(actorId: string, groupId: string) {
+    await this.mustGroup(groupId);
+    await this.prisma.group.update({ where: { id: groupId }, data: { inviteCode: null } });
+    await this.prisma.auditLog.create({ data: { actorId, action: "group.invite.off", entity: "Group", entityId: groupId } });
+    return { inviteUrl: null };
+  }
+
+  /** Bot: o'quvchi guruh havolasini bosdi */
+  async joinByInvite(code: string, from: TelegramProfile): Promise<{ status: "joined" | "already" | "moved" | "staff" | "invalid"; groupName?: string; parentLinked?: boolean }> {
+    const g = await this.prisma.group.findUnique({ where: { inviteCode: code } });
+    if (!g || !g.isActive) return { status: "invalid" };
+    const user = await this.staff.upsertTelegramUser(from);
+    if (user.role !== "STUDENT") return { status: "staff", groupName: g.name };
+    const sp = await this.prisma.studentProfile.findUniqueOrThrow({
+      where: { userId: user.id },
+      select: { id: true, groupId: true, parents: { where: { status: { in: ["PENDING", "APPROVED"] } }, select: { id: true } } },
+    });
+    const parentLinked = sp.parents.length > 0;
+    if (sp.groupId === g.id) return { status: "already", groupName: g.name, parentLinked };
+    await this.prisma.studentProfile.update({ where: { id: sp.id }, data: { groupId: g.id, mode: "OFFLINE" } });
+    await this.prisma.auditLog.create({ data: { actorId: user.id, action: "group.join", entity: "Group", entityId: g.id, meta: { from: sp.groupId } } });
+    return { status: sp.groupId ? "moved" : "joined", groupName: g.name, parentLinked };
+  }
+
   async addStudents(actorId: string, groupId: string, studentIds: string[]) {
     await this.mustGroup(groupId);
     const { count } = await this.prisma.studentProfile.updateMany({ where: { id: { in: studentIds } }, data: { groupId, mode: "OFFLINE" } });
@@ -165,7 +212,7 @@ export class AttendanceService {
     const byStudent = new Map(marks.map((m) => [m.studentId, m]));
     return {
       date,
-      group: { id: g.id, name: g.name, schedule: g.schedule, isActive: g.isActive, studentCount: students.length },
+      group: { id: g.id, name: g.name, schedule: g.schedule, isActive: g.isActive, studentCount: students.length, inviteUrl: this.inviteUrl(g.inviteCode) },
       rows: students.map((s) => {
         const m = byStudent.get(s.studentId);
         return { student: s, status: m?.status ?? null, note: m?.note ?? null, notifiedAt: m?.notifiedAt?.toISOString() ?? null };

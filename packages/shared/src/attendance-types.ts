@@ -58,6 +58,8 @@ export interface AdminGroup {
   schedule: string | null;
   isActive: boolean;
   studentCount: number;
+  /** Guruh havolasi: o'quvchi bosib, o'zi qo'shiladi */
+  inviteUrl: string | null;
 }
 
 export interface AdminParentLink {

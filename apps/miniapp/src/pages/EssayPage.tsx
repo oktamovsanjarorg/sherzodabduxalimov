@@ -48,14 +48,20 @@ export function EssayPage() {
           {e.status === "DRAFT" && <DraftPages e={e} onChange={set} />}
           {e.status === "AWAITING_PAYMENT" && <EssayPay e={e} onChange={() => q.refetch()} />}
           {e.status === "SUBMITTED" && <Waiting icon={<GraduationCap size={36} className="mx-auto text-brand" />} title="Ustoz tekshirmoqda" hint="Tekshirilgach bot orqali xabar keladi." />}
-          {e.status === "AI_CHECKING" && <Waiting icon={<Loader2 size={36} className="mx-auto animate-spin text-brand" />} title="AI tekshirmoqda…" hint="Odatda 10–30 soniya. Sahifani yopsangiz ham natija bot orqali keladi." />}
+          {e.status === "AI_CHECKING" && (
+            <Waiting
+              icon={<Loader2 size={36} className="mx-auto animate-spin text-brand" />}
+              title={e.pages && !e.text ? "AI qo'lyozmani o'qimoqda…" : "AI tekshirmoqda…"}
+              hint={`Odatda ${e.pages ? "30–60" : "10–30"} soniya. Sahifani yopsangiz ham natija bot orqali keladi.`}
+            />
+          )}
           {e.status === "AI_FAILED" && <Failed e={e} onChange={set} />}
 
           {[...e.reviews].reverse().map((r) => (
             <ReviewCard key={r.source} r={r} />
           ))}
 
-          {e.mode === "TEACHER" && e.status !== "DRAFT" && e.pages > 0 && (
+          {e.status !== "DRAFT" && e.pages > 0 && (
             <>
               <p className="mb-2 mt-6 px-1 text-sm font-bold text-hint">Yuborilgan varoqlar</p>
               <div className="grid grid-cols-2 gap-2">
@@ -67,7 +73,8 @@ export function EssayPage() {
           )}
           {e.mode === "AI" && e.text && (
             <details className="card mt-6">
-              <summary className="cursor-pointer text-sm font-bold">Yuborilgan matn</summary>
+              <summary className="cursor-pointer text-sm font-bold">{e.pages ? "AI qo'lyozmadan o'qigan matn" : "Yuborilgan matn"}</summary>
+              {e.pages > 0 && <p className="mt-2 text-xs text-hint">[?] — AI o'qiy olmagan so'z. Bunday so'zlar xato hisoblanmaydi.</p>}
               <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed">{e.text}</p>
             </details>
           )}
@@ -229,7 +236,8 @@ function DraftPages({ e, onChange }: { e: MyEssayDetail; onChange: (e: MyEssayDe
       <p className="mt-2 px-1 text-xs text-hint">Varoqni yorug' joyda, tekis qilib, butun sahifa ko'rinadigan qilib suratga oling.</p>
       {err && <p className="mt-2 px-1 text-sm text-danger">{err}</p>}
       <button className="btn-primary mt-4" disabled={!e.pages || finish.isPending || busy} onClick={() => finish.mutate()}>
-        Davom etish: to'lov
+        {finish.isPending && <Loader2 size={18} className="animate-spin" />}
+        {e.mode === "AI" ? "AI'ga tekshirishga yuborish" : "Davom etish: to'lov"}
       </button>
     </>
   );

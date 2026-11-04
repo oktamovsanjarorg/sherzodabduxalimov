@@ -60,6 +60,28 @@ bot.command("start", async (ctx) => {
     return;
   }
 
+  // O'quvchi: offline guruh havolasi orqali keldi
+  const g = /^g_([A-Za-z0-9_-]{6,16})$/.exec(payload);
+  if (g) {
+    try {
+      const r = await internal<{ status: string; groupName?: string; parentLinked?: boolean }>("join-group", { code: g[1], from: fromOf(ctx.from) });
+      const group = esc(r.groupName ?? "");
+      const parentNote = r.parentLinked ? "" : "\n\nIlovani birinchi ochganingizda <b>ota-onangizni ulash</b> so'raladi: bu majburiy.";
+      const msg: Record<string, string> = {
+        joined: `✅ Siz <b>${group}</b> guruhiga qo'shildingiz!\n\nEndi barcha videodarslar, testlar va mock imtihonlar siz uchun ochiq.${parentNote}`,
+        moved: `✅ Siz <b>${group}</b> guruhiga o'tkazildingiz.\n\nBarcha darslar va testlar ochiq.${parentNote}`,
+        already: `Siz allaqachon <b>${group}</b> guruhidasiz 👍`,
+        staff: `Siz xodimsiz: bu havola o'quvchilar uchun. Uni guruh chatiga yuboring.`,
+        invalid: "Bu havola eskirgan yoki o'chirilgan. Ustozdan yangi havola so'rang.",
+      };
+      await ctx.reply(msg[r.status] ?? msg.invalid, { parse_mode: "HTML", reply_markup: r.status === "invalid" ? undefined : openAppKeyboard() });
+    } catch (e) {
+      console.error("join-group:", redact(e));
+      await ctx.reply("Hozir guruhga qo'shib bo'lmadi, birozdan keyin havolani qayta bosing.");
+    }
+    return;
+  }
+
   // O'quvchi: o'z raqamini ulashish (Mini App'dan zaxira yo'l)
   if (payload === "phone") {
     await ctx.reply("Telefon raqamingizni ulashish uchun pastdagi tugmani bosing 👇", {

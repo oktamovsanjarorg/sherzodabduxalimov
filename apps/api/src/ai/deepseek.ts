@@ -45,7 +45,7 @@ const resultSchema = z.object({
   mistakes: z.array(z.object({ wrong: z.string(), right: z.string(), note: z.string().nullish() })).default([]),
 });
 
-export function buildEssayPrompt(topic: string, text: string) {
+export function buildEssayPrompt(topic: string, text: string, handwritten = false) {
   const rubric = ESSAY_RUBRIC.map((c) => `- "${c.key}": ${c.label} (0–${c.max} ball)`).join("\n");
   const system = `Sen tajribali ona tili va adabiyot o'qituvchisisan. Abituriyentning o'zbek tilida (lotin yozuvida) yozgan essesini Milliy sertifikat talablari bo'yicha xolis baholaysan.
 Mezonlar:
@@ -55,14 +55,19 @@ Qoidalar:
 - "mistakes": eng muhim imlo, tinish belgisi va grammatik xatolar (ko'pi bilan 15 ta): "wrong" — matndagi noto'g'ri shakl, "right" — to'g'risi, "note" — qisqa qoida. Faqat aniq xatolarni yoz: "wrong" va "right" bir xil bo'lmasin, ishonching komil bo'lmasa kiritma.
 - "feedback": o'quvchiga 3–5 jumlali umumiy xulosa va yaxshilash bo'yicha aniq maslahat.
 - Matn mavzuga umuman aloqasiz yoki juda qisqa bo'lsa, ballarni shunga mos pasaytir.
-- Barcha izohlar o'zbek tilida (lotin) bo'lsin.
+- Barcha izohlar o'zbek tilida (lotin) bo'lsin.${
+    handwritten
+      ? `
+- Matn o'quvchining qo'lyozmasidan avtomatik o'qib olingan. [?] belgisi o'qib bo'lmagan so'zni bildiradi: uni xato deb hisoblama va ball kamaytirma. Faqat aniq ko'rinib turgan xatolarni hisobga ol.`
+      : ""
+  }
 Javobni faqat JSON ko'rinishida qaytar: {"criteria":[{"key":"...","score":0,"comment":"..."}],"feedback":"...","mistakes":[{"wrong":"...","right":"...","note":"..."}]}`;
   const user = `Esse mavzusi: ${topic}\n\nEsse matni:\n"""\n${text}\n"""`;
   return { system, user };
 }
 
-export async function gradeEssayDeepSeek(opts: { apiKey: string; model: string; topic: string; text: string }): Promise<AiEssayResult> {
-  const { system, user } = buildEssayPrompt(opts.topic, opts.text);
+export async function gradeEssayDeepSeek(opts: { apiKey: string; model: string; topic: string; text: string; handwritten?: boolean }): Promise<AiEssayResult> {
+  const { system, user } = buildEssayPrompt(opts.topic, opts.text, opts.handwritten);
   const r = await postJson(
     "api.deepseek.com",
     "/chat/completions",

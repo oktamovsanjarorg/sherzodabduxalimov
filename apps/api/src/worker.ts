@@ -5,10 +5,12 @@
 import { PrismaClient } from "@onatili/db";
 import { Queue, Worker } from "bullmq";
 import { gradeEssayDeepSeek } from "./ai/deepseek";
+import { transcribeHandwriting } from "./ai/gemini";
 import { ESSAY_AI_QUEUE, type EssayAiJob } from "./ai/queue";
 import { runSubscriptionReminders } from "./billing/reminders";
 import { gradeEssayJob, markEssayFailed } from "./essays/ai-runner";
-import { rm } from "node:fs/promises";
+import { readFile, rm } from "node:fs/promises";
+import { resolve } from "node:path";
 import { loadEnv } from "./config/env";
 import { MediaPaths } from "./media/paths";
 import { VIDEO_QUEUE, redisConnection, type TranscodeJob } from "./media/queue";
@@ -121,9 +123,23 @@ const essayAi = new Worker<EssayAiJob>(
     const total = await gradeEssayJob(
       prisma,
       job.data.essayId,
-      (topic, text) => gradeEssayDeepSeek({ apiKey: key, model: env.DEEPSEEK_MODEL, topic, text }),
+      (topic, text, handwritten) => gradeEssayDeepSeek({ apiKey: key, model: env.DEEPSEEK_MODEL, topic, text, handwritten }),
       (chatId, text, button) => notifyQueue.add("send", { chatId: String(chatId), text, button }),
       env.MINIAPP_URL,
+      env.GEMINI_API_KEY
+        ? async (paths) => {
+            const root = resolve(env.MEDIA_DIR, "essays");
+            const images = await Promise.all(
+              paths.map(async (p) => {
+                const abs = resolve(env.MEDIA_DIR, p);
+                if (!abs.startsWith(root + "/")) throw new Error("bad essay path");
+                const data = await readFile(abs);
+                return { mime: data[0] === 0x89 ? "image/png" : data[0] === 0x52 ? "image/webp" : "image/jpeg", data };
+              }),
+            );
+            return transcribeHandwriting({ apiKey: env.GEMINI_API_KEY!, model: env.GEMINI_MODEL, images });
+          }
+        : undefined,
     );
     if (total !== null) console.log(`[essay-ai] ${job.data.essayId}: ${total} ball`);
   },

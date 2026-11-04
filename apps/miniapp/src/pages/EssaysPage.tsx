@@ -82,10 +82,12 @@ export function NewEssayPage() {
   const [mode, setMode] = useState<EssayModeName | null>(null);
   const [prompt, setPrompt] = useState("");
   const [text, setText] = useState("");
+  /** AI: qo'lyozma rasmi (asosiy) yoki matnni yozish */
+  const [typed, setTyped] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
   const create = useMutation({
-    mutationFn: () => api.createEssay({ mode: mode!, prompt: prompt.trim(), text: mode === "AI" ? text : null }),
+    mutationFn: () => api.createEssay({ mode: mode!, prompt: prompt.trim(), text: aiTyped ? text : null }),
     onSuccess: (e) => navigate(`/essays/${e.id}`, { replace: true }),
     onError: (e) => setErr(e instanceof ApiError ? e.message : "Yuborib bo'lmadi, internetni tekshiring"),
   });
@@ -95,7 +97,9 @@ export function NewEssayPage() {
   const aiOk = !!c?.aiEnabled && aiLeft > 0;
   const teacherOk = !!c?.teacherPriceUzs;
   const n = words(text);
-  const canSend = mode && prompt.trim().length >= 3 && (mode === "TEACHER" || n >= 30) && !create.isPending;
+  // Qo'lyozma o'qish sozlanmagan bo'lsa AI faqat yozilgan matn bilan
+  const aiTyped = mode === "AI" && (typed || !c?.aiPhotoEnabled);
+  const canSend = mode && prompt.trim().length >= 3 && (!aiTyped || n >= 30) && !create.isPending;
 
   return (
     <FullPage>
@@ -111,7 +115,7 @@ export function NewEssayPage() {
               Icon={Bot}
               title="AI"
               price="Bepul"
-              hint={!c.aiEnabled ? "Hozircha o'chiq" : aiLeft > 0 ? `Bugun yana ${aiLeft} ta` : "Bugungi limit tugadi"}
+              hint={!c.aiEnabled ? "Hozircha o'chiq" : aiLeft > 0 ? `Kuniga ${c.aiDailyLimit} ta · yana ${aiLeft} ta` : "Bugungi limit tugadi"}
               onClick={() => setMode("AI")}
             />
             <ModeCard
@@ -138,26 +142,35 @@ export function NewEssayPage() {
             </>
           )}
 
-          {mode === "AI" && (
+          {mode === "AI" && !aiTyped && (
+            <div className="card mt-4 flex gap-3 text-sm text-hint">
+              <Camera size={20} className="mt-0.5 shrink-0 text-brand" />
+              <div>
+                <p>Esseni varoqqa ruchka bilan yozing. Keyingi qadamda varoq rasmlarini yuklaysiz (1–4 bet): AI qo'lyozmani o'qib, xatolaringiz bilan birga tekshiradi.</p>
+                <button className="mt-2 font-semibold text-brand" onClick={() => setTyped(true)}>
+                  Yoki matnni telefonda yozaman
+                </button>
+              </div>
+            </div>
+          )}
+
+          {aiTyped && (
             <>
               <p className="mb-2 mt-6 px-1 text-sm font-bold text-hint">3. Esse matni</p>
-              <div className="card mb-3 flex gap-3 text-sm">
-                <Info size={20} className="mt-0.5 shrink-0 text-brand" />
-                <div className="space-y-1 text-hint">
-                  <p className="font-semibold text-text">Varoqqa yozganmisiz? Matnni rasmdan nusxalang:</p>
-                  <p>
-                    <b>iPhone:</b> varoqni suratga oling → rasmni oching → matnni barmoq bilan bosib turib belgilang → «Nusxalash».
-                  </p>
-                  <p>
-                    <b>Android:</b> Google Lens (yoki kamera) → «Matn» → «Hammasini tanlash» → «Nusxalash».
-                  </p>
-                  <p>So'ng shu yerga qo'ying va xatolarni to'g'irlab chiqing (AI aynan siz yozgandek tekshirishi uchun).</p>
+              {c.aiPhotoEnabled ? (
+                <button className="mb-3 px-1 text-sm font-semibold text-brand" onClick={() => setTyped(false)}>
+                  ← Varoqqa yozganman: rasmini yuklayman
+                </button>
+              ) : (
+                <div className="card mb-3 flex gap-3 text-sm">
+                  <Info size={20} className="mt-0.5 shrink-0 text-brand" />
+                  <p className="text-hint">AI hozircha faqat yozilgan matnni tekshiradi. Varoqqa yozgan bo'lsangiz, matnni rasmdan nusxalang (iPhone: rasmdagi matnni bosib turib «Nusxalash»; Android: Google Lens → «Matn») va shu yerga qo'ying.</p>
                 </div>
-              </div>
+              )}
               <textarea
                 value={text}
                 onChange={(e) => setText(e.target.value)}
-                placeholder="Esse matnini shu yerga yozing yoki qo'ying"
+                placeholder="Esse matnini shu yerga yozing"
                 className="min-h-[45vh] w-full resize-y rounded-card border-2 border-transparent bg-section px-4 py-3 text-[16px] leading-relaxed outline-none focus:border-brand"
               />
               <p className={`mt-1 px-1 text-xs ${n < 30 ? "text-hint" : "text-success"}`}>{n} ta so'z{n < 30 ? " (kamida 30)" : ""}</p>
@@ -175,7 +188,7 @@ export function NewEssayPage() {
           {mode && (
             <button className="btn-primary mt-4" disabled={!canSend} onClick={() => create.mutate()}>
               {create.isPending && <Loader2 size={18} className="animate-spin" />}
-              {mode === "AI" ? "AI'ga tekshirishga yuborish" : "Davom etish: rasmlarni yuklash"}
+              {aiTyped ? "AI'ga tekshirishga yuborish" : "Davom etish: varoq rasmlarini yuklash"}
             </button>
           )}
         </>
