@@ -204,6 +204,13 @@ export class StudentsService {
   async remove(actorId: string, studentId: string, opts: { force: boolean; isTeacher: boolean }) {
     const sp = await this.prisma.studentProfile.findUnique({ where: { id: studentId }, include: { user: { select: { id: true, telegramId: true, firstName: true, lastName: true } } } });
     if (!sp) throw new NotFoundException("O'quvchi topilmadi");
+    // Moliyaviy hisob saqlanishi shart: to'lov tarixi bor o'quvchi o'chirilmaydi (bloklash mumkin)
+    const [paid, offline] = await Promise.all([
+      this.prisma.payment.count({ where: { userId: sp.user.id, status: "APPROVED" } }),
+      this.prisma.offlinePayment.count({ where: { studentId } }),
+    ]);
+    if (paid + offline > 0)
+      throw new ConflictException(`O'quvchining to'lov tarixi bor (${paid + offline} ta): moliyaviy hisob uchun o'chirib bo'lmaydi. O'rniga bloklang yoki guruhdan chiqaring.`);
     if (sp.user.telegramId !== null && !(opts.force && opts.isTeacher))
       throw new ConflictException(opts.isTeacher ? "Bu o'quvchi botdan foydalanadi: o'chirishni tasdiqlang" : "Botdan foydalanayotgan o'quvchini faqat ustoz o'chira oladi");
     await this.prisma.user.delete({ where: { id: sp.user.id } });

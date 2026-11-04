@@ -84,6 +84,10 @@ describe("O'quvchilar: botsiz kiritish, ro'yxat, karta, hisobni bog'lash (e2e)",
     expect(d.billing.offlineMonths[0]).toMatchObject({ month: currentMonth(), paid: true, amountUzs: 300000 });
     expect(d.stats).toMatchObject({ testsTaken: 0, lessonsCompleted: 0 });
     expect((await req("GET", `/admin/students/${aziz.studentId}`, undefined, A)).json().billing).toBeNull();
+    // To'lov tarixi bor o'quvchini o'chirib bo'lmaydi (moliyaviy hisob)
+    const del = await req("DELETE", `/admin/students/${aziz.studentId}?force=1`);
+    expect(del.statusCode).toBe(409);
+    expect(del.json().message).toMatch(/to'lov tarixi/);
   });
 
   it("o'quvchi botda telefonini ulashsa, qo'lda kiritilgan yozuv uning hisobiga o'tadi", async () => {

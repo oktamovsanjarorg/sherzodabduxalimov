@@ -12,7 +12,7 @@ export const BOT_TOKEN = "123456:E2E_TEST_TOKEN";
 
 export const OWNER = "e2e_owner";
 
-export async function createApp(extraControllers: Type[] = []) {
+export async function createApp(extraControllers: Type[] = [], opts: { rateLimit?: boolean } = {}) {
   const env = loadEnv({
     ...process.env,
     BOT_TOKEN,
@@ -27,7 +27,7 @@ export async function createApp(extraControllers: Type[] = []) {
     controllers: extraControllers,
   }).compile();
   const app = mod.createNestApplication<NestFastifyApplication>(new FastifyAdapter());
-  configureApp(app);
+  await configureApp(app, { rateLimit: opts.rateLimit ?? false });
   await app.init();
   await app.getHttpAdapter().getInstance().ready();
   return app;
