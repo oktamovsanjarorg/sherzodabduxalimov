@@ -1,5 +1,5 @@
 import { Body, Controller, Delete, Get, HttpCode, Param, Patch, Post, Query, UseGuards } from "@nestjs/common";
-import { studentBulkInput, studentCreateInput, studentUpdateInput } from "@onatili/shared";
+import { studentAccessInput, studentBlockInput, studentBulkInput, studentCreateInput, studentUpdateInput } from "@onatili/shared";
 import { z } from "zod";
 import { parse } from "../admin/zod";
 import { CurrentUser, Public, Roles, type JwtUser } from "../auth/decorators";
@@ -33,8 +33,20 @@ export class StudentsController {
     return this.svc.update(u.sub, id, parse(studentUpdateInput, b));
   }
 
-  @Delete("students/:id") remove(@CurrentUser() u: JwtUser, @Param("id") id: string) {
-    return this.svc.remove(u.sub, id);
+  @Delete("students/:id") remove(@CurrentUser() u: JwtUser, @Param("id") id: string, @Query("force") force?: string) {
+    return this.svc.remove(u.sub, id, { force: force === "1", isTeacher: u.role === "TEACHER" });
+  }
+
+  /** Kirish rejimi va bloklash: faqat ega */
+  @Roles("TEACHER")
+  @Patch("students/:id/access") access(@CurrentUser() u: JwtUser, @Param("id") id: string, @Body() b: unknown) {
+    return this.svc.setAccess(u.sub, id, parse(studentAccessInput, b).mode);
+  }
+
+  @Roles("TEACHER")
+  @Post("students/:id/block") @HttpCode(200) block(@CurrentUser() u: JwtUser, @Param("id") id: string, @Body() b: unknown) {
+    const d = parse(studentBlockInput, b);
+    return this.svc.setBlocked(u.sub, id, d.blocked, d.reason);
   }
 
   @Post("students/:id/invite") @HttpCode(200) invite(@Param("id") id: string) {

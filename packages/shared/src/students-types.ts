@@ -21,10 +21,16 @@ export interface RosterRow {
   /** Oxirgi 30 kun davomati */
   attendance30: { present: number; absent: number; total: number };
   lastActiveAt: string | null;
+  /** AUTO — obuna/guruh bo'yicha; FREE — ustoz bepul ochgan; CLOSED — ustoz yopgan */
+  accessMode: "AUTO" | "FREE" | "CLOSED";
+  /** Pullik kontent hozir ochiqmi (rejim, obuna va guruh hisobga olingan) */
+  hasAccess: boolean;
+  blocked: boolean;
 }
 
 export interface StudentDetail extends RosterRow {
   createdAt: string;
+  blockedReason: string | null;
   /** Qo'lda kiritilgan va hali botga kirmagan o'quvchi uchun shaxsiy havola */
   inviteUrl: string | null;
   /** Ota-onaga yuboriladigan havola */
@@ -92,3 +98,6 @@ export function normUzPhone(p: string | null | undefined): string | null {
   if (d.length === 12 && d.startsWith("998")) return `+${d}`;
   return `+${d}`;
 }
+
+export const studentAccessInput = z.object({ mode: z.enum(["AUTO", "FREE", "CLOSED"]) });
+export const studentBlockInput = z.object({ blocked: z.boolean(), reason: z.string().trim().max(300).nullish().transform((v) => v || null) });

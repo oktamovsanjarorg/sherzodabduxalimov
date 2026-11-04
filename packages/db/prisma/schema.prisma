@@ -35,6 +35,8 @@ model User {
   /// Ism-familiyani ustoz yozgan: Telegram'dan kirganda ustiga yozilmaydi
   nameLocked   Boolean  @default(false)
   isBlocked    Boolean  @default(false)
+  /// Bloklash sababi (foydalanuvchiga ko'rsatiladi)
+  blockedReason String?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
@@ -66,10 +68,18 @@ model StudentProfile {
   parentLinkCode String     @unique // ota-ona botga shu kod bilan ulanadi
   /// Qo'lda kiritilgan o'quvchining shaxsiy havolasi (t.me/bot?start=s_<kod>): bosganda Telegram hisobi shu yozuvga bog'lanadi
   inviteCode     String?    @unique
+  /// Ilovaga kirish: AUTO — obuna yoki offline guruh bo'yicha; FREE — ustoz bepul ochib bergan; CLOSED — ustoz yopib qo'ygan
+  accessMode     StudentAccess @default(AUTO)
   parents        ParentLink[]
   attendance     Attendance[]
   offlinePayments OfflinePayment[]
   createdAt      DateTime   @default(now())
+}
+
+enum StudentAccess {
+  AUTO
+  FREE
+  CLOSED
 }
 
 enum ParentLinkStatus {

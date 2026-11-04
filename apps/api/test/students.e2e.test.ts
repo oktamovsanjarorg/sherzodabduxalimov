@@ -6,7 +6,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { BOT_TOKEN, OWNER, createApp, login } from "./helpers";
 
 const prisma = new PrismaClient();
-const TG = { owner: 900001001, assistant: 900001002, phoneUser: 900001003, linkUser: 900001004, existing: 900001005 };
+const TG = { owner: 900001001, assistant: 900001002, phoneUser: 900001003, linkUser: 900001004, existing: 900001005, managed: 900001006 };
 const TAG = "E2E-roster";
 const PHONES = ["+998901110001", "+998901110002", "+998901110003", "+998901110004"];
 
@@ -130,5 +130,51 @@ describe("O'quvchilar: botsiz kiritish, ro'yxat, karta, hisobni bog'lash (e2e)",
 
     const linked = (await req("GET", `/admin/roster?q=${TAG}Madina`)).json()[0];
     expect((await req("DELETE", `/admin/students/${linked.studentId}`)).statusCode).toBe(409);
+  });
+
+  it("boshqaruv: kirish rejimi, bloklash (token darhol ishlamaydi), ota-onani bekor qilish/qayta tasdiqlash, o'chirish", async () => {
+    const M = (await login(app, TG.managed, "Boshqariladigan")).headers;
+    const sp = await prisma.studentProfile.findFirstOrThrow({ where: { user: { telegramId: BigInt(TG.managed) } } });
+    const course = await prisma.course.create({ data: { title: `${TAG} kurs`, isPublished: true, topics: { create: { title: "M", lessons: { create: { title: "Pullik", isPublished: true, isFree: false } } } } }, include: { topics: { include: { lessons: true } } } });
+    const lessonId = course.topics[0].lessons[0].id;
+    try {
+      // Kirish rejimi: faqat ega; FREE -> ochiq, CLOSED -> yopiq, AUTO -> obunasiz yopiq
+      expect((await req("PATCH", `/admin/students/${sp.id}/access`, { mode: "FREE" }, A)).statusCode).toBe(403);
+      expect((await req("GET", `/lessons/${lessonId}`, undefined, M)).statusCode).toBe(403);
+      expect((await req("PATCH", `/admin/students/${sp.id}/access`, { mode: "FREE" })).json()).toMatchObject({ accessMode: "FREE", hasAccess: true });
+      expect((await req("GET", `/lessons/${lessonId}`, undefined, M)).statusCode).toBe(200);
+      expect((await req("GET", "/me", undefined, M)).json().accessMode).toBe("FREE");
+      await req("PATCH", `/admin/students/${sp.id}/access`, { mode: "CLOSED" });
+      expect((await req("GET", `/lessons/${lessonId}`, undefined, M)).statusCode).toBe(403);
+      await req("PATCH", `/admin/students/${sp.id}/access`, { mode: "AUTO" });
+
+      // Bloklash: mavjud token ham darhol ishlamaydi, sababi ko'rinadi; blokdan chiqarilsa qayta ishlaydi
+      const b = (await req("POST", `/admin/students/${sp.id}/block`, { blocked: true, reason: "To'lov qilinmagan" })).json();
+      expect(b).toMatchObject({ blocked: true, blockedReason: "To'lov qilinmagan" });
+      const denied = await req("GET", "/me", undefined, M);
+      expect(denied.statusCode).toBe(401);
+      expect(denied.json()).toMatchObject({ code: "BLOCKED", message: "Hisob bloklangan: To'lov qilinmagan" });
+      await req("POST", `/admin/students/${sp.id}/block`, { blocked: false });
+      expect((await req("GET", "/me", undefined, M)).statusCode).toBe(200);
+
+      // Ota-ona: tasdiqlash -> bekor qilish -> qayta tasdiqlash -> o'chirish
+      const link = await prisma.parentLink.findFirstOrThrow({ where: { studentId: sp.id } });
+      expect((await req("POST", `/admin/parent-links/${link.id}/approve`)).statusCode).toBe(200);
+      expect((await req("POST", `/admin/parent-links/${link.id}/reject`, { reason: "Xato ulangan" })).statusCode).toBe(200);
+      expect((await prisma.parentLink.findUniqueOrThrow({ where: { id: link.id } })).status).toBe("REJECTED");
+      expect((await req("POST", `/admin/parent-links/${link.id}/approve`)).statusCode).toBe(200);
+      expect(await prisma.parentLink.findUniqueOrThrow({ where: { id: link.id } })).toMatchObject({ status: "APPROVED", rejectReason: null });
+      expect((await req("DELETE", `/admin/parent-links/${link.id}`, undefined, A)).statusCode).toBe(200);
+      expect(await prisma.parentLink.count({ where: { id: link.id } })).toBe(0);
+
+      // O'chirish: botdagi o'quvchini yordamchi o'chira olmaydi; ega tasdiq (force) bilan o'chiradi
+      expect((await req("DELETE", `/admin/students/${sp.id}?force=1`, undefined, A)).statusCode).toBe(409);
+      expect((await req("DELETE", `/admin/students/${sp.id}`)).statusCode).toBe(409);
+      expect((await req("DELETE", `/admin/students/${sp.id}?force=1`)).statusCode).toBe(200);
+      expect(await prisma.user.count({ where: { telegramId: BigInt(TG.managed) } })).toBe(0);
+      expect((await req("GET", "/me", undefined, M)).statusCode).toBe(401); // o'chirilgan hisob tokeni ham ishlamaydi
+    } finally {
+      await prisma.course.delete({ where: { id: course.id } });
+    }
   });
 });

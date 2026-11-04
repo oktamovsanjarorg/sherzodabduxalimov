@@ -100,6 +100,9 @@ function Row({ r, isTeacher, showGroup }: { r: RosterRow; isTeacher: boolean; sh
         </p>
       </div>
       <div className="flex flex-wrap items-center gap-1">
+        {r.blocked && <Badge tone="red">bloklangan</Badge>}
+        {r.accessMode === "FREE" && <Badge tone="blue">bepul ochiq</Badge>}
+        {r.accessMode === "CLOSED" && <Badge tone="red">kirish yopiq</Badge>}
         {!r.telegramLinked && <Badge tone="amber">botga kirmagan</Badge>}
         {r.parents.approved ? <Badge tone="green">ota-ona ✓</Badge> : r.parents.pending ? <Badge tone="blue">ota-ona kutilmoqda</Badge> : <Badge>ota-ona yo'q</Badge>}
         {isTeacher && r.paidThisMonth !== null && (r.paidThisMonth ? <Badge tone="green">shu oy to'lagan</Badge> : <Badge tone="red">qarzdor</Badge>)}

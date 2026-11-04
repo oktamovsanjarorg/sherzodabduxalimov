@@ -32,6 +32,7 @@ export function SubscribePage() {
 
   const b = billing.data;
   const isStaff = useAuth((s) => (s.user ? STAFF_ROLES.includes(s.user.role) : false));
+  const accessMode = useAuth((s) => s.user?.accessMode ?? "AUTO");
   return (
     <FullPage>
       <h1 className="px-1 text-xl font-extrabold">Obuna</h1>
@@ -61,7 +62,11 @@ export function SubscribePage() {
             </div>
           )}
 
-          {b.offline ? null : isStaff ? (
+          {accessMode === "FREE" ? (
+            <p className="card mt-4 text-center text-sm font-semibold text-success">Ustoz siz uchun barcha darslar va testlarni bepul ochib bergan.</p>
+          ) : accessMode === "CLOSED" ? (
+            <p className="card mt-4 text-center text-sm font-semibold text-danger">Ustoz kirishingizni vaqtincha yopgan. Savol bo'lsa, ustozga murojaat qiling.</p>
+          ) : b.offline ? null : isStaff ? (
             <p className="card mt-4 text-center text-sm text-hint">Siz xodimsiz: barcha kontent obunasiz ochiq. To'lov formasi o'quvchilarga ko'rinadi.</p>
           ) : b.pending ? (
             <PendingCard p={b.pending} onCancelled={() => qc.invalidateQueries({ queryKey: ["billing"] })} />

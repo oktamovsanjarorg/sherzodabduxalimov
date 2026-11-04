@@ -1,4 +1,4 @@
-import { BadRequestException, Body, Controller, Get, HttpCode, Param, Post, Query, UseGuards } from "@nestjs/common";
+import { BadRequestException, Body, Controller, Delete, Get, HttpCode, Param, Post, Query, UseGuards } from "@nestjs/common";
 import { z } from "zod";
 import { parse } from "../admin/zod";
 import { CurrentUser, Public, Roles, type JwtUser } from "../auth/decorators";
@@ -63,5 +63,11 @@ export class ParentsController {
   reject(@CurrentUser() u: JwtUser, @Param("id") id: string, @Body() b: { reason?: unknown }) {
     if (typeof b?.reason !== "string") throw new BadRequestException("Sabab kerak");
     return this.parents.reject(u.sub, id, b.reason);
+  }
+
+  @Roles("TEACHER", "ASSISTANT")
+  @Delete("admin/parent-links/:id")
+  removeLink(@CurrentUser() u: JwtUser, @Param("id") id: string) {
+    return this.parents.remove(u.sub, id);
   }
 }

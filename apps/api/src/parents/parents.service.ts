@@ -166,8 +166,13 @@ export class ParentsService {
   async approve(actorId: string, id: string) {
     const l = await this.prisma.parentLink.findUnique({ where: { id }, include: linkInclude });
     if (!l) throw new NotFoundException("So'rov topilmadi");
-    if (l.status !== "PENDING") throw new ConflictException("So'rov allaqachon ko'rib chiqilgan");
-    await this.prisma.parentLink.update({ where: { id }, data: { status: "APPROVED", reviewedById: actorId, reviewedAt: new Date() } });
+    if (l.status === "APPROVED") throw new ConflictException("Allaqachon tasdiqlangan");
+    // Rad etilganni qayta tasdiqlash: o'quvchining faol ota-onalari chegarasi tekshiriladi
+    if (l.status === "REJECTED") {
+      const active = await this.prisma.parentLink.count({ where: { studentId: l.studentId, status: { in: ["PENDING", "APPROVED"] }, id: { not: id } } });
+      if (active >= MAX_PARENTS) throw new ConflictException(`O'quvchida allaqachon ${MAX_PARENTS} ta ota-ona ulangan`);
+    }
+    await this.prisma.parentLink.update({ where: { id }, data: { status: "APPROVED", reviewedById: actorId, reviewedAt: new Date(), rejectReason: null } });
     await this.prisma.auditLog.create({ data: { actorId, action: "parent.approve", entity: "ParentLink", entityId: id } });
     await this.notify.send(
       l.parent.telegramId,
@@ -191,6 +196,15 @@ export class ParentsService {
       l.student.user.telegramId,
       `❌ Ota-ona ulanish so'rovi rad etildi.\nSabab: ${esc(r)}\n\nIlovani ochib, haqiqiy ota-onangizni qayta ulang.`,
     );
+    return { ok: true };
+  }
+
+  /** Ulanishni butunlay o'chirish (masalan, xato yoki begona odam). Ota-ona havolani qayta bosib so'rov yuborishi mumkin */
+  async remove(actorId: string, id: string) {
+    const l = await this.prisma.parentLink.findUnique({ where: { id }, include: linkInclude });
+    if (!l) throw new NotFoundException("Ulanish topilmadi");
+    await this.prisma.parentLink.delete({ where: { id } });
+    await this.prisma.auditLog.create({ data: { actorId, action: "parent.delete", entity: "ParentLink", entityId: id, meta: { parent: fullName(l.parent), student: fullName(l.student.user) } } });
     return { ok: true };
   }
 

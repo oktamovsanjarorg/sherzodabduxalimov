@@ -35,10 +35,12 @@ const rosterInclude = (month: string, since: Date) =>
         phone: true,
         telegramId: true,
         updatedAt: true,
+        isBlocked: true,
+        blockedReason: true,
         subscriptions: { where: { status: "ACTIVE", endsAt: { gt: new Date() } }, orderBy: { endsAt: "desc" }, take: 1, select: { endsAt: true } },
       },
     },
-    group: { select: { id: true, name: true } },
+    group: { select: { id: true, name: true, isActive: true } },
     parents: { where: { status: { in: ["PENDING", "APPROVED"] } }, select: { status: true } },
     offlinePayments: { where: { month }, select: { id: true } },
     attendance: { where: { date: { gte: since } }, select: { status: true } },
@@ -100,13 +102,16 @@ export class StudentsService {
       name: fullName(r.user),
       username: r.user.username,
       phone: r.user.phone,
-      group: r.group,
+      group: r.group ? { id: r.group.id, name: r.group.name } : null,
       telegramLinked: r.user.telegramId !== null,
       parents: { approved: r.parents.filter((p) => p.status === "APPROVED").length, pending: r.parents.filter((p) => p.status === "PENDING").length },
       subscriptionEndsAt: r.user.subscriptions[0]?.endsAt.toISOString() ?? null,
       paidThisMonth: isTeacher && r.group ? r.offlinePayments.length > 0 : null,
       attendance30: { present, absent: r.attendance.filter((a) => a.status === "ABSENT").length, total: r.attendance.length },
       lastActiveAt: r.user.telegramId !== null ? r.user.updatedAt.toISOString() : null,
+      accessMode: r.accessMode,
+      hasAccess: r.accessMode === "FREE" || (r.accessMode === "AUTO" && (r.user.subscriptions.length > 0 || !!r.group?.isActive)),
+      blocked: r.user.isBlocked,
     };
   }
 
@@ -192,14 +197,35 @@ export class StudentsService {
     return this.detail(studentId, true);
   }
 
-  /** Faqat botga kirmagan (qo'lda kiritilgan) o'quvchini butunlay o'chirish mumkin */
-  async remove(actorId: string, studentId: string) {
+  /**
+   * O'quvchini butunlay o'chirish: barcha natijalari, davomati, to'lovlari bilan.
+   * Botga kirgan o'quvchi uchun faqat ega (TEACHER) va aniq tasdiq bilan (force). U qayta kirsa, bo'sh hisob ochiladi.
+   */
+  async remove(actorId: string, studentId: string, opts: { force: boolean; isTeacher: boolean }) {
     const sp = await this.prisma.studentProfile.findUnique({ where: { id: studentId }, include: { user: { select: { id: true, telegramId: true, firstName: true, lastName: true } } } });
     if (!sp) throw new NotFoundException("O'quvchi topilmadi");
-    if (sp.user.telegramId !== null) throw new ConflictException("Bu o'quvchi botdan foydalanadi: o'chirish o'rniga guruhdan chiqaring");
+    if (sp.user.telegramId !== null && !(opts.force && opts.isTeacher))
+      throw new ConflictException(opts.isTeacher ? "Bu o'quvchi botdan foydalanadi: o'chirishni tasdiqlang" : "Botdan foydalanayotgan o'quvchini faqat ustoz o'chira oladi");
     await this.prisma.user.delete({ where: { id: sp.user.id } });
     await this.prisma.auditLog.create({ data: { actorId, action: "student.delete", entity: "StudentProfile", entityId: studentId, meta: { name: fullName(sp.user) } } });
     return { ok: true };
+  }
+
+  /** Ilovaga kirish rejimi: AUTO (obuna/guruh), FREE (bepul ochiq), CLOSED (yopiq) */
+  async setAccess(actorId: string, studentId: string, mode: "AUTO" | "FREE" | "CLOSED") {
+    const { count } = await this.prisma.studentProfile.updateMany({ where: { id: studentId }, data: { accessMode: mode } });
+    if (!count) throw new NotFoundException("O'quvchi topilmadi");
+    await this.prisma.auditLog.create({ data: { actorId, action: "student.access", entity: "StudentProfile", entityId: studentId, meta: { mode } } });
+    return this.detail(studentId, true);
+  }
+
+  /** Bloklangan o'quvchi ilovani ocha olmaydi (tokeni ham darhol ishlamay qoladi) */
+  async setBlocked(actorId: string, studentId: string, blocked: boolean, reason: string | null) {
+    const sp = await this.prisma.studentProfile.findUnique({ where: { id: studentId }, select: { userId: true } });
+    if (!sp) throw new NotFoundException("O'quvchi topilmadi");
+    await this.prisma.user.update({ where: { id: sp.userId }, data: { isBlocked: blocked, blockedReason: blocked ? reason : null } });
+    await this.prisma.auditLog.create({ data: { actorId, action: blocked ? "student.block" : "student.unblock", entity: "StudentProfile", entityId: studentId, meta: { reason } } });
+    return this.detail(studentId, true);
   }
 
   async resetInvite(studentId: string) {
@@ -255,6 +281,7 @@ export class StudentsService {
     return {
       ...row,
       createdAt: sp.createdAt.toISOString(),
+      blockedReason: sp.user.blockedReason,
       inviteUrl: sp.user.telegramId === null ? this.inviteUrl(sp.inviteCode) : null,
       parentInviteUrl: `https://t.me/${this.env.BOT_USERNAME}?start=p_${sp.parentLinkCode}`,
       parentList: sp.parents.map((p) => ({ id: p.id, name: fullName(p.parent), phone: p.phone, relation: p.relation, status: p.status })),

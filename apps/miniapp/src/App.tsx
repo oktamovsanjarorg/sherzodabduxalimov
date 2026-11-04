@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { Navigate, Route, Routes } from "react-router-dom";
 import { AppLayout } from "./components/AppLayout";
-import { api } from "./lib/api";
+import { api, ApiError } from "./lib/api";
 import { getInitData } from "./lib/telegram";
 import { AttemptPage } from "./pages/AttemptPage";
 import { EssayPage } from "./pages/EssayPage";
@@ -25,6 +25,7 @@ export function App() {
   const initData = getInitData();
   const setSession = useAuth((s) => s.setSession);
   const user = useAuth((s) => s.user);
+  const blocked = useAuth((s) => s.blocked);
 
   const session = useQuery({
     queryKey: ["session"],
@@ -39,6 +40,13 @@ export function App() {
 
   if (!initData) return <FullScreen title="Ilovani Telegram ichida oching" text="Bot orqali «Ilovani ochish» tugmasini bosing." />;
   if (session.isPending) return <Splash />;
+  if (blocked || (session.error instanceof ApiError && session.error.code === "BLOCKED"))
+    return (
+      <FullScreen
+        title="Hisobingiz bloklangan"
+        text={`${(blocked ?? session.error?.message ?? "").replace(/^Hisob bloklangan:?\s*/, "") || "Ustoz hisobingizni vaqtincha yopgan."} Savol bo'lsa, ustoz yoki yordamchiga murojaat qiling.`}
+      />
+    );
   if (session.isError) return <FullScreen title="Kirishda xatolik" text={session.error.message} />;
   // Ota-onasi ulanmagan o'quvchi: majburiy qadam (server ham kontentni yopiq tutadi)
   if (user?.role === "STUDENT" && user.parentStatus === "NONE") return <ParentGatePage />;

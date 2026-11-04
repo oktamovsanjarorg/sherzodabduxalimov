@@ -35,6 +35,10 @@ export class AccessService {
   /** Bitta so'rov ichida qayta-qayta ishlatish uchun: "pullik kontent ochiqmi?" */
   async canAccessPaid(user: JwtUser): Promise<boolean> {
     if (this.isStaff(user.role)) return true;
+    // Ustoz qo'lda belgilagan rejim: bepul ochiq yoki yopiq (obuna/guruhdan qat'i nazar)
+    const mode = (await this.prisma.studentProfile.findUnique({ where: { userId: user.sub }, select: { accessMode: true } }))?.accessMode;
+    if (mode === "FREE") return true;
+    if (mode === "CLOSED") return false;
     const [sub, group] = await Promise.all([this.hasActiveSubscription(user.sub), this.activeGroup(user.sub)]);
     return sub || group !== null;
   }

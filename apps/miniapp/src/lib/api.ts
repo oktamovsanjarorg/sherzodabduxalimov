@@ -61,6 +61,8 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   });
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
+    // Ustoz bloklagan: butun ilova o'rniga "bloklangan" ekrani
+    if (res.status === 401 && body.code === "BLOCKED") useAuth.setState({ blocked: body.message ?? "Hisob bloklangan" });
     throw new ApiError(res.status, body.message ?? res.statusText, body.code);
   }
   return res.json() as Promise<T>;

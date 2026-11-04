@@ -3,6 +3,7 @@ import { Reflector } from "@nestjs/core";
 import { JwtService } from "@nestjs/jwt";
 import type { RoleName } from "@onatili/shared";
 import { PrismaService } from "../prisma/prisma.service";
+import { ERROR_CODES } from "@onatili/shared";
 import { IS_PUBLIC, JwtUser, ROLES_KEY } from "./decorators";
 
 /** Global guard: JWT tekshiradi, keyin @Roles() bo'yicha ruxsatni tekshiradi. */
@@ -31,15 +32,15 @@ export class AuthGuard implements CanActivate {
     }
     req.user = payload;
 
+    // Har bir so'rovda hisob bazadan tekshiriladi: o'chirilgan yoki bloklangan foydalanuvchining tokeni
+    // (o'quvchida 1 soat, xodimda 12 soat) darhol kuchini yo'qotadi; rol ham bazadagisi olinadi.
+    const db = await this.prisma.user.findUnique({ where: { id: payload.sub }, select: { role: true, isBlocked: true, blockedReason: true } });
+    if (!db) throw new UnauthorizedException("Hisob topilmadi");
+    if (db.isBlocked) throw new UnauthorizedException({ code: ERROR_CODES.BLOCKED, message: db.blockedReason ? `Hisob bloklangan: ${db.blockedReason}` : "Hisob bloklangan" });
+    req.user = { ...payload, role: db.role };
+
     const roles = this.reflector.getAllAndOverride<RoleName[] | undefined>(ROLES_KEY, targets);
-    if (roles?.length) {
-      // Rol talab qilinadigan (admin) so'rovlarda rol bazadan qayta tekshiriladi: xodim olib tashlansa
-      // yoki bloklansa, uning 12 soatlik tokeni darhol kuchini yo'qotadi.
-      const db = await this.prisma.user.findUnique({ where: { id: payload.sub }, select: { role: true, isBlocked: true } });
-      if (!db || db.isBlocked) throw new UnauthorizedException("Hisob faol emas");
-      if (!roles.includes(db.role)) throw new ForbiddenException("Ruxsat yo'q");
-      req.user = { ...payload, role: db.role };
-    }
+    if (roles?.length && !roles.includes(db.role)) throw new ForbiddenException("Ruxsat yo'q");
     return true;
   }
 }

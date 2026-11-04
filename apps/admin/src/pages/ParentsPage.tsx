@@ -2,7 +2,7 @@ import { PARENT_FLAG_LABELS, type AdminParentLink } from "@onatili/shared";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { AlertTriangle, Check, Phone, ShieldCheck, X } from "lucide-react";
 import { useState } from "react";
-import { Badge, Empty, Modal, PageHeader, Spinner } from "../components/ui";
+import { Badge, ConfirmButton, Empty, Modal, PageHeader, Spinner } from "../components/ui";
 import { api, errMsg } from "../lib/api";
 import { useToast } from "../lib/toast";
 
@@ -67,6 +67,14 @@ function LinkCard({ link }: { link: AdminParentLink }) {
   const qc = useQueryClient();
   const [rejecting, setRejecting] = useState(false);
   const done = () => qc.invalidateQueries({ queryKey: ["parent-links"] });
+  const remove = useMutation({
+    mutationFn: () => api.deleteParentLink(link.id),
+    onSuccess: () => {
+      toast("O'chirildi");
+      done();
+    },
+    onError: (e) => toast(errMsg(e), "error"),
+  });
   const approve = useMutation({
     mutationFn: () => api.approveParent(link.id),
     onSuccess: () => {
@@ -107,11 +115,24 @@ function LinkCard({ link }: { link: AdminParentLink }) {
             </button>
           </div>
         ) : link.status === "APPROVED" ? (
-          <Badge tone="green">
-            <ShieldCheck size={11} /> {link.reviewedBy ?? ""} tasdiqlagan
-          </Badge>
+          <div className="flex w-full flex-wrap items-center justify-end gap-2 sm:w-auto">
+            <Badge tone="green">
+              <ShieldCheck size={11} /> {link.reviewedBy ?? ""} tasdiqlagan
+            </Badge>
+            <button className="btn-danger btn-sm" onClick={() => setRejecting(true)}>
+              Bekor qilish
+            </button>
+          </div>
         ) : (
-          <Badge tone="red">Rad etilgan: {link.rejectReason}</Badge>
+          <div className="flex w-full flex-wrap items-center justify-end gap-2 sm:w-auto">
+            <Badge tone="red">Rad etilgan: {link.rejectReason}</Badge>
+            <button className="btn-secondary btn-sm" onClick={() => approve.mutate()} disabled={approve.isPending}>
+              <Check size={14} /> Qayta tasdiqlash
+            </button>
+            <ConfirmButton label="Ulanish o'chirilsinmi?" onConfirm={() => remove.mutate()}>
+              O'chirish
+            </ConfirmButton>
+          </div>
         )}
       </div>
       {rejecting && <RejectModal link={link} onClose={() => setRejecting(false)} onDone={done} />}
@@ -133,7 +154,7 @@ function RejectModal({ link, onClose, onDone }: { link: AdminParentLink; onClose
   });
   return (
     <Modal
-      title="So'rovni rad etish"
+      title={link.status === "APPROVED" ? "Tasdiqni bekor qilish" : "So'rovni rad etish"}
       onClose={onClose}
       footer={
         <>

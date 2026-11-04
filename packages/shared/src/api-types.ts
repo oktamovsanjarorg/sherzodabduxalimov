@@ -20,6 +20,8 @@ export const meSchema = z.object({
     .nullable(),
   /** Offline guruh a'zosi: obunasiz hamma narsa ochiq */
   offlineGroup: z.object({ name: z.string() }).nullable().default(null),
+  /** Ustoz belgilagan kirish rejimi (o'quvchi uchun) */
+  accessMode: z.enum(["AUTO", "FREE", "CLOSED"]).default("AUTO"),
 });
 export type Me = z.infer<typeof meSchema>;
 

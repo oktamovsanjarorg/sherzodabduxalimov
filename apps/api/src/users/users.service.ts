@@ -14,6 +14,7 @@ export class UsersService {
           select: {
             parents: { where: { status: { in: ["PENDING", "APPROVED"] } }, select: { status: true } },
             group: { select: { name: true, isActive: true } },
+            accessMode: true,
           },
         },
         subscriptions: {
@@ -39,6 +40,7 @@ export class UsersService {
       parentStatus,
       subscription: sub ? { planName: sub.plan.name, endsAt: sub.endsAt.toISOString() } : null,
       offlineGroup: user.student?.group?.isActive ? { name: user.student.group.name } : null,
+      accessMode: user.student?.accessMode ?? "AUTO",
     };
   }
 }

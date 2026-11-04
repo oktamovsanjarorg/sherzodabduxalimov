@@ -1,5 +1,6 @@
 import { Inject, Injectable, UnauthorizedException } from "@nestjs/common";
 import { JwtService } from "@nestjs/jwt";
+import { ERROR_CODES } from "@onatili/shared";
 import { InitDataError, validateInitData, type AuthResponse } from "@onatili/shared/server";
 import { ENV, type Env } from "../config/env";
 import { esc } from "../notify/telegram";
@@ -25,7 +26,8 @@ export class AuthService {
     }
 
     const { user, created } = await this.staff.upsertTelegramUserEx(tg);
-    if (user.isBlocked) throw new UnauthorizedException("Hisob bloklangan");
+    if (user.isBlocked)
+      throw new UnauthorizedException({ code: ERROR_CODES.BLOCKED, message: user.blockedReason ? `Hisob bloklangan: ${user.blockedReason}` : "Hisob bloklangan" });
     if (created && user.role === "STUDENT") {
       const who = esc([user.firstName, user.lastName].filter(Boolean).join(" ")) + (user.username ? ` (@${esc(user.username)})` : "");
       await this.staff.alertOwners(`🆕 <b>Yangi o'quvchi</b> ilovaga kirdi: ${who}\n\nAdmin → O'quvchilar`);
