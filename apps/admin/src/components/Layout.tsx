@@ -82,42 +82,61 @@ export function Layout() {
 
   return (
     <div className="min-h-screen">
-      <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/95 backdrop-blur" style={{ paddingTop: "env(safe-area-inset-top, 0px)" }}>
-        <div className="mx-auto flex h-14 max-w-6xl items-center gap-3 px-4 sm:px-8">
+      {/* Kompyuter: chap tomonda sidebar, barcha bo'limlar ochiq */}
+      <aside className="fixed inset-y-0 left-0 z-30 hidden w-60 flex-col border-r border-slate-200 bg-white md:flex">
+        <div className="flex h-16 items-center gap-3 px-5">
           <img src={`${import.meta.env.BASE_URL}favicon.svg`} alt="" className="h-8 w-8" />
-          <span className="font-extrabold md:hidden">{current.label}</span>
-          <span className="hidden text-sm font-extrabold md:inline">Ona tili · Admin</span>
-
-          {/* Kompyuter: guruhlar tepada */}
-          <nav className="ml-4 hidden flex-1 items-center gap-1 md:flex">
-            {groups.map((g) => {
-              const active = g.match.test(pathname);
-              return (
-                <NavLink
-                  key={g.to}
-                  to={g.to}
-                  className={`relative flex h-9 items-center gap-2 rounded-lg px-3 text-sm font-semibold transition ${
-                    active ? "bg-brand-soft text-brand-dark" : "text-slate-600 hover:bg-slate-100"
-                  }`}
-                >
-                  <g.Icon size={16} />
-                  <span className="relative">
-                    {g.label}
-                    <Badge n={g.badge} />
-                  </span>
-                </NavLink>
-              );
-            })}
-          </nav>
-          <span className="hidden text-right text-xs leading-tight md:block">
-            <span className="block font-bold">{s.user.firstName}</span>
-            <span className="text-slate-500">{ROLE_LABELS[s.user.role]}</span>
-          </span>
+          <span className="text-sm font-extrabold">Ona tili · Admin</span>
         </div>
+        <nav className="flex-1 space-y-4 overflow-y-auto px-3 pb-4">
+          {groups.map((g) => {
+            const items = g.sub ?? [{ to: g.to, label: g.label, match: g.match }];
+            return (
+              <div key={g.to}>
+                {g.sub && (
+                  <p className="mb-1 flex items-center gap-2 px-3 text-[11px] font-bold uppercase tracking-wide text-slate-400">
+                    <g.Icon size={13} /> {g.label}
+                  </p>
+                )}
+                <ul className="space-y-0.5">
+                  {items.map((t) => {
+                    const active = t.match.test(pathname);
+                    return (
+                      <li key={t.to}>
+                        <NavLink
+                          to={t.to}
+                          className={`relative flex h-9 items-center gap-2.5 rounded-lg px-3 text-sm font-semibold transition ${
+                            active ? "bg-brand-soft text-brand-dark" : "text-slate-600 hover:bg-slate-100"
+                          }`}
+                        >
+                          {!g.sub && <g.Icon size={16} />}
+                          <span className="min-w-0 flex-1 truncate">{t.label}</span>
+                          {!g.sub && g.badge ? (
+                            <span className="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-red-600 px-1.5 text-[11px] font-extrabold text-white">{g.badge}</span>
+                          ) : null}
+                        </NavLink>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+            );
+          })}
+        </nav>
+        <div className="border-t border-slate-200 px-5 py-3 text-xs leading-tight">
+          <p className="font-bold">{s.user.firstName}</p>
+          <p className="text-slate-500">{ROLE_LABELS[s.user.role]}</p>
+        </div>
+      </aside>
 
-        {/* Guruh ichidagi bo'limlar */}
+      {/* Telefon/planshet: yuqorida sarlavha va guruh ichidagi bo'limlar */}
+      <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/95 backdrop-blur md:hidden" style={{ paddingTop: "env(safe-area-inset-top, 0px)" }}>
+        <div className="flex h-14 items-center gap-3 px-4">
+          <img src={`${import.meta.env.BASE_URL}favicon.svg`} alt="" className="h-8 w-8" />
+          <span className="font-extrabold">{current.label}</span>
+        </div>
         {current.sub && (
-          <div className="mx-auto flex max-w-6xl gap-1 overflow-x-auto px-4 pb-2 sm:px-8">
+          <div className="flex gap-1 overflow-x-auto px-4 pb-2">
             {current.sub.map((t) => {
               const active = t.match.test(pathname);
               return (
@@ -136,9 +155,11 @@ export function Layout() {
         )}
       </header>
 
-      <main className="mx-auto w-full min-w-0 max-w-6xl px-4 pb-28 pt-5 sm:px-8 sm:pt-8 md:pb-10">
-        <Outlet />
-      </main>
+      <div className="md:pl-60">
+        <main className="mx-auto w-full min-w-0 max-w-6xl px-4 pb-28 pt-5 sm:px-8 sm:pt-8 md:pb-10">
+          <Outlet />
+        </main>
+      </div>
 
       {/* Telefon/planshet: pastki navigatsiya */}
       <nav
