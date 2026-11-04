@@ -4,8 +4,19 @@ import { request } from "node:https";
  * Telegram Bot API'ga xabar yuborish. IPv4 majburiy: serverda IPv6 ishlamaydi,
  * Node'ning standart fetch'i esa avval IPv6 bilan urinib, osilib qoladi.
  */
-export function sendTelegramMessage(botToken: string, chatId: string, text: string): Promise<{ ok: boolean; status: number; description?: string; retryAfter?: number }> {
-  const body = JSON.stringify({ chat_id: chatId, text, parse_mode: "HTML", disable_web_page_preview: true });
+export function sendTelegramMessage(
+  botToken: string,
+  chatId: string,
+  text: string,
+  button?: { text: string; webAppUrl: string },
+): Promise<{ ok: boolean; status: number; description?: string; retryAfter?: number }> {
+  const body = JSON.stringify({
+    chat_id: chatId,
+    text,
+    parse_mode: "HTML",
+    disable_web_page_preview: true,
+    ...(button ? { reply_markup: { inline_keyboard: [[{ text: button.text, web_app: { url: button.webAppUrl } }]] } } : {}),
+  });
   return new Promise((resolve, reject) => {
     const req = request(
       {

@@ -3,13 +3,14 @@
  * Alohida jarayon (konteyner): API'ni og'ir ffmpeg ishi sekinlashtirmasligi uchun.
  */
 import { PrismaClient } from "@onatili/db";
-import { Worker } from "bullmq";
+import { Queue, Worker } from "bullmq";
+import { runSubscriptionReminders } from "./billing/reminders";
 import { rm } from "node:fs/promises";
 import { loadEnv } from "./config/env";
 import { MediaPaths } from "./media/paths";
 import { VIDEO_QUEUE, redisConnection, type TranscodeJob } from "./media/queue";
 import { transcode } from "./media/transcode";
-import { NOTIFY_QUEUE, type NotifyJob } from "./notify/notify.service";
+import { NOTIFY_QUEUE, createNotifyQueue, type NotifyJob } from "./notify/notify.service";
 import { sendTelegramMessage } from "./notify/telegram";
 
 const env = loadEnv();
@@ -69,7 +70,7 @@ worker.on("ready", () => console.log(`[worker] tayyor, navbat: ${env.QUEUE_PREFI
 const notifier = new Worker<NotifyJob>(
   NOTIFY_QUEUE,
   async (job) => {
-    const r = await sendTelegramMessage(env.BOT_TOKEN, job.data.chatId, job.data.text);
+    const r = await sendTelegramMessage(env.BOT_TOKEN, job.data.chatId, job.data.text, job.data.button);
     if (r.ok) {
       if (job.data.attendanceId) {
         await prisma.attendance.update({ where: { id: job.data.attendanceId }, data: { notifiedAt: new Date() } }).catch(() => {});
@@ -87,7 +88,31 @@ const notifier = new Worker<NotifyJob>(
 );
 notifier.on("failed", (job, err) => console.error(`[notify] ${job?.data.chatId} xato:`, err.message.replace(/bot\d+:[\w-]+/g, "bot***")));
 
+/** Obuna eslatmalari: har soatda (to'lov jadvali) */
+const CRON_QUEUE = "billing-cron";
+const notifyQueue = createNotifyQueue(env.REDIS_URL, env.QUEUE_PREFIX);
+const cronQueue = new Queue(CRON_QUEUE, { prefix: env.QUEUE_PREFIX, connection: redisConnection(env.REDIS_URL) });
+void cronQueue
+  .upsertJobScheduler("subscription-reminders", { every: 3600_000 }, { name: "reminders", opts: { removeOnComplete: 50, removeOnFail: 50 } })
+  .catch((e) => console.error("[cron] rejalashtirib bo'lmadi:", e.message));
+const cron = new Worker(
+  CRON_QUEUE,
+  async () => {
+    const r = await runSubscriptionReminders(
+      prisma,
+      (chatId, text, button) => notifyQueue.add("send", { chatId: String(chatId), text, button }),
+      env.MINIAPP_URL,
+    );
+    if (r.sent) console.log(`[cron] obuna eslatmalari: ${r.sent} ta yuborildi`);
+  },
+  { connection: redisConnection(env.REDIS_URL), prefix: env.QUEUE_PREFIX, concurrency: 1 },
+);
+cron.on("failed", (_job, err) => console.error("[cron] xato:", err.message));
+
 const shutdown = async () => {
+  await cron.close();
+  await cronQueue.close();
+  await notifyQueue.close();
   await notifier.close();
   await worker.close();
   await prisma.$disconnect();

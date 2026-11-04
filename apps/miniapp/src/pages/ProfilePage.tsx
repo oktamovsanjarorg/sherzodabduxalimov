@@ -17,7 +17,7 @@ export function ProfilePage() {
 
   const items = [
     { Icon: BarChart3, label: "Statistika", hint: "Natijalar tarixi", to: "/stats" },
-    { Icon: CreditCard, label: "To'lov va obuna", hint: sub ? `Faol · ${formatDate(sub.endsAt)} gacha` : "Obuna yo'q", to: "/subscribe" },
+    { Icon: CreditCard, label: "To'lov va obuna", hint: user.offlineGroup ? `Offline · ${user.offlineGroup.name}` : sub ? `Faol · ${formatDate(sub.endsAt)} gacha` : "Obuna yo'q", to: "/subscribe" },
     { Icon: CalendarCheck, label: "Davomatim", hint: "Offline darslar", to: "/my-attendance" },
     {
       Icon: Users,

@@ -1,9 +1,19 @@
 import { Body, Controller, Delete, Get, HttpCode, Param, Patch, Post, Put, Query, Res } from "@nestjs/common";
-import { billingSettingsInput, grantSubscriptionInput, paymentRejectInput, planInput, type PaymentStatusName } from "@onatili/shared";
+import {
+  billingSettingsInput,
+  currentMonth,
+  grantSubscriptionInput,
+  groupFeeInput,
+  offlinePaymentInput,
+  paymentRejectInput,
+  planInput,
+  type PaymentStatusName,
+} from "@onatili/shared";
 import type { FastifyReply } from "fastify";
 import { CurrentUser, Roles, type JwtUser } from "../auth/decorators";
 import { parse } from "../admin/zod";
 import { BillingService } from "./billing.service";
+import { OfflineBillingService } from "./offline.service";
 
 /** O'quvchi: tariflar, karta, chek yuborish */
 @Controller("billing")
@@ -81,5 +91,32 @@ export class AdminBillingController {
 
   @Put("billing-settings") saveCard(@CurrentUser() u: JwtUser, @Body() b: unknown) {
     return this.svc.saveCard(u.sub, parse(billingSettingsInput, b));
+  }
+}
+
+/** Ustoz (ega): offline guruhlarning oylik to'lovlari */
+@Roles("TEACHER")
+@Controller("admin/offline-payments")
+export class AdminOfflineBillingController {
+  constructor(private readonly svc: OfflineBillingService) {}
+
+  @Get() ledger(@Query("groupId") groupId = "", @Query("month") month?: string) {
+    return this.svc.ledger(groupId, month || currentMonth());
+  }
+
+  @Put() mark(@CurrentUser() u: JwtUser, @Body() b: unknown) {
+    return this.svc.mark(u.sub, parse(offlinePaymentInput, b));
+  }
+
+  @Delete(":studentId/:month") unmark(@CurrentUser() u: JwtUser, @Param("studentId") studentId: string, @Param("month") month: string) {
+    return this.svc.unmark(u.sub, studentId, month);
+  }
+
+  @Patch("groups/:id/fee") fee(@CurrentUser() u: JwtUser, @Param("id") id: string, @Body() b: unknown) {
+    return this.svc.setFee(u.sub, id, parse(groupFeeInput, b).monthlyFeeUzs);
+  }
+
+  @Post("remind") @HttpCode(200) remind(@CurrentUser() u: JwtUser, @Body() b: { groupId?: string; month?: string }) {
+    return this.svc.remind(u.sub, b?.groupId ?? "", b?.month || currentMonth());
   }
 }

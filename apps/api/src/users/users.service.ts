@@ -10,7 +10,12 @@ export class UsersService {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
       include: {
-        student: { select: { parents: { where: { status: { in: ["PENDING", "APPROVED"] } }, select: { status: true } } } },
+        student: {
+          select: {
+            parents: { where: { status: { in: ["PENDING", "APPROVED"] } }, select: { status: true } },
+            group: { select: { name: true, isActive: true } },
+          },
+        },
         subscriptions: {
           where: { status: "ACTIVE", endsAt: { gt: new Date() } },
           orderBy: { endsAt: "desc" },
@@ -33,6 +38,7 @@ export class UsersService {
       phone: user.phone,
       parentStatus,
       subscription: sub ? { planName: sub.plan.name, endsAt: sub.endsAt.toISOString() } : null,
+      offlineGroup: user.student?.group?.isActive ? { name: user.student.group.name } : null,
     };
   }
 }

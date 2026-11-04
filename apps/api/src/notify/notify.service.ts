@@ -9,6 +9,8 @@ export interface NotifyJob {
   text: string; // HTML
   /** Xabar yuborilgach DB'da belgilash uchun (masalan, davomat yozuvi) */
   attendanceId?: string;
+  /** Xabar ostidagi Mini App tugmasi */
+  button?: { text: string; webAppUrl: string };
 }
 
 export function createNotifyQueue(redisUrl: string, prefix: string) {
@@ -31,5 +33,8 @@ export class NotifyService implements OnModuleDestroy {
   }
   send(chatId: bigint | string, text: string, attendanceId?: string) {
     return this.queue.add("send", { chatId: String(chatId), text, attendanceId });
+  }
+  sendWithButton(chatId: bigint | string, text: string, button?: NotifyJob["button"]) {
+    return this.queue.add("send", { chatId: String(chatId), text, button });
   }
 }

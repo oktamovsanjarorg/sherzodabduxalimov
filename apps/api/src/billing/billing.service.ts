@@ -5,6 +5,7 @@ import {
   type AdminPayment,
   type AdminPlan,
   type AdminSubscription,
+  type AdminSubscriptions,
   type BillingCard,
   type BillingSettingsInput,
   type BillingView,
@@ -18,6 +19,7 @@ import { ENV, type Env } from "../config/env";
 import { NotifyService } from "../notify/notify.service";
 import { esc } from "../notify/telegram";
 import { PrismaService } from "../prisma/prisma.service";
+import { OfflineBillingService } from "./offline.service";
 
 const DAY = 86_400_000;
 const BILLING_KEY = "billing";
@@ -53,6 +55,7 @@ export class BillingService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly notify: NotifyService,
+    private readonly offline: OfflineBillingService,
     @Inject(ENV) env: Env,
   ) {
     this.mediaRoot = resolve(env.MEDIA_DIR);
@@ -111,7 +114,7 @@ export class BillingService {
 
   async view(userId: string): Promise<BillingView> {
     const now = new Date();
-    const [plans, card, sub, payments] = await Promise.all([
+    const [plans, card, sub, payments, offline] = await Promise.all([
       this.prisma.plan.findMany({ where: { isActive: true }, orderBy: [{ sortOrder: "asc" }, { priceUzs: "asc" }] }),
       this.card(),
       this.prisma.subscription.findFirst({
@@ -120,6 +123,7 @@ export class BillingService {
         include: { plan: { select: { name: true } } },
       }),
       this.prisma.payment.findMany({ where: { userId }, orderBy: { createdAt: "desc" }, take: 10, include: { plan: { select: { name: true } } } }),
+      this.offline.mine(userId),
     ]);
     const mine = payments.map(
       (p): MyPayment => ({
@@ -137,6 +141,7 @@ export class BillingService {
       subscription: sub ? { planName: sub.plan.name, endsAt: sub.endsAt.toISOString() } : null,
       pending: mine.find((p) => p.status === "PENDING") ?? null,
       history: mine,
+      offline,
     };
   }
 
@@ -146,6 +151,7 @@ export class BillingService {
     if (!ext) throw new BadRequestException("Faqat rasm (JPG, PNG, WEBP) qabul qilinadi");
     const plan = await this.prisma.plan.findFirst({ where: { id: planId, isActive: true } });
     if (!plan) throw new NotFoundException("Tarif topilmadi");
+    if (await this.offline.mine(userId)) throw new ConflictException("Siz offline guruhdasiz: obuna kerak emas, to'lov darsda olinadi");
     if (await this.prisma.payment.count({ where: { userId, status: "PENDING" } }))
       throw new ConflictException("Avvalgi chekingiz hali tekshirilmoqda");
 
@@ -286,14 +292,27 @@ export class BillingService {
     return { ok: true, endsAt: sub.endsAt.toISOString() };
   }
 
-  async subscriptions(): Promise<AdminSubscription[]> {
-    const rows = await this.prisma.subscription.findMany({
-      where: { status: "ACTIVE", endsAt: { gt: new Date() } },
-      orderBy: { endsAt: "asc" },
-      include: { user: { select: { id: true, firstName: true, lastName: true, username: true, phone: true } }, plan: { select: { name: true } }, payment: { select: { method: true } } },
-      take: 500,
-    });
-    return rows.map((s) => ({
+  async subscriptions(): Promise<AdminSubscriptions> {
+    const now = new Date();
+    const include = {
+      user: { select: { id: true, firstName: true, lastName: true, username: true, phone: true } },
+      plan: { select: { name: true } },
+      payment: { select: { method: true } },
+    } satisfies Prisma.SubscriptionInclude;
+    const [active, ended] = await Promise.all([
+      this.prisma.subscription.findMany({ where: { status: "ACTIVE", endsAt: { gt: now } }, orderBy: { endsAt: "asc" }, include, take: 500 }),
+      this.prisma.subscription.findMany({
+        where: { status: "ACTIVE", endsAt: { lte: now, gt: new Date(now.getTime() - 30 * DAY) } },
+        orderBy: { endsAt: "desc" },
+        include,
+        take: 500,
+      }),
+    ]);
+    const activeUsers = new Set(active.map((s) => s.userId));
+    const seen = new Set<string>();
+    // Uzaytirmaganlar: hozir faol obunasi yo'q, har o'quvchi bir marta
+    const lapsed = ended.filter((s) => !activeUsers.has(s.userId) && !seen.has(s.userId) && seen.add(s.userId));
+    const map = (s: (typeof active)[number]): AdminSubscription => ({
       id: s.id,
       student: { id: s.user.id, name: fullName(s.user), username: s.user.username, phone: s.user.phone },
       planName: s.plan.name,
@@ -301,7 +320,8 @@ export class BillingService {
       endsAt: s.endsAt.toISOString(),
       status: s.status,
       method: s.payment?.method ?? null,
-    }));
+    });
+    return { active: active.map(map), lapsed: lapsed.map(map) };
   }
 
   async cancelSubscription(actorId: string, id: string) {

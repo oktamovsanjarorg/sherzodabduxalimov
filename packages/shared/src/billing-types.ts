@@ -39,6 +39,8 @@ export interface BillingView {
   subscription: { planName: string; endsAt: string } | null;
   pending: MyPayment | null;
   history: MyPayment[];
+  /** Offline guruh a'zosi bo'lsa: obuna kerak emas, oylik to'lov holati */
+  offline: MyOfflineBilling | null;
 }
 
 export interface AdminPayment {
@@ -58,6 +60,12 @@ export interface AdminPayment {
   subscription: { startsAt: string; endsAt: string } | null;
   /** O'quvchining hozirgi faol obunasi (tasdiqlansa shu sanadan uzaytiriladi) */
   activeUntil: string | null;
+}
+
+export interface AdminSubscriptions {
+  active: AdminSubscription[];
+  /** So'nggi 30 kunda tugagan va uzaytirilmagan */
+  lapsed: AdminSubscription[];
 }
 
 export interface AdminSubscription {
@@ -110,3 +118,47 @@ export const grantSubscriptionInput = z.object({
 export const formatCard = (n: string) => n.replace(/\D/g, "").replace(/(\d{4})(?=\d)/g, "$1 ");
 /** 150000 -> "150 000" */
 export const formatSum = (n: number) => String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+
+// ===================== Offline guruh to'lovlari =====================
+
+export const MONTH_RE = /^\d{4}-(0[1-9]|1[0-2])$/;
+const UZ_MONTHS = ["yanvar", "fevral", "mart", "aprel", "may", "iyun", "iyul", "avgust", "sentabr", "oktabr", "noyabr", "dekabr"];
+/** "2026-11" -> "noyabr 2026" */
+export const monthLabel = (m: string) => `${UZ_MONTHS[Number(m.slice(5, 7)) - 1]} ${m.slice(0, 4)}`;
+/** Toshkent vaqti bo'yicha joriy oy: "2026-11" */
+export const currentMonth = (now = new Date()) => new Date(now.getTime() + 5 * 3600_000).toISOString().slice(0, 7);
+
+export interface OfflineLedgerRow {
+  studentId: string;
+  name: string;
+  username: string | null;
+  phone: string | null;
+  /** Xabar yuboriladigan (tasdiqlangan) ota-onalar soni */
+  approvedParents: number;
+  paid: { amountUzs: number; note: string | null; paidAt: string; markedBy: string | null } | null;
+}
+
+export interface OfflineLedger {
+  group: { id: string; name: string; monthlyFeeUzs: number | null };
+  month: string;
+  rows: OfflineLedgerRow[];
+  totals: { students: number; paid: number; debtors: number; sumUzs: number };
+  /** Shu oy uchun qarzdorlarga oxirgi eslatma qachon yuborilgan */
+  lastReminderAt: string | null;
+}
+
+export const offlinePaymentInput = z.object({
+  studentId: z.string().min(1),
+  month: z.string().regex(MONTH_RE, "Oy YYYY-MM ko'rinishida bo'lishi kerak"),
+  amountUzs: z.coerce.number().int().min(0).max(100_000_000).optional(),
+  note: z.string().trim().max(300).nullable().default(null),
+});
+
+export const groupFeeInput = z.object({ monthlyFeeUzs: z.coerce.number().int().min(0).max(100_000_000).nullable() });
+
+/** O'quvchi o'zining offline to'lov holatini ko'radi */
+export interface MyOfflineBilling {
+  groupName: string;
+  monthlyFeeUzs: number | null;
+  months: { month: string; paid: boolean; amountUzs: number | null }[];
+}

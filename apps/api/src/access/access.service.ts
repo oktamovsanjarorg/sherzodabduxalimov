@@ -12,17 +12,31 @@ export class AccessService {
     return STAFF_ROLES.includes(role);
   }
 
+  /**
+   * Obuna tugagach yana 1 kun ochiq turadi: chek yuborilib, tasdiqlanguncha o'quvchi darsdan uzilmasin.
+   * (Ilovada sana haqiqiy tugash kuni bilan ko'rsatiladi.)
+   */
+  static readonly GRACE_MS = 86_400_000;
+
   async hasActiveSubscription(userId: string, now = new Date()): Promise<boolean> {
     const sub = await this.prisma.subscription.findFirst({
-      where: { userId, status: "ACTIVE", startsAt: { lte: now }, endsAt: { gt: now } },
+      where: { userId, status: "ACTIVE", startsAt: { lte: now }, endsAt: { gt: new Date(now.getTime() - AccessService.GRACE_MS) } },
       select: { id: true },
     });
     return sub !== null;
   }
 
+  /** Offline o'quvchi: faol guruhga a'zo ekan, hamma narsa ochiq (to'lov darsda olinadi) */
+  async activeGroup(userId: string): Promise<{ id: string; name: string } | null> {
+    const p = await this.prisma.studentProfile.findUnique({ where: { userId }, select: { group: { select: { id: true, name: true, isActive: true } } } });
+    return p?.group?.isActive ? { id: p.group.id, name: p.group.name } : null;
+  }
+
   /** Bitta so'rov ichida qayta-qayta ishlatish uchun: "pullik kontent ochiqmi?" */
   async canAccessPaid(user: JwtUser): Promise<boolean> {
-    return this.isStaff(user.role) || (await this.hasActiveSubscription(user.sub));
+    if (this.isStaff(user.role)) return true;
+    const [sub, group] = await Promise.all([this.hasActiveSubscription(user.sub), this.activeGroup(user.sub)]);
+    return sub || group !== null;
   }
 
   assertAccess(isFree: boolean, paidOpen: boolean) {

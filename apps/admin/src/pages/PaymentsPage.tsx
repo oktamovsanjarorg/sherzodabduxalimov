@@ -2,17 +2,22 @@ import { formatSum, type AdminPayment, type AdminStudent, type AdminSubscription
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Check, Gift, ImageOff, Phone, Search, X } from "lucide-react";
 import { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
+import { OfflineLedgerView } from "./OfflineLedger";
 import { Badge, ConfirmButton, Empty, Field, Modal, PageHeader, Spinner } from "../components/ui";
 import { api, errMsg } from "../lib/api";
 import { useToast } from "../lib/toast";
 
-type Tab = PaymentStatusName | "SUBS";
+type Tab = PaymentStatusName | "SUBS" | "OFFLINE";
+const TABS: Tab[] = ["PENDING", "APPROVED", "REJECTED", "SUBS", "OFFLINE"];
 const REASONS = ["Summa to'liq emas", "Chek o'qilmaydi", "Pul kartaga tushmagan", "Boshqa to'lovning cheki"];
 const date = (iso: string) => new Date(iso).toLocaleDateString("ru-RU");
 const dateTime = (iso: string) => new Date(iso).toLocaleString("ru-RU", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
 
 export function PaymentsPage() {
-  const [tab, setTab] = useState<Tab>("PENDING");
+  const [params, setParams] = useSearchParams();
+  const tab: Tab = TABS.includes(params.get("tab") as Tab) ? (params.get("tab") as Tab) : "PENDING";
+  const setTab = (t: Tab) => setParams(t === "PENDING" ? {} : { tab: t }, { replace: true });
   const [granting, setGranting] = useState(false);
   const pending = useQuery({ queryKey: ["payments", "PENDING"], queryFn: () => api.payments("PENDING"), refetchInterval: 15_000 });
   const n = pending.data?.length ?? 0;
@@ -35,16 +40,21 @@ export function PaymentsPage() {
               ["PENDING", `Kutilmoqda${n ? ` (${n})` : ""}`],
               ["APPROVED", "Tasdiqlangan"],
               ["REJECTED", "Rad etilgan"],
-              ["SUBS", "Obunachilar"],
+              ["SUBS", "Online obunalar"],
+              ["OFFLINE", "Offline guruhlar"],
             ] as const
           ).map(([k, l]) => (
-            <button key={k} onClick={() => setTab(k)} className={`whitespace-nowrap rounded-md px-3 py-1.5 ${tab === k ? "bg-brand text-white" : "text-slate-600"}`}>
+            <button
+              key={k}
+              ref={tab === k ? (el) => el?.scrollIntoView({ block: "nearest", inline: "nearest" }) : undefined}
+              onClick={() => setTab(k)}
+              className={`whitespace-nowrap rounded-md px-3 py-1.5 ${tab === k ? "bg-brand text-white" : "text-slate-600"}`}>
               {l}
             </button>
           ))}
         </div>
       </div>
-      {tab === "SUBS" ? <Subscribers /> : <PaymentList status={tab} />}
+      {tab === "SUBS" ? <Subscribers /> : tab === "OFFLINE" ? <OfflineLedgerView /> : <PaymentList status={tab} />}
       {granting && <GrantModal onClose={() => setGranting(false)} />}
     </>
   );
@@ -207,6 +217,7 @@ function Subscribers() {
   const toast = useToast();
   const qc = useQueryClient();
   const [q, setQ] = useState("");
+  const [view, setView] = useState<"all" | "soon" | "lapsed">("all");
   const subs = useQuery({ queryKey: ["subscriptions"], queryFn: api.subscriptions });
   const cancel = useMutation({
     mutationFn: (id: string) => api.cancelSubscription(id),
@@ -217,18 +228,43 @@ function Subscribers() {
     onError: (e) => toast(errMsg(e), "error"),
   });
   if (subs.isPending) return <Spinner className="text-slate-400" />;
+  const soon = Date.now() + 7 * 86_400_000;
+  // Bir o'quvchining ketma-ket obunalaridan oxirgisi "tugash sanasi" hisoblanadi
+  const lastEnd = new Map<string, number>();
+  for (const s of subs.data?.active ?? []) lastEnd.set(s.student.id, Math.max(lastEnd.get(s.student.id) ?? 0, new Date(s.endsAt).getTime()));
+  const base =
+    view === "lapsed"
+      ? (subs.data?.lapsed ?? [])
+      : (subs.data?.active ?? []).filter((s) => view === "all" || (lastEnd.get(s.student.id)! <= soon && new Date(s.endsAt).getTime() === lastEnd.get(s.student.id)));
   const needle = q.trim().toLowerCase();
-  const rows = (subs.data ?? []).filter((s) => !needle || `${s.student.name} ${s.student.username ?? ""} ${s.student.phone ?? ""}`.toLowerCase().includes(needle));
-  const soon = Date.now() + 5 * 86_400_000;
+  const rows = base.filter((s) => !needle || `${s.student.name} ${s.student.username ?? ""} ${s.student.phone ?? ""}`.toLowerCase().includes(needle));
+  const soonCount = [...lastEnd.values()].filter((t) => t <= soon).length;
   return (
     <>
-      <div className="relative mb-3 max-w-sm">
-        <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-        <input className="input pl-9" placeholder="Ism, username yoki telefon" value={q} onChange={(e) => setQ(e.target.value)} />
+      <div className="mb-3 flex flex-wrap items-center gap-2">
+        {(
+          [
+            ["all", `Faol (${lastEnd.size})`],
+            ["soon", `7 kunda tugaydi (${soonCount})`],
+            ["lapsed", `Uzaytirmagan (${subs.data?.lapsed.length ?? 0})`],
+          ] as const
+        ).map(([k, l]) => (
+          <button key={k} onClick={() => setView(k)} className={`h-8 rounded-full px-3 text-xs font-bold ${view === k ? "bg-slate-900 text-white" : "bg-slate-100 text-slate-600"}`}>
+            {l}
+          </button>
+        ))}
+        <div className="relative ml-auto w-full max-w-xs sm:w-auto">
+          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+          <input className="input pl-9" placeholder="Ism, username yoki telefon" value={q} onChange={(e) => setQ(e.target.value)} />
+        </div>
       </div>
-      <p className="mb-2 text-sm text-slate-500">Faol obunalar: {subs.data?.length ?? 0} ta (tugash sanasi bo'yicha)</p>
+      <p className="mb-2 text-xs text-slate-500">
+        {view === "lapsed"
+          ? "So'nggi 30 kunda obunasi tugagan va uzaytirmagan o'quvchilar. Ularga qo'ng'iroq qilib eslatish mumkin."
+          : "Bot o'quvchiga obuna tugashiga 3 kun va 1 kun qolganda hamda tugagan kuni avtomatik eslatadi."}
+      </p>
       {!rows.length ? (
-        <Empty title="Faol obuna yo'q" />
+        <Empty title={view === "lapsed" ? "Uzaytirmagan o'quvchi yo'q" : "Ro'yxat bo'sh"} />
       ) : (
         <div className="card divide-y divide-slate-100">
           {rows.map((s: AdminSubscription) => (
@@ -238,15 +274,26 @@ function Subscribers() {
                 <p className="truncate text-xs text-slate-500">
                   {s.student.username ? `@${s.student.username} · ` : ""}
                   {s.planName}
+                  {s.student.phone && (
+                    <a href={`tel:${s.student.phone}`} className="ml-2 font-semibold text-brand">
+                      {s.student.phone}
+                    </a>
+                  )}
                 </p>
               </div>
-              <Badge tone={new Date(s.endsAt).getTime() < soon ? "amber" : "green"}>
-                {new Date(s.startsAt).getTime() > Date.now() ? `${date(s.startsAt)} dan ` : ""}
-                {date(s.endsAt)} gacha
-              </Badge>
-              <ConfirmButton label="Obuna bekor qilinsinmi?" onConfirm={() => cancel.mutate(s.id)}>
-                Bekor qilish
-              </ConfirmButton>
+              {view === "lapsed" ? (
+                <Badge tone="red">{date(s.endsAt)} da tugagan</Badge>
+              ) : (
+                <>
+                  <Badge tone={new Date(s.endsAt).getTime() < soon ? "amber" : "green"}>
+                    {new Date(s.startsAt).getTime() > Date.now() ? `${date(s.startsAt)} dan ` : ""}
+                    {date(s.endsAt)} gacha
+                  </Badge>
+                  <ConfirmButton label="Obuna bekor qilinsinmi?" onConfirm={() => cancel.mutate(s.id)}>
+                    Bekor qilish
+                  </ConfirmButton>
+                </>
+              )}
             </div>
           ))}
         </div>

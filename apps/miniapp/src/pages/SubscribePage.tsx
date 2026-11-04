@@ -1,4 +1,4 @@
-import { formatCard, formatSum, STAFF_ROLES, type BillingView, type MyPayment } from "@onatili/shared";
+import { formatCard, formatSum, monthLabel, STAFF_ROLES, type BillingView, type MyOfflineBilling, type MyPayment } from "@onatili/shared";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Check, CheckCircle2, Clock, Copy, ImagePlus, Loader2, XCircle } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
@@ -38,7 +38,9 @@ export function SubscribePage() {
       {billing.isError && <p className="card mt-4 text-center text-sm text-danger">Ma'lumotni yuklab bo'lmadi</p>}
       {b && (
         <>
-          {b.subscription ? (
+          {b.offline ? (
+            <OfflineCard o={b.offline} />
+          ) : b.subscription ? (
             <div className="card mt-4 flex items-center gap-3">
               <CheckCircle2 size={28} className="shrink-0 text-success" />
               <div>
@@ -58,7 +60,7 @@ export function SubscribePage() {
             </div>
           )}
 
-          {isStaff ? (
+          {b.offline ? null : isStaff ? (
             <p className="card mt-4 text-center text-sm text-hint">Siz xodimsiz: barcha kontent obunasiz ochiq. To'lov formasi o'quvchilarga ko'rinadi.</p>
           ) : b.pending ? (
             <PendingCard p={b.pending} onCancelled={() => qc.invalidateQueries({ queryKey: ["billing"] })} />
@@ -96,6 +98,32 @@ function useSyncSubscription(b: BillingView | undefined) {
     useAuth.setState({ user: { ...user, subscription: b.subscription } });
     qc.invalidateQueries({ predicate: (q) => q.queryKey[0] !== "billing" });
   }, [b, user, qc]);
+}
+
+function OfflineCard({ o }: { o: MyOfflineBilling }) {
+  return (
+    <>
+      <div className="card mt-4 flex items-center gap-3">
+        <CheckCircle2 size={28} className="shrink-0 text-success" />
+        <div>
+          <p className="font-bold">Offline guruh: {o.groupName}</p>
+          <p className="text-sm text-hint">Barcha darslar va testlar ochiq. To'lov darsda qabul qilinadi.</p>
+        </div>
+      </div>
+      <p className="mb-2 mt-6 px-1 text-sm font-bold text-hint">Oylik to'lovlar{o.monthlyFeeUzs ? ` · ${formatSum(o.monthlyFeeUzs)} so'm` : ""}</p>
+      <div className="card divide-y divide-hint/10 py-1">
+        {o.months.map((m) => (
+          <div key={m.month} className="flex items-center gap-3 py-3">
+            {m.paid ? <CheckCircle2 size={20} className="shrink-0 text-success" /> : <Clock size={20} className="shrink-0 text-hint" />}
+            <span className="flex-1 text-sm font-semibold capitalize">{monthLabel(m.month)}</span>
+            <span className={`text-xs font-bold ${m.paid ? "text-success" : "text-hint"}`}>
+              {m.paid ? `To'langan${m.amountUzs ? ` · ${formatSum(m.amountUzs)}` : ""}` : "To'lanmagan"}
+            </span>
+          </div>
+        ))}
+      </div>
+    </>
+  );
 }
 
 function PayForm({ b }: { b: BillingView }) {

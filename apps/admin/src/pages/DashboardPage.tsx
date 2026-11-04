@@ -16,7 +16,8 @@ export function DashboardPage() {
   const x = d.data;
   const unmarked = x.attendanceToday.groups.filter((g) => g.total > 0 && g.marked < g.total);
   const payments = isTeacher ? x.pendingPayments : 0;
-  const todo = (payments ? 1 : 0) + (x.pendingEssays ? 1 : 0) + (x.pendingParents ? 1 : 0) + (unmarked.length ? 1 : 0) + (x.videos.failed ? 1 : 0);
+  const expiring = isTeacher ? x.expiringSubscriptions : 0;
+  const todo = (expiring ? 1 : 0) + (payments ? 1 : 0) + (x.pendingEssays ? 1 : 0) + (x.pendingParents ? 1 : 0) + (unmarked.length ? 1 : 0) + (x.videos.failed ? 1 : 0);
 
   return (
     <div className="space-y-6">
@@ -30,6 +31,9 @@ export function DashboardPage() {
         <h2 className="label">Bugun</h2>
         {payments > 0 && (
           <Todo to="/payments" tone="amber" Icon={CreditCard} title={`${payments} ta to'lov cheki kutmoqda`} hint="Pul kartaga tushganini tekshirib tasdiqlang" />
+        )}
+        {expiring > 0 && (
+          <Todo to="/payments?tab=SUBS" tone="brand" Icon={CreditCard} title={`${expiring} ta online obuna 7 kun ichida tugaydi`} hint="Bot o'quvchilarga o'zi eslatadi. Ro'yxatni ko'rish" />
         )}
         {x.pendingEssays > 0 && (
           <Todo to="/essays" tone="amber" Icon={FileText} title={`${x.pendingEssays} ta esse tekshirilmagan`} hint="O'quvchilar yakuniy natijani kutmoqda" />

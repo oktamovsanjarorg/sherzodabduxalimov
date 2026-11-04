@@ -130,7 +130,7 @@ describe("Qo'lda to'lov va obuna (e2e)", () => {
     const g = (await req("POST", "/admin/subscriptions", { userId: studentId, planId, note: "Naqd" })).json();
     expect(new Date(g.endsAt).getTime() - new Date(before).getTime()).toBe(30 * DAY);
 
-    const subs = (await req("GET", "/admin/subscriptions")).json().filter((s: { student: { id: string } }) => s.student.id === studentId);
+    const subs = (await req("GET", "/admin/subscriptions")).json().active.filter((s: { student: { id: string } }) => s.student.id === studentId);
     expect(subs).toHaveLength(2);
     for (const s of subs) expect((await req("POST", `/admin/subscriptions/${s.id}/cancel`)).statusCode).toBe(200);
     expect((await req("GET", "/me", undefined, S)).json().subscription).toBeNull();

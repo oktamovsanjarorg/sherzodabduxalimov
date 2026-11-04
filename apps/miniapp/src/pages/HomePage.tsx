@@ -32,7 +32,7 @@ export function HomePage() {
           <p className="text-xs text-hint">Xush kelibsiz</p>
           <h1 className="truncate text-lg font-extrabold leading-tight">{user.firstName}</h1>
         </div>
-        <button onClick={go("/subscribe")}>{sub ? <Badge>Obuna faol</Badge> : <Badge tone="muted">Bepul</Badge>}</button>
+        <button onClick={go("/subscribe")}>{sub ? <Badge>Obuna faol</Badge> : user.offlineGroup ? <Badge>Offline guruh</Badge> : <Badge tone="muted">Bepul</Badge>}</button>
       </header>
 
       {/* Davom ettirish yoki boshlash kartasi */}

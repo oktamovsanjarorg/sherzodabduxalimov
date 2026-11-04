@@ -45,6 +45,7 @@ model User {
   payments      Payment[]
   paymentsReviewed Payment[]     @relation("PaymentReviewer")
   attendanceMarked Attendance[]  @relation("AttendanceMarker")
+  offlinePaymentsMarked OfflinePayment[] @relation("OfflinePaymentMarker")
   lessonProgress LessonProgress[]
   auditLogs     AuditLog[]
   loginTokens   LoginToken[]
@@ -62,6 +63,7 @@ model StudentProfile {
   parentLinkCode String     @unique // ota-ona botga shu kod bilan ulanadi
   parents        ParentLink[]
   attendance     Attendance[]
+  offlinePayments OfflinePayment[]
   createdAt      DateTime   @default(now())
 }
 
@@ -96,9 +98,12 @@ model Group {
   id        String           @id @default(cuid())
   name      String
   schedule  String? // masalan: "Du/Chor/Ju 14:00"
+  /// Offline guruhning oylik to'lovi (so'm). To'lovni belgilashda standart summa
+  monthlyFeeUzs Int?
   isActive  Boolean          @default(true)
   students  StudentProfile[]
   attendance Attendance[]
+  offlinePayments OfflinePayment[]
   createdAt DateTime         @default(now())
 }
 
@@ -383,6 +388,8 @@ model Subscription {
   startsAt  DateTime
   endsAt    DateTime
   status    SubscriptionStatus @default(ACTIVE)
+  /// Yuborilgan eslatma bosqichi: 0 yo'q, 1 "3 kun qoldi", 2 "1 kun qoldi", 3 "tugadi"
+  reminderStage Int            @default(0)
   payment   Payment?
   createdAt DateTime           @default(now())
 
@@ -424,6 +431,24 @@ model Payment {
   @@unique([method, externalId])
   @@index([status, createdAt])
   @@index([userId, createdAt])
+}
+
+/// Offline guruh o'quvchisining oylik to'lovi (naqd/karta, darsda olinadi). Bir oyga bitta yozuv.
+model OfflinePayment {
+  id         String         @id @default(cuid())
+  studentId  String
+  student    StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  groupId    String?
+  group      Group?         @relation(fields: [groupId], references: [id], onDelete: SetNull)
+  month      String // "2026-11"
+  amountUzs  Int
+  note       String?
+  markedById String?
+  markedBy   User?          @relation("OfflinePaymentMarker", fields: [markedById], references: [id], onDelete: SetNull)
+  createdAt  DateTime       @default(now())
+
+  @@unique([studentId, month])
+  @@index([groupId, month])
 }
 
 /// Ilova sozlamalari (kalit -> JSON). Masalan: "billing" = karta rekvizitlari

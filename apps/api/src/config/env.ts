@@ -21,6 +21,8 @@ const schema = z.object({
   QUEUE_PREFIX: z.string().default("onatili"),
   // HLS segmentlari qayerdan beriladi: dev'da API'ning o'zi, prod'da nginx (/media-files/v)
   MEDIA_SEGMENT_BASE: z.string().default("/api/media-seg"),
+  // Mini App manzili: bot xabaridagi "Obunani uzaytirish" tugmasi uchun (bo'lmasa tugmasiz yuboriladi)
+  MINIAPP_URL: z.string().url().startsWith("https://").optional().catch(undefined),
 });
 
 export type Env = z.infer<typeof schema>;

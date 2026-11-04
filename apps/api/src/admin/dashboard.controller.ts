@@ -6,6 +6,8 @@ export interface AdminDashboard {
   pendingParents: number;
   pendingEssays: number;
   pendingPayments: number;
+  /** 7 kun ichida tugaydigan online obunalar */
+  expiringSubscriptions: number;
   videos: { processing: number; failed: number };
   students: { total: number; withoutApprovedParent: number };
   attendanceToday: { groups: { id: string; name: string; schedule: string | null; marked: number; total: number }[] };
@@ -25,6 +27,14 @@ export class DashboardController {
       where: { question: { type: "ESSAY" }, points: null, textAnswer: { not: null }, attempt: { status: { in: ["SUBMITTED", "EXPIRED"] } } },
     });
     const pendingPayments = await this.prisma.payment.count({ where: { status: "PENDING" } });
+    const now = new Date();
+    const expiringSubscriptions = (
+      await this.prisma.subscription.groupBy({
+        by: ["userId"],
+        where: { status: "ACTIVE", endsAt: { gt: now } },
+        _max: { endsAt: true },
+      })
+    ).filter((g) => g._max.endsAt! <= new Date(now.getTime() + 7 * 86_400_000)).length;
     const [pendingParents, processing, failed, total, withApproved, groups, lp, ld, tests, questions] = await Promise.all([
       this.prisma.parentLink.count({ where: { status: "PENDING" } }),
       this.prisma.video.count({ where: { status: { in: ["PROCESSING", "UPLOADING"] }, lesson: { isNot: null } } }),
@@ -45,6 +55,7 @@ export class DashboardController {
       pendingParents,
       pendingEssays,
       pendingPayments,
+      expiringSubscriptions,
       videos: { processing, failed },
       students: { total, withoutApprovedParent: total - withApproved },
       attendanceToday: { groups: groups.map((g) => ({ id: g.id, name: g.name, schedule: g.schedule, marked: g.attendance.length, total: g._count.students })) },

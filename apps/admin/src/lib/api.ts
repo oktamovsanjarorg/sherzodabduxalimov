@@ -1,7 +1,8 @@
 import type {
   AdminPayment,
   AdminPlan,
-  AdminSubscription,
+  AdminSubscriptions,
+  OfflineLedger,
   BillingCard,
   BillingSettingsInput,
   PaymentStatusName,
@@ -64,6 +65,7 @@ export interface AdminDashboard {
   pendingParents: number;
   pendingEssays: number;
   pendingPayments: number;
+  expiringSubscriptions: number;
   videos: { processing: number; failed: number };
   students: { total: number; withoutApprovedParent: number };
   attendanceToday: { groups: { id: string; name: string; schedule: string | null; marked: number; total: number }[] };
@@ -85,7 +87,12 @@ export const api = {
     if (!res.ok) throw new ApiError(res.status, "Chekni yuklab bo'lmadi");
     return URL.createObjectURL(await res.blob());
   },
-  subscriptions: () => request<AdminSubscription[]>("/admin/subscriptions"),
+  subscriptions: () => request<AdminSubscriptions>("/admin/subscriptions"),
+  offlineLedger: (groupId: string, month: string) => request<OfflineLedger>(`/admin/offline-payments?groupId=${groupId}&month=${month}`),
+  markOffline: (d: { studentId: string; month: string; amountUzs?: number; note?: string | null }) => request("/admin/offline-payments", json("PUT", d)),
+  unmarkOffline: (studentId: string, month: string) => request(`/admin/offline-payments/${studentId}/${month}`, json("DELETE")),
+  setGroupFee: (groupId: string, monthlyFeeUzs: number | null) => request(`/admin/offline-payments/groups/${groupId}/fee`, json("PATCH", { monthlyFeeUzs })),
+  remindDebtors: (groupId: string, month: string) => request<{ students: number; messages: number }>("/admin/offline-payments/remind", json("POST", { groupId, month })),
   grantSubscription: (d: { userId: string; planId: string; note: string | null }) => request<{ ok: true; endsAt: string }>("/admin/subscriptions", json("POST", d)),
   cancelSubscription: (id: string) => request(`/admin/subscriptions/${id}/cancel`, json("POST")),
   plans: () => request<AdminPlan[]>("/admin/plans"),
