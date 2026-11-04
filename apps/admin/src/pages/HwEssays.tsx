@@ -1,4 +1,5 @@
-import { ESSAY_MAX_SCORE, ESSAY_RUBRIC, type AdminHwEssay, type EssayReviewView } from "@onatili/shared";
+import { ESSAY_MAX_SCORE, type AdminHwEssay, type EssayReviewView } from "@onatili/shared";
+import { RubricForm, emptyRubric, rubricComplete, rubricTotal, type RubricValue } from "../components/RubricForm";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ChevronRight, ImageOff, Phone } from "lucide-react";
 import { useState } from "react";
@@ -70,7 +71,10 @@ function PageImage({ id, n }: { id: string; n: number }) {
 function AiHint({ r }: { r: EssayReviewView }) {
   return (
     <details className="rounded-lg bg-sky-50 p-3 text-sm">
-      <summary className="cursor-pointer font-bold text-sky-900">AI bahosi (taxminiy): {fmt(r.totalScore)}/{r.maxScore}</summary>
+      <summary className="cursor-pointer font-bold text-sky-900">
+        AI bahosi (taxminiy): {fmt(r.totalScore)}/{r.maxScore}
+        {r.special ? ` · ${r.special.label}` : ""}
+      </summary>
       <ul className="mt-2 space-y-1 text-sky-900">
         {r.criteria.map((c) => (
           <li key={c.key}>
@@ -87,19 +91,19 @@ function ReviewModal({ essay, onClose }: { essay: AdminHwEssay; onClose: () => v
   const qc = useQueryClient();
   const prev = essay.reviews.find((r) => r.source === "TEACHER");
   const ai = essay.reviews.find((r) => r.source === "AI");
-  const [scores, setScores] = useState<Record<string, string>>(() =>
-    Object.fromEntries(ESSAY_RUBRIC.map((c) => [c.key, prev ? fmt(prev.criteria.find((x) => x.key === c.key)?.score ?? 0) : ""])),
+  const [rubric, setRubric] = useState<RubricValue>(() =>
+    prev
+      ? { special: (prev.special?.key as RubricValue["special"]) ?? null, scores: Object.fromEntries(prev.criteria.map((c) => [c.key, c.score])) }
+      : emptyRubric(),
   );
-  const [comments, setComments] = useState<Record<string, string>>(() => Object.fromEntries(ESSAY_RUBRIC.map((c) => [c.key, prev?.criteria.find((x) => x.key === c.key)?.comment ?? ""])));
   const [feedback, setFeedback] = useState(prev?.feedback ?? "");
-  const num = (k: string) => Number((scores[k] ?? "").replace(",", "."));
-  const valid = ESSAY_RUBRIC.every((c) => scores[c.key]?.trim() !== "" && Number.isFinite(num(c.key)) && num(c.key) >= 0 && num(c.key) <= c.max);
-  const total = ESSAY_RUBRIC.reduce((s, c) => s + (Number.isFinite(num(c.key)) ? num(c.key) : 0), 0);
+  const total = rubricTotal(rubric);
 
   const save = useMutation({
     mutationFn: () =>
       api.reviewHwEssay(essay.id, {
-        criteria: ESSAY_RUBRIC.map((c) => ({ key: c.key, score: num(c.key), comment: comments[c.key]?.trim() || null })),
+        special: rubric.special,
+        criteria: Object.entries(rubric.scores).map(([key, score]) => ({ key, score: score ?? 0, comment: null })),
         feedback: feedback.trim() || null,
       }),
     onSuccess: (r) => {
@@ -124,13 +128,13 @@ function ReviewModal({ essay, onClose }: { essay: AdminHwEssay; onClose: () => v
           <button className="btn-secondary" onClick={onClose}>
             Yopish
           </button>
-          <button className="btn-primary" disabled={!valid || save.isPending} onClick={() => save.mutate()}>
+          <button className="btn-primary" disabled={!rubricComplete(rubric) || save.isPending} onClick={() => save.mutate()}>
             {prev ? "Qayta baholash" : "Baholash va yuborish"}
           </button>
         </>
       }
     >
-      <div className="grid gap-5 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)]">
+      <div className="grid gap-5 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]">
         <div className="space-y-3">
           <p className="text-sm">
             <span className="text-slate-500">Mavzu:</span> <b>{essay.prompt}</b>
@@ -147,25 +151,16 @@ function ReviewModal({ essay, onClose }: { essay: AdminHwEssay; onClose: () => v
             </div>
           ))}
           {essay.text && <p className="whitespace-pre-wrap rounded-lg bg-slate-50 p-3 text-sm">{essay.text}</p>}
+          {ai && <AiHint r={ai} />}
         </div>
         <div className="space-y-3">
-          {ai && <AiHint r={ai} />}
-          {ESSAY_RUBRIC.map((c) => (
-            <div key={c.key} className="rounded-lg border border-slate-200 p-3">
-              <div className="flex items-center gap-2">
-                <span className="flex-1 text-sm font-bold">{c.label}</span>
-                <input
-                  className={`input h-9 w-16 text-center ${scores[c.key] && (num(c.key) > c.max || !Number.isFinite(num(c.key))) ? "border-red-400" : ""}`}
-                  inputMode="decimal"
-                  value={scores[c.key]}
-                  onChange={(e) => setScores({ ...scores, [c.key]: e.target.value })}
-                />
-                <span className="w-8 text-sm text-slate-500">/ {c.max}</span>
-              </div>
-              <input className="input mt-2 h-9 text-sm" placeholder="Izoh (ixtiyoriy)" value={comments[c.key]} onChange={(e) => setComments({ ...comments, [c.key]: e.target.value })} />
-            </div>
-          ))}
-          <textarea className="input min-h-[100px] py-2 text-sm" placeholder="Umumiy xulosa va maslahat (o'quvchiga boradi)" value={feedback} onChange={(e) => setFeedback(e.target.value)} />
+          <RubricForm value={rubric} onChange={setRubric} aiHint={ai ? Object.fromEntries(ai.criteria.map((c) => [c.key, c.score])) : undefined} />
+          <textarea
+            className="input min-h-[100px] py-2 text-sm"
+            placeholder="Taqriz: umumiy xulosa va maslahat (o'quvchiga boradi)"
+            value={feedback}
+            onChange={(e) => setFeedback(e.target.value)}
+          />
         </div>
       </div>
     </Modal>

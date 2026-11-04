@@ -239,6 +239,11 @@ model Test {
   timeLimitSec Int?
   shuffle      Boolean        @default(true)
   gradingScale GradingScale   @default(NONE)
+  /// Rasch kalibrlash: qobiliyatlar (θ) o'rtachasi va standart tafovuti, nechta natijadan hisoblangan
+  raschMu      Float?
+  raschSigma   Float?
+  raschN       Int            @default(0)
+  raschAt      DateTime?
   isFree       Boolean        @default(false)
   isPublished  Boolean        @default(false)
   questions    TestQuestion[]
@@ -254,6 +259,8 @@ model TestQuestion {
   question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
   order      Int      @default(0)
   points     Float    @default(1)
+  /// Rasch: savol qiyinligi (logit). Milliy sertifikat testlarida ballni shu beradi
+  raschB     Float?
 
   @@id([testId, questionId])
 }
@@ -292,6 +299,9 @@ model AttemptAnswer {
   points      Float? // ESSAY uchun ustoz baholaguncha null
   answeredAt  DateTime @default(now())
   reviewComment String?
+  /// Esse: rasmiy mezon bo'yicha 12 band bahosi [{key,label,max,score}] va maxsus holat
+  rubric        Json?
+  special       String?
   reviewedById  String?
   reviewedAt    DateTime?
 
@@ -352,6 +362,8 @@ model EssayReview {
   criteria   Json // [{key,label,score,max,comment}]
   mistakes   Json         @default("[]") // AI: [{wrong,right,note}]
   totalScore Float
+  /// Esse tekshirilmaydigan holat (OFF_TOPIC, TOO_SHORT, ...)
+  special    String?
   feedback   String?
   createdAt  DateTime     @default(now())
 }

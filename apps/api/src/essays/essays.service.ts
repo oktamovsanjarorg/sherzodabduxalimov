@@ -3,7 +3,9 @@ import { Prisma } from "@onatili/db";
 import {
   AI_ESSAY_DAILY_LIMIT,
   ESSAY_MAX_SCORE,
-  ESSAY_RUBRIC,
+  ESSAY_SPECIAL,
+  rubricScore,
+  type EssaySpecialKey,
   MAX_ESSAY_PAGES,
   STAFF_ROLES,
   type AdminHwEssay,
@@ -44,6 +46,7 @@ export function toReviewView(r: EssayWithReviews["reviews"][number]): EssayRevie
     maxScore: ESSAY_MAX_SCORE,
     feedback: r.feedback,
     mistakes: (r.mistakes ?? []) as EssayReviewView["mistakes"],
+    special: r.special && r.special in ESSAY_SPECIAL ? { key: r.special, label: ESSAY_SPECIAL[r.special as EssaySpecialKey].label } : null,
     createdAt: r.createdAt.toISOString(),
   };
 }
@@ -294,16 +297,16 @@ export class EssaysService implements OnModuleDestroy {
     const e = await this.prisma.essay.findUnique({ where: { id }, include: { user: { select: { telegramId: true } } } });
     if (!e || e.mode !== "TEACHER") throw new NotFoundException("Esse topilmadi");
     if (e.status !== "SUBMITTED" && e.status !== "REVIEWED") throw new ConflictException("Esse hali to'lanmagan");
-    const criteria = ESSAY_RUBRIC.map((c) => {
-      const got = d.criteria.find((x) => x.key === c.key);
-      return { key: c.key, label: c.label, max: c.max, score: Math.max(0, Math.min(c.max, Math.round((got?.score ?? 0) * 2) / 2)), comment: got?.comment || null };
-    });
-    const total = criteria.reduce((s, c) => s + c.score, 0);
+    // Rasmiy mezon: 12 band (har biri 0..2) yoki maxsus holat (2 yoki 0 ball)
+    if (!d.special && !d.criteria.length) throw new BadRequestException("Mezonning 12 bandi bo'yicha ball qo'ying");
+    const r = rubricScore(d.special, d.criteria);
+    const criteria = r.criteria.map((c) => ({ ...c, comment: d.criteria.find((x) => x.key === c.key)?.comment || null }));
+    const total = r.total;
     const first = e.status === "SUBMITTED";
     await this.prisma.$transaction([
       // Qayta baholansa: eski ustoz bahosi almashtiriladi
       this.prisma.essayReview.deleteMany({ where: { essayId: id, source: "TEACHER" } }),
-      this.prisma.essayReview.create({ data: { essayId: id, source: "TEACHER", reviewerId: actorId, criteria, totalScore: total, feedback: d.feedback } }),
+      this.prisma.essayReview.create({ data: { essayId: id, source: "TEACHER", reviewerId: actorId, criteria, special: d.special, totalScore: total, feedback: d.feedback } }),
       this.prisma.essay.update({ where: { id }, data: { status: "REVIEWED" } }),
     ]);
     await this.prisma.auditLog.create({ data: { actorId, action: "essay.review", entity: "Essay", entityId: id, meta: { total } } });

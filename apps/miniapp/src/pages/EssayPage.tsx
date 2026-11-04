@@ -127,7 +127,12 @@ function ReviewCard({ r }: { r: EssayReviewView }) {
           <p className="text-xs text-hint">{ai ? "Taxminiy. Aniq baho uchun ustozga yuboring." : formatDate(r.createdAt)}</p>
         </div>
       </div>
-      <div className="card divide-y divide-hint/10 py-1">
+      {r.special && (
+        <p className="card text-sm font-semibold text-danger">
+          {r.special.label}: rasmiy mezon bo'yicha esse tekshirilmaydi va {r.totalScore} ball bilan baholanadi.
+        </p>
+      )}
+      {r.criteria.length > 0 && <div className="card divide-y divide-hint/10 py-1">
         {r.criteria.map((c) => (
           <div key={c.key} className="py-3">
             <div className="flex items-center gap-2">
@@ -143,7 +148,7 @@ function ReviewCard({ r }: { r: EssayReviewView }) {
             {c.comment && <p className="mt-1.5 text-xs text-hint">{c.comment}</p>}
           </div>
         ))}
-      </div>
+      </div>}
       {r.feedback && (
         <div className="card">
           <p className="mb-1 text-sm font-bold">Xulosa</p>

@@ -1,5 +1,5 @@
 import type { PrismaClient } from "@onatili/db";
-import { ESSAY_MAX_SCORE, ESSAY_RUBRIC } from "@onatili/shared";
+import { ESSAY_MAX_SCORE, ESSAY_SPECIAL, countWords, isMostlyCyrillic, rubricScore, type EssaySpecialKey } from "@onatili/shared";
 import type { AiEssayResult } from "../ai/deepseek";
 import type { SendFn } from "../billing/reminders";
 import { esc } from "../notify/telegram";
@@ -28,15 +28,19 @@ export async function gradeEssayJob(prisma: PrismaClient, essayId: string, grade
     await prisma.essay.update({ where: { id: essayId }, data: { text } });
   }
   if (!text) return null;
-  const r = await grade(e.prompt, text, handwritten);
-  const criteria = ESSAY_RUBRIC.map((c) => {
-    const got = r.criteria.find((x) => x.key === c.key);
-    return { key: c.key, label: c.label, max: c.max, score: got?.score ?? 0, comment: got?.comment ?? null };
-  });
-  const total = criteria.reduce((s, c) => s + c.score, 0);
+
+  // Mezon: to'liq kirillcha -> 0; 100 so'zdan kam -> 2 (tekshirilmaydi). Buni AI emas, server aniq hisoblaydi
+  const auto: EssaySpecialKey | null = isMostlyCyrillic(text) ? "CYRILLIC" : countWords(text) < 100 ? "TOO_SHORT" : null;
+  const r = auto
+    ? { special: auto, criteria: [], feedback: `${ESSAY_SPECIAL[auto].label}: mezon bo'yicha esse tekshirilmaydi va ${ESSAY_SPECIAL[auto].score} ball bilan baholanadi.${auto === "TOO_SHORT" ? ` Matningizda ${countWords(text)} ta so'z bor, kamida 100 ta kerak.` : ""}`, mistakes: [] }
+    : await grade(e.prompt, text, handwritten);
+  const special = (r.special ?? null) as EssaySpecialKey | null;
+  const scored = rubricScore(special, r.criteria);
+  const criteria = scored.criteria.map((c) => ({ ...c, comment: r.criteria.find((x) => x.key === c.key)?.comment ?? null }));
+  const total = scored.total;
   const { count } = await prisma.essay.updateMany({ where: { id: essayId, status: "AI_CHECKING" }, data: { status: "AI_CHECKED", error: null } });
   if (!count) return null;
-  await prisma.essayReview.create({ data: { essayId, source: "AI", provider: "deepseek", criteria, mistakes: r.mistakes, totalScore: total, feedback: r.feedback || null } });
+  await prisma.essayReview.create({ data: { essayId, source: "AI", provider: "deepseek", criteria, special, mistakes: r.mistakes, totalScore: total, feedback: r.feedback || null } });
   if (e.user.telegramId !== null) await send(
     e.user.telegramId,
     `🤖 <b>AI essengizni tekshirdi</b>\n«${esc(e.prompt.slice(0, 80))}»\nTaxminiy ball: <b>${total} / ${ESSAY_MAX_SCORE}</b>`,

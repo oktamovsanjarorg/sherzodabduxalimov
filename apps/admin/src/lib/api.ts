@@ -192,7 +192,7 @@ export const api = {
   updatePassage: (id: string, d: Partial<PassageInput>) => request(`/admin/passages/${id}`, json("PATCH", d)),
   deletePassage: (id: string) => request(`/admin/passages/${id}`, json("DELETE")),
   essays: (status: "pending" | "reviewed") => request<AdminEssay[]>(`/admin/essays?status=${status}`),
-  reviewEssay: (attemptId: string, questionId: string, d: { points: number; comment: string | null }) =>
+  reviewEssay: (attemptId: string, questionId: string, d: { points?: number; special?: string | null; criteria?: { key: string; score: number }[]; comment: string | null }) =>
     request<{ points: number; score: number }>(`/admin/essays/${attemptId}/${questionId}`, json("POST", d)),
   staff: () => request<StaffList>("/admin/staff"),
   addStaff: (username: string) => request<{ status: "added" | "invited" }>("/admin/staff", json("POST", { username })),

@@ -99,6 +99,8 @@ export interface AttemptState {
   testId: string;
   testTitle: string;
   testType: "TOPIC" | "MOCK";
+  /** MILLIY_SERTIFIKAT: savollarga ball ko'rsatilmaydi (ballni Rasch modeli beradi) */
+  gradingScale: "NONE" | "MILLIY_SERTIFIKAT";
   status: "IN_PROGRESS" | "SUBMITTED" | "EXPIRED";
   startedAt: string;
   deadlineAt: string | null;
@@ -119,6 +121,9 @@ export interface ResultQuestion extends Omit<AttemptQuestion, "points"> {
   maxPoints: number;
   pending: boolean;
   reviewComment: string | null;
+  /** Esse: rasmiy mezon bo'yicha 12 band bahosi va maxsus holat */
+  rubric: { key: string; label: string; max: number; score: number }[] | null;
+  special: { key: string; label: string } | null;
 }
 
 export interface AttemptResult {
@@ -177,8 +182,11 @@ export function essayTo75(score24: number): number {
 }
 
 export interface MilliyBreakdown {
-  /** Test qismi: to'plangan/maksimal ball va 75 ballik shkalaga keltirilgani (taxminiy: Rasch o'rniga foiz × 75) */
-  test: { score: number; max: number; scaled: number };
+  /**
+   * Test qismi Rasch modeli bilan: θ (qobiliyat), T = 50 + 10Z (0..75).
+   * calibrated=false: savol qiyinliklari hali yetarli natijadan hisoblanmagan (dastlabki baho)
+   */
+  test: { correct: number; total: number; theta: number; scaled: number; calibrated: boolean; sampleSize: number };
   /** Yozma ish: 24 ballik baho va 75 ballik shkaladagisi. Testda esse bo'lmasa null */
   essay: { score24: number; scaled: number } | null;
   /** Esse ustoz tekshiruvini kutmoqda: umumiy ball hali chiqmaydi */
@@ -193,15 +201,18 @@ export interface MilliyBreakdown {
 const r1 = (x: number) => Math.round(x * 10) / 10;
 const r2 = (x: number) => Math.round(x * 100) / 100;
 
-/** Milliy sertifikat: baholash mezonlari hujjati bo'yicha natija */
-export function milliyBreakdown(p: { testScore: number; testMax: number; essayScore: number | null; essayMax: number; essayPending: boolean }): MilliyBreakdown {
-  const testScaled = p.testMax > 0 ? r1((p.testScore / p.testMax) * 75) : 0;
-  const hasEssay = p.essayMax > 0;
-  const score24 = hasEssay ? r1(((p.essayScore ?? 0) / p.essayMax) * 24) : 0;
-  const essay = hasEssay ? { score24, scaled: essayTo75(score24) } : null;
-  const total = p.essayPending ? null : r1(essay ? (testScaled + essay.scaled) / 2 : testScaled);
+/** Milliy sertifikat: baholash mezonlari hujjati bo'yicha natija (test qismi T allaqachon Rasch bilan hisoblangan) */
+export function milliyBreakdown(p: {
+  test: MilliyBreakdown["test"];
+  /** Esse 24 ballik shkalada (null: yozilmagan yoki testda yo'q) */
+  essayScore24: number | null;
+  hasEssay: boolean;
+  essayPending: boolean;
+}): MilliyBreakdown {
+  const essay = p.hasEssay ? { score24: r1(p.essayScore24 ?? 0), scaled: essayTo75(p.essayScore24 ?? 0) } : null;
+  const total = p.essayPending ? null : r1(essay ? (p.test.scaled + essay.scaled) / 2 : p.test.scaled);
   return {
-    test: { score: r1(p.testScore), max: r1(p.testMax), scaled: testScaled },
+    test: { ...p.test, theta: Math.round(p.test.theta * 100) / 100 },
     essay: p.essayPending ? null : essay,
     essayPending: p.essayPending,
     total,
@@ -214,6 +225,7 @@ export function milliyBreakdown(p: { testScore: number; testMax: number; essaySc
           : { first: r2((total * 93) / 65), second: r2((total * 63) / 65) },
   };
 }
+
 export type SaveAnswerBody = z.infer<typeof saveAnswerBody>;
 
 export interface StudentStats {

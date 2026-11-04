@@ -4,6 +4,7 @@ import { Queue } from "bullmq";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { redisConnection } from "../src/media/queue";
 import { NOTIFY_QUEUE, type NotifyJob } from "../src/notify/notify.service";
+import { RaschService } from "../src/tests/rasch.service";
 import { OWNER, createApp, login } from "./helpers";
 
 const prisma = new PrismaClient();
@@ -101,8 +102,9 @@ describe("Milliy sertifikat formatidagi mock (e2e)", () => {
 
     const r = (await req("POST", `/attempts/${st.id}/submit`, undefined, S)).json();
     expect(r).toMatchObject({ score: 4.2, maxScore: 28.2, pendingPoints: 24, gradingScale: "MILLIY_SERTIFIKAT" });
-    // Baholash mezonlari: test qismi 75 ballik shkalaga (4,2/4,2 = 75), esse tekshirilmaguncha umumiy ball chiqmaydi
-    expect(r.milliy).toMatchObject({ test: { score: 4.2, max: 4.2, scaled: 75 }, essayPending: true, total: null, level: null });
+    // Test qismi Rasch bilan. Natijalar 30 tadan kam: dastlabki baho (b = 0, μ = 0, σ = 1).
+    // 2/2 to'g'ri: θ = ln(1,7/0,3) ≈ 1,73 -> T = 50 + 10·1,73 = 67,3. Esse tekshirilmaguncha umumiy ball yo'q
+    expect(r.milliy).toMatchObject({ test: { correct: 2, total: 2, scaled: 67.3, calibrated: false }, essayPending: true, total: null, level: null });
     expect(r.level).toBeNull();
     const essay = r.questions.find((q: { id: string }) => q.id === qEssay);
     expect(essay).toMatchObject({ pending: true, points: null, maxPoints: 24 });
@@ -113,19 +115,23 @@ describe("Milliy sertifikat formatidagi mock (e2e)", () => {
     const e = list.find((x: { questionId: string }) => x.questionId === qEssay);
     expect(e).toMatchObject({ maxPoints: 24, words: 200, student: { name: "Nilufar" } });
 
-    // Maksimumdan oshirib bo'lmaydi: 30 -> 24 ga qisqaradi
-    const res = (await req("POST", `/admin/essays/${e.attemptId}/${qEssay}`, { points: 30, comment: "Juda yaxshi" })).json();
-    expect(res).toEqual({ points: 24, score: 28.2 });
+    // Milliy testda ball qo'lda emas: rasmiy mezonning 12 bandi bo'yicha (har biri 0..2)
+    expect((await req("POST", `/admin/essays/${e.attemptId}/${qEssay}`, { points: 30, comment: "x" })).statusCode).toBe(400);
+    const keys = ["style", "views", "evidence", "parts", "structure", "coherence", "spelling", "punctuation", "affixes", "wordUsage", "lexicon", "purity"];
+    expect((await req("POST", `/admin/essays/${e.attemptId}/${qEssay}`, { criteria: [{ key: "style", score: 9 }] })).statusCode).toBe(400); // 2 dan ko'p emas
+    const res = (await req("POST", `/admin/essays/${e.attemptId}/${qEssay}`, { criteria: keys.map((key) => ({ key, score: 2 })), comment: "Juda yaxshi" })).json();
+    expect(res.points).toBe(24);
 
     const r = (await req("GET", `/attempts/${e.attemptId}`, undefined, S)).json();
     expect(r.pendingPoints).toBe(0);
     expect(r.questions.find((q: { id: string }) => q.id === qEssay)).toMatchObject({ pending: false, points: 24, reviewComment: "Juda yaxshi" });
-    // Esse 24/24 -> 75; umumiy = (75 + 75) / 2 = 75 -> A+, oliygohda maksimal ball
-    expect(r.milliy).toMatchObject({ essay: { score24: 24, scaled: 75 }, total: 75, level: { code: "A+" }, university: { first: 93, second: 63 } });
+    expect(r.questions.find((q: { id: string }) => q.id === qEssay).rubric).toHaveLength(12);
+    // Esse 24/24 -> 75; umumiy = (67,3 + 75) / 2 = 71,2 -> A+, oliygohda maksimal ball
+    expect(r.milliy).toMatchObject({ essay: { score24: 24, scaled: 75 }, total: 71.2, level: { code: "A+" }, university: { first: 93, second: 63 } });
 
     expect((await req("GET", "/admin/essays?status=pending")).json().some((x: { questionId: string }) => x.questionId === qEssay)).toBe(false);
     const jobs = (await queue.getJobs(["waiting", "delayed"])).map((j) => j.data.text);
-    expect(jobs.some((t) => t.includes("esse tekshirildi") && t.includes("75 / 75") && t.includes("A+"))).toBe(true);
+    expect(jobs.some((t) => t.includes("esse tekshirildi") && t.includes("<b>71.2</b> / 75") && t.includes("A+"))).toBe(true);
 
     // O'quvchi esse baholay olmaydi
     expect((await req("POST", `/admin/essays/${e.attemptId}/${qEssay}`, { points: 1 }, S)).statusCode).toBe(403);
@@ -146,8 +152,60 @@ describe("Milliy sertifikat formatidagi mock (e2e)", () => {
     const r = (await req("POST", `/attempts/${st.id}/submit`, undefined, S)).json();
     expect(r.pendingPoints).toBe(0);
     expect(r.questions.find((q: { id: string }) => q.id === qEssay)).toMatchObject({ pending: false, points: 0 });
-    // Hech narsa yozilmagan: test 0, esse 0 -> umumiy 0, sertifikat berilmaydi
-    expect(r.milliy).toMatchObject({ total: 0, essay: { score24: 0, scaled: 0 }, university: null });
+    // Hech narsa yozilmagan: θ = ln(0,3/1,7) -> T = 32,7; esse 0 -> 0; umumiy 16,4 -> sertifikat berilmaydi
+    expect(r.milliy).toMatchObject({ test: { correct: 0, scaled: 32.7 }, total: 16.4, essay: { score24: 0, scaled: 0 }, university: null });
     expect(r.level.label).toMatch(/berilmaydi/);
+  });
+
+  it("100 so'zdan kam esse tekshirilmaydi: avtomatik 2 ball; to'liq kirillcha — 0", async () => {
+    const st = (await req("POST", `/tests/${testId}/attempts`, undefined, S)).json();
+    await req("PUT", `/attempts/${st.id}/answers/${qEssay}`, { textAnswer: "Reklama haqida qisqa fikr. ".repeat(10) }, S);
+    const r = (await req("POST", `/attempts/${st.id}/submit`, undefined, S)).json();
+    expect(r.questions.find((q: { id: string }) => q.id === qEssay)).toMatchObject({ pending: false, points: 2, special: { key: "TOO_SHORT" } });
+    expect(r.milliy.essay).toEqual({ score24: 2, scaled: 31 });
+
+    const st2 = (await req("POST", `/tests/${testId}/attempts`, undefined, S)).json();
+    await req("PUT", `/attempts/${st2.id}/answers/${qEssay}`, { textAnswer: "Реклама ҳақида фикрим жуда узун ва батафсил. ".repeat(30) }, S);
+    const r2 = (await req("POST", `/attempts/${st2.id}/submit`, undefined, S)).json();
+    expect(r2.questions.find((q: { id: string }) => q.id === qEssay)).toMatchObject({ points: 0, special: { key: "CYRILLIC" } });
+  });
+
+  it("Rasch: 30+ natijadan savol qiyinliklari kalibrlanadi; qiyin savolni yechgan yuqori ball oladi", async () => {
+    // 2 ta savol: qMcq oson (ko'pchilik yechgan), qPunct qiyin (kam yechgan). 40 ta sintetik o'quvchi
+    const users = await Promise.all(
+      Array.from({ length: 40 }, (_, i) => prisma.user.create({ data: { telegramId: BigInt(900000700 + i), firstName: `${TAG}-r${i}`, role: "STUDENT" } })),
+    );
+    for (const [i, u] of users.entries()) {
+      const easy = i % 10 !== 0; // 90% yechgan
+      const hard = i % 4 === 0; // 25% yechgan
+      await prisma.attempt.create({
+        data: {
+          userId: u.id,
+          testId,
+          status: "SUBMITTED",
+          finishedAt: new Date(),
+          answers: { create: [{ questionId: qMcq, isCorrect: easy, optionIds: [] }, { questionId: qPunct, isCorrect: hard, optionIds: [] }] },
+        },
+      });
+    }
+    const out = await app.get(RaschService).calibrateTest(testId);
+    expect(out).toMatchObject({ calibrated: true });
+    const tqs = await prisma.testQuestion.findMany({ where: { testId, questionId: { in: [qMcq, qPunct] } } });
+    const b = Object.fromEntries(tqs.map((q) => [q.questionId, q.raschB!]));
+    expect(b[qPunct]).toBeGreaterThan(b[qMcq]); // qiyin savolning qiyinligi yuqori
+
+    // Faqat qiyin savolni yechgan > faqat oson savolni yechgan
+    const take = async (opt: { mcq: boolean; punct: boolean }) => {
+      const st = (await req("POST", `/tests/${testId}/attempts`, undefined, S)).json();
+      if (opt.mcq) await req("PUT", `/attempts/${st.id}/answers/${qMcq}`, { optionIds: [optRight] }, S);
+      if (opt.punct) await req("PUT", `/attempts/${st.id}/answers/${qPunct}`, { textAnswer: "« » : „ , “ ." }, S);
+      return (await req("POST", `/attempts/${st.id}/submit`, undefined, S)).json().milliy.test;
+    };
+    const onlyEasy = await take({ mcq: true, punct: false });
+    const both = await take({ mcq: true, punct: true });
+    expect(onlyEasy.calibrated).toBe(true);
+    expect(onlyEasy.sampleSize).toBeGreaterThanOrEqual(40);
+    expect(both.scaled).toBeGreaterThan(onlyEasy.scaled);
+    await prisma.user.deleteMany({ where: { id: { in: users.map((u) => u.id) } } });
   });
 });

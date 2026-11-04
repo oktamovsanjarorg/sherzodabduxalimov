@@ -1,4 +1,4 @@
-import type { AttemptQuestion, AttemptResult, AttemptState } from "@onatili/shared";
+import { ESSAY_REQUIREMENTS, type AttemptQuestion, type AttemptResult, type AttemptState } from "@onatili/shared";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { BookOpenText, ChevronLeft, ChevronRight, Clock, Grid3x3, Loader2, X } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -230,6 +230,7 @@ function Runner({ state }: { state: AttemptState }) {
         onChoose={choose}
         onText={typeText}
         passageIsNew={Boolean(q.passage) && qs[index - 1]?.passage?.id !== q.passage?.id}
+        milliy={state.gradingScale === "MILLIY_SERTIFIKAT"}
       />
 
       {showMap && (
@@ -277,7 +278,9 @@ function QuestionView({
   onChoose,
   onText,
   passageIsNew,
+  milliy,
 }: {
+  milliy: boolean;
   q: AttemptQuestion;
   answer: Answer | undefined;
   onChoose: (id: string) => void;
@@ -293,9 +296,10 @@ function QuestionView({
         <div className="mb-2 flex items-center gap-2">
           {q.type === "MULTIPLE" && <span className="text-xs font-bold text-brand">Bir nechta javob tanlang</span>}
           {q.type === "TEXT" && <span className="text-xs font-bold text-brand">Javobni yozing</span>}
-          {q.type === "ESSAY" && <span className="text-xs font-bold text-brand">Esse · ustoz baholaydi</span>}
+          {q.type === "ESSAY" && <span className="text-xs font-bold text-brand">Esse · ustoz rasmiy mezon (24 ball) bo'yicha baholaydi</span>}
           <span className="flex-1" />
-          <span className="rounded-full bg-surface px-2 py-0.5 text-[11px] font-bold text-hint">{fmtPoints(q.points)} ball</span>
+          {/* Milliy sertifikat: savol ballari ko'rsatilmaydi, ballni Rasch modeli beradi */}
+          {!milliy && <span className="rounded-full bg-surface px-2 py-0.5 text-[11px] font-bold text-hint">{fmtPoints(q.points)} ball</span>}
         </div>
         <div className="font-medium">
           <Markdown text={q.text} />
@@ -305,6 +309,17 @@ function QuestionView({
 
       {q.type === "ESSAY" ? (
         <>
+          {milliy && (
+            <details className="mt-3 rounded-xl bg-brand-soft px-3 py-2 text-sm">
+              <summary className="cursor-pointer font-bold text-brand">Esse talablari (rasmiy mezon)</summary>
+              <ol className="mt-1 list-decimal space-y-0.5 pl-5 text-[13px]">
+                {ESSAY_REQUIREMENTS.map((r) => (
+                  <li key={r}>{r}</li>
+                ))}
+              </ol>
+              <p className="mt-1 text-[12px] text-hint">100 so'zdan kam yoki mavzuga mos bo'lmasa — 2 ball; to'liq kirillcha yoki faqat kirish qismi — 0 ball.</p>
+            </details>
+          )}
           <textarea
             key={q.id}
             className="mt-3 min-h-[50vh] w-full resize-y rounded-card border-2 border-transparent bg-section px-4 py-3 text-[16px] leading-relaxed outline-none focus:border-brand"

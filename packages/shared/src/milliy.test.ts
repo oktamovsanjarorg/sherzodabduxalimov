@@ -14,18 +14,17 @@ describe("Milliy sertifikat baholash mezonlari", () => {
     expect(essayTo75(18.7)).toBe(64); // oraliq ball pastga: 18,5
   });
 
+  const T = (scaled: number) => ({ correct: 0, total: 1, theta: 0, scaled, calibrated: true, sampleSize: 100 });
   it("umumiy ball = ikki qism o'rtachasi; daraja; oliygoh bali (Ball×93/65, Ball×63/65)", () => {
-    // Test 60/75 (80%), esse 19 -> 65: umumiy (60 + 65) / 2 = 62,5 -> B+
-    const r = milliyBreakdown({ testScore: 40, testMax: 50, essayScore: 19, essayMax: 24, essayPending: false });
-    expect(r).toMatchObject({ test: { scaled: 60 }, essay: { scaled: 65 }, total: 62.5, level: { code: "B+" } });
+    // Test T=60, esse 19 -> 65: umumiy (60 + 65) / 2 = 62,5 -> B+
+    const r = milliyBreakdown({ test: T(60), essayScore24: 19, hasEssay: true, essayPending: false });
+    expect(r).toMatchObject({ essay: { scaled: 65 }, total: 62.5, level: { code: "B+" } });
     expect(r.university).toEqual({ first: 89.42, second: 60.58 });
     // Hujjatdagi misollar: 60 -> 85,85 va 58,15; 64,9 -> 92,86 va 62,9; 65 va undan yuqori -> 93 va 63
-    expect(milliyBreakdown({ testScore: 60, testMax: 75, essayScore: null, essayMax: 0, essayPending: false }).university).toEqual({ first: 85.85, second: 58.15 });
-    expect(milliyBreakdown({ testScore: 64.9, testMax: 75, essayScore: null, essayMax: 0, essayPending: false }).university).toEqual({ first: 92.86, second: 62.9 });
-    expect(milliyBreakdown({ testScore: 70, testMax: 75, essayScore: null, essayMax: 0, essayPending: false }).university).toEqual({ first: 93, second: 63 });
-    // 46 dan kam: sertifikat yo'q
-    expect(milliyBreakdown({ testScore: 30, testMax: 75, essayScore: null, essayMax: 0, essayPending: false })).toMatchObject({ university: null, level: { code: "—" } });
-    // Esse tekshirilmagan
-    expect(milliyBreakdown({ testScore: 50, testMax: 50, essayScore: null, essayMax: 24, essayPending: true })).toMatchObject({ total: null, level: null, essay: null });
+    expect(milliyBreakdown({ test: T(60), essayScore24: null, hasEssay: false, essayPending: false }).university).toEqual({ first: 85.85, second: 58.15 });
+    expect(milliyBreakdown({ test: T(64.9), essayScore24: null, hasEssay: false, essayPending: false }).university).toEqual({ first: 92.86, second: 62.9 });
+    expect(milliyBreakdown({ test: T(70), essayScore24: null, hasEssay: false, essayPending: false }).university).toEqual({ first: 93, second: 63 });
+    expect(milliyBreakdown({ test: T(30), essayScore24: null, hasEssay: false, essayPending: false })).toMatchObject({ university: null, level: { code: "—" } });
+    expect(milliyBreakdown({ test: T(50), essayScore24: null, hasEssay: true, essayPending: true })).toMatchObject({ total: null, level: null, essay: null });
   });
 });

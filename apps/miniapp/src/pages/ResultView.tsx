@@ -1,4 +1,4 @@
-import type { AttemptResult, MilliyBreakdown, ResultQuestion } from "@onatili/shared";
+import { RASCH_MIN_SAMPLE, type AttemptResult, type MilliyBreakdown, type ResultQuestion } from "@onatili/shared";
 import { useMutation } from "@tanstack/react-query";
 import { Check, Clock, Lightbulb, RotateCcw, X } from "lucide-react";
 import { Markdown } from "../components/Markdown";
@@ -72,7 +72,11 @@ export function ResultView({ result }: { result: AttemptResult }) {
         {m && <MilliyCard m={m} />}
         <div className="mt-5 grid w-full grid-cols-3 divide-x divide-hint/15">
           <Stat value={`${result.correctCount}/${result.totalCount}`} label="To'g'ri" />
-          <Stat value={`${fmtPoints(result.score)}/${fmtPoints(result.maxScore)}`} label={m ? "Xom ball" : "Ball"} />
+          {m ? (
+            <Stat value={m.test.calibrated ? `θ ${fmtPoints(m.test.theta)}` : "—"} label="Qobiliyat (Rasch)" />
+          ) : (
+            <Stat value={`${fmtPoints(result.score)}/${fmtPoints(result.maxScore)}`} label="Ball" />
+          )}
           <Stat value={formatClock(Math.max(0, spentSec))} label="Vaqt" />
         </div>
       </div>
@@ -98,7 +102,7 @@ export function ResultView({ result }: { result: AttemptResult }) {
       {list.length === 0 && <p className="card text-center text-sm text-hint">Xato yo'q 🎉</p>}
       <div className="space-y-3">
         {list.map((q) => (
-          <QuestionReview key={q.id} q={q} n={result.questions.indexOf(q) + 1} />
+          <QuestionReview key={q.id} q={q} n={result.questions.indexOf(q) + 1} milliy={!!m} />
         ))}
       </div>
     </FullPage>
@@ -118,7 +122,14 @@ function MilliyCard({ m }: { m: MilliyBreakdown }) {
   );
   return (
     <div className="mt-4 w-full divide-y divide-hint/10 rounded-xl bg-surface px-4 text-left">
-      {row("Test qismi", `${fmtPoints(m.test.scaled)} / 75`, `${fmtPoints(m.test.score)} / ${fmtPoints(m.test.max)} ball · taxminiy (rasmiy imtihonda Rasch modeli)`)}
+      {row(
+        "Test qismi (Rasch modeli)",
+        `${fmtPoints(m.test.scaled)} / 75`,
+        `${m.test.correct} / ${m.test.total} to'g'ri · ` +
+          (m.test.calibrated
+            ? `${m.test.sampleSize} ta natija asosida`
+            : `dastlabki baho: model ${RASCH_MIN_SAMPLE} ta natijadan keyin kalibrlanadi (hozir ${m.test.sampleSize} ta)`),
+      )}
       {m.essayPending
         ? row("Yozma ish (esse)", "tekshirilmoqda", "Ustoz baholagach bot orqali xabar keladi")
         : m.essay && row("Yozma ish (esse)", `${fmtPoints(m.essay.scaled)} / 75`, `${fmtPoints(m.essay.score24)} / 24 ball`)}
@@ -167,7 +178,7 @@ function ScoreRing({ percent, className, label, sub }: { percent: number; classN
   );
 }
 
-function QuestionReview({ q, n }: { q: ResultQuestion; n: number }) {
+function QuestionReview({ q, n, milliy }: { q: ResultQuestion; n: number; milliy: boolean }) {
   return (
     <div className="card">
       <div className="flex items-start gap-2">
@@ -182,9 +193,11 @@ function QuestionReview({ q, n }: { q: ResultQuestion; n: number }) {
           <span className="text-hint">{n}. </span>
           {q.type === "ESSAY" ? "Esse" : <Markdown text={q.text} />}
         </div>
-        <span className="shrink-0 rounded-full bg-surface px-2 py-0.5 text-[11px] font-bold text-hint">
-          {q.points === null ? "?" : fmtPoints(q.points)}/{fmtPoints(q.maxPoints)}
-        </span>
+        {(!milliy || q.type === "ESSAY") && (
+          <span className="shrink-0 rounded-full bg-surface px-2 py-0.5 text-[11px] font-bold text-hint">
+            {q.points === null ? "?" : fmtPoints(q.points)}/{fmtPoints(milliy ? 24 : q.maxPoints)}
+          </span>
+        )}
       </div>
 
       {q.type === "ESSAY" && (
@@ -198,6 +211,20 @@ function QuestionReview({ q, n }: { q: ResultQuestion; n: number }) {
             <p className="text-hint">Esse yozilmagan</p>
           )}
           {q.pending && <p className="font-semibold text-brand">Ustoz tekshirmoqda…</p>}
+          {q.special && <p className="rounded-xl bg-danger/10 px-3 py-2 font-semibold text-danger">{q.special.label}: esse mezon bo'yicha tekshirilmaydi</p>}
+          {q.rubric && q.rubric.length > 0 && (
+            <div className="divide-y divide-hint/10 rounded-xl bg-surface px-3">
+              {q.rubric.map((c) => (
+                <div key={c.key} className="flex items-center justify-between gap-2 py-1.5 text-[13px]">
+                  <span>{c.label}</span>
+                  <span className="font-extrabold">
+                    {fmtPoints(c.score)}
+                    <span className="text-hint">/{c.max}</span>
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
           {q.reviewComment && (
             <p className="rounded-xl bg-brand-soft px-3 py-2">
               <span className="font-bold">Ustoz izohi: </span>

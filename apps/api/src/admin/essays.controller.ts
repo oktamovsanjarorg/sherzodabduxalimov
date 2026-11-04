@@ -20,6 +20,6 @@ export class EssaysController {
     @Body() b: unknown,
   ) {
     const d = parse(essayReviewInput, b);
-    return this.svc.review(u.sub, attemptId, questionId, d.points, d.comment ?? null);
+    return this.svc.review(u.sub, attemptId, questionId, { points: d.points, special: d.special, criteria: d.criteria }, d.comment ?? null);
   }
 }

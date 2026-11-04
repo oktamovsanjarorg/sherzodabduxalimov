@@ -25,7 +25,7 @@ export function MocksPage() {
           <li>45: esse (24 ball), ustoz tekshiradi</li>
         </ul>
         <p className="pt-1 text-xs text-hint">
-          Baholash: test qismi va yozma ish alohida 75 ballik shkalaga o'tkaziladi, umumiy ball — ularning o'rtachasi. Daraja:{" "}
+          Baholash rasmiy tartibda: test qismi Rasch modeli bilan (T = 50 + 10Z, maksimal 75), esse 12 bandli mezon (24 ball) bilan baholanib 75 ballik shkalaga o'tkaziladi, umumiy ball — o'rtachasi. Daraja:{" "}
           {MILLIY_LEVELS.map((l) => `${l.code} (${l.min}+)`).join(", ")}. Oliygohga kirish bali ham ko'rsatiladi.
         </p>
       </div>

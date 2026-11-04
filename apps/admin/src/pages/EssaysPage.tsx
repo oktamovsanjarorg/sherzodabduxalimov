@@ -1,4 +1,5 @@
-import type { AdminEssay } from "@onatili/shared";
+import { essayTo75, type AdminEssay } from "@onatili/shared";
+import { RubricForm, rubricComplete, rubricTotal, type RubricValue } from "../components/RubricForm";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ChevronRight } from "lucide-react";
 import { useState } from "react";
@@ -73,11 +74,23 @@ function ReviewModal({ essay, onClose }: { essay: AdminEssay; onClose: () => voi
   const qc = useQueryClient();
   const [points, setPoints] = useState(essay.points !== null ? fmt(essay.points) : "");
   const [comment, setComment] = useState(essay.reviewComment ?? "");
+  // Milliy sertifikat: rasmiy mezon (12 band) bilan baholanadi, ball shundan chiqadi
+  const [rubric, setRubric] = useState<RubricValue>(() => ({
+    special: (essay.special as RubricValue["special"]) ?? null,
+    scores: Object.fromEntries((essay.rubric ?? []).map((c) => [c.key, c.score])),
+  }));
   const value = Number(points.replace(",", "."));
-  const valid = points.trim() !== "" && Number.isFinite(value) && value >= 0 && value <= essay.maxPoints;
+  const valid = essay.milliy ? rubricComplete(rubric) : points.trim() !== "" && Number.isFinite(value) && value >= 0 && value <= essay.maxPoints;
 
   const save = useMutation({
-    mutationFn: () => api.reviewEssay(essay.attemptId, essay.questionId, { points: value, comment: comment.trim() || null }),
+    mutationFn: () =>
+      api.reviewEssay(
+        essay.attemptId,
+        essay.questionId,
+        essay.milliy
+          ? { special: rubric.special, criteria: Object.entries(rubric.scores).map(([key, score]) => ({ key, score: score ?? 0 })), comment: comment.trim() || null }
+          : { points: value, comment: comment.trim() || null },
+      ),
     onSuccess: (r) => {
       toast(`Saqlandi · umumiy natija ${fmt(r.score)} ball. O'quvchiga yuborildi`);
       qc.invalidateQueries({ queryKey: ["essays"] });
@@ -117,6 +130,15 @@ function ReviewModal({ essay, onClose }: { essay: AdminEssay; onClose: () => voi
           </div>
         </div>
 
+        {essay.milliy ? (
+          <>
+            <RubricForm value={rubric} onChange={setRubric} />
+            <p className="text-sm font-bold">Jami: {fmt(rubricTotal(rubric))} / 24 → 75 ballik shkalada {essayTo75(rubricTotal(rubric))}</p>
+            <Field label="Taqriz (o'quvchiga yuboriladi)">
+              <textarea className="textarea min-h-[110px]" value={comment} onChange={(e) => setComment(e.target.value)} placeholder="Ekspert xulosasi: kuchli tomonlari, xatolari, tavsiyalar…" />
+            </Field>
+          </>
+        ) : (
         <div className="grid gap-3 sm:grid-cols-[180px_minmax(0,1fr)]">
           <Field label={`Ball (0 – ${fmt(essay.maxPoints)})`}>
             <input className="input text-lg font-bold" inputMode="decimal" value={points} onChange={(e) => setPoints(e.target.value.replace(/[^\d.,]/g, ""))} placeholder="0" />
@@ -132,7 +154,8 @@ function ReviewModal({ essay, onClose }: { essay: AdminEssay; onClose: () => voi
             <textarea className="textarea min-h-[110px]" value={comment} onChange={(e) => setComment(e.target.value)} placeholder="Kuchli tomonlari, xatolari, tavsiyalar…" />
           </Field>
         </div>
-        {points.trim() !== "" && !valid && <p className="text-sm font-semibold text-red-600">Ball 0 dan {fmt(essay.maxPoints)} gacha bo'lishi kerak</p>}
+        )}
+        {!essay.milliy && points.trim() !== "" && !valid && <p className="text-sm font-semibold text-red-600">Ball 0 dan {fmt(essay.maxPoints)} gacha bo'lishi kerak</p>}
       </div>
     </Modal>
   );

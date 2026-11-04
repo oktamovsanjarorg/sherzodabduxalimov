@@ -1,4 +1,4 @@
-import { ESSAY_STATUS_LABELS, MAX_ESSAY_PAGES, formatSum, type EssayModeName, type MyEssaySummary } from "@onatili/shared";
+import { ESSAY_REQUIREMENTS, ESSAY_STATUS_LABELS, MAX_ESSAY_PAGES, formatSum, type EssayModeName, type MyEssaySummary } from "@onatili/shared";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Bot, ChevronRight, GraduationCap, Info, Loader2, Plus } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
@@ -189,6 +189,20 @@ export function NewEssayPage() {
           </div>
 
           {mode && (
+            <details className="card mt-4 text-sm">
+              <summary className="cursor-pointer font-bold text-brand">Esse talablari (rasmiy mezon, 24 ball)</summary>
+              <ol className="mt-2 list-decimal space-y-1 pl-5 text-hint">
+                {ESSAY_REQUIREMENTS.map((r) => (
+                  <li key={r}>{r}</li>
+                ))}
+              </ol>
+              <p className="mt-2 text-xs text-hint">
+                12 ta band bo'yicha baholanadi: uslub, qarashlar, dalillar, tuzilish, mantiq, imlo, punktuatsiya, qo'shimcha va so'z qo'llash, lug'at boyligi. 100 so'zdan kam yoki mavzuga mos bo'lmasa — 2 ball.
+              </p>
+            </details>
+          )}
+
+          {mode && (
             <>
               <Step n={2} title="Esse mavzusi" />
               <input
@@ -233,7 +247,7 @@ export function NewEssayPage() {
                 placeholder="Esse matnini shu yerga yozing"
                 className="min-h-[45vh] w-full resize-y rounded-card border-2 border-transparent bg-section px-4 py-3 text-[16px] leading-relaxed outline-none focus:border-brand"
               />
-              <p className={`mt-1 px-1 text-xs ${n < 30 ? "text-hint" : "text-success"}`}>{n} ta so'z{n < 30 ? " (kamida 30)" : ""}</p>
+              <p className={`mt-1 px-1 text-xs ${n < 30 ? "text-hint" : "text-success"}`}>{n} ta so'z{n < 30 ? " (kamida 30)" : n < 100 ? " · 100 tadan kam bo'lsa mezon bo'yicha 2 ball" : ""}</p>
             </>
           )}
 

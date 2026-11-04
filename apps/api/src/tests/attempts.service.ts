@@ -2,9 +2,13 @@ import { BadRequestException, ConflictException, Injectable, NotFoundException }
 import type { Prisma } from "@onatili/db";
 import {
   ERROR_CODES,
-  milliyBreakdown,
+  ESSAY_SPECIAL,
+  countWords,
+  isMostlyCyrillic,
+  type EssaySpecialKey,
   type AttemptQuestion,
   type AttemptResult,
+  type ResultQuestion,
   type AttemptState,
   type SaveAnswerBody,
   type TestSummary,
@@ -15,6 +19,8 @@ import { ContentService } from "../content/content.service";
 import { ParentsService } from "../parents/parents.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { DEADLINE_GRACE_MS, isAnswerCorrect, isPastDeadline, seededShuffle } from "./grading";
+import { milliyOf } from "./milliy";
+import { RaschService } from "./rasch.service";
 
 const SUPPORTED = ["SINGLE", "MULTIPLE", "TEXT", "ESSAY"] as const;
 /** 1,1 + 1,7 kabi kasr ballar yig'indisidagi suzuvchi nuqta xatosini yo'qotish */
@@ -38,6 +44,7 @@ export class AttemptsService {
     private readonly access: AccessService,
     private readonly content: ContentService,
     private readonly parents: ParentsService,
+    private readonly rasch: RaschService,
   ) {}
 
   async listMocks(user: JwtUser): Promise<TestSummary[]> {
@@ -168,8 +175,12 @@ export class AttemptsService {
       const given = answers.get(q.id);
       // Yozilgan esse ustoz baholaguncha "kutilmoqda" (null); bo'sh esse darhol 0
       if (q.type === "ESSAY") {
-        const pending = Boolean(given?.textAnswer?.trim());
-        return { q, given, ok: null, points: pending ? null : 0 };
+        const text = given?.textAnswer?.trim() ?? "";
+        // Mezon: yozilmagan -> 0; to'liq kirillcha -> 0; 100 so'zdan kam -> 2 (tekshirilmaydi). Qolgani ustozga
+        const special: EssaySpecialKey | null =
+          a.test.gradingScale !== "MILLIY_SERTIFIKAT" || !text ? null : isMostlyCyrillic(text) ? "CYRILLIC" : countWords(text) < 100 ? "TOO_SHORT" : null;
+        if (special) return { q, given, ok: null, points: ESSAY_SPECIAL[special].score, special };
+        return { q, given, ok: null, points: text ? null : 0 };
       }
       const ok = isAnswerCorrect(q, given);
       return { q, given, ok, points: ok ? q.points : 0 };
@@ -177,20 +188,24 @@ export class AttemptsService {
     const score = round1(graded.reduce((s, g) => s + (g.points ?? 0), 0));
     const maxScore = round1(graded.reduce((s, g) => s + g.q.points, 0));
 
+    let finalized = false;
     await this.prisma.$transaction(async (tx) => {
       const { count } = await tx.attempt.updateMany({
         where: { id: a.id, status: "IN_PROGRESS" },
         data: { status, score, maxScore, finishedAt: new Date() },
       });
       if (count === 0) return; // boshqa so'rov allaqachon yakunlagan
+      finalized = true;
       for (const g of graded) {
         if (!g.given) continue;
         await tx.attemptAnswer.update({
           where: { attemptId_questionId: { attemptId: a.id, questionId: g.q.id } },
-          data: { isCorrect: g.ok, points: g.points },
+          data: { isCorrect: g.ok, points: g.points, ...("special" in g && g.special ? { special: g.special, reviewComment: `${ESSAY_SPECIAL[g.special].label}: esse tekshirilmaydi (mezon bo'yicha ${ESSAY_SPECIAL[g.special].score} ball)` } : {}) },
         });
       }
     });
+    // Rasch: yangi natija bilan savol qiyinliklari va μ, σ qayta hisoblanadi
+    if (finalized && a.test.gradingScale === "MILLIY_SERTIFIKAT") this.rasch.calibrateSoon(a.testId);
   }
 
   private toState(a: AttemptFull): AttemptState {
@@ -208,6 +223,7 @@ export class AttemptsService {
       testId: a.testId,
       testTitle: a.test.title,
       testType: a.test.type,
+      gradingScale: a.test.gradingScale,
       status: "IN_PROGRESS",
       startedAt: a.startedAt.toISOString(),
       deadlineAt: a.deadlineAt?.toISOString() ?? null,
@@ -239,24 +255,15 @@ export class AttemptsService {
         maxPoints: q.points,
         pending,
         reviewComment: given?.reviewComment ?? null,
+        rubric: q.type === "ESSAY" ? ((given?.rubric as ResultQuestion["rubric"]) ?? null) : null,
+        special: given?.special && given.special in ESSAY_SPECIAL ? { key: given.special, label: ESSAY_SPECIAL[given.special as EssaySpecialKey].label } : null,
       };
     });
     const score = round1(a.score ?? 0);
     const maxScore = round1(a.maxScore ?? 0);
     const pendingPoints = round1(questions.filter((q) => q.pending).reduce((s, q) => s + q.maxPoints, 0));
-    // Milliy sertifikat: test qismi va yozma ish alohida 75 ballik shkalaga keltirilib, o'rtachasi olinadi
-    const essays = questions.filter((q) => q.type === "ESSAY");
-    const tests = questions.filter((q) => q.type !== "ESSAY");
-    const milliy =
-      a.test.gradingScale === "MILLIY_SERTIFIKAT"
-        ? milliyBreakdown({
-            testScore: tests.reduce((s, q) => s + (q.points ?? 0), 0),
-            testMax: tests.reduce((s, q) => s + q.maxPoints, 0),
-            essayScore: essays.reduce((s, q) => s + (q.points ?? 0), 0),
-            essayMax: essays.reduce((s, q) => s + q.maxPoints, 0),
-            essayPending: essays.some((q) => q.pending),
-          })
-        : null;
+    // Milliy sertifikat: test qismi Rasch modeli bilan, yozma ish mezon jadvali bilan; umumiy ball o'rtachasi
+    const milliy = milliyOf(a);
     return {
       id: a.id,
       testId: a.testId,

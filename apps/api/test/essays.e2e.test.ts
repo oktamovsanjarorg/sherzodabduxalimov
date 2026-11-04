@@ -15,7 +15,8 @@ const conn = () => redisConnection(process.env.REDIS_URL ?? "redis://localhost:6
 const notifyQ = new Queue<NotifyJob>(NOTIFY_QUEUE, { prefix: "onatili-e2e", connection: conn() });
 const aiQ = new Queue(ESSAY_AI_QUEUE, { prefix: "onatili-e2e", connection: conn() });
 const JPEG = Buffer.concat([Buffer.from([0xff, 0xd8, 0xff, 0xe0]), Buffer.alloc(300, 7)]);
-const TEXT = "Kitob insonning eng yaqin do'sti hisoblanadi. ".repeat(10);
+// Mezon: 100 so'zdan kam esse tekshirilmaydi (2 ball), shuning uchun 120 so'z
+const TEXT = "Kitob insonning eng yaqin do'sti hisoblanadi. ".repeat(20);
 
 async function cleanup() {
   await prisma.user.deleteMany({ where: { telegramId: { in: Object.values(TG).map(BigInt) } } });
@@ -66,18 +67,20 @@ describe("Esse: AI (bepul) va ustoz (pullik, qo'lyozma) (e2e)", () => {
 
     // Worker o'rnida: soxta AI javobi (ball maksimumdan oshsa qisqaradi, bir xil "xato"lar tashlanadi)
     const fake = normalize({
-      criteria: [{ key: "topic", score: 9, comment: "Mos" }, { key: "spelling", score: 4.3, comment: null }],
+      special: null,
+      criteria: [{ key: "style", score: 9, comment: "Mos" }, { key: "spelling", score: 1.3, comment: null }],
       feedback: "Yaxshi",
       mistakes: [{ wrong: "dust", right: "do'st", note: null }, { wrong: "kitob", right: "Kitob", note: null }],
     });
     const sent: string[] = [];
     const total = await gradeEssayJob(prisma, e.id, async () => fake, async (_c, t) => void sent.push(t), undefined);
-    expect(total).toBe(4 + 4.5);
+    expect(total).toBe(2 + 1.5);
     const d = (await req("GET", `/essays/${e.id}`, undefined, S)).json();
     expect(d.status).toBe("AI_CHECKED");
-    expect(d.reviews[0]).toMatchObject({ source: "AI", totalScore: 8.5, maxScore: 24, feedback: "Yaxshi" });
+    expect(d.reviews[0]).toMatchObject({ source: "AI", totalScore: 3.5, maxScore: 24, feedback: "Yaxshi" });
     expect(d.reviews[0].mistakes).toEqual([{ wrong: "dust", right: "do'st", note: null }]);
-    expect(sent[0]).toContain("8.5 / 24");
+    expect(sent[0]).toContain("3.5 / 24");
+    expect(d.reviews[0].criteria).toHaveLength(12);
 
     // Muvaffaqiyatsiz bo'lsa limitga hisoblanmaydi va qayta urinish mumkin
     const f = (await req("POST", "/essays", { mode: "AI", prompt: "Ikkinchi", text: TEXT }, S)).json();
@@ -109,9 +112,9 @@ describe("Esse: AI (bepul) va ustoz (pullik, qo'lyozma) (e2e)", () => {
 
     const readPaths: string[][] = [];
     const handwrittenFlags: boolean[] = [];
-    const read = async (p: string[]) => (readPaths.push(p), "Ona tilim mening faxrim. Men uni sevaman va [?] asrayman. ".repeat(5));
-    const grade = async (_t: string, _x: string, hw: boolean) => (handwrittenFlags.push(hw), normalize({ criteria: [{ key: "topic", score: 3, comment: null }], feedback: "", mistakes: [] }));
-    expect(await gradeEssayJob(prisma, e.id, grade, async () => {}, undefined, read)).toBe(3);
+    const read = async (p: string[]) => (readPaths.push(p), "Ona tilim mening faxrim. Men uni sevaman va [?] asrayman. ".repeat(12));
+    const grade = async (_t: string, _x: string, hw: boolean) => (handwrittenFlags.push(hw), normalize({ special: null, criteria: [{ key: "views", score: 1.5, comment: null }], feedback: "", mistakes: [] }));
+    expect(await gradeEssayJob(prisma, e.id, grade, async () => {}, undefined, read)).toBe(1.5);
     expect(readPaths[0]).toHaveLength(2);
     expect(handwrittenFlags).toEqual([true]);
     const d = (await req("GET", `/essays/${e.id}`, undefined, S)).json();
@@ -174,20 +177,20 @@ describe("Esse: AI (bepul) va ustoz (pullik, qo'lyozma) (e2e)", () => {
     // Ustoz navbati va baholash
     const q = (await req("GET", "/admin/hw-essays?status=pending")).json();
     expect(q.find((x: { id: string }) => x.id === e.id)).toMatchObject({ pages: 1, student: { name: "Madina" } });
-    expect((await req("POST", `/admin/hw-essays/${e.id}/review`, { criteria: [{ key: "topic", score: 4 }] }, S)).statusCode).toBe(403);
+    expect((await req("POST", `/admin/hw-essays/${e.id}/review`, { criteria: [{ key: "style", score: 2 }] }, S)).statusCode).toBe(403);
     const r = (
       await req("POST", `/admin/hw-essays/${e.id}/review`, {
-        criteria: [{ key: "topic", score: 4 }, { key: "content", score: 10, comment: "Dalillar yaxshi" }, { key: "spelling", score: 3.5 }],
+        criteria: [{ key: "style", score: 2 }, { key: "evidence", score: 1.5, comment: "Dalillar yaxshi" }, { key: "spelling", score: 1 }],
         feedback: "Barakalla",
       })
     ).json();
-    expect(r).toEqual({ totalScore: 4 + 6 + 3.5 });
+    expect(r).toEqual({ totalScore: 2 + 1.5 + 1 });
     const d = (await req("GET", `/essays/${e.id}`, undefined, S)).json();
-    expect(d).toMatchObject({ status: "REVIEWED", score: { total: 13.5, max: 24 } });
+    expect(d).toMatchObject({ status: "REVIEWED", score: { total: 4.5, max: 24 } });
     expect(d.reviews.find((x: { source: string }) => x.source === "TEACHER")).toMatchObject({ feedback: "Barakalla", reviewer: "Ega" });
     const texts = (await notifyQ.getJobs(["waiting", "delayed"])).map((j) => j.data.text);
     expect(texts.some((t) => t.includes("ustozga yuborildi"))).toBe(true);
-    expect(texts.some((t) => t.includes("Essengiz tekshirildi") && t.includes("13.5 / 24"))).toBe(true);
+    expect(texts.some((t) => t.includes("Essengiz tekshirildi") && t.includes("4.5 / 24"))).toBe(true);
 
     // Baholangan esseni o'chirib bo'lmaydi
     expect((await req("DELETE", `/essays/${e.id}`, undefined, S)).statusCode).toBe(409);

@@ -198,9 +198,19 @@ export interface AdminEssay {
   reviewComment: string | null;
   submittedAt: string;
   reviewedAt: string | null;
+  /** Milliy sertifikat testi: rasmiy mezon (12 band) bilan baholanadi */
+  milliy: boolean;
+  rubric: { key: string; label: string; max: number; score: number }[] | null;
+  special: string | null;
 }
 
+/**
+ * Mock essesini baholash. Milliy sertifikat testida: 12 band (criteria) yoki maxsus holat (special) —
+ * ball shundan hisoblanadi. Boshqa testlarda: oddiy ball (points).
+ */
 export const essayReviewInput = z.object({
-  points: z.number().min(0).max(100),
+  points: z.number().min(0).max(100).optional(),
+  special: z.enum(["OFF_TOPIC", "TOO_SHORT", "COPIED", "ONLY_INTRO", "CYRILLIC", "BLANK"]).nullable().optional(),
+  criteria: z.array(z.object({ key: z.string(), score: z.coerce.number().min(0).max(2) })).optional(),
   comment: z.string().trim().max(5000).nullable().optional(),
 });

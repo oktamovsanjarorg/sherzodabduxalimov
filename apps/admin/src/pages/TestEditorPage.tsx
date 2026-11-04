@@ -131,7 +131,7 @@ function Editor({ initial }: { initial: AdminTestDetail | null }) {
             <textarea className="textarea min-h-[60px]" value={description} onChange={(e) => setDescription(e.target.value)} />
           </Field>
           {type === "MOCK" && (
-            <Toggle checked={milliy} onChange={setMilliy} label="Milliy sertifikat shkalasi" hint="Rasmiy mezon bo'yicha: test qismi va esse 75 ballik shkalaga o'tkaziladi, umumiy ball o'rtachasi; daraja (A+ … C) va oliygoh bali chiqadi" />
+            <Toggle checked={milliy} onChange={setMilliy} label="Milliy sertifikat shkalasi" hint="Rasmiy tartib: test qismi Rasch modeli bilan (savollarga qo'lda ball qo'yilmaydi), esse 24 ballik mezon bilan baholanib 75 ballik shkalaga o'tkaziladi; umumiy ball — o'rtachasi; daraja va oliygoh bali chiqadi" />
           )}
           <Toggle checked={shuffle} onChange={setShuffle} label="Aralashtirish" hint="Har bir o'quvchida savol va variantlar tartibi boshqacha" />
           <Toggle checked={isFree} onChange={setIsFree} label="Bepul" hint="Obunasiz ham ochiq" />
@@ -141,7 +141,7 @@ function Editor({ initial }: { initial: AdminTestDetail | null }) {
         <section className="card">
           <div className="flex flex-wrap items-center gap-2 border-b border-slate-200 px-4 py-4 sm:px-5">
             <h2 className="font-extrabold">Savollar</h2>
-            <Badge>{items.length} ta · {total} ball</Badge>
+            <Badge>{items.length} ta{milliy ? " · ball Rasch modeli bilan" : ` · ${total} ball`}</Badge>
             <span className="flex-1" />
             <button className="btn-secondary btn-sm" onClick={() => setCreating(true)}><Plus size={14} /> Yangi savol</button>
             <button className="btn-primary btn-sm" onClick={() => setPicker(true)}><Plus size={14} /> Bankdan tanlash</button>
@@ -161,7 +161,8 @@ function Editor({ initial }: { initial: AdminTestDetail | null }) {
                 </div>
                 {/* Telefonda: matn tagida alohida qator */}
                 <div className="ml-9 flex items-center gap-1 sm:ml-0">
-                <label className="flex items-center gap-1 text-xs font-bold text-slate-500">
+                {/* Milliy sertifikat: ballni Rasch modeli beradi, qo'lda ball qo'yilmaydi */}
+                {!milliy && <label className="flex items-center gap-1 text-xs font-bold text-slate-500">
                   Ball
                   <input
                     className="input h-9 w-16 px-2"
@@ -172,7 +173,7 @@ function Editor({ initial }: { initial: AdminTestDetail | null }) {
                       setItems((cur) => cur.map((c, j) => (j === i ? { ...c, points: Number.isFinite(v) && v > 0 ? v : 1 } : c)));
                     }}
                   />
-                </label>
+                </label>}
                 <button className="btn-ghost h-9 w-9 p-0" disabled={i === 0} onClick={() => moveItem(i, -1)} aria-label="Yuqoriga"><ArrowUp size={14} /></button>
                 <button className="btn-ghost h-9 w-9 p-0" disabled={i === items.length - 1} onClick={() => moveItem(i, 1)} aria-label="Pastga"><ArrowDown size={14} /></button>
                 <button className="btn-ghost h-9 w-9 p-0 text-slate-400 hover:text-red-600" onClick={() => setItems((cur) => cur.filter((_, j) => j !== i))} aria-label="Olib tashlash"><X size={16} /></button>
