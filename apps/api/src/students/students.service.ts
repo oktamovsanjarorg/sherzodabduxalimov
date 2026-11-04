@@ -14,7 +14,8 @@ import {
 import { randomBytes } from "node:crypto";
 import { ENV, type Env } from "../config/env";
 import { PrismaService } from "../prisma/prisma.service";
-import type { TelegramProfile } from "../staff/staff.service";
+import { esc } from "../notify/telegram";
+import { StaffService, type TelegramProfile } from "../staff/staff.service";
 
 const DAY = 86_400_000;
 const fullName = (u: { firstName: string; lastName: string | null }) => [u.firstName, u.lastName].filter(Boolean).join(" ");
@@ -53,6 +54,7 @@ type RosterProfile = Prisma.StudentProfileGetPayload<{ include: ReturnType<typeo
 export class StudentsService {
   constructor(
     private readonly prisma: PrismaService,
+    private readonly staff: StaffService,
     @Inject(ENV) private readonly env: Env,
   ) {}
 
@@ -309,6 +311,7 @@ export class StudentsService {
       await this.prisma.user.update({ where: { id: sp.userId }, data: { telegramId: BigInt(from.id), username: from.username ?? null } });
       await this.prisma.studentProfile.update({ where: { id: sp.id }, data: { inviteCode: null } });
     }
+    await this.staff.alertOwners(`🔗 Siz kiritgan <b>${esc(fullName(sp.user))}</b> botga ulandi (shaxsiy havola orqali)${sp.group ? ` · ${esc(sp.group.name)}` : ""}`);
     return { status: "claimed", name: fullName(sp.user), groupName: sp.group?.name };
   }
 
@@ -321,6 +324,7 @@ export class StudentsService {
     const me = await this.prisma.user.findUnique({ where: { id: userId }, select: { role: true } });
     if (me?.role !== "STUDENT") return false;
     await this.mergeInto(placeholder.id, userId);
+    await this.staff.alertOwners(`🔗 Siz kiritgan <b>${esc(fullName(placeholder))}</b> botga ulandi (telefon raqami orqali)`);
     return true;
   }
 

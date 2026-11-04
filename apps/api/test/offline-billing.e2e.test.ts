@@ -100,6 +100,8 @@ describe("Offline guruh: kirish va oylik to'lov; online obuna eslatmalari (e2e)"
 
     // Hali botga kirmagan o'quvchi ham yaratiladi va guruhga tushadi
     expect((await join(code, TG.joiner)).json()).toMatchObject({ status: "joined", groupName: `${TAG} 1-guruh`, parentLinked: false });
+    // Egaga xabar: yangi o'quvchi guruhga qo'shildi
+    expect((await jobs()).some((j) => j.chatId === String(TG.owner) && j.text.includes("Yangi o'quvchi") && j.text.includes(`${TAG} 1-guruh`))).toBe(true);
     expect((await join(code, TG.joiner)).json().status).toBe("already");
     const sp = await prisma.studentProfile.findFirstOrThrow({ where: { user: { telegramId: BigInt(TG.joiner) } } });
     expect(sp).toMatchObject({ groupId, mode: "OFFLINE" });

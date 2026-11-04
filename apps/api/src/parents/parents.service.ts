@@ -102,6 +102,9 @@ export class ParentsService {
       student.user.telegramId,
       `👨‍👩‍👦 <b>${esc(fullName(parent))}</b> sizning ota-onangiz sifatida ulanish so'rovini yubordi. Ustoz tasdiqlagach, davomat xabarlari unga boradi.`,
     );
+    await this.staff.alertOwners(
+      `👨‍👩‍👦 <b>Yangi ota-ona so'rovi</b>: ${esc(fullName(parent))} → ${esc(fullName(student.user))}${flags.length ? " ⚠️ shubhali" : ""}\n\nAdmin → Ota-onalar: raqamga qo'ng'iroq qilib tasdiqlang`,
+    );
     return { status: "created", studentName: fullName(student.user) };
   }
 

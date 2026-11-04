@@ -2,6 +2,7 @@ import { Inject, Injectable, UnauthorizedException } from "@nestjs/common";
 import { JwtService } from "@nestjs/jwt";
 import { InitDataError, validateInitData, type AuthResponse } from "@onatili/shared/server";
 import { ENV, type Env } from "../config/env";
+import { esc } from "../notify/telegram";
 import { StaffService } from "../staff/staff.service";
 import { UsersService } from "../users/users.service";
 
@@ -23,8 +24,12 @@ export class AuthService {
       throw e;
     }
 
-    const user = await this.staff.upsertTelegramUser(tg);
+    const { user, created } = await this.staff.upsertTelegramUserEx(tg);
     if (user.isBlocked) throw new UnauthorizedException("Hisob bloklangan");
+    if (created && user.role === "STUDENT") {
+      const who = esc([user.firstName, user.lastName].filter(Boolean).join(" ")) + (user.username ? ` (@${esc(user.username)})` : "");
+      await this.staff.alertOwners(`🆕 <b>Yangi o'quvchi</b> ilovaga kirdi: ${who}\n\nAdmin → O'quvchilar`);
+    }
 
     const token = await this.jwt.signAsync({ sub: user.id, role: user.role });
     return { token, expiresIn: this.env.JWT_TTL, user: await this.users.me(user.id) };

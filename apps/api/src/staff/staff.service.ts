@@ -3,6 +3,7 @@ import { JwtService } from "@nestjs/jwt";
 import { STAFF_ROLES, type AuthResponse, type RoleName } from "@onatili/shared";
 import { createHash, randomBytes } from "node:crypto";
 import { ENV, type Env } from "../config/env";
+import { NotifyService } from "../notify/notify.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { UsersService } from "../users/users.service";
 
@@ -28,6 +29,7 @@ export class StaffService {
     private readonly prisma: PrismaService,
     private readonly jwt: JwtService,
     private readonly users: UsersService,
+    private readonly notify: NotifyService,
   ) {
     this.owners = new Set(env.OWNER_USERNAMES.split(",").map(normUsername).filter(Boolean));
   }
@@ -41,6 +43,17 @@ export class StaffService {
    * ega ro'yxatidagi username: TEACHER; taklif qilingan username: taklifdagi rol.
    */
   async upsertTelegramUser(tg: TelegramProfile) {
+    return (await this.upsertTelegramUserEx(tg)).user;
+  }
+
+  /** Egalarga (ustozlarga) bot orqali qisqa xabar: yangi o'quvchi, guruhga qo'shilish va h.k. */
+  async alertOwners(text: string) {
+    const owners = await this.prisma.user.findMany({ where: { role: "TEACHER", isBlocked: false, telegramId: { not: null } }, select: { telegramId: true } });
+    await Promise.all(owners.map((o) => this.notify.send(o.telegramId, text).catch(() => null)));
+  }
+
+  /** upsertTelegramUser + yangi yaratilganmi */
+  async upsertTelegramUserEx(tg: TelegramProfile) {
     const profile = {
       username: tg.username ?? null,
       firstName: tg.first_name,
@@ -60,6 +73,7 @@ export class StaffService {
     );
     // Ustoz yozgan ism-familiya Telegram'dagisi bilan almashtirilmaydi
     const locked = await this.prisma.user.findUnique({ where: { telegramId: BigInt(tg.id) }, select: { nameLocked: true } });
+    const created = locked === null;
     if (locked?.nameLocked) {
       delete update.firstName;
       delete update.lastName;
@@ -86,7 +100,7 @@ export class StaffService {
         ]);
       }
     }
-    return user;
+    return { user, created };
   }
 
   /** Bot /admin: xodim uchun bir martalik kirish havolasi. Xodim bo'lmasa null. */

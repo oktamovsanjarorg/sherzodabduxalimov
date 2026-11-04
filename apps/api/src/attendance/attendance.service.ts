@@ -173,7 +173,7 @@ export class AttendanceService {
   async joinByInvite(code: string, from: TelegramProfile): Promise<{ status: "joined" | "already" | "moved" | "staff" | "invalid"; groupName?: string; parentLinked?: boolean }> {
     const g = await this.prisma.group.findUnique({ where: { inviteCode: code } });
     if (!g || !g.isActive) return { status: "invalid" };
-    const user = await this.staff.upsertTelegramUser(from);
+    const { user, created } = await this.staff.upsertTelegramUserEx(from);
     if (user.role !== "STUDENT") return { status: "staff", groupName: g.name };
     const sp = await this.prisma.studentProfile.findUniqueOrThrow({
       where: { userId: user.id },
@@ -183,6 +183,8 @@ export class AttendanceService {
     if (sp.groupId === g.id) return { status: "already", groupName: g.name, parentLinked };
     await this.prisma.studentProfile.update({ where: { id: sp.id }, data: { groupId: g.id, mode: "OFFLINE" } });
     await this.prisma.auditLog.create({ data: { actorId: user.id, action: "group.join", entity: "Group", entityId: g.id, meta: { from: sp.groupId } } });
+    const who = esc([user.firstName, user.lastName].filter(Boolean).join(" ")) + (user.username ? ` (@${esc(user.username)})` : "");
+    await this.staff.alertOwners(`👥 ${created ? "<b>Yangi o'quvchi</b> " : ""}${who} havola orqali <b>${esc(g.name)}</b> guruhiga ${sp.groupId ? "o'tdi" : "qo'shildi"}`);
     return { status: sp.groupId ? "moved" : "joined", groupName: g.name, parentLinked };
   }
 
