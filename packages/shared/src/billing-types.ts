@@ -46,7 +46,9 @@ export interface BillingView {
 export interface AdminPayment {
   id: string;
   student: { id: string; name: string; username: string | null; phone: string | null };
-  plan: { id: string; name: string; durationDays: number };
+  /** Obuna to'lovi bo'lsa tarif, esse tekshiruvi bo'lsa esse */
+  plan: { id: string; name: string; durationDays: number } | null;
+  essay: { id: string; prompt: string } | null;
   method: PaymentMethodName;
   amountUzs: number;
   status: PaymentStatusName;

@@ -2,6 +2,8 @@ import type {
   AdminPayment,
   AdminPlan,
   AdminSubscriptions,
+  AdminHwEssay,
+  TeacherEssayReviewInput,
   OfflineLedger,
   BillingCard,
   BillingSettingsInput,
@@ -79,7 +81,7 @@ export interface StaffList {
 
 export const api = {
   payments: (status: PaymentStatusName) => request<AdminPayment[]>(`/admin/payments?status=${status}`),
-  approvePayment: (id: string) => request<{ ok: true; endsAt: string }>(`/admin/payments/${id}/approve`, json("POST")),
+  approvePayment: (id: string) => request<{ ok: true; endsAt: string | null }>(`/admin/payments/${id}/approve`, json("POST")),
   rejectPayment: (id: string, reason: string) => request(`/admin/payments/${id}/reject`, json("POST", { reason })),
   /** Chek rasmi: avtorizatsiya sarlavhasi kerak, shuning uchun <img src> emas, blob */
   receipt: async (id: string) => {
@@ -95,6 +97,16 @@ export const api = {
   remindDebtors: (groupId: string, month: string) => request<{ students: number; messages: number }>("/admin/offline-payments/remind", json("POST", { groupId, month })),
   grantSubscription: (d: { userId: string; planId: string; note: string | null }) => request<{ ok: true; endsAt: string }>("/admin/subscriptions", json("POST", d)),
   cancelSubscription: (id: string) => request(`/admin/subscriptions/${id}/cancel`, json("POST")),
+  hwEssays: (status: "pending" | "reviewed") => request<AdminHwEssay[]>(`/admin/hw-essays?status=${status}`),
+  reviewHwEssay: (id: string, d: TeacherEssayReviewInput) => request<{ totalScore: number }>(`/admin/hw-essays/${id}/review`, json("POST", d)),
+  /** Varoq rasmi (avtorizatsiya bilan blob) */
+  essayPage: async (id: string, n: number) => {
+    const res = await fetch(`/api/essays/${id}/pages/${n}`, { headers: { Authorization: `Bearer ${loadSession()?.token}` } });
+    if (!res.ok) throw new ApiError(res.status, "Rasmni yuklab bo'lmadi");
+    return URL.createObjectURL(await res.blob());
+  },
+  essaySettings: () => request<{ priceUzs: number | null }>("/admin/essay-settings"),
+  saveEssaySettings: (priceUzs: number | null) => request("/admin/essay-settings", json("PUT", { priceUzs })),
   plans: () => request<AdminPlan[]>("/admin/plans"),
   createPlan: (d: PlanInput) => request("/admin/plans", json("POST", d)),
   updatePlan: (id: string, d: Partial<PlanInput>) => request(`/admin/plans/${id}`, json("PATCH", d)),

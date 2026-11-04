@@ -5,17 +5,41 @@ import { useState } from "react";
 import { Badge, Empty, Field, Modal, PageHeader, Spinner } from "../components/ui";
 import { api, errMsg } from "../lib/api";
 import { useToast } from "../lib/toast";
+import { HwEssays } from "./HwEssays";
 
 const fmt = (n: number) => String(Math.round(n * 10) / 10).replace(".", ",");
 
 export function EssaysPage() {
+  const [source, setSource] = useState<"hw" | "mock">("hw");
+  return (
+    <>
+      <PageHeader
+        title="Esselar"
+        subtitle={
+          source === "hw"
+            ? "O'quvchi varoqqa yozib rasmini yuborgan va ustoz tekshiruvi uchun to'lagan esselar. Baho bot orqali o'quvchiga boradi."
+            : "Mock testlardagi esselar. Ball qo'yilgach, o'quvchiga umumiy natija va daraja bot orqali yuboriladi."
+        }
+      />
+      <div className="mb-3 flex gap-2">
+        {([["hw", "Qo'lyozma esselar"], ["mock", "Mock esselari"]] as const).map(([k, l]) => (
+          <button key={k} onClick={() => setSource(k)} className={`h-9 rounded-full px-4 text-sm font-bold ${source === k ? "bg-slate-900 text-white" : "bg-slate-100 text-slate-600"}`}>
+            {l}
+          </button>
+        ))}
+      </div>
+      {source === "hw" ? <HwEssays /> : <MockEssays />}
+    </>
+  );
+}
+
+function MockEssays() {
   const [tab, setTab] = useState<"pending" | "reviewed">("pending");
   const [open, setOpen] = useState<AdminEssay | null>(null);
   const list = useQuery({ queryKey: ["essays", tab], queryFn: () => api.essays(tab), refetchInterval: tab === "pending" ? 30_000 : false });
 
   return (
     <>
-      <PageHeader title="Esselar" subtitle="Mock testlardagi esselar. Ball qo'yilgach, o'quvchiga umumiy natija va daraja bot orqali yuboriladi." />
       <div className="mb-4 inline-flex rounded-lg border border-slate-200 bg-white p-1 text-sm font-bold">
         {([["pending", "Tekshirilmagan"], ["reviewed", "Tekshirilgan"]] as const).map(([k, l]) => (
           <button key={k} onClick={() => setTab(k)} className={`rounded-md px-3 py-1.5 ${tab === k ? "bg-brand text-white" : "text-slate-600"}`}>

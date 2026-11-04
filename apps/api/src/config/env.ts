@@ -22,6 +22,10 @@ const schema = z.object({
   // HLS segmentlari qayerdan beriladi: dev'da API'ning o'zi, prod'da nginx (/media-files/v)
   MEDIA_SEGMENT_BASE: z.string().default("/api/media-seg"),
   // Mini App manzili: bot xabaridagi "Obunani uzaytirish" tugmasi uchun (bo'lmasa tugmasiz yuboriladi)
+  // AI esse tekshiruvi. Qiymatdagi "# izoh" qismi olib tashlanadi (.env da shunday yozilgan bo'lishi mumkin)
+  AI_PROVIDER: z.preprocess((v) => (typeof v === "string" ? v.split("#")[0].trim() : v), z.enum(["deepseek", "none"]).catch("none")).default("none"),
+  DEEPSEEK_API_KEY: z.preprocess((v) => (typeof v === "string" ? v.split("#")[0].trim() || undefined : v), z.string().optional()),
+  DEEPSEEK_MODEL: z.string().default("deepseek-chat"),
   MINIAPP_URL: z.string().url().startsWith("https://").optional().catch(undefined),
 });
 

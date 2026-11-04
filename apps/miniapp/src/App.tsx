@@ -4,6 +4,8 @@ import { AppLayout } from "./components/AppLayout";
 import { api } from "./lib/api";
 import { getInitData } from "./lib/telegram";
 import { AttemptPage } from "./pages/AttemptPage";
+import { EssayPage } from "./pages/EssayPage";
+import { EssaysPage, NewEssayPage } from "./pages/EssaysPage";
 import { HomePage } from "./pages/HomePage";
 import { LessonPage } from "./pages/LessonPage";
 import { LessonsPage } from "./pages/LessonsPage";
@@ -52,6 +54,9 @@ export function App() {
       <Route path="lesson/:id" element={<LessonPage />} />
       <Route path="attempt/:id" element={<AttemptPage />} />
       <Route path="mocks" element={<MocksPage />} />
+      <Route path="essays" element={<EssaysPage />} />
+      <Route path="essays/new" element={<NewEssayPage />} />
+      <Route path="essays/:id" element={<EssayPage />} />
       <Route path="subscribe" element={<SubscribePage />} />
       <Route path="parents" element={<ParentsPage />} />
       <Route path="stats" element={<StatsPage />} />

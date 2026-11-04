@@ -4,7 +4,10 @@
  */
 import { PrismaClient } from "@onatili/db";
 import { Queue, Worker } from "bullmq";
+import { gradeEssayDeepSeek } from "./ai/deepseek";
+import { ESSAY_AI_QUEUE, type EssayAiJob } from "./ai/queue";
 import { runSubscriptionReminders } from "./billing/reminders";
+import { gradeEssayJob, markEssayFailed } from "./essays/ai-runner";
 import { rm } from "node:fs/promises";
 import { loadEnv } from "./config/env";
 import { MediaPaths } from "./media/paths";
@@ -109,7 +112,31 @@ const cron = new Worker(
 );
 cron.on("failed", (_job, err) => console.error("[cron] xato:", err.message));
 
+/** AI esse tekshiruvi (DeepSeek). Bir vaqtda 3 ta: API limitlari va xarajat nazorati uchun */
+const essayAi = new Worker<EssayAiJob>(
+  ESSAY_AI_QUEUE,
+  async (job) => {
+    if (env.AI_PROVIDER !== "deepseek" || !env.DEEPSEEK_API_KEY) throw new Error("AI o'chirilgan");
+    const key = env.DEEPSEEK_API_KEY;
+    const total = await gradeEssayJob(
+      prisma,
+      job.data.essayId,
+      (topic, text) => gradeEssayDeepSeek({ apiKey: key, model: env.DEEPSEEK_MODEL, topic, text }),
+      (chatId, text, button) => notifyQueue.add("send", { chatId: String(chatId), text, button }),
+      env.MINIAPP_URL,
+    );
+    if (total !== null) console.log(`[essay-ai] ${job.data.essayId}: ${total} ball`);
+  },
+  { connection: redisConnection(env.REDIS_URL), prefix: env.QUEUE_PREFIX, concurrency: 3, lockDuration: 180_000 },
+);
+essayAi.on("failed", async (job, err) => {
+  if (!job) return;
+  console.error(`[essay-ai] ${job.data.essayId} xato (${job.attemptsMade}-urinish):`, err.message);
+  if (job.attemptsMade >= (job.opts.attempts ?? 1)) await markEssayFailed(prisma, job.data.essayId, err.message).catch(() => {});
+});
+
 const shutdown = async () => {
+  await essayAi.close();
   await cron.close();
   await cronQueue.close();
   await notifyQueue.close();

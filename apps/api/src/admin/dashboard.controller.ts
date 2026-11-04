@@ -26,6 +26,7 @@ export class DashboardController {
     const pendingEssays = await this.prisma.attemptAnswer.count({
       where: { question: { type: "ESSAY" }, points: null, textAnswer: { not: null }, attempt: { status: { in: ["SUBMITTED", "EXPIRED"] } } },
     });
+    const pendingHwEssays = await this.prisma.essay.count({ where: { mode: "TEACHER", status: "SUBMITTED" } });
     const pendingPayments = await this.prisma.payment.count({ where: { status: "PENDING" } });
     const now = new Date();
     const expiringSubscriptions = (
@@ -53,7 +54,7 @@ export class DashboardController {
     ]);
     return {
       pendingParents,
-      pendingEssays,
+      pendingEssays: pendingEssays + pendingHwEssays,
       pendingPayments,
       expiringSubscriptions,
       videos: { processing, failed },

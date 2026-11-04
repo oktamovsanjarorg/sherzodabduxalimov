@@ -1,4 +1,8 @@
 import type {
+  CreateEssayInput,
+  EssayConfig,
+  MyEssayDetail,
+  MyEssaySummary,
   BillingView,
   MyPayment,
   ChildView,
@@ -80,13 +84,30 @@ export const api = {
 
   billing: () => request<BillingView>("/billing"),
   /** Chek rasmi xom baytlar sifatida yuboriladi */
-  submitPayment: (planId: string, image: Blob, note: string) =>
-    request<MyPayment>(`/billing/payments?planId=${encodeURIComponent(planId)}${note ? `&note=${encodeURIComponent(note)}` : ""}`, {
+  submitPayment: (target: { planId: string } | { essayId: string }, image: Blob, note: string) =>
+    request<MyPayment>(`/billing/payments?${new URLSearchParams({ ...target, ...(note ? { note } : {}) })}`, {
       method: "POST",
       body: image,
       headers: { "Content-Type": image.type || "image/jpeg" },
     }),
   cancelPayment: (id: string) => request<{ ok: true }>(`/billing/payments/${id}`, { method: "DELETE" }),
+
+  essayConfig: () => request<EssayConfig>("/essays/config"),
+  essays: () => request<MyEssaySummary[]>("/essays"),
+  essay: (id: string) => request<MyEssayDetail>(`/essays/${id}`),
+  createEssay: (d: CreateEssayInput) => post<MyEssayDetail>("/essays", d),
+  addEssayPage: (id: string, image: Blob) =>
+    request<MyEssayDetail>(`/essays/${id}/pages`, { method: "POST", body: image, headers: { "Content-Type": image.type || "image/jpeg" } }),
+  removeEssayPage: (id: string, n: number) => request<MyEssayDetail>(`/essays/${id}/pages/${n}`, { method: "DELETE" }),
+  finishEssay: (id: string) => post<MyEssayDetail>(`/essays/${id}/finish`),
+  retryEssay: (id: string) => post<MyEssayDetail>(`/essays/${id}/retry`),
+  deleteEssay: (id: string) => request<{ ok: true }>(`/essays/${id}`, { method: "DELETE" }),
+  /** Varoq rasmi: avtorizatsiya kerak, shuning uchun blob URL */
+  essayPage: async (id: string, n: number) => {
+    const res = await fetch(`/api/essays/${id}/pages/${n}`, { headers: { Authorization: `Bearer ${useAuth.getState().token}` } });
+    if (!res.ok) throw new ApiError(res.status, "Rasmni yuklab bo'lmadi");
+    return URL.createObjectURL(await res.blob());
+  },
 
   mocks: () => request<TestSummary[]>("/mocks"),
   startTest: (testId: string) => post<AttemptState>(`/tests/${testId}/attempts`),

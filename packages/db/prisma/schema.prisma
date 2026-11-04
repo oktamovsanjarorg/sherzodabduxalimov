@@ -294,23 +294,39 @@ model AttemptAnswer {
 // ===================== Esse =====================
 
 enum EssayStatus {
-  SUBMITTED
+  DRAFT // rasmlar yuklanmoqda
+  AWAITING_PAYMENT // ustoz tekshiruvi: to'lov kutilmoqda
+  SUBMITTED // ustoz navbatida
   AI_CHECKING
   AI_CHECKED
-  REVIEWED
+  AI_FAILED
+  REVIEWED // ustoz baholadi
 }
 
+enum EssayMode {
+  AI // bepul, matn bilan
+  TEACHER // pullik, qo'lyozma rasmlari bilan
+}
+
+/// Erkin esse (testdan tashqari): o'quvchi yozadi, AI yoki ustoz tekshiradi
 model Essay {
   id        String        @id @default(cuid())
   userId    String
   user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  mode      EssayMode     @default(AI)
   prompt    String // esse mavzusi
   text      String?
-  imageUrls String[]
-  status    EssayStatus   @default(SUBMITTED)
+  imageUrls String[] // MEDIA_DIR ichidagi nisbiy yo'llar: essays/<id>/<n>.jpg
+  status    EssayStatus   @default(DRAFT)
+  error     String?
+  priceUzs  Int? // ustoz tekshiruvi narxi (yuborilgan paytdagi)
+  payment   Payment?
   reviews   EssayReview[]
   createdAt DateTime      @default(now())
   updatedAt DateTime      @updatedAt
+
+  @@index([status, createdAt])
+  @@index([userId, createdAt])
 }
 
 enum ReviewSource {
@@ -326,7 +342,8 @@ model EssayReview {
   reviewerId String?
   reviewer   User?        @relation("Reviewer", fields: [reviewerId], references: [id], onDelete: SetNull)
   provider   String? // deepseek | claude
-  criteria   Json // [{key,score,max,comment}]
+  criteria   Json // [{key,label,score,max,comment}]
+  mistakes   Json         @default("[]") // AI: [{wrong,right,note}]
   totalScore Float
   feedback   String?
   createdAt  DateTime     @default(now())
@@ -412,8 +429,10 @@ model Payment {
   id             String        @id @default(cuid())
   userId         String
   user           User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  planId         String
-  plan           Plan          @relation(fields: [planId], references: [id])
+  planId         String? // obuna to'lovi
+  plan           Plan?         @relation(fields: [planId], references: [id], onDelete: Restrict)
+  essayId        String?       @unique // yoki: bitta esseni ustoz tekshiruvi uchun to'lov
+  essay          Essay?        @relation(fields: [essayId], references: [id], onDelete: SetNull)
   method         PaymentMethod
   amountUzs      Int
   status         PaymentStatus @default(PENDING)

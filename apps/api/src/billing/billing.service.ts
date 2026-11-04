@@ -39,6 +39,7 @@ const MIME = { jpg: "image/jpeg", png: "image/png", webp: "image/webp" } as cons
 const paymentInclude = {
   user: { select: { id: true, firstName: true, lastName: true, username: true, phone: true } },
   plan: { select: { id: true, name: true, durationDays: true } },
+  essay: { select: { id: true, prompt: true } },
   reviewedBy: { select: { firstName: true, lastName: true } },
   subscription: { select: { startsAt: true, endsAt: true } },
 } satisfies Prisma.PaymentInclude;
@@ -128,7 +129,7 @@ export class BillingService {
     const mine = payments.map(
       (p): MyPayment => ({
         id: p.id,
-        planName: p.plan.name,
+        planName: p.plan?.name ?? "Esse tekshiruvi",
         amountUzs: p.amountUzs,
         status: p.status,
         reviewNote: p.reviewNote,
@@ -139,24 +140,43 @@ export class BillingService {
       plans: plans.map((p) => ({ id: p.id, name: p.name, priceUzs: p.priceUzs, durationDays: p.durationDays, description: p.description })),
       card,
       subscription: sub ? { planName: sub.plan.name, endsAt: sub.endsAt.toISOString() } : null,
-      pending: mine.find((p) => p.status === "PENDING") ?? null,
+      // Obuna sahifasida faqat obuna to'lovi kutilayotgani ko'rsatiladi (esse to'lovi esse sahifasida)
+      pending: mine.find((p, i) => p.status === "PENDING" && payments[i].planId) ?? null,
       history: mine,
       offline,
     };
   }
 
-  async submit(userId: string, planId: string, payerNote: string | null, body: unknown): Promise<MyPayment> {
+  async submit(userId: string, target: { planId?: string; essayId?: string }, payerNote: string | null, body: unknown): Promise<MyPayment> {
     if (!Buffer.isBuffer(body) || !body.length) throw new BadRequestException("Chek rasmini yuboring");
     const ext = sniffImage(body);
     if (!ext) throw new BadRequestException("Faqat rasm (JPG, PNG, WEBP) qabul qilinadi");
-    const plan = await this.prisma.plan.findFirst({ where: { id: planId, isActive: true } });
-    if (!plan) throw new NotFoundException("Tarif topilmadi");
-    if (await this.offline.mine(userId)) throw new ConflictException("Siz offline guruhdasiz: obuna kerak emas, to'lov darsda olinadi");
-    if (await this.prisma.payment.count({ where: { userId, status: "PENDING" } }))
-      throw new ConflictException("Avvalgi chekingiz hali tekshirilmoqda");
+
+    let item: { planId: string | null; essayId: string | null; title: string; amountUzs: number };
+    if (target.essayId) {
+      const e = await this.prisma.essay.findFirst({ where: { id: target.essayId, userId } });
+      if (!e || e.mode !== "TEACHER") throw new NotFoundException("Esse topilmadi");
+      if (e.status !== "AWAITING_PAYMENT" || !e.priceUzs) throw new ConflictException("Bu esse uchun to'lov kerak emas");
+      // Rad etilgan chek bo'lsa, uni yangisi bilan almashtiramiz (essayId unique)
+      const prev = await this.prisma.payment.findUnique({ where: { essayId: e.id } });
+      if (prev?.status === "PENDING") throw new ConflictException("Avvalgi chekingiz hali tekshirilmoqda");
+      if (prev?.status === "APPROVED") throw new ConflictException("Bu esse allaqachon to'langan");
+      if (prev) {
+        await this.prisma.payment.delete({ where: { id: prev.id } });
+        await this.removeReceipt(prev.receiptUrl);
+      }
+      item = { planId: null, essayId: e.id, title: "Esse tekshiruvi", amountUzs: e.priceUzs };
+    } else {
+      const plan = await this.prisma.plan.findFirst({ where: { id: target.planId ?? "", isActive: true } });
+      if (!plan) throw new NotFoundException("Tarif topilmadi");
+      if (await this.offline.mine(userId)) throw new ConflictException("Siz offline guruhdasiz: obuna kerak emas, to'lov darsda olinadi");
+      if (await this.prisma.payment.count({ where: { userId, status: "PENDING", planId: { not: null } } }))
+        throw new ConflictException("Avvalgi chekingiz hali tekshirilmoqda");
+      item = { planId: plan.id, essayId: null, title: plan.name, amountUzs: plan.priceUzs };
+    }
 
     const p = await this.prisma.payment.create({
-      data: { userId, planId, method: "MANUAL", amountUzs: plan.priceUzs, payerNote: payerNote?.trim().slice(0, 300) || null },
+      data: { userId, planId: item.planId, essayId: item.essayId, method: "MANUAL", amountUzs: item.amountUzs, payerNote: payerNote?.trim().slice(0, 300) || null },
       include: { user: { select: { firstName: true, lastName: true, username: true } } },
     });
     const rel = `receipts/${p.id}.${ext}`;
@@ -174,10 +194,10 @@ export class BillingService {
     const who = esc(fullName(p.user)) + (p.user.username ? ` (@${esc(p.user.username)})` : "");
     await Promise.all(
       teachers.map((t) =>
-        this.notify.send(t.telegramId, `💳 <b>Yangi to'lov cheki</b>\n${who}\n${esc(plan.name)} · ${formatSum(plan.priceUzs)} so'm\n\nAdmin panel → Ko'proq → To'lovlar`),
+        this.notify.send(t.telegramId, `💳 <b>Yangi to'lov cheki</b>\n${who}\n${esc(item.title)} · ${formatSum(item.amountUzs)} so'm\n\nAdmin panel → Ko'proq → To'lovlar`),
       ),
     );
-    return { id: p.id, planName: plan.name, amountUzs: p.amountUzs, status: "PENDING", reviewNote: null, createdAt: p.createdAt.toISOString() };
+    return { id: p.id, planName: item.title, amountUzs: p.amountUzs, status: "PENDING", reviewNote: null, createdAt: p.createdAt.toISOString() };
   }
 
   /** O'quvchi kutilayotgan chekini bekor qiladi (noto'g'ri rasm yuborgan bo'lsa) */
@@ -211,6 +231,7 @@ export class BillingService {
       id: p.id,
       student: { id: p.user.id, name: fullName(p.user), username: p.user.username, phone: p.user.phone },
       plan: p.plan,
+      essay: p.essay ? { id: p.essay.id, prompt: p.essay.prompt } : null,
       method: p.method,
       amountUzs: p.amountUzs,
       status: p.status,
@@ -241,15 +262,27 @@ export class BillingService {
         const exists = await tx.payment.count({ where: { id } });
         throw exists ? new ConflictException("To'lov allaqachon ko'rib chiqilgan") : new NotFoundException("To'lov topilmadi");
       }
-      const p = await tx.payment.findUniqueOrThrow({ where: { id }, include: { plan: true, user: { select: { telegramId: true } } } });
-      const sub = await this.extend(tx, p.userId, p.planId, p.plan.durationDays);
+      const p = await tx.payment.findUniqueOrThrow({ where: { id }, include: { plan: true, essay: { select: { id: true, prompt: true } }, user: { select: { telegramId: true } } } });
+      if (p.essayId) {
+        // Esse tekshiruvi: esse ustoz navbatiga tushadi
+        await tx.essay.updateMany({ where: { id: p.essayId, status: "AWAITING_PAYMENT" }, data: { status: "SUBMITTED" } });
+        return { payment: p, sub: null };
+      }
+      const sub = await this.extend(tx, p.userId, p.planId!, p.plan!.durationDays);
       await tx.payment.update({ where: { id }, data: { subscriptionId: sub.id } });
       return { payment: p, sub };
     });
-    await this.audit(actorId, "payment.approve", "Payment", id, { subscriptionId: sub.id, endsAt: sub.endsAt });
+    await this.audit(actorId, "payment.approve", "Payment", id, sub ? { subscriptionId: sub.id, endsAt: sub.endsAt } : { essayId: payment.essayId });
+    if (!sub) {
+      await this.notify.send(
+        payment.user.telegramId,
+        `✅ <b>To'lovingiz tasdiqlandi</b>\nEsse «${esc(payment.essay?.prompt.slice(0, 80) ?? "")}» ustozga yuborildi. Tekshirilgach bot orqali xabar keladi.`,
+      );
+      return { ok: true, endsAt: null };
+    }
     await this.notify.send(
       payment.user.telegramId,
-      `✅ <b>To'lovingiz tasdiqlandi</b>\n${esc(payment.plan.name)} · ${formatSum(payment.amountUzs)} so'm\nObuna <b>${fmtDate(sub.endsAt)}</b> gacha faol. Barcha darslar va testlar ochildi!`,
+      `✅ <b>To'lovingiz tasdiqlandi</b>\n${esc(payment.plan!.name)} · ${formatSum(payment.amountUzs)} so'm\nObuna <b>${fmtDate(sub.endsAt)}</b> gacha faol. Barcha darslar va testlar ochildi!`,
     );
     return { ok: true, endsAt: sub.endsAt.toISOString() };
   }
@@ -265,7 +298,7 @@ export class BillingService {
     await this.audit(actorId, "payment.reject", "Payment", id, { reason });
     await this.notify.send(
       p.user.telegramId,
-      `❌ <b>To'lov cheki qabul qilinmadi</b>\nSabab: ${esc(reason)}\n\nIlovada "Obuna" bo'limidan chekni qayta yuborishingiz mumkin.`,
+      `❌ <b>To'lov cheki qabul qilinmadi</b>\nSabab: ${esc(reason)}\n\n${p.essayId ? "Ilovada «Esselarim» bo'limidan" : "Ilovada «Obuna» bo'limidan"} chekni qayta yuborishingiz mumkin.`,
     );
     return { ok: true };
   }

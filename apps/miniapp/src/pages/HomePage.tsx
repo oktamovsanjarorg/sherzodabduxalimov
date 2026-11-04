@@ -58,7 +58,7 @@ export function HomePage() {
         <QuickAction Icon={PlayCircle} label="Videodarslar" hint="Mavzular bo'yicha" onClick={go("/lessons")} />
         <QuickAction Icon={ListChecks} label="Mavzu testlari" hint="Mustahkamlash" onClick={go("/lessons")} />
         <QuickAction Icon={ClipboardCheck} label="Mock test" hint="Milliy sertifikat" onClick={go("/mocks")} />
-        <QuickAction Icon={FileText} label="Esse yuborish" hint="Tez orada" />
+        <QuickAction Icon={FileText} label="Esse yozish" hint="AI yoki ustoz tekshiradi" onClick={go("/essays")} />
       </div>
 
       <SectionTitle>Mening natijam</SectionTitle>

@@ -106,7 +106,7 @@ function PaymentCard({ p }: { p: AdminPayment }) {
   const approve = useMutation({
     mutationFn: () => api.approvePayment(p.id),
     onSuccess: (r) => {
-      toast(`Tasdiqlandi. Obuna ${date(r.endsAt)} gacha`);
+      toast(r.endsAt ? `Tasdiqlandi. Obuna ${date(r.endsAt)} gacha` : "Tasdiqlandi. Esse ustoz navbatiga tushdi");
       done();
     },
     onError: (e) => toast(errMsg(e), "error"),
@@ -128,8 +128,8 @@ function PaymentCard({ p }: { p: AdminPayment }) {
         </div>
         <div className="shrink-0 text-right">
           <p className="text-lg font-extrabold">{formatSum(p.amountUzs)} so'm</p>
-          <p className="text-xs text-slate-500">
-            {p.plan.name} · {p.plan.durationDays} kun
+          <p className="max-w-[180px] truncate text-xs text-slate-500">
+            {p.plan ? `${p.plan.name} · ${p.plan.durationDays} kun` : `📝 Esse tekshiruvi: ${p.essay?.prompt ?? ""}`}
           </p>
         </div>
       </div>

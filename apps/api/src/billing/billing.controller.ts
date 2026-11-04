@@ -27,8 +27,14 @@ export class BillingController {
   /** Tana: xom rasm baytlari (image/jpeg | image/png | image/webp) */
   @Roles("STUDENT")
   @Post("payments")
-  submit(@CurrentUser() u: JwtUser, @Query("planId") planId = "", @Query("note") note: string | undefined, @Body() body: unknown) {
-    return this.svc.submit(u.sub, planId, note ?? null, body);
+  submit(
+    @CurrentUser() u: JwtUser,
+    @Query("planId") planId: string | undefined,
+    @Query("essayId") essayId: string | undefined,
+    @Query("note") note: string | undefined,
+    @Body() body: unknown,
+  ) {
+    return this.svc.submit(u.sub, essayId ? { essayId } : { planId }, note ?? null, body);
   }
 
   @Delete("payments/:id") cancel(@CurrentUser() u: JwtUser, @Param("id") id: string) {

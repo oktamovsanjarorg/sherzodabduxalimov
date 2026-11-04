@@ -11,7 +11,10 @@ export function BillingSettingsPage() {
     <>
       <PageHeader title="Tariflar va karta" subtitle="O'quvchilar Mini App'dagi “Obuna” bo'limida shu tariflar va karta raqamini ko'radi." />
       <div className="grid gap-5 lg:grid-cols-2 [&>*]:min-w-0">
-        <CardForm />
+        <div className="space-y-5">
+          <CardForm />
+          <EssayPrice />
+        </div>
         <Plans />
       </div>
     </>
@@ -79,6 +82,40 @@ function CardForm() {
           </button>
         </>
       )}
+    </form>
+  );
+}
+
+function EssayPrice() {
+  const toast = useToast();
+  const qc = useQueryClient();
+  const q = useQuery({ queryKey: ["essay-settings"], queryFn: api.essaySettings });
+  const [v, setV] = useState("");
+  useEffect(() => setV(q.data?.priceUzs ? String(q.data.priceUzs) : ""), [q.data]);
+  const save = useMutation({
+    mutationFn: () => api.saveEssaySettings(v ? Number(v) : null),
+    onSuccess: () => {
+      toast("Saqlandi");
+      qc.invalidateQueries({ queryKey: ["essay-settings"] });
+    },
+    onError: (e) => toast(errMsg(e), "error"),
+  });
+  return (
+    <form
+      className="card space-y-3 p-5"
+      onSubmit={(e) => {
+        e.preventDefault();
+        save.mutate();
+      }}
+    >
+      <h2 className="font-extrabold">📝 Esseni ustoz tekshirishi</h2>
+      <p className="text-sm text-slate-500">O'quvchi varoqqa yozgan essesining rasmini yuboradi va shu summani to'laydi. AI tekshiruvi bepul (kuniga 2 ta).</p>
+      <Field label="Bitta esse narxi (so'm)" hint="Bo'sh qoldirilsa, ustoz tekshiruvi o'chiq turadi">
+        <input className="input" inputMode="numeric" placeholder="Masalan: 25000" value={v} onChange={(e) => setV(e.target.value.replace(/\D/g, ""))} />
+      </Field>
+      <button className="btn-primary" disabled={save.isPending || (q.data?.priceUzs ? String(q.data.priceUzs) : "") === v}>
+        <Save size={16} /> Saqlash
+      </button>
     </form>
   );
 }
