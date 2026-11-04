@@ -48,7 +48,8 @@ export function EssayPage() {
           {e.status === "DRAFT" && <DraftPages e={e} onChange={set} />}
           {e.status === "AWAITING_PAYMENT" && <EssayPay e={e} onChange={() => q.refetch()} />}
           {e.status === "SUBMITTED" && <Waiting icon={<GraduationCap size={36} className="mx-auto text-brand" />} title="Ustoz tekshirmoqda" hint="Tekshirilgach bot orqali xabar keladi." />}
-          {e.status === "AI_CHECKING" && (
+          {e.status === "AI_CHECKING" && Date.now() - new Date(e.createdAt).getTime() > 20 * 60_000 && <Failed e={{ ...e, error: "Tekshiruv juda uzoq cho'zildi. Qayta yuborib ko'ring." }} onChange={set} />}
+          {e.status === "AI_CHECKING" && Date.now() - new Date(e.createdAt).getTime() <= 20 * 60_000 && (
             <Waiting
               icon={<Loader2 size={36} className="mx-auto animate-spin text-brand" />}
               title={e.pages && !e.text ? "AI qo'lyozmani o'qimoqda…" : "AI tekshirmoqda…"}

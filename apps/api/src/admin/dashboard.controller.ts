@@ -23,19 +23,17 @@ export class DashboardController {
   @Get()
   async get(): Promise<AdminDashboard> {
     const today = new Date(`${new Date(Date.now() + 5 * 3600_000).toISOString().slice(0, 10)}T00:00:00.000Z`);
-    const pendingEssays = await this.prisma.attemptAnswer.count({
-      where: { question: { type: "ESSAY" }, points: null, textAnswer: { not: null }, attempt: { status: { in: ["SUBMITTED", "EXPIRED"] } } },
-    });
-    const pendingHwEssays = await this.prisma.essay.count({ where: { mode: "TEACHER", status: "SUBMITTED" } });
-    const pendingPayments = await this.prisma.payment.count({ where: { status: "PENDING" } });
     const now = new Date();
-    const expiringSubscriptions = (
-      await this.prisma.subscription.groupBy({
-        by: ["userId"],
-        where: { status: "ACTIVE", endsAt: { gt: now } },
-        _max: { endsAt: true },
-      })
-    ).filter((g) => g._max.endsAt! <= new Date(now.getTime() + 7 * 86_400_000)).length;
+    // Hammasi parallel: dashboard har 30 soniyada yangilanadi
+    const [pendingEssays, pendingHwEssays, pendingPayments, subEnds] = await Promise.all([
+      this.prisma.attemptAnswer.count({
+        where: { question: { type: "ESSAY" }, points: null, textAnswer: { not: null }, attempt: { status: { in: ["SUBMITTED", "EXPIRED"] } } },
+      }),
+      this.prisma.essay.count({ where: { mode: "TEACHER", status: "SUBMITTED" } }),
+      this.prisma.payment.count({ where: { status: "PENDING" } }),
+      this.prisma.subscription.groupBy({ by: ["userId"], where: { status: "ACTIVE", endsAt: { gt: now } }, _max: { endsAt: true } }),
+    ]);
+    const expiringSubscriptions = subEnds.filter((g) => g._max.endsAt! <= new Date(now.getTime() + 7 * 86_400_000)).length;
     const [pendingParents, processing, failed, total, withApproved, groups, lp, ld, tests, questions] = await Promise.all([
       this.prisma.parentLink.count({ where: { status: "PENDING" } }),
       this.prisma.video.count({ where: { status: { in: ["PROCESSING", "UPLOADING"] }, lesson: { isNot: null } } }),

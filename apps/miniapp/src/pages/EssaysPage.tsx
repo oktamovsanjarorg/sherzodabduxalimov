@@ -1,7 +1,7 @@
 import { ESSAY_STATUS_LABELS, MAX_ESSAY_PAGES, formatSum, type EssayModeName, type MyEssaySummary } from "@onatili/shared";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Bot, ChevronRight, GraduationCap, Info, Loader2, Plus } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { FullPage } from "../components/FullPage";
 import { PhotoPicker, type PickedPhoto } from "../components/PhotoPicker";
@@ -90,6 +90,7 @@ export function NewEssayPage() {
   const [preparing, setPreparing] = useState(false);
   const [progress, setProgress] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
+  const draft = useRef<{ id: string; mode: EssayModeName; uploaded: Set<string> } | null>(null);
 
   useEffect(() => () => photos.forEach((p) => URL.revokeObjectURL(p.url)), []); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -119,16 +120,33 @@ export function NewEssayPage() {
     }
   };
 
+  const removePhoto = (i: number) => {
+    // Bu rasm avvalgi (uzilgan) urinishda serverga yuklangan bo'lsa: eski qoralama o'chiriladi, keyingi yuborishda yangisi yaratiladi
+    const d = draft.current;
+    if (d && d.uploaded.has(photos[i].url)) {
+      void api.deleteEssay(d.id).catch(() => {});
+      draft.current = null;
+    }
+    setPhotos((p) => p.filter((_, j) => j !== i));
+  };
+
   const send = useMutation({
     mutationFn: async () => {
       setProgress("Yuborilmoqda…");
-      const e = await api.createEssay({ mode: mode!, prompt: prompt.trim(), text: aiTyped ? text : null });
-      if (!needPhotos) return e;
-      for (let i = 0; i < photos.length; i++) {
-        setProgress(`Rasm yuklanmoqda: ${i + 1}/${photos.length}`);
-        await api.addEssayPage(e.id, photos[i].blob);
+      // Internet uzilib qayta bosilsa: avval yaratilgan qoralama va yuklangan rasmlar qayta ishlatiladi
+      let d = draft.current;
+      if (!d || d.mode !== mode || !needPhotos) {
+        const e = await api.createEssay({ mode: mode!, prompt: prompt.trim(), text: aiTyped ? text : null });
+        if (!needPhotos) return e;
+        d = draft.current = { id: e.id, mode: mode!, uploaded: new Set() };
       }
-      return api.finishEssay(e.id);
+      for (let i = 0; i < photos.length; i++) {
+        if (d.uploaded.has(photos[i].url)) continue;
+        setProgress(`Rasm yuklanmoqda: ${i + 1}/${photos.length}`);
+        await api.addEssayPage(d.id, photos[i].blob);
+        d.uploaded.add(photos[i].url);
+      }
+      return api.finishEssay(d.id);
     },
     onSuccess: (e) => {
       hapticResult("success");
@@ -186,7 +204,7 @@ export function NewEssayPage() {
           {needPhotos && (
             <>
               <Step n={3} title={`Varoq rasmlari (${photos.length}/${MAX_ESSAY_PAGES})`} />
-              <PhotoPicker photos={photos} max={MAX_ESSAY_PAGES} busy={preparing} onAdd={addPhotos} onRemove={(i) => setPhotos((p) => p.filter((_, j) => j !== i))} />
+              <PhotoPicker photos={photos} max={MAX_ESSAY_PAGES} busy={preparing} onAdd={addPhotos} onRemove={removePhoto} />
               <p className="mt-2 px-1 text-xs text-hint">Varoqni yorug' joyda, tekis qilib, butun sahifa ko'rinadigan qilib suratga oling.</p>
               {mode === "AI" && c.aiPhotoEnabled && (
                 <button className="mt-2 px-1 text-sm font-semibold text-brand" onClick={() => setTyped(true)}>

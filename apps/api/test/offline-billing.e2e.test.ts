@@ -145,6 +145,17 @@ describe("Offline guruh: kirish va oylik to'lov; online obuna eslatmalari (e2e)"
     const up = await app.inject({ method: "POST", url: `/api/billing/payments?planId=${plan.id}`, headers: { ...OFF, "content-type": "image/jpeg" }, payload: Buffer.from([0xff, 0xd8, 0xff, 0xe0, 1, 2, 3]) });
     expect(up.statusCode).toBe(409);
 
+    // Guruhdan chiqqan o'quvchining to'lovini tahrirlash (avval 500 xato berardi) va boshqa guruhda ikki marta hisoblanmasligi
+    const g2 = (await req("POST", "/admin/groups", { name: `${TAG} 2-guruh` })).json().id;
+    await req("POST", `/admin/groups/${g2}/students`, { studentIds: [paidStudentId] });
+    expect((await req("PUT", "/admin/offline-payments", { studentId: paidStudentId, month, amountUzs: 250000, note: "Tuzatildi" })).statusCode).toBe(200);
+    const l1 = (await req("GET", `/admin/offline-payments?groupId=${groupId}&month=${month}`)).json();
+    const l2 = (await req("GET", `/admin/offline-payments?groupId=${g2}&month=${month}`)).json();
+    expect(l1.totals.sumUzs).toBe(250000); // to'lov 1-guruhda olingan
+    expect(l2.totals).toMatchObject({ paid: 1, sumUzs: 0 }); // 2-guruhda "to'lagan", lekin summa qayta qo'shilmaydi
+    await req("DELETE", `/admin/groups/${g2}/students/${paidStudentId}`);
+    await req("POST", `/admin/groups/${groupId}/students`, { studentIds: [paidStudentId] });
+
     expect((await req("DELETE", `/admin/offline-payments/${paidStudentId}/${month}`)).statusCode).toBe(200);
     expect((await req("GET", `/admin/offline-payments?groupId=${groupId}&month=${month}`)).json().totals.paid).toBe(0);
   });

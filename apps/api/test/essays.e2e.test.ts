@@ -86,6 +86,10 @@ describe("Esse: AI (bepul) va ustoz (pullik, qo'lyozma) (e2e)", () => {
     expect((await req("POST", `/essays/${f.id}/retry`, undefined, S)).json().status).toBe("AI_CHECKING");
 
     expect((await req("POST", "/essays", { mode: "AI", prompt: "Uchinchi", text: TEXT }, S)).statusCode).toBe(409); // 2 ta ishlatildi
+    // Eski muvaffaqiyatsiz esse orqali limitni chetlab o'tib bo'lmaydi
+    const old = await prisma.essay.create({ data: { userId: (await prisma.user.findUniqueOrThrow({ where: { telegramId: BigInt(TG.student) } })).id, mode: "AI", prompt: "Kechagi", text: TEXT, status: "AI_FAILED", createdAt: new Date(Date.now() - 2 * 86_400_000) } });
+    expect((await req("POST", `/essays/${old.id}/retry`, undefined, S)).statusCode).toBe(409);
+    await prisma.essay.delete({ where: { id: old.id } });
     expect((await req("GET", "/essays", undefined, S)).json()).toHaveLength(2);
   });
 

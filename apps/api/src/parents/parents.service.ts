@@ -220,7 +220,8 @@ export class ParentsService {
         name: fullName(l.student.user),
         username: l.student.user.username,
         phone: l.student.user.phone,
-        telegramId: String(l.student.user.telegramId),
+        // Ustoz qo'lda kiritgan, hali botga kirmagan o'quvchida null
+        telegramId: l.student.user.telegramId === null ? null : String(l.student.user.telegramId),
         groupName: l.student.group?.name ?? null,
       },
     };

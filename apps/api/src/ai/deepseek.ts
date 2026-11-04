@@ -88,7 +88,32 @@ export async function gradeEssayDeepSeek(opts: { apiKey: string; model: string; 
   if (r.status !== 200) throw new Error(`DeepSeek ${r.status}: ${j?.error?.message ?? "javob yo'q"}`);
   const content = j?.choices?.[0]?.message?.content;
   if (!content) throw new Error("DeepSeek bo'sh javob qaytardi");
-  return normalize(resultSchema.parse(JSON.parse(content)));
+  return normalize(resultSchema.parse(parseFirstJson(content)));
+}
+
+/**
+ * Model ba'zan JSON'dan keyin (yoki oldin) qo'shimcha matn yozadi: birinchi to'liq {...} obyektini ajratib olamiz.
+ * Satr ichidagi qavslar va qochirilgan qo'shtirnoqlar hisobga olinadi.
+ */
+export function parseFirstJson(raw: string): unknown {
+  try {
+    return JSON.parse(raw);
+  } catch {
+    const start = raw.indexOf("{");
+    if (start < 0) throw new Error("AI javobida JSON yo'q");
+    let depth = 0;
+    let inStr = false;
+    for (let i = start; i < raw.length; i++) {
+      const ch = raw[i];
+      if (inStr) {
+        if (ch === "\\") i++;
+        else if (ch === '"') inStr = false;
+      } else if (ch === '"') inStr = true;
+      else if (ch === "{") depth++;
+      else if (ch === "}" && --depth === 0) return JSON.parse(raw.slice(start, i + 1));
+    }
+    throw new Error("AI javobidagi JSON to'liq emas");
+  }
 }
 
 /** Mezon kalitlari va ball chegaralari bizning jadval bo'yicha tekshiriladi (AI'ga to'liq ishonilmaydi) */

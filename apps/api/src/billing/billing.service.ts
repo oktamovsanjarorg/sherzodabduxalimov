@@ -175,9 +175,17 @@ export class BillingService {
       item = { planId: plan.id, essayId: null, title: plan.name, amountUzs: plan.priceUzs };
     }
 
-    const p = await this.prisma.payment.create({
-      data: { userId, planId: item.planId, essayId: item.essayId, method: "MANUAL", amountUzs: item.amountUzs, payerNote: payerNote?.trim().slice(0, 300) || null },
-      include: { user: { select: { firstName: true, lastName: true, username: true } } },
+    // Bir vaqtda ikki so'rov kelsa (ikki marta bosilsa) ikkita chek yaratilmasin: o'quvchi bo'yicha qulf
+    const p = await this.prisma.$transaction(async (tx) => {
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`payment:${userId}`}))`;
+      const dup = item.essayId
+        ? await tx.payment.count({ where: { essayId: item.essayId } })
+        : await tx.payment.count({ where: { userId, status: "PENDING", planId: { not: null } } });
+      if (dup) throw new ConflictException("Avvalgi chekingiz hali tekshirilmoqda");
+      return tx.payment.create({
+        data: { userId, planId: item.planId, essayId: item.essayId, method: "MANUAL", amountUzs: item.amountUzs, payerNote: payerNote?.trim().slice(0, 300) || null },
+        include: { user: { select: { firstName: true, lastName: true, username: true } } },
+      });
     });
     const rel = `receipts/${p.id}.${ext}`;
     try {

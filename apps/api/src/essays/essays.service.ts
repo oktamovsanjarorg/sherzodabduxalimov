@@ -1,4 +1,4 @@
-import { BadRequestException, ConflictException, ForbiddenException, Inject, Injectable, NotFoundException, OnModuleDestroy } from "@nestjs/common";
+import { BadRequestException, ConflictException, ForbiddenException, Inject, Injectable, NotFoundException, OnModuleDestroy, ServiceUnavailableException } from "@nestjs/common";
 import { Prisma } from "@onatili/db";
 import {
   AI_ESSAY_DAILY_LIMIT,
@@ -138,7 +138,7 @@ export class EssaysService implements OnModuleDestroy {
         return this.detail(userId, e.id);
       }
       const e = await this.prisma.essay.create({ data: { userId, mode: "AI", prompt: d.prompt, text: d.text, status: "AI_CHECKING" } });
-      await this.queue.add("grade", { essayId: e.id }, { jobId: e.id });
+      await this.enqueue(e.id);
       return this.detail(userId, e.id);
     }
     const price = await this.teacherPrice();
@@ -170,7 +170,12 @@ export class EssaysService implements OnModuleDestroy {
     if (e.status !== "DRAFT") throw new ConflictException("Yuborilgan essedan rasm o'chirib bo'lmaydi");
     const rel = e.imageUrls[n];
     if (!rel) throw new NotFoundException("Varoq topilmadi");
-    await this.prisma.essay.update({ where: { id }, data: { imageUrls: e.imageUrls.filter((_, i) => i !== n) } });
+    // Shartli yangilash: shu orada boshqa rasm qo'shilgan bo'lsa, u yo'qolib ketmasin
+    const { count } = await this.prisma.essay.updateMany({
+      where: { id, status: "DRAFT", imageUrls: { equals: e.imageUrls } },
+      data: { imageUrls: e.imageUrls.filter((_, i) => i !== n) },
+    });
+    if (!count) throw new ConflictException("Rasmlar o'zgardi, sahifani yangilab qayta urinib ko'ring");
     await rm(this.abs(rel), { force: true });
     return this.detail(userId, id);
   }
@@ -185,7 +190,7 @@ export class EssaysService implements OnModuleDestroy {
       await this.assertAiLimit(userId);
       // Limit bugun yuborilganlar bo'yicha: qoralama yaratilgan kun emas
       await this.prisma.essay.update({ where: { id }, data: { status: "AI_CHECKING", createdAt: new Date() } });
-      await this.queue.add("grade", { essayId: id }, { jobId: id });
+      await this.enqueue(id);
       return this.detail(userId, id);
     }
     // Xodim sinab ko'rayotgan bo'lsa: to'lovsiz, to'g'ridan-to'g'ri ustoz navbatiga
@@ -207,11 +212,25 @@ export class EssaysService implements OnModuleDestroy {
 
   async retry(userId: string, id: string): Promise<MyEssayDetail> {
     const e = await this.own(userId, id);
-    if (e.status !== "AI_FAILED") throw new ConflictException("Qayta tekshirish kerak emas");
+    // AI_CHECKING'da 20 daqiqadan ko'p turib qolgan bo'lsa ham (vazifa yo'qolgan) qayta yuborish mumkin
+    const stuck = e.status === "AI_CHECKING" && Date.now() - e.updatedAt.getTime() > 20 * 60_000;
+    if (e.status !== "AI_FAILED" && !stuck) throw new ConflictException("Qayta tekshirish kerak emas");
     if (!this.aiEnabled || (!e.text && !this.aiPhotoEnabled)) throw new ConflictException("AI tekshiruvi hozircha o'chirilgan");
-    await this.prisma.essay.update({ where: { id }, data: { status: "AI_CHECKING", error: null } });
-    await this.queue.add("grade", { essayId: id }, { jobId: `${id}-${Date.now()}` });
+    // Qayta urinish ham kunlik limitga kiradi: aks holda eski muvaffaqiyatsiz esselar orqali limit chetlab o'tiladi
+    if (e.status === "AI_FAILED") await this.assertAiLimit(userId);
+    await this.prisma.essay.update({ where: { id }, data: { status: "AI_CHECKING", error: null, createdAt: new Date() } });
+    await this.enqueue(id, `${id}-${Date.now()}`);
     return this.detail(userId, id);
+  }
+
+  /** Navbatga qo'yib bo'lmasa (Redis uzilgan), esse "AI tekshirmoqda"da qotib qolmasin: qayta urinish mumkin bo'lsin */
+  private async enqueue(essayId: string, jobId = essayId) {
+    try {
+      await this.queue.add("grade", { essayId }, { jobId });
+    } catch {
+      await this.prisma.essay.updateMany({ where: { id: essayId, status: "AI_CHECKING" }, data: { status: "AI_FAILED", error: "Hozir tekshiruvga yuborib bo'lmadi. Birozdan keyin «Qayta urinish»ni bosing." } });
+      throw new ServiceUnavailableException("Hozir AI tekshiruviga yuborib bo'lmadi, birozdan keyin qayta urinib ko'ring");
+    }
   }
 
   async remove(userId: string, id: string) {

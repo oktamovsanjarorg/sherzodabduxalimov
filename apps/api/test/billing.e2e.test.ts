@@ -136,6 +136,14 @@ describe("Qo'lda to'lov va obuna (e2e)", () => {
     expect((await req("GET", "/me", undefined, S)).json().subscription).toBeNull();
   });
 
+  it("chekni bir vaqtda ikki marta yuborsa ham bitta to'lov yaratiladi", async () => {
+    const [a, b] = await Promise.all([upload(`/billing/payments?planId=${planId}`, JPEG), upload(`/billing/payments?planId=${planId}`, JPEG)]);
+    expect([a.statusCode, b.statusCode].sort()).toEqual([201, 409]);
+    expect(await prisma.payment.count({ where: { userId: studentId, status: "PENDING" } })).toBe(1);
+    const p = [a, b].find((r) => r.statusCode === 201)!.json();
+    await req("DELETE", `/billing/payments/${p.id}`, undefined, S);
+  });
+
   it("o'quvchi kutilayotgan chekini bekor qila oladi, boshqa birovnikini emas", async () => {
     const mine = (await upload(`/billing/payments?planId=${planId}`, JPEG)).json();
     const O = (await login(app, TG.other, "Begona")).headers;

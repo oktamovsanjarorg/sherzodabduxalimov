@@ -49,12 +49,14 @@ export class OfflineBillingService {
       })
       .sort((a, b) => Number(!!a.paid) - Number(!!b.paid) || a.name.localeCompare(b.name));
     const paid = rows.filter((r) => r.paid);
+    // Yig'ilgan summa: faqat shu guruhda olingan to'lovlar (boshqa guruhdan o'tgan o'quvchi to'lagan bo'lsa ham "to'lagan" ko'rinadi, lekin ikki marta qo'shilmaydi)
+    const sumHere = students.reduce((sum, st) => sum + (st.offlinePayments[0]?.groupId === groupId ? st.offlinePayments[0].amountUzs : 0), 0);
     const last = await this.prisma.auditLog.findFirst({ where: { action: "offline.remind", entityId: `${groupId}:${month}` }, orderBy: { createdAt: "desc" } });
     return {
       group,
       month,
       rows,
-      totals: { students: rows.length, paid: paid.length, debtors: rows.length - paid.length, sumUzs: paid.reduce((s, r) => s + r.paid!.amountUzs, 0) },
+      totals: { students: rows.length, paid: paid.length, debtors: rows.length - paid.length, sumUzs: sumHere },
       lastReminderAt: last?.createdAt.toISOString() ?? null,
     };
   }
@@ -74,7 +76,8 @@ export class OfflineBillingService {
     const amountUzs = d.amountUzs ?? existing?.amountUzs ?? s.group?.monthlyFeeUzs ?? 0;
     const p = await this.prisma.offlinePayment.upsert({
       where: { studentId_month: { studentId: d.studentId, month: d.month } },
-      create: { studentId: d.studentId, groupId: s.group!.id, month: d.month, amountUzs, note: d.note, markedById: actorId },
+      // Guruhdan chiqqan o'quvchining eski to'lovini tahrirlash ham mumkin: unda create ishlamaydi (existing bor)
+      create: { studentId: d.studentId, groupId: s.group?.id ?? null, month: d.month, amountUzs, note: d.note, markedById: actorId },
       update: { amountUzs, note: d.note, markedById: actorId },
     });
     await this.prisma.auditLog.create({ data: { actorId, action: "offline.paid", entity: "OfflinePayment", entityId: p.id, meta: { month: d.month, amountUzs } } });

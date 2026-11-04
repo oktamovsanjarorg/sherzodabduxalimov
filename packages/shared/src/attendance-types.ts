@@ -73,7 +73,7 @@ export interface AdminParentLink {
   reviewedBy: string | null;
   rejectReason: string | null;
   parent: { id: string; name: string; username: string | null; telegramId: string };
-  student: { userId: string; name: string; username: string | null; phone: string | null; telegramId: string; groupName: string | null };
+  student: { userId: string; name: string; username: string | null; phone: string | null; telegramId: string | null; groupName: string | null };
 }
 
 export interface AttendanceDay {

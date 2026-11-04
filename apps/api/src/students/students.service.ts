@@ -118,8 +118,9 @@ export class StudentsService {
 
   /** Bir xil telefon bilan ikki marta kiritilmasin */
   private async assertPhoneFree(phone: string | null, exceptUserId?: string) {
-    if (!phone) return;
     const key = phoneKey(phone);
+    // To'liq bo'lmagan raqam (9 raqamdan kam) boshqa o'quvchilarning raqami oxiriga tasodifan mos kelib qolmasin
+    if (key.length < 9) return;
     const same = await this.prisma.user.findFirst({ where: { role: "STUDENT", phone: { endsWith: key }, ...(exceptUserId ? { id: { not: exceptUserId } } : {}) }, select: { firstName: true, lastName: true } });
     if (same) throw new ConflictException(`Bu telefon raqami bilan o'quvchi bor: ${fullName(same)}`);
   }
