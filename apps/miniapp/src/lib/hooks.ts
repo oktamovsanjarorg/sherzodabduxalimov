@@ -74,3 +74,10 @@ export function formatDuration(sec: number | null) {
   const m = Math.round(sec / 60);
   return m >= 60 ? `${Math.floor(m / 60)} soat ${m % 60 ? `${m % 60} daq` : ""}`.trim() : `${m} daq`;
 }
+
+/** 2026-11-04T... -> 04.11.2026 (uz-UZ locale ba'zi qurilmalarda ISO ko'rinishda chiqadi) */
+export function formatDate(iso: string) {
+  const d = new Date(iso);
+  const p = (n: number) => String(n).padStart(2, "0");
+  return `${p(d.getDate())}.${p(d.getMonth() + 1)}.${d.getFullYear()}`;
+}

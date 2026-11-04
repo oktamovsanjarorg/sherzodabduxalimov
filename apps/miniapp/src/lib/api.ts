@@ -19,6 +19,24 @@ export interface MyParents {
   parents: { id: string; name: string; status: "PENDING" | "APPROVED" | "REJECTED"; relation: string | null; rejectReason: string | null }[];
 }
 
+export interface MyAttempt {
+  id: string;
+  testTitle: string;
+  testType: "TOPIC" | "MOCK";
+  score: number;
+  maxScore: number;
+  percent: number;
+  level: string | null;
+  essayPending: boolean;
+  finishedAt: string;
+}
+
+export interface MyAttendance {
+  group: { name: string; schedule: string | null } | null;
+  counts: Record<"PRESENT" | "LATE" | "ABSENT" | "EXCUSED", number>;
+  records: { date: string; status: "PRESENT" | "LATE" | "ABSENT" | "EXCUSED"; note: string | null }[];
+}
+
 export class ApiError extends Error {
   constructor(public status: number, message: string, public code?: string) {
     super(message);
@@ -51,6 +69,8 @@ export const api = {
   myParents: () => request<MyParents>("/me/parents"),
   myChildren: () => request<ChildView[]>("/me/children"),
   stats: () => request<StudentStats>("/me/stats"),
+  myAttempts: () => request<MyAttempt[]>("/me/attempts"),
+  myAttendance: () => request<MyAttendance>("/me/attendance"),
 
   courses: () => request<CourseView[]>("/courses"),
   lesson: (id: string) => request<LessonDetail>(`/lessons/${id}`),

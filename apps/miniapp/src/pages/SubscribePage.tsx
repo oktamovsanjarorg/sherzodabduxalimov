@@ -1,7 +1,7 @@
 import { CheckCircle2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { FullPage } from "../components/FullPage";
-import { useBackButton } from "../lib/hooks";
+import { formatDate, useBackButton } from "../lib/hooks";
 import { useAuth } from "../store/auth";
 
 const perks = [
@@ -24,7 +24,7 @@ export function SubscribePage() {
         <div className="card mt-4">
           <p className="font-bold">Obunangiz faol</p>
           <p className="text-sm text-hint">
-            {sub.planName} · {new Date(sub.endsAt).toLocaleDateString("uz-UZ")} gacha
+            {sub.planName} · {formatDate(sub.endsAt)} gacha
           </p>
         </div>
       ) : (

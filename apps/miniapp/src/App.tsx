@@ -12,6 +12,9 @@ import { ParentGatePage } from "./pages/ParentGatePage";
 import { ParentHomePage } from "./pages/ParentHomePage";
 import { ParentsPage } from "./pages/ParentsPage";
 import { ProfilePage } from "./pages/ProfilePage";
+import { MyAttendancePage } from "./pages/MyAttendancePage";
+import { SettingsPage } from "./pages/SettingsPage";
+import { StatsPage } from "./pages/StatsPage";
 import { SubscribePage } from "./pages/SubscribePage";
 import { useAuth } from "./store/auth";
 
@@ -51,6 +54,9 @@ export function App() {
       <Route path="mocks" element={<MocksPage />} />
       <Route path="subscribe" element={<SubscribePage />} />
       <Route path="parents" element={<ParentsPage />} />
+      <Route path="stats" element={<StatsPage />} />
+      <Route path="my-attendance" element={<MyAttendancePage />} />
+      <Route path="settings" element={<SettingsPage />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );

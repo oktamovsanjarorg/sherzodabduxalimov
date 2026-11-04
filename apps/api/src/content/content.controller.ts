@@ -22,6 +22,16 @@ export class ContentController {
     return this.content.completeLesson(user, id);
   }
 
+  @Get("me/attempts")
+  attempts(@CurrentUser() user: JwtUser) {
+    return this.content.myAttempts(user);
+  }
+
+  @Get("me/attendance")
+  attendance(@CurrentUser() user: JwtUser) {
+    return this.content.myAttendance(user);
+  }
+
   @Get("me/stats")
   stats(@CurrentUser() user: JwtUser) {
     return this.content.stats(user);

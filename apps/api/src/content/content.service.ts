@@ -1,5 +1,5 @@
 import { Inject, Injectable, NotFoundException } from "@nestjs/common";
-import type { CourseView, LessonDetail, LessonVideo, StudentStats, TestSummary } from "@onatili/shared";
+import { milliyLevel, type CourseView, type LessonDetail, type LessonVideo, type StudentStats, type TestSummary } from "@onatili/shared";
 import { AccessService } from "../access/access.service";
 import type { JwtUser } from "../auth/decorators";
 import { ENV, type Env } from "../config/env";
@@ -195,6 +195,53 @@ export class ContentService {
       create: { userId: user.sub, lessonId: id, completedAt: new Date() },
     });
     return { ok: true };
+  }
+
+  /** Yakunlangan test urinishlari (eng yangisi birinchi) */
+  async myAttempts(user: JwtUser) {
+    const rows = await this.prisma.attempt.findMany({
+      where: { userId: user.sub, status: { not: "IN_PROGRESS" } },
+      orderBy: { finishedAt: "desc" },
+      take: 50,
+      include: {
+        test: { select: { title: true, type: true, gradingScale: true } },
+        answers: { where: { points: null, textAnswer: { not: null }, question: { type: "ESSAY" } }, select: { questionId: true } },
+      },
+    });
+    return rows.map((a) => {
+      const score = Math.round((a.score ?? 0) * 10) / 10;
+      const max = Math.round((a.maxScore ?? 0) * 10) / 10;
+      return {
+        id: a.id,
+        testTitle: a.test.title,
+        testType: a.test.type,
+        score,
+        maxScore: max,
+        percent: max ? Math.round((score / max) * 100) : 0,
+        level: a.test.gradingScale === "MILLIY_SERTIFIKAT" ? milliyLevel(score).code : null,
+        essayPending: a.answers.length > 0,
+        finishedAt: (a.finishedAt ?? a.startedAt).toISOString(),
+      };
+    });
+  }
+
+  /** O'quvchining o'z davomati (offline guruh) */
+  async myAttendance(user: JwtUser) {
+    const sp = await this.prisma.studentProfile.findUnique({
+      where: { userId: user.sub },
+      include: {
+        group: { select: { name: true, schedule: true } },
+        attendance: { orderBy: { date: "desc" }, take: 90, select: { date: true, status: true, note: true } },
+      },
+    });
+    const records = (sp?.attendance ?? []).map((a) => ({ date: a.date.toISOString().slice(0, 10), status: a.status, note: a.note }));
+    const counts = { PRESENT: 0, LATE: 0, ABSENT: 0, EXCUSED: 0 } as Record<string, number>;
+    for (const r of records) counts[r.status]++;
+    return {
+      group: sp?.group ? { name: sp.group.name, schedule: sp.group.schedule } : null,
+      counts,
+      records,
+    };
   }
 
   async stats(user: JwtUser): Promise<StudentStats> {

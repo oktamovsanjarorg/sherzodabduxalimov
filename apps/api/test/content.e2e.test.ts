@@ -179,6 +179,13 @@ describe("Kontent va testlar (e2e)", () => {
     expect(twice.score).toBe(3);
   });
 
+  it("profil: test natijalari tarixi va davomat", async () => {
+    const attempts = (await inject({ method: "GET", url: "/api/me/attempts", headers: A.headers })).json();
+    expect(attempts[0]).toMatchObject({ testTitle: "Bepul test", score: 3, maxScore: 3, percent: 100, level: null, essayPending: false });
+    const att = (await inject({ method: "GET", url: "/api/me/attendance", headers: A.headers })).json();
+    expect(att).toMatchObject({ group: null, records: [], counts: { PRESENT: 0 } });
+  });
+
   it("pullik mock obunasiz yopiq, obuna bilan ochiladi; muddat o'tsa EXPIRED", async () => {
     const locked = await inject({ method: "POST", url: `/api/tests/${P}-paidtest/attempts`, headers: B.headers });
     expect(locked.statusCode).toBe(403);
