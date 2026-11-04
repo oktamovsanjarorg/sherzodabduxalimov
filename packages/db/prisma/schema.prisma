@@ -361,6 +361,8 @@ model Plan {
   name          String
   priceUzs      Int
   durationDays  Int            @default(30)
+  description   String?
+  sortOrder     Int            @default(0)
   isActive      Boolean        @default(true)
   subscriptions Subscription[]
   payments      Payment[]
@@ -408,7 +410,8 @@ model Payment {
   method         PaymentMethod
   amountUzs      Int
   status         PaymentStatus @default(PENDING)
-  receiptUrl     String? // qo'lda to'lov cheki
+  receiptUrl     String? // qo'lda to'lov cheki: MEDIA_DIR ichidagi nisbiy yo'l (receipts/<id>.jpg)
+  payerNote      String? // o'quvchi izohi (kimning kartasidan, qachon)
   externalId     String? // Click/Payme tranzaksiya id
   reviewedById   String?
   reviewedBy     User?         @relation("PaymentReviewer", fields: [reviewedById], references: [id], onDelete: SetNull)
@@ -419,6 +422,15 @@ model Payment {
   updatedAt      DateTime      @updatedAt
 
   @@unique([method, externalId])
+  @@index([status, createdAt])
+  @@index([userId, createdAt])
+}
+
+/// Ilova sozlamalari (kalit -> JSON). Masalan: "billing" = karta rekvizitlari
+model AppSetting {
+  key       String   @id
+  value     Json
+  updatedAt DateTime @updatedAt
 }
 
 // ===================== Audit =====================

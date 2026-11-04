@@ -1,0 +1,112 @@
+import { z } from "zod";
+
+// ===================== To'lov va obuna =====================
+
+/** Chek rasmi hajmi chegarasi (klient rasmni siqib yuboradi, odatda 200–500 KB) */
+export const MAX_RECEIPT_BYTES = 5 * 1024 * 1024;
+
+export type PaymentStatusName = "PENDING" | "APPROVED" | "REJECTED";
+export type PaymentMethodName = "MANUAL" | "CLICK" | "PAYME";
+
+export interface PlanView {
+  id: string;
+  name: string;
+  priceUzs: number;
+  durationDays: number;
+  description: string | null;
+}
+
+export interface BillingCard {
+  number: string;
+  holder: string;
+  /** Qo'shimcha ko'rsatma (masalan: "Izohga ismingizni yozing") */
+  note: string | null;
+}
+
+export interface MyPayment {
+  id: string;
+  planName: string;
+  amountUzs: number;
+  status: PaymentStatusName;
+  reviewNote: string | null;
+  createdAt: string;
+}
+
+export interface BillingView {
+  plans: PlanView[];
+  /** Ustoz karta rekvizitlarini kiritmagan bo'lsa null */
+  card: BillingCard | null;
+  subscription: { planName: string; endsAt: string } | null;
+  pending: MyPayment | null;
+  history: MyPayment[];
+}
+
+export interface AdminPayment {
+  id: string;
+  student: { id: string; name: string; username: string | null; phone: string | null };
+  plan: { id: string; name: string; durationDays: number };
+  method: PaymentMethodName;
+  amountUzs: number;
+  status: PaymentStatusName;
+  payerNote: string | null;
+  hasReceipt: boolean;
+  reviewNote: string | null;
+  reviewedBy: string | null;
+  createdAt: string;
+  updatedAt: string;
+  /** Tasdiqlangan bo'lsa: berilgan obuna muddati */
+  subscription: { startsAt: string; endsAt: string } | null;
+  /** O'quvchining hozirgi faol obunasi (tasdiqlansa shu sanadan uzaytiriladi) */
+  activeUntil: string | null;
+}
+
+export interface AdminSubscription {
+  id: string;
+  student: { id: string; name: string; username: string | null; phone: string | null };
+  planName: string;
+  startsAt: string;
+  endsAt: string;
+  status: "ACTIVE" | "EXPIRED" | "CANCELLED";
+  method: PaymentMethodName | null;
+}
+
+export interface AdminPlan extends PlanView {
+  isActive: boolean;
+  sortOrder: number;
+  activeSubscribers: number;
+}
+
+export const planInput = z.object({
+  name: z.string().trim().min(2, "Nomi kamida 2 harf").max(80),
+  priceUzs: z.coerce.number().int().min(1000, "Narx kamida 1 000 so'm").max(100_000_000),
+  durationDays: z.coerce.number().int().min(1).max(730),
+  description: z.string().trim().max(300).nullable().default(null),
+  sortOrder: z.coerce.number().int().default(0),
+  isActive: z.boolean().default(true),
+});
+export type PlanInput = z.infer<typeof planInput>;
+
+export const billingSettingsInput = z.object({
+  // Bo'shliqlar olib tashlanadi: 16 xonali karta raqami (Uzcard/Humo/Visa)
+  number: z
+    .string()
+    .transform((s) => s.replace(/\D/g, ""))
+    .refine((s) => s.length === 16, "Karta raqami 16 ta raqamdan iborat bo'lishi kerak"),
+  holder: z.string().trim().min(3, "Karta egasining ismini kiriting").max(80),
+  note: z.string().trim().max(300).nullable().default(null),
+});
+export type BillingSettingsInput = z.infer<typeof billingSettingsInput>;
+
+export const paymentRejectInput = z.object({ reason: z.string().trim().min(3, "Sababini yozing").max(300) });
+
+export const grantSubscriptionInput = z.object({
+  userId: z.string().min(1),
+  planId: z.string().min(1),
+  /** Naqd to'lov va h.k. uchun izoh */
+  note: z.string().trim().max(300).nullable().default(null),
+});
+
+/** "8600 1234 5678 9012" */
+export const formatCard = (n: string) => n.replace(/\D/g, "").replace(/(\d{4})(?=\d)/g, "$1 ");
+/** 150000 -> "150 000" */
+export const formatSum = (n: number) => String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, " ");

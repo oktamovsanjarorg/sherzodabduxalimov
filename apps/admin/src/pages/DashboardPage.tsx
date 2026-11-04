@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { FileText, AlertTriangle, BookOpen, CalendarCheck, CheckCircle2, ChevronRight, ClipboardList, Film, LibraryBig, Plus, ShieldCheck, Users } from "lucide-react";
+import { FileText, AlertTriangle, BookOpen, CalendarCheck, CheckCircle2, ChevronRight, ClipboardList, CreditCard, Film, LibraryBig, Plus, ShieldCheck, Users } from "lucide-react";
 import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { Spinner } from "../components/ui";
@@ -9,12 +9,14 @@ import { loadSession } from "../lib/session";
 export function DashboardPage() {
   const d = useQuery({ queryKey: ["dashboard"], queryFn: api.dashboard, refetchInterval: 30_000 });
   const name = loadSession()?.user.firstName ?? "";
+  const isTeacher = loadSession()?.user.role === "TEACHER";
 
   if (d.isPending) return <Spinner className="text-slate-400" />;
   if (d.isError) return <p className="text-sm text-red-600">{errMsg(d.error)}</p>;
   const x = d.data;
   const unmarked = x.attendanceToday.groups.filter((g) => g.total > 0 && g.marked < g.total);
-  const todo = (x.pendingEssays ? 1 : 0) + (x.pendingParents ? 1 : 0) + (unmarked.length ? 1 : 0) + (x.videos.failed ? 1 : 0);
+  const payments = isTeacher ? x.pendingPayments : 0;
+  const todo = (payments ? 1 : 0) + (x.pendingEssays ? 1 : 0) + (x.pendingParents ? 1 : 0) + (unmarked.length ? 1 : 0) + (x.videos.failed ? 1 : 0);
 
   return (
     <div className="space-y-6">
@@ -26,6 +28,9 @@ export function DashboardPage() {
       {/* Bugun nima qilish kerak */}
       <section className="space-y-2">
         <h2 className="label">Bugun</h2>
+        {payments > 0 && (
+          <Todo to="/payments" tone="amber" Icon={CreditCard} title={`${payments} ta to'lov cheki kutmoqda`} hint="Pul kartaga tushganini tekshirib tasdiqlang" />
+        )}
         {x.pendingEssays > 0 && (
           <Todo to="/essays" tone="amber" Icon={FileText} title={`${x.pendingEssays} ta esse tekshirilmagan`} hint="O'quvchilar yakuniy natijani kutmoqda" />
         )}

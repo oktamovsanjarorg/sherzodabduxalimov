@@ -1,4 +1,6 @@
 import type {
+  BillingView,
+  MyPayment,
   ChildView,
   AttemptResult,
   AttemptState,
@@ -75,6 +77,16 @@ export const api = {
   courses: () => request<CourseView[]>("/courses"),
   lesson: (id: string) => request<LessonDetail>(`/lessons/${id}`),
   completeLesson: (id: string) => post<{ ok: true }>(`/lessons/${id}/complete`),
+
+  billing: () => request<BillingView>("/billing"),
+  /** Chek rasmi xom baytlar sifatida yuboriladi */
+  submitPayment: (planId: string, image: Blob, note: string) =>
+    request<MyPayment>(`/billing/payments?planId=${encodeURIComponent(planId)}${note ? `&note=${encodeURIComponent(note)}` : ""}`, {
+      method: "POST",
+      body: image,
+      headers: { "Content-Type": image.type || "image/jpeg" },
+    }),
+  cancelPayment: (id: string) => request<{ ok: true }>(`/billing/payments/${id}`, { method: "DELETE" }),
 
   mocks: () => request<TestSummary[]>("/mocks"),
   startTest: (testId: string) => post<AttemptState>(`/tests/${testId}/attempts`),

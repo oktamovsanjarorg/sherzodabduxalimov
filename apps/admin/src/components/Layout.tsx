@@ -41,10 +41,14 @@ export function useNavGroups(): NavGroup[] {
       to: "/more",
       label: "Ko'proq",
       Icon: MoreHorizontal,
-      match: /^\/(more|staff)/,
+      match: /^\/(more|staff|payments|billing)/,
+      // Yangi to'lov cheklari faqat egaga ko'rinadi (yordamchilar to'lovlarga kira olmaydi)
+      badge: isTeacher ? dash.data?.pendingPayments : undefined,
       sub: isTeacher
         ? [
             { to: "/more", label: "Profil", match: /^\/more/ },
+            { to: "/payments", label: `To'lovlar${dash.data?.pendingPayments ? ` (${dash.data.pendingPayments})` : ""}`, match: /^\/payments/ },
+            { to: "/billing", label: "Tariflar", match: /^\/billing/ },
             { to: "/staff", label: "Xodimlar", match: /^\/staff/ },
           ]
         : undefined,

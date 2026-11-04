@@ -1,7 +1,13 @@
 import { ROLE_LABELS } from "@onatili/shared";
-import { ChevronRight, LogOut, Users } from "lucide-react";
+import { ChevronRight, CreditCard, LogOut, Tags, Users, type LucideIcon } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { clearSession, loadSession } from "../lib/session";
+
+const TEACHER_LINKS: { to: string; label: string; Icon: LucideIcon }[] = [
+  { to: "/payments", label: "To'lovlar va obunachilar", Icon: CreditCard },
+  { to: "/billing", label: "Tariflar va karta raqami", Icon: Tags },
+  { to: "/staff", label: "Xodimlar (yordamchilar)", Icon: Users },
+];
 
 export function MorePage() {
   const navigate = useNavigate();
@@ -23,15 +29,16 @@ export function MorePage() {
       </div>
 
       <ul className="card divide-y divide-slate-100 overflow-hidden">
-        {isTeacher && (
-          <li>
-            <Link to="/staff" className="flex h-14 items-center gap-3 px-5 text-sm font-semibold hover:bg-slate-50">
-              <Users size={18} className="text-brand" />
-              <span className="flex-1">Xodimlar (yordamchilar)</span>
-              <ChevronRight size={18} className="text-slate-400" />
-            </Link>
-          </li>
-        )}
+        {isTeacher &&
+          TEACHER_LINKS.map(({ to, label, Icon }) => (
+            <li key={to}>
+              <Link to={to} className="flex h-14 items-center gap-3 px-5 text-sm font-semibold hover:bg-slate-50">
+                <Icon size={18} className="text-brand" />
+                <span className="flex-1">{label}</span>
+                <ChevronRight size={18} className="text-slate-400" />
+              </Link>
+            </li>
+          ))}
         <li>
           <button
             className="flex h-14 w-full items-center gap-3 px-5 text-left text-sm font-semibold text-red-600 hover:bg-red-50"

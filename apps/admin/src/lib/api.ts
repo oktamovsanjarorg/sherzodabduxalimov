@@ -1,4 +1,11 @@
 import type {
+  AdminPayment,
+  AdminPlan,
+  AdminSubscription,
+  BillingCard,
+  BillingSettingsInput,
+  PaymentStatusName,
+  PlanInput,
   AdminEssay,
   AdminPassage,
   PassageInput,
@@ -56,6 +63,7 @@ const json = (method: string, body?: unknown): RequestInit => ({ method, body: b
 export interface AdminDashboard {
   pendingParents: number;
   pendingEssays: number;
+  pendingPayments: number;
   videos: { processing: number; failed: number };
   students: { total: number; withoutApprovedParent: number };
   attendanceToday: { groups: { id: string; name: string; schedule: string | null; marked: number; total: number }[] };
@@ -68,6 +76,24 @@ export interface StaffList {
 }
 
 export const api = {
+  payments: (status: PaymentStatusName) => request<AdminPayment[]>(`/admin/payments?status=${status}`),
+  approvePayment: (id: string) => request<{ ok: true; endsAt: string }>(`/admin/payments/${id}/approve`, json("POST")),
+  rejectPayment: (id: string, reason: string) => request(`/admin/payments/${id}/reject`, json("POST", { reason })),
+  /** Chek rasmi: avtorizatsiya sarlavhasi kerak, shuning uchun <img src> emas, blob */
+  receipt: async (id: string) => {
+    const res = await fetch(`/api/admin/payments/${id}/receipt`, { headers: { Authorization: `Bearer ${loadSession()?.token}` } });
+    if (!res.ok) throw new ApiError(res.status, "Chekni yuklab bo'lmadi");
+    return URL.createObjectURL(await res.blob());
+  },
+  subscriptions: () => request<AdminSubscription[]>("/admin/subscriptions"),
+  grantSubscription: (d: { userId: string; planId: string; note: string | null }) => request<{ ok: true; endsAt: string }>("/admin/subscriptions", json("POST", d)),
+  cancelSubscription: (id: string) => request(`/admin/subscriptions/${id}/cancel`, json("POST")),
+  plans: () => request<AdminPlan[]>("/admin/plans"),
+  createPlan: (d: PlanInput) => request("/admin/plans", json("POST", d)),
+  updatePlan: (id: string, d: Partial<PlanInput>) => request(`/admin/plans/${id}`, json("PATCH", d)),
+  billingSettings: () => request<{ card: BillingCard | null }>("/admin/billing-settings"),
+  saveBillingSettings: (d: BillingSettingsInput) => request<BillingCard>("/admin/billing-settings", json("PUT", d)),
+
   consumeLink: (token: string) => request<AuthResponse>("/auth/admin-link", json("POST", { token })),
 
   courses: () => request<AdminCourse[]>("/admin/courses"),
