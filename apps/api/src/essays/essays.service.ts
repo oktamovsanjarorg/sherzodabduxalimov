@@ -27,6 +27,7 @@ import { redisConnection } from "../media/queue";
 import { NotifyService } from "../notify/notify.service";
 import { esc } from "../notify/telegram";
 import { PrismaService } from "../prisma/prisma.service";
+import { toVoiceView } from "../voice/voice.service";
 
 const ESSAY_KEY = "essay";
 const MIME = { jpg: "image/jpeg", png: "image/png", webp: "image/webp" } as const;
@@ -246,7 +247,7 @@ export class EssaysService implements OnModuleDestroy {
   }
 
   async detail(userId: string, id: string): Promise<MyEssayDetail> {
-    const e = await this.prisma.essay.findFirst({ where: { id, userId }, include: { ...reviewInclude, payment: true } });
+    const e = await this.prisma.essay.findFirst({ where: { id, userId }, include: { ...reviewInclude, payment: true, voice: true } });
     if (!e) throw new NotFoundException("Esse topilmadi");
     const p = e.payment;
     return {
@@ -257,6 +258,7 @@ export class EssaysService implements OnModuleDestroy {
       error: e.status === "AI_FAILED" ? (e.error ?? "AI hozir javob bermadi. Birozdan keyin qayta urinib ko'ring.") : null,
       payment: p ? { id: p.id, planName: "Esse tekshiruvi", amountUzs: p.amountUzs, status: p.status, reviewNote: p.reviewNote, createdAt: p.createdAt.toISOString() } : null,
       reviews: e.reviews.map(toReviewView),
+      voice: toVoiceView(e.voice),
     };
   }
 
@@ -278,7 +280,7 @@ export class EssaysService implements OnModuleDestroy {
       where: status === "pending" ? { mode: "TEACHER", status: "SUBMITTED" } : { mode: "TEACHER", status: "REVIEWED" },
       orderBy: status === "pending" ? { updatedAt: "asc" } : { updatedAt: "desc" },
       take: status === "pending" ? 200 : 100,
-      include: { ...reviewInclude, user: { select: { id: true, firstName: true, lastName: true, username: true, phone: true } } },
+      include: { ...reviewInclude, voice: true, user: { select: { id: true, firstName: true, lastName: true, username: true, phone: true } } },
     });
     return rows.map((e) => ({
       id: e.id,
@@ -290,6 +292,7 @@ export class EssaysService implements OnModuleDestroy {
       status: e.status,
       createdAt: e.createdAt.toISOString(),
       reviews: e.reviews.map(toReviewView),
+      voice: toVoiceView(e.voice),
     }));
   }
 

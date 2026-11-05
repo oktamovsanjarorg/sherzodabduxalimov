@@ -21,6 +21,7 @@ import { PrismaService } from "../prisma/prisma.service";
 import { DEADLINE_GRACE_MS, isAnswerCorrect, isPastDeadline, seededShuffle } from "./grading";
 import { milliyOf } from "./milliy";
 import { RaschService } from "./rasch.service";
+import { toVoiceView } from "../voice/voice.service";
 
 const SUPPORTED = ["SINGLE", "MULTIPLE", "TEXT", "ESSAY"] as const;
 /** 1,1 + 1,7 kabi kasr ballar yig'indisidagi suzuvchi nuqta xatosini yo'qotish */
@@ -92,7 +93,7 @@ export class AttemptsService {
   async get(user: JwtUser, attemptId: string): Promise<AttemptState | AttemptResult> {
     let a = await this.load(user, attemptId);
     if (a.status === "IN_PROGRESS" && (await this.expireIfNeeded(a))) a = await this.load(user, attemptId);
-    return a.status === "IN_PROGRESS" ? this.toState(a) : this.toResult(a);
+    return a.status === "IN_PROGRESS" ? this.toState(a) : this.toResult(a, await this.voices(a.id));
   }
 
   async saveAnswer(user: JwtUser, attemptId: string, questionId: string, body: SaveAnswerBody) {
@@ -132,7 +133,8 @@ export class AttemptsService {
       const late = isPastDeadline(a.deadlineAt, new Date(), DEADLINE_GRACE_MS);
       await this.finalize(a, late ? "EXPIRED" : "SUBMITTED");
     }
-    return this.toResult(await this.load(user, attemptId));
+    const done = await this.load(user, attemptId);
+    return this.toResult(done, await this.voices(done.id));
   }
 
   // ------------------------------------------------------------------
@@ -233,7 +235,13 @@ export class AttemptsService {
     };
   }
 
-  private toResult(a: AttemptFull): AttemptResult {
+  /** Mock esselariga ustozning ovozli izohlari */
+  private async voices(attemptId: string) {
+    const rows = await this.prisma.voiceNote.findMany({ where: { attemptId }, select: { id: true, questionId: true, status: true, durationSec: true } });
+    return new Map(rows.map((v) => [v.questionId!, toVoiceView(v)]));
+  }
+
+  private toResult(a: AttemptFull, voices: Map<string, ReturnType<typeof toVoiceView>> = new Map()): AttemptResult {
     const answers = new Map(a.answers.map((x) => [x.questionId, x]));
     const questions = this.questions(a.test, a.id).map((q) => {
       const given = answers.get(q.id);
@@ -256,6 +264,7 @@ export class AttemptsService {
         pending,
         reviewComment: given?.reviewComment ?? null,
         rubric: q.type === "ESSAY" ? ((given?.rubric as ResultQuestion["rubric"]) ?? null) : null,
+        voice: q.type === "ESSAY" ? (voices.get(q.id) ?? null) : null,
         special: given?.special && given.special in ESSAY_SPECIAL ? { key: given.special, label: ESSAY_SPECIAL[given.special as EssaySpecialKey].label } : null,
       };
     });

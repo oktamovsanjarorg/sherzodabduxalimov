@@ -132,6 +132,15 @@ export interface EssayReviewView {
   createdAt: string;
 }
 
+/** Ustozning ovozli izohi */
+export interface VoiceView {
+  id: string;
+  status: "PROCESSING" | "READY" | "FAILED";
+  durationSec: number | null;
+}
+/** Ovozli izoh: ko'pi bilan 12 MB (taxminan 10 daqiqa) */
+export const MAX_VOICE_BYTES = 12 * 1024 * 1024;
+
 export interface MyEssaySummary {
   id: string;
   mode: EssayModeName;
@@ -149,6 +158,7 @@ export interface MyEssayDetail extends MyEssaySummary {
   /** To'lov (faqat ustoz tekshiruvi) */
   payment: MyPayment | null;
   reviews: EssayReviewView[];
+  voice: VoiceView | null;
 }
 
 export interface EssayConfig {
@@ -193,6 +203,7 @@ export interface AdminHwEssay {
   status: EssayStatusName;
   createdAt: string;
   reviews: EssayReviewView[];
+  voice: VoiceView | null;
 }
 
 /** Rubrika bo'yicha umumiy ball: maxsus holat bo'lsa uning bali, aks holda 12 band (har biri 0..2, 0,5 qadam) yig'indisi */

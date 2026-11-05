@@ -51,6 +51,7 @@ model User {
   paymentsReviewed Payment[]     @relation("PaymentReviewer")
   attendanceMarked Attendance[]  @relation("AttendanceMarker")
   offlinePaymentsMarked OfflinePayment[] @relation("OfflinePaymentMarker")
+  voiceNotes    VoiceNote[]    @relation("VoiceAuthor")
   lessonProgress LessonProgress[]
   auditLogs     AuditLog[]
   loginTokens   LoginToken[]
@@ -349,6 +350,7 @@ model Essay {
   priceUzs  Int? // ustoz tekshiruvi narxi (yuborilgan paytdagi)
   payment   Payment?
   reviews   EssayReview[]
+  voice     VoiceNote?
   createdAt DateTime      @default(now())
   updatedAt DateTime      @updatedAt
 
@@ -497,6 +499,34 @@ model OfflinePayment {
 
   @@unique([studentId, month])
   @@index([groupId, month])
+}
+
+enum VoiceStatus {
+  PROCESSING
+  READY
+  FAILED
+}
+
+/// Ustozning ovozli izohi: erkin esse (essayId) yoki mock essesi (attemptId + questionId) uchun bittadan
+model VoiceNote {
+  id           String      @id @default(cuid())
+  essayId      String?     @unique
+  essay        Essay?      @relation(fields: [essayId], references: [id], onDelete: Cascade)
+  attemptId    String?
+  questionId   String?
+  /// MEDIA_DIR ichidagi nisbiy yo'llar: asl yozuv, Telegram uchun OGG/Opus, ilova uchun M4A
+  originalPath String
+  oggPath      String?
+  m4aPath      String?
+  durationSec  Int?
+  status       VoiceStatus @default(PROCESSING)
+  error        String?
+  createdById  String?
+  createdBy    User?       @relation("VoiceAuthor", fields: [createdById], references: [id], onDelete: SetNull)
+  sentAt       DateTime?
+  createdAt    DateTime    @default(now())
+
+  @@unique([attemptId, questionId])
 }
 
 /// Ilova sozlamalari (kalit -> JSON). Masalan: "billing" = karta rekvizitlari

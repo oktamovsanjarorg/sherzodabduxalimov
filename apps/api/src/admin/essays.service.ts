@@ -4,6 +4,7 @@ import { NotifyService } from "../notify/notify.service";
 import { esc } from "../notify/telegram";
 import { PrismaService } from "../prisma/prisma.service";
 import { milliySelect, milliyOf } from "../tests/milliy";
+import { toVoiceView } from "../voice/voice.service";
 
 const round1 = (x: number) => Math.round(x * 10) / 10;
 const words = (t: string) => (t.trim().match(/\S+/g) ?? []).length;
@@ -29,6 +30,11 @@ export class EssaysService {
       orderBy: status === "pending" ? { answeredAt: "asc" } : { reviewedAt: "desc" },
       take: 200,
     });
+    const voices = await this.prisma.voiceNote.findMany({
+      where: { attemptId: { in: rows.map((r) => r.attemptId) } },
+      select: { id: true, attemptId: true, questionId: true, status: true, durationSec: true },
+    });
+    const voiceOf = (a: string, q: string) => toVoiceView(voices.find((v) => v.attemptId === a && v.questionId === q));
     return rows
       .filter((r) => r.textAnswer?.trim())
       .map((r) => ({
@@ -45,6 +51,7 @@ export class EssaysService {
         milliy: r.attempt.test.gradingScale === "MILLIY_SERTIFIKAT",
         rubric: (r.rubric as AdminEssay["rubric"]) ?? null,
         special: r.special,
+        voice: voiceOf(r.attemptId, r.questionId),
         submittedAt: (r.attempt.finishedAt ?? r.answeredAt).toISOString(),
         reviewedAt: r.reviewedAt?.toISOString() ?? null,
       }));

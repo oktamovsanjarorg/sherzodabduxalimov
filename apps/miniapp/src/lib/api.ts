@@ -111,6 +111,12 @@ export const api = {
     return URL.createObjectURL(await res.blob());
   },
 
+  voiceBlob: async (id: string) => {
+    const res = await fetch(`/api/voice/${id}`, { headers: { Authorization: `Bearer ${useAuth.getState().token}` } });
+    if (!res.ok) throw new ApiError(res.status, "Ovozli izohni yuklab bo'lmadi");
+    return URL.createObjectURL(await res.blob());
+  },
+
   mocks: () => request<TestSummary[]>("/mocks"),
   startTest: (testId: string) => post<AttemptState>(`/tests/${testId}/attempts`),
   attempt: (id: string) => request<AttemptState | AttemptResult>(`/attempts/${id}`),

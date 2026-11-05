@@ -2,6 +2,7 @@ import type {
   AdminPayment,
   AdminPlan,
   AdminSubscriptions,
+  VoiceView,
   RosterRow,
   StudentCreateInput,
   StudentDetail,
@@ -110,6 +111,16 @@ export const api = {
   remindDebtors: (groupId: string, month: string) => request<{ students: number; messages: number }>("/admin/offline-payments/remind", json("POST", { groupId, month })),
   grantSubscription: (d: { userId: string; planId: string; note: string | null }) => request<{ ok: true; endsAt: string }>("/admin/subscriptions", json("POST", d)),
   cancelSubscription: (id: string) => request(`/admin/subscriptions/${id}/cancel`, json("POST")),
+  /** Ovozli izoh: xom audio (Content-Type — yozuv formati) */
+  uploadHwVoice: (id: string, audio: Blob) =>
+    request<VoiceView>(`/admin/hw-essays/${id}/voice`, { method: "POST", body: audio, headers: { "Content-Type": audio.type || "audio/webm" } }),
+  uploadMockVoice: (attemptId: string, questionId: string, audio: Blob) =>
+    request<VoiceView>(`/admin/essays/${attemptId}/${questionId}/voice`, { method: "POST", body: audio, headers: { "Content-Type": audio.type || "audio/webm" } }),
+  voiceBlob: async (id: string) => {
+    const res = await fetch(`/api/voice/${id}`, { headers: { Authorization: `Bearer ${loadSession()?.token}` } });
+    if (!res.ok) throw new ApiError(res.status, "Ovozni yuklab bo'lmadi");
+    return URL.createObjectURL(await res.blob());
+  },
   hwEssays: (status: "pending" | "reviewed") => request<AdminHwEssay[]>(`/admin/hw-essays?status=${status}`),
   reviewHwEssay: (id: string, d: TeacherEssayReviewInput) => request<{ totalScore: number }>(`/admin/hw-essays/${id}/review`, json("POST", d)),
   /** Varoq rasmi (avtorizatsiya bilan blob) */

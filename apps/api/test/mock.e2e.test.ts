@@ -133,6 +133,14 @@ describe("Milliy sertifikat formatidagi mock (e2e)", () => {
     const jobs = (await queue.getJobs(["waiting", "delayed"])).map((j) => j.data.text);
     expect(jobs.some((t) => t.includes("esse tekshirildi") && t.includes("<b>71.2</b> / 75") && t.includes("A+"))).toBe(true);
 
+    // Ovozli izoh mock essesiga ham (baholangandan keyin); natijada ko'rinadi
+    const audio = Buffer.concat([Buffer.from([0x1a, 0x45, 0xdf, 0xa3]), Buffer.alloc(4000, 3)]);
+    const v = await app.inject({ method: "POST", url: `/api/admin/essays/${e.attemptId}/${qEssay}/voice`, headers: { ...H, "content-type": "audio/webm" }, payload: audio });
+    expect(v.statusCode).toBe(201);
+    const withVoice = (await req("GET", `/attempts/${e.attemptId}`, undefined, S)).json();
+    expect(withVoice.questions.find((q: { id: string }) => q.id === qEssay).voice).toMatchObject({ id: v.json().id, status: "PROCESSING" });
+    expect((await req("GET", "/admin/essays?status=reviewed")).json().find((x: { attemptId: string }) => x.attemptId === e.attemptId).voice.id).toBe(v.json().id);
+
     // O'quvchi esse baholay olmaydi
     expect((await req("POST", `/admin/essays/${e.attemptId}/${qEssay}`, { points: 1 }, S)).statusCode).toBe(403);
   });

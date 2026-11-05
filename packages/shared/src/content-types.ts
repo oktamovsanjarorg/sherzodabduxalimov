@@ -124,6 +124,8 @@ export interface ResultQuestion extends Omit<AttemptQuestion, "points"> {
   /** Esse: rasmiy mezon bo'yicha 12 band bahosi va maxsus holat */
   rubric: { key: string; label: string; max: number; score: number }[] | null;
   special: { key: string; label: string } | null;
+  /** Esse: ustozning ovozli izohi */
+  voice: { id: string; status: "PROCESSING" | "READY" | "FAILED"; durationSec: number | null } | null;
 }
 
 export interface AttemptResult {

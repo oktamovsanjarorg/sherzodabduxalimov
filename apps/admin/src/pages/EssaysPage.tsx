@@ -1,5 +1,6 @@
 import { essayTo75, type AdminEssay } from "@onatili/shared";
 import { RubricForm, rubricComplete, rubricTotal, type RubricValue } from "../components/RubricForm";
+import { VoicePlayer, VoiceRecorder } from "../components/VoiceRecorder";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ChevronRight } from "lucide-react";
 import { useState } from "react";
@@ -79,6 +80,7 @@ function ReviewModal({ essay, onClose }: { essay: AdminEssay; onClose: () => voi
     special: (essay.special as RubricValue["special"]) ?? null,
     scores: Object.fromEntries((essay.rubric ?? []).map((c) => [c.key, c.score])),
   }));
+  const [voice, setVoice] = useState<Blob | null>(null);
   const value = Number(points.replace(",", "."));
   const valid = essay.milliy ? rubricComplete(rubric) : points.trim() !== "" && Number.isFinite(value) && value >= 0 && value <= essay.maxPoints;
 
@@ -91,8 +93,9 @@ function ReviewModal({ essay, onClose }: { essay: AdminEssay; onClose: () => voi
           ? { special: rubric.special, criteria: Object.entries(rubric.scores).map(([key, score]) => ({ key, score: score ?? 0 })), comment: comment.trim() || null }
           : { points: value, comment: comment.trim() || null },
       ),
-    onSuccess: (r) => {
-      toast(`Saqlandi · umumiy natija ${fmt(r.score)} ball. O'quvchiga yuborildi`);
+    onSuccess: async (r) => {
+      if (voice) await api.uploadMockVoice(essay.attemptId, essay.questionId, voice).catch((e) => toast(`Baho saqlandi, lekin ovoz yuborilmadi: ${errMsg(e)}`, "error"));
+      toast(`Saqlandi${voice ? " · ovozli izoh bilan" : ""}. O'quvchiga yuborildi`);
       qc.invalidateQueries({ queryKey: ["essays"] });
       qc.invalidateQueries({ queryKey: ["dashboard"] });
       onClose();
@@ -137,6 +140,13 @@ function ReviewModal({ essay, onClose }: { essay: AdminEssay; onClose: () => voi
             <Field label="Taqriz (o'quvchiga yuboriladi)">
               <textarea className="textarea min-h-[110px]" value={comment} onChange={(e) => setComment(e.target.value)} placeholder="Ekspert xulosasi: kuchli tomonlari, xatolari, tavsiyalar…" />
             </Field>
+            {essay.voice && !voice && (
+              <div className="rounded-lg bg-slate-50 p-3">
+                <p className="mb-1 text-xs font-bold text-slate-500">Yuborilgan ovozli izoh</p>
+                <VoicePlayer voice={essay.voice} />
+              </div>
+            )}
+            <VoiceRecorder value={voice} onChange={setVoice} />
           </>
         ) : (
         <div className="grid gap-3 sm:grid-cols-[180px_minmax(0,1fr)]">

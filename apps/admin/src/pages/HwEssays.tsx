@@ -1,5 +1,6 @@
 import { ESSAY_MAX_SCORE, type AdminHwEssay, type EssayReviewView } from "@onatili/shared";
 import { RubricForm, emptyRubric, rubricComplete, rubricTotal, type RubricValue } from "../components/RubricForm";
+import { VoicePlayer, VoiceRecorder } from "../components/VoiceRecorder";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ChevronRight, ImageOff, Phone } from "lucide-react";
 import { useState } from "react";
@@ -97,7 +98,17 @@ function ReviewModal({ essay, onClose }: { essay: AdminHwEssay; onClose: () => v
       : emptyRubric(),
   );
   const [feedback, setFeedback] = useState(prev?.feedback ?? "");
+  const [voice, setVoice] = useState<Blob | null>(null);
   const total = rubricTotal(rubric);
+  const sendVoice = useMutation({
+    mutationFn: () => api.uploadHwVoice(essay.id, voice!),
+    onSuccess: () => {
+      toast("Ovozli izoh yuborildi");
+      setVoice(null);
+      qc.invalidateQueries({ queryKey: ["hw-essays"] });
+    },
+    onError: (e) => toast(errMsg(e), "error"),
+  });
 
   const save = useMutation({
     mutationFn: () =>
@@ -106,8 +117,10 @@ function ReviewModal({ essay, onClose }: { essay: AdminHwEssay; onClose: () => v
         criteria: Object.entries(rubric.scores).map(([key, score]) => ({ key, score: score ?? 0, comment: null })),
         feedback: feedback.trim() || null,
       }),
-    onSuccess: (r) => {
-      toast(`Saqlandi: ${fmt(r.totalScore)}/${ESSAY_MAX_SCORE}. O'quvchiga yuborildi`);
+    onSuccess: async (r) => {
+      // Ovozli izoh baholash saqlangandan keyin yuboriladi (server shuni talab qiladi)
+      if (voice) await api.uploadHwVoice(essay.id, voice).catch((e) => toast(`Baho saqlandi, lekin ovoz yuborilmadi: ${errMsg(e)}`, "error"));
+      toast(`Saqlandi: ${fmt(r.totalScore)}/${ESSAY_MAX_SCORE}${voice ? " · ovozli izoh bilan" : ""}. O'quvchiga yuborildi`);
       qc.invalidateQueries({ queryKey: ["hw-essays"] });
       qc.invalidateQueries({ queryKey: ["dashboard"] });
       onClose();
@@ -161,6 +174,18 @@ function ReviewModal({ essay, onClose }: { essay: AdminHwEssay; onClose: () => v
             value={feedback}
             onChange={(e) => setFeedback(e.target.value)}
           />
+          {essay.voice && !voice && (
+            <div className="rounded-lg bg-slate-50 p-3">
+              <p className="mb-1 text-xs font-bold text-slate-500">Yuborilgan ovozli izoh</p>
+              <VoicePlayer voice={essay.voice} />
+            </div>
+          )}
+          <VoiceRecorder value={voice} onChange={setVoice} />
+          {prev && voice && (
+            <button className="btn-secondary btn-sm" disabled={sendVoice.isPending} onClick={() => sendVoice.mutate()}>
+              Bahoni o'zgartirmasdan faqat ovozni yuborish
+            </button>
+          )}
         </div>
       </div>
     </Modal>

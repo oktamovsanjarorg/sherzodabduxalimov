@@ -9,6 +9,8 @@ import { transcribeHandwriting } from "./ai/gemini";
 import { ESSAY_AI_QUEUE, type EssayAiJob } from "./ai/queue";
 import { runSubscriptionReminders } from "./billing/reminders";
 import { gradeEssayJob, markEssayFailed } from "./essays/ai-runner";
+import { VOICE_QUEUE, type VoiceJob } from "./voice/queue";
+import { markVoiceFailed, processVoice } from "./voice/voice-runner";
 import { readFile, rm } from "node:fs/promises";
 import { resolve } from "node:path";
 import { loadEnv } from "./config/env";
@@ -16,7 +18,7 @@ import { MediaPaths } from "./media/paths";
 import { VIDEO_QUEUE, redisConnection, type TranscodeJob } from "./media/queue";
 import { transcode } from "./media/transcode";
 import { NOTIFY_QUEUE, createNotifyQueue, type NotifyJob } from "./notify/notify.service";
-import { sendTelegramMessage } from "./notify/telegram";
+import { sendTelegramMessage, sendTelegramVoice } from "./notify/telegram";
 
 const env = loadEnv();
 const prisma = new PrismaClient();
@@ -152,7 +154,23 @@ essayAi.on("failed", async (job, err) => {
   if (job.attemptsMade >= (job.opts.attempts ?? 1)) await markEssayFailed(prisma, job.data.essayId, err.message).catch(() => {});
 });
 
+/** Ustozning ovozli izohlari: o'girish (ffmpeg) va o'quvchiga Telegram ovozli xabari */
+const voice = new Worker<VoiceJob>(
+  VOICE_QUEUE,
+  async (job) => {
+    const r = await processVoice(prisma, env.MEDIA_DIR, job.data.voiceId, (chatId, ogg, caption, durationSec) =>
+      sendTelegramVoice(env.BOT_TOKEN, String(chatId), ogg, { caption, durationSec: durationSec ?? undefined }),
+    );
+    if (r) console.log(`[voice] ${job.data.voiceId}: ${r.durationSec ?? "?"} s, yuborildi`);
+  },
+  { connection: redisConnection(env.REDIS_URL), prefix: env.QUEUE_PREFIX, concurrency: 2, lockDuration: 120_000 },
+);
+voice.on("failed", async (job, err) => {
+  if (job && job.attemptsMade >= (job.opts.attempts ?? 1)) await markVoiceFailed(prisma, job.data.voiceId, err.message).catch(() => {});
+});
+
 const shutdown = async () => {
+  await voice.close();
   await essayAi.close();
   await cron.close();
   await cronQueue.close();

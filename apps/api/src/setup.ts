@@ -1,6 +1,6 @@
 import type { NestFastifyApplication } from "@nestjs/platform-fastify";
 import rateLimit from "@fastify/rate-limit";
-import { MAX_RECEIPT_BYTES, UPLOAD_CHUNK_BYTES } from "@onatili/shared";
+import { MAX_RECEIPT_BYTES, MAX_VOICE_BYTES, UPLOAD_CHUNK_BYTES } from "@onatili/shared";
 import type { FastifyRequest } from "fastify";
 
 /** main.ts va testlar uchun umumiy sozlash */
@@ -29,4 +29,9 @@ export async function configureApp(app: NestFastifyApplication, opts: { rateLimi
     .getHttpAdapter()
     .getInstance()
     .addContentTypeParser(["image/jpeg", "image/png", "image/webp"], { parseAs: "buffer", bodyLimit: MAX_RECEIPT_BYTES }, (_req, body, done) => done(null, body));
+  // Ustozning ovozli izohi: xom audio baytlari (turi ffmpeg o'girishda tekshiriladi)
+  app
+    .getHttpAdapter()
+    .getInstance()
+    .addContentTypeParser(/^audio\//, { parseAs: "buffer", bodyLimit: MAX_VOICE_BYTES }, (_req, body, done) => done(null, body));
 }

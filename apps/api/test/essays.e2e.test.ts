@@ -194,5 +194,23 @@ describe("Esse: AI (bepul) va ustoz (pullik, qo'lyozma) (e2e)", () => {
 
     // Baholangan esseni o'chirib bo'lmaydi
     expect((await req("DELETE", `/essays/${e.id}`, undefined, S)).statusCode).toBe(409);
+
+    // Ustozning ovozli izohi: faqat baholangandan keyin; o'quvchi o'zinikini tinglaydi, begona — yo'q
+    const audio = Buffer.concat([Buffer.from([0x1a, 0x45, 0xdf, 0xa3]), Buffer.alloc(4000, 3)]); // webm sarlavhasi + ma'lumot
+    const up = (url: string, body: Buffer, type = "audio/webm") => app.inject({ method: "POST", url: `/api${url}`, headers: { ...H, "content-type": type }, payload: body });
+    expect((await up(`/admin/hw-essays/${e.id}/voice`, Buffer.alloc(10))).statusCode).toBe(400); // juda qisqa
+    expect((await up(`/admin/hw-essays/${e.id}/voice`, audio, "image/png")).json().message).toMatch(/audio/); // rasm emas, audio kerak
+    const v = await up(`/admin/hw-essays/${e.id}/voice`, audio);
+    expect(v.statusCode).toBe(201);
+    expect(v.json()).toMatchObject({ status: "PROCESSING" });
+    const vid = v.json().id;
+    expect((await req("GET", `/essays/${e.id}`, undefined, S)).json().voice).toMatchObject({ id: vid, status: "PROCESSING" });
+    expect((await req("GET", `/voice/${vid}`, undefined, S)).rawPayload.equals(audio)).toBe(true); // o'girilguncha asl yozuv
+    expect((await req("GET", `/voice/${vid}`, undefined, O)).statusCode).toBe(403);
+    // Qayta yozilsa eskisi almashtiriladi
+    const v2 = (await up(`/admin/hw-essays/${e.id}/voice`, audio)).json();
+    expect(v2.id).not.toBe(vid);
+    expect(await prisma.voiceNote.count({ where: { essayId: e.id } })).toBe(1);
+    expect((await req("GET", `/voice/${vid}`, undefined, S)).statusCode).toBe(404);
   });
 });

@@ -6,6 +6,7 @@ import { fmtPoints } from "./AttemptPage";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { FullPage } from "../components/FullPage";
+import { VoiceNote } from "../components/VoiceNote";
 import { api } from "../lib/api";
 import { formatClock, useBackButton } from "../lib/hooks";
 
@@ -211,6 +212,7 @@ function QuestionReview({ q, n, milliy }: { q: ResultQuestion; n: number; milliy
             <p className="text-hint">Esse yozilmagan</p>
           )}
           {q.pending && <p className="font-semibold text-brand">Ustoz tekshirmoqda…</p>}
+          {q.voice && <VoiceNote voice={q.voice} />}
           {q.special && <p className="rounded-xl bg-danger/10 px-3 py-2 font-semibold text-danger">{q.special.label}: esse mezon bo'yicha tekshirilmaydi</p>}
           {q.rubric && q.rubric.length > 0 && (
             <div className="divide-y divide-hint/10 rounded-xl bg-surface px-3">

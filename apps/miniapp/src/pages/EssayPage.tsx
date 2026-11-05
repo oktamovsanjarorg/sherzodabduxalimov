@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { CopyLine } from "../components/CopyLine";
 import { FullPage } from "../components/FullPage";
+import { VoiceNote } from "../components/VoiceNote";
 import { api, ApiError } from "../lib/api";
 import { formatDate, useBackButton } from "../lib/hooks";
 import { compressImage } from "../lib/image";
@@ -58,6 +59,11 @@ export function EssayPage() {
           )}
           {e.status === "AI_FAILED" && <Failed e={e} onChange={set} />}
 
+          {e.voice && (
+            <div className="mt-4">
+              <VoiceNote voice={e.voice} />
+            </div>
+          )}
           {[...e.reviews].reverse().map((r) => (
             <ReviewCard key={r.source} r={r} />
           ))}
