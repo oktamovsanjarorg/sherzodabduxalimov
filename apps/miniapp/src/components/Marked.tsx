@@ -23,13 +23,13 @@ export function PageOverlay({ a, ratio }: { a: PageAnnotations; ratio: number })
         const x = m.x * W;
         const y = m.y * H;
         const text = `${errorTypeLabel(m.type)}${m.note ? `: ${m.note}` : ""}`;
-        const w = Math.min(420, 14 + text.length * 10.5);
+        const w = Math.min(360, 10 + text.length * 7.6);
         const left = Math.min(x, W - w - 4);
         return (
           <g key={i}>
-            <circle cx={x} cy={y} r={7} fill="#dc2626" />
-            <rect x={left} y={y - 40} width={w} height={28} rx={6} fill="#dc2626" />
-            <text x={left + 7} y={y - 20} fontSize={19} fontWeight={700} fill="#fff" fontFamily="system-ui, sans-serif">
+            <circle cx={x} cy={y} r={4.5} fill="#dc2626" />
+            <rect x={left} y={y - 25} width={w} height={19} rx={4} fill="#dc2626" fillOpacity={0.88} />
+            <text x={left + 5} y={y - 11} fontSize={14} fontWeight={700} fill="#fff" fontFamily="system-ui, sans-serif">
               {text}
             </text>
           </g>

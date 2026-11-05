@@ -5,7 +5,7 @@
 import { PrismaClient } from "@onatili/db";
 import { Queue, Worker } from "bullmq";
 import { gradeEssayDeepSeek } from "./ai/deepseek";
-import { transcribeHandwriting } from "./ai/gemini";
+import { locatePhrases, transcribeHandwriting } from "./ai/gemini";
 import { ESSAY_AI_QUEUE, type EssayAiJob } from "./ai/queue";
 import { runSubscriptionReminders } from "./billing/reminders";
 import { gradeEssayJob, markEssayFailed } from "./essays/ai-runner";
@@ -116,6 +116,19 @@ const cron = new Worker(
 );
 cron.on("failed", (_job, err) => console.error("[cron] xato:", err.message));
 
+/** Esse varoqlari (faqat MEDIA_DIR/essays ichidan) */
+async function essayImages(paths: string[]) {
+  const root = resolve(env.MEDIA_DIR, "essays");
+  return Promise.all(
+    paths.map(async (p) => {
+      const abs = resolve(env.MEDIA_DIR, p);
+      if (!abs.startsWith(root + "/")) throw new Error("bad essay path");
+      const data = await readFile(abs);
+      return { mime: data[0] === 0x89 ? "image/png" : data[0] === 0x52 ? "image/webp" : "image/jpeg", data };
+    }),
+  );
+}
+
 /** AI esse tekshiruvi (DeepSeek). Bir vaqtda 3 ta: API limitlari va xarajat nazorati uchun */
 const essayAi = new Worker<EssayAiJob>(
   ESSAY_AI_QUEUE,
@@ -128,19 +141,9 @@ const essayAi = new Worker<EssayAiJob>(
       (topic, text, handwritten) => gradeEssayDeepSeek({ apiKey: key, model: env.DEEPSEEK_MODEL, topic, text, handwritten }),
       (chatId, text, button) => notifyQueue.add("send", { chatId: String(chatId), text, button }),
       env.MINIAPP_URL,
+      env.GEMINI_API_KEY ? async (paths) => transcribeHandwriting({ apiKey: env.GEMINI_API_KEY!, model: env.GEMINI_MODEL, images: await essayImages(paths) }) : undefined,
       env.GEMINI_API_KEY
-        ? async (paths) => {
-            const root = resolve(env.MEDIA_DIR, "essays");
-            const images = await Promise.all(
-              paths.map(async (p) => {
-                const abs = resolve(env.MEDIA_DIR, p);
-                if (!abs.startsWith(root + "/")) throw new Error("bad essay path");
-                const data = await readFile(abs);
-                return { mime: data[0] === 0x89 ? "image/png" : data[0] === 0x52 ? "image/webp" : "image/jpeg", data };
-              }),
-            );
-            return transcribeHandwriting({ apiKey: env.GEMINI_API_KEY!, model: env.GEMINI_MODEL, images });
-          }
+        ? async (paths, phrases) => locatePhrases({ apiKey: env.GEMINI_API_KEY!, model: env.GEMINI_MODEL, images: await essayImages(paths), phrases })
         : undefined,
     );
     if (total !== null) console.log(`[essay-ai] ${job.data.essayId}: ${total} ball`);

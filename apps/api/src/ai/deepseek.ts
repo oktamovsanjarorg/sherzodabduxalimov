@@ -1,4 +1,4 @@
-import { ESSAY_RUBRIC, RUBRIC_STEPS } from "@onatili/shared";
+import { ERROR_TYPES, ESSAY_RUBRIC, RUBRIC_STEPS, type ErrorTypeKey } from "@onatili/shared";
 import { request } from "node:https";
 import { z } from "zod";
 
@@ -7,7 +7,7 @@ export interface AiEssayResult {
   special: "OFF_TOPIC" | "COPIED" | "ONLY_INTRO" | null;
   criteria: { key: string; score: number; comment: string | null }[];
   feedback: string;
-  mistakes: { wrong: string; right: string; note: string | null }[];
+  mistakes: { wrong: string; right: string; note: string | null; type: ErrorTypeKey }[];
 }
 
 /** DeepSeek (OpenAI bilan mos API). IPv4 majburiy: serverda IPv6 ishlamaydi. */
@@ -45,8 +45,21 @@ const resultSchema = z.object({
   special: z.enum(["OFF_TOPIC", "COPIED", "ONLY_INTRO"]).nullish().catch(null),
   criteria: z.array(z.object({ key: z.string(), score: z.coerce.number(), comment: z.string().nullish() })).default([]),
   feedback: z.string().default(""),
-  mistakes: z.array(z.object({ wrong: z.string(), right: z.string(), note: z.string().nullish() })).default([]),
+  mistakes: z.array(z.object({ wrong: z.string(), right: z.string(), note: z.string().nullish(), type: z.string().nullish() })).default([]),
 });
+
+const TYPE_KEYS = ERROR_TYPES.map((t) => t.key as string);
+/** AI tur bermasa yoki noto'g'ri bersa: izohdagi kalit so'zdan aniqlaymiz */
+function mistakeType(type: string | null | undefined, note: string | null | undefined): ErrorTypeKey {
+  if (type && TYPE_KEYS.includes(type)) return type as ErrorTypeKey;
+  const n = (note ?? "").toLowerCase();
+  if (n.startsWith("imlo") || n.includes("tutuq")) return "spelling";
+  if (n.startsWith("punkt") || n.includes("vergul") || n.includes("tinish")) return "punctuation";
+  if (n.startsWith("qo'shimcha") || n.includes("qo'shimcha")) return "affix";
+  if (n.startsWith("so'z")) return "word";
+  if (n.includes("uslub")) return "style";
+  return "other";
+}
 
 /** Rasmiy mezon (BBA) va "Yozma ishni baholashga qo'yiladigan talablar" asosida ko'rsatma */
 export function buildEssayPrompt(topic: string, text: string, handwritten = false) {
@@ -77,10 +90,10 @@ ESSE TEKSHIRILMAYDIGAN HOLATLAR ("special"):
 Bunday holatda "special" ga shu qiymatni yoz, aks holda null.
 
 JAVOB (faqat JSON):
-{"special": null, "criteria": [{"key": "style", "score": 1.5, "comment": "..."}, ... 12 ta band ...], "feedback": "...", "mistakes": [{"wrong": "...", "right": "...", "note": "imlo|punktuatsiya|qo'shimcha|so'z qo'llash: qisqa qoida"}]}
+{"special": null, "criteria": [{"key": "style", "score": 1.5, "comment": "..."}, ... 12 ta band ...], "feedback": "...", "mistakes": [{"wrong": "...", "right": "...", "type": "spelling|punctuation|affix|word|style|logic|other", "note": "qisqa qoida"}]}
 - "comment": har bir bandga 1–2 jumla, xatolar sonini ko'rsat (masalan, "imlo xatosi 3 o'rinda").
 - "feedback": ekspert taqrizi — 3–5 jumlali xulosa va yaxshilash bo'yicha aniq maslahat.
-- "mistakes": eng muhim xatolar (ko'pi bilan 15 ta). "wrong" va "right" bir xil bo'lmasin; ishonching komil bo'lmasa kiritma.
+- "mistakes": eng muhim xatolar (ko'pi bilan 15 ta). "wrong" — matndan AYNAN ko'chirilgan qism (1–4 so'z, keyin varoqdan topiladi), "right" — to'g'risi. "type": spelling (imlo), punctuation (tinish belgisi), affix (qo'shimcha), word (so'z qo'llash), style (uslub), logic (mantiq/izchillik), other. "wrong" va "right" bir xil bo'lmasin; ishonching komil bo'lmasa kiritma.
 Barcha izohlar o'zbek tilida (lotin).`;
   const note = handwritten
     ? "\n\nEslatma: matn talabgorning qo'lyozmasidan avtomatik o'qib olingan. [?] — o'qib bo'lmagan so'z: uni xato deb hisoblama, ball kamaytirma."
@@ -111,7 +124,41 @@ export async function gradeEssayDeepSeek(opts: { apiKey: string; model: string; 
   if (r.status !== 200) throw new Error(`DeepSeek ${r.status}: ${j?.error?.message ?? "javob yo'q"}`);
   const content = j?.choices?.[0]?.message?.content;
   if (!content) throw new Error("DeepSeek bo'sh javob qaytardi");
-  return normalize(resultSchema.parse(parseFirstJson(content)));
+  const result = normalize(resultSchema.parse(parseFirstJson(content)));
+  // Model ba'zan ballda xato borligini ko'rsatib, ro'yxatni bo'sh qaytaradi: unda faqat xatolarni alohida so'raymiz
+  const errorBands = ["spelling", "punctuation", "affixes", "wordUsage"];
+  if (!result.special && !result.mistakes.length && result.criteria.some((c) => errorBands.includes(c.key) && c.score < 2)) {
+    result.mistakes = await listMistakesDeepSeek(opts).catch(() => []);
+  }
+  return result;
+}
+
+/** Faqat xatolar ro'yxati (asosiy javobda tushib qolganda) */
+async function listMistakesDeepSeek(opts: { apiKey: string; model: string; topic: string; text: string }): Promise<AiEssayResult["mistakes"]> {
+  const system = `Sen ona tili fan ekspertisan. Esse matnidagi imlo, punktuatsiya, qo'shimcha va so'z qo'llash xatolarini top.
+Bir xil xato takrorlansa — bitta. Faqat aniq xatolar, ko'pi bilan 15 ta.
+Javob faqat JSON: {"mistakes": [{"wrong": "matndan AYNAN ko'chirilgan 1–4 so'z", "right": "to'g'risi", "type": "spelling|punctuation|affix|word|style|logic|other", "note": "qisqa qoida"}]}
+"wrong" va "right" bir xil bo'lmasin. Izohlar o'zbek tilida (lotin).`;
+  const r = await postJson(
+    "api.deepseek.com",
+    "/chat/completions",
+    opts.apiKey,
+    {
+      model: opts.model,
+      temperature: 0,
+      max_tokens: 2000,
+      response_format: { type: "json_object" },
+      messages: [
+        { role: "system", content: system },
+        { role: "user", content: `Esse matni:\n"""\n${opts.text}\n"""` },
+      ],
+    },
+    90_000,
+  );
+  const j = r.json as { choices?: { message?: { content?: string } }[] } | null;
+  const content = j?.choices?.[0]?.message?.content;
+  if (r.status !== 200 || !content) return [];
+  return normalize(resultSchema.parse({ criteria: [], ...(parseFirstJson(content) as object) })).mistakes;
 }
 
 /**
@@ -154,6 +201,6 @@ export function normalize(r: z.infer<typeof resultSchema>): AiEssayResult {
       // AI ba'zan to'g'ri so'zni "xato" deb ko'rsatadi: bir xil juftliklar olib tashlanadi
       .filter((m) => m.wrong.trim() && m.wrong.trim().toLowerCase() !== m.right.trim().toLowerCase())
       .slice(0, 15)
-      .map((m) => ({ wrong: m.wrong.slice(0, 200), right: m.right.slice(0, 200), note: m.note?.slice(0, 300) || null })),
+      .map((m) => ({ wrong: m.wrong.slice(0, 200), right: m.right.slice(0, 200), note: m.note?.slice(0, 300) || null, type: mistakeType(m.type, m.note) })),
   };
 }

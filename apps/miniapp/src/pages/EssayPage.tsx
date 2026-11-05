@@ -34,7 +34,11 @@ export function EssayPage() {
     qc.invalidateQueries({ queryKey: ["essays"] });
   };
   const e = q.data;
-  const hasMarks = !!e?.annotations && e.annotations.pages.some((p) => p.strokes.length || p.marks.length);
+  // Ustoz belgilagan bo'lsa — ustozniki, aks holda AI belgilari (taxminiy)
+  const teacherAnno = e?.annotations && e.annotations.pages.some((p) => p.strokes.length || p.marks.length) ? e.annotations : null;
+  const aiAnno = e?.reviews.find((r) => r.source === "AI")?.annotations ?? null;
+  const shownAnno = teacherAnno ?? (aiAnno && aiAnno.pages.some((p) => p.marks.length) ? aiAnno : null);
+  const hasMarks = !!shownAnno;
 
   return (
     <FullPage>
@@ -72,12 +76,12 @@ export function EssayPage() {
 
           {e.status !== "DRAFT" && e.pages > 0 && (
             <>
-              <p className="mb-2 mt-6 px-1 text-sm font-bold text-hint">{hasMarks ? "Ustoz belgilagan xatolar" : "Yuborilgan varoqlar"}</p>
+              <p className="mb-2 mt-6 px-1 text-sm font-bold text-hint">{teacherAnno ? "Ustoz belgilagan xatolar" : hasMarks ? "AI belgilagan xatolar (taxminiy)" : "Yuborilgan varoqlar"}</p>
               {hasMarks ? (
                 <div className="space-y-3">
-                  <MarksLegend a={e.annotations!} />
+                  <MarksLegend a={shownAnno!} />
                   {Array.from({ length: e.pages }, (_, n) => (
-                    <AnnotatedPage key={n} id={e.id} n={n} a={e.annotations!.pages[n] ?? { strokes: [], marks: [] }} />
+                    <AnnotatedPage key={n} id={e.id} n={n} a={shownAnno!.pages[n] ?? { strokes: [], marks: [] }} />
                   ))}
                 </div>
               ) : (
@@ -96,9 +100,18 @@ export function EssayPage() {
           )}
           {e.mode === "AI" && e.text && (
             <details className="card mt-6">
-              <summary className="cursor-pointer text-sm font-bold">{e.pages ? "AI qo'lyozmadan o'qigan matn" : "Yuborilgan matn"}</summary>
+              <summary className="cursor-pointer text-sm font-bold">
+                {e.pages ? "AI qo'lyozmadan o'qigan matn" : "Yuborilgan matn"}
+                {!e.pages && aiAnno?.text.length ? ` · AI ${aiAnno.text.length} ta xatoni belgiladi` : ""}
+              </summary>
               {e.pages > 0 && <p className="mt-2 text-xs text-hint">[?] — AI o'qiy olmagan so'z. Bunday so'zlar xato hisoblanmaydi.</p>}
-              <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed">{e.text}</p>
+              {!e.pages && aiAnno?.text.length ? (
+                <div className="mt-2 text-sm">
+                  <MarkedText text={e.text} marks={aiAnno.text} />
+                </div>
+              ) : (
+                <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed">{e.text}</p>
+              )}
             </details>
           )}
           {(e.status === "DRAFT" || e.status === "AI_FAILED" || (e.status === "AWAITING_PAYMENT" && e.payment?.status !== "PENDING")) && (

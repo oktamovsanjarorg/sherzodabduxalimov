@@ -126,9 +126,11 @@ export interface EssayReviewView {
   maxScore: number;
   feedback: string | null;
   /** Faqat AI: topilgan xatolar */
-  mistakes: { wrong: string; right: string; note: string | null }[];
+  mistakes: { wrong: string; right: string; note: string | null; type?: string }[];
   /** Esse tekshirilmaydigan holat (2 yoki 0 ball) */
   special: { key: string; label: string } | null;
+  /** AI: xatolarning varoq/matndagi joyi */
+  annotations: import("./annotation-types").EssayAnnotations | null;
   createdAt: string;
 }
 

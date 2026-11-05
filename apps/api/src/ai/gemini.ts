@@ -62,16 +62,13 @@ const RETRYABLE = new Set([404, 429, 500, 502, 503, 504]);
 
 const textOf = (j: any): string => (j?.candidates?.[0]?.content?.parts ?? []).map((p: { text?: string }) => p.text ?? "").join("").trim();
 
-export async function transcribeHandwriting(opts: { apiKey: string; model: string; images: { mime: string; data: Buffer }[] }): Promise<string> {
-  const body = {
-    contents: [{ parts: [...opts.images.map((i) => ({ inline_data: { mime_type: i.mime, data: i.data.toString("base64") } })), { text: OCR_PROMPT }] }],
-    generationConfig: { temperature: 0, maxOutputTokens: 8192 },
-  };
+/** Gemini'ga so'rov: band bo'lsa (503/429) yoki model yo'q bo'lsa (404) navbatdagi modelga o'tiladi */
+async function generate(apiKey: string, preferred: string, body: object): Promise<string> {
   const tried = new Set<string>();
   let last = "";
   const attempt = async (model: string) => {
     tried.add(model);
-    const r = await call("POST", `/v1beta/models/${encodeURIComponent(model)}:generateContent`, opts.apiKey, body, 75_000).catch((e: Error) => ({ status: 504, json: { error: { message: e.message } } }));
+    const r = await call("POST", `/v1beta/models/${encodeURIComponent(model)}:generateContent`, apiKey, body, 75_000).catch((e: Error) => ({ status: 504, json: { error: { message: e.message } } }));
     if (r.status === 200) {
       const text = textOf(r.json);
       if (!text) throw new Error(`Gemini bo'sh javob (${r.json?.candidates?.[0]?.finishReason ?? r.json?.promptFeedback?.blockReason ?? "?"})`);
@@ -81,16 +78,70 @@ export async function transcribeHandwriting(opts: { apiKey: string; model: strin
     if (!RETRYABLE.has(r.status)) throw new Error(last);
     return null;
   };
-  for (const model of [opts.model, ...FALLBACK_MODELS]) {
+  for (const model of [preferred, ...FALLBACK_MODELS]) {
     if (tried.has(model)) continue;
     const text = await attempt(model);
     if (text) return text;
   }
-  // Hammasi band yoki nomlar o'zgargan: ro'yxatdan mavjud modelni topib bir marta urinamiz
-  const picked = await pickModel(opts.apiKey, opts.model).catch(() => null);
+  const picked = await pickModel(apiKey, preferred).catch(() => null);
   if (picked && !tried.has(picked)) {
     const text = await attempt(picked);
     if (text) return text;
   }
   throw new Error(last);
+}
+
+const imageParts = (images: { mime: string; data: Buffer }[]) => images.map((i) => ({ inline_data: { mime_type: i.mime, data: i.data.toString("base64") } }));
+
+export async function transcribeHandwriting(opts: { apiKey: string; model: string; images: { mime: string; data: Buffer }[] }): Promise<string> {
+  return generate(opts.apiKey, opts.model, {
+    contents: [{ parts: [...imageParts(opts.images), { text: OCR_PROMPT }] }],
+    generationConfig: { temperature: 0, maxOutputTokens: 8192 },
+  });
+}
+
+export interface LocatedPhrase {
+  /** So'rovdagi tartib raqami */
+  i: number;
+  /** Varoq (0 dan) */
+  page: number;
+  /** [ymin, xmin, ymax, xmax], 0..1000 (Gemini formati) */
+  box: [number, number, number, number];
+}
+
+/**
+ * Xato so'z/iboralarning qo'lyozma varoqdagi joyini topadi (AI belgilari uchun).
+ * Topilmaganlari javobda bo'lmaydi.
+ */
+export async function locatePhrases(opts: { apiKey: string; model: string; images: { mime: string; data: Buffer }[]; phrases: string[] }): Promise<LocatedPhrase[]> {
+  if (!opts.phrases.length) return [];
+  const list = opts.phrases.map((p, i) => `${i}: "${p}"`).join("\n");
+  const prompt = `Rasmlarda o'quvchining qo'lda yozgan o'zbekcha essesi bor (${opts.images.length} ta varoq, tartib bilan, 0 dan boshlab).
+Quyidagi so'z yoki iboralarning har birini qo'lyozmadan top (xatolari bilan yozilgan bo'lishi mumkin, aynan shunday qidir):
+${list}
+Har biri uchun bitta joy: matndagi BIRINCHI uchragan o'rni. Ramka faqat shu so'z(lar)ni qamrab olsin, butun qatorni emas.
+Javob faqat JSON massiv: [{"i": 0, "page": 0, "box_2d": [ymin, xmin, ymax, xmax]}] — koordinatalar 0..1000 (shu varoq o'lchamiga nisbatan).
+Topa olmaganingni javobga kiritma.`;
+  const raw = await generate(opts.apiKey, opts.model, {
+    contents: [{ parts: [...imageParts(opts.images), { text: prompt }] }],
+    generationConfig: { temperature: 0, maxOutputTokens: 4096, responseMimeType: "application/json" },
+  });
+  let arr: unknown;
+  try {
+    arr = JSON.parse(raw.replace(/^```(json)?|```$/g, "").trim());
+  } catch {
+    return [];
+  }
+  if (!Array.isArray(arr)) return [];
+  const out: LocatedPhrase[] = [];
+  for (const x of arr as { i?: unknown; page?: unknown; box_2d?: unknown }[]) {
+    const b = x.box_2d;
+    if (typeof x.i !== "number" || !Array.isArray(b) || b.length !== 4 || !b.every((v) => typeof v === "number" && v >= 0 && v <= 1000)) continue;
+    const page = typeof x.page === "number" ? x.page : 0;
+    if (x.i < 0 || x.i >= opts.phrases.length || page < 0 || page >= opts.images.length) continue;
+    const [ymin, xmin, ymax, xmax] = b as number[];
+    if (ymax <= ymin || xmax <= xmin) continue;
+    out.push({ i: x.i, page, box: [ymin, xmin, ymax, xmax] });
+  }
+  return out;
 }

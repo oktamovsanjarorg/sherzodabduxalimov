@@ -377,6 +377,8 @@ model EssayReview {
   provider   String? // deepseek | claude
   criteria   Json // [{key,label,score,max,comment}]
   mistakes   Json         @default("[]") // AI: [{wrong,right,note}]
+  /// AI: xatolarning varoqdagi joyi (chizgi + yorliq) yoki matndagi o'rni — ustoz belgilari bilan bir xil format
+  annotations Json?
   totalScore Float
   /// Esse tekshirilmaydigan holat (OFF_TOPIC, TOO_SHORT, ...)
   special    String?

@@ -78,7 +78,7 @@ describe("Esse: AI (bepul) va ustoz (pullik, qo'lyozma) (e2e)", () => {
     const d = (await req("GET", `/essays/${e.id}`, undefined, S)).json();
     expect(d.status).toBe("AI_CHECKED");
     expect(d.reviews[0]).toMatchObject({ source: "AI", totalScore: 3.5, maxScore: 24, feedback: "Yaxshi" });
-    expect(d.reviews[0].mistakes).toEqual([{ wrong: "dust", right: "do'st", note: null }]);
+    expect(d.reviews[0].mistakes).toEqual([{ wrong: "dust", right: "do'st", note: null, type: "other" }]);
     expect(sent[0]).toContain("3.5 / 24");
     expect(d.reviews[0].criteria).toHaveLength(12);
 
@@ -114,12 +114,19 @@ describe("Esse: AI (bepul) va ustoz (pullik, qo'lyozma) (e2e)", () => {
     const handwrittenFlags: boolean[] = [];
     const read = async (p: string[]) => (readPaths.push(p), "Ona tilim mening faxrim. Men uni sevaman va [?] asrayman. ".repeat(12));
     const grade = async (_t: string, _x: string, hw: boolean) => (handwrittenFlags.push(hw), normalize({ special: null, criteria: [{ key: "views", score: 1.5, comment: null }], feedback: "", mistakes: [] }));
-    expect(await gradeEssayJob(prisma, e.id, grade, async () => {}, undefined, read)).toBe(1.5);
+    const locate = async () => [{ i: 0, page: 1, box: [100, 200, 150, 400] as [number, number, number, number] }];
+    const grade2 = async (_t: string, _x: string, hw: boolean) => (
+      handwrittenFlags.push(hw),
+      normalize({ special: null, criteria: [{ key: "views", score: 1.5, comment: null }], feedback: "", mistakes: [{ wrong: "asrayman", right: "asrayman.", type: "punctuation", note: null }] })
+    );
+    expect(await gradeEssayJob(prisma, e.id, grade2, async () => {}, undefined, read, locate)).toBe(1.5);
     expect(readPaths[0]).toHaveLength(2);
     expect(handwrittenFlags).toEqual([true]);
     const d = (await req("GET", `/essays/${e.id}`, undefined, S)).json();
     expect(d).toMatchObject({ status: "AI_CHECKED", pages: 2 });
     expect(d.text).toContain("[?] asrayman"); // o'qilgan matn ko'rinadi
+    // AI xatoni 2-varoqda belgiladi (chizgi + yorliq)
+    expect(d.reviews[0].annotations.pages[1].marks[0]).toMatchObject({ type: "punctuation", note: "asrayman.", x: 0.2, y: 0.1 });
 
     // Rasmda esse yo'q
     const n = (await req("POST", "/essays", { mode: "AI", prompt: "Bo'sh varoq" }, S)).json();

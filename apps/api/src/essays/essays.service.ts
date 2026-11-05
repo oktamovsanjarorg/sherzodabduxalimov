@@ -50,6 +50,7 @@ export function toReviewView(r: EssayWithReviews["reviews"][number]): EssayRevie
     feedback: r.feedback,
     mistakes: (r.mistakes ?? []) as EssayReviewView["mistakes"],
     special: r.special && r.special in ESSAY_SPECIAL ? { key: r.special, label: ESSAY_SPECIAL[r.special as EssaySpecialKey].label } : null,
+    annotations: (r.annotations as EssayAnnotations | null) ?? null,
     createdAt: r.createdAt.toISOString(),
   };
 }

@@ -102,6 +102,8 @@ function PageImage({ id, n, anno, onSave }: { id: string; n: number; anno: PageA
   );
 }
 
+const countMarksTotal = (a: EssayAnnotations) => Object.values(countMarks(a)).reduce((x, y) => x + y, 0);
+
 function AiHint({ r }: { r: EssayReviewView }) {
   return (
     <details className="rounded-lg bg-sky-50 p-3 text-sm">
@@ -219,6 +221,30 @@ function ReviewModal({ essay, onClose }: { essay: AdminHwEssay; onClose: () => v
           <div className="rounded-lg border border-slate-200 p-3">
             <p className="mb-1.5 text-xs font-bold uppercase tracking-wide text-slate-500">Belgilangan xatolar</p>
             <MarkCounts counts={countMarks(anno)} />
+            {ai?.annotations && ai.annotations.pages.some((p) => p.marks.length) && (
+              <button
+                className="btn-secondary btn-sm mt-2"
+                onClick={async () => {
+                  // AI belgilari ustozning mavjud belgilari ustiga qo'shiladi; keyin keraksizini o'chirish mumkin
+                  const next = {
+                    ...anno,
+                    pages: anno.pages.map((p, i) => {
+                      const a = ai.annotations!.pages[i];
+                      return a ? { strokes: [...p.strokes, ...a.strokes], marks: [...p.marks, ...a.marks] } : p;
+                    }),
+                  };
+                  try {
+                    await api.saveHwAnnotations(essay.id, next);
+                    setAnno(next);
+                    toast(`AI belgilari qo'shildi (${countMarksTotal(ai.annotations!)} ta). Keraksizini o'chirg'ich bilan olib tashlang`);
+                  } catch (e) {
+                    toast(errMsg(e), "error");
+                  }
+                }}
+              >
+                🤖 AI belgilarini olish ({countMarksTotal(ai.annotations)} ta)
+              </button>
+            )}
             <p className="mt-1.5 text-[11px] text-slate-400">Mezondagi "1–2 o'rinda", "3–4 o'rinda" bandlarini shunga qarab qo'ying. Bir xil xato takrorlansa — bitta.</p>
           </div>
           <RubricForm value={rubric} onChange={setRubric} aiHint={ai ? Object.fromEntries(ai.criteria.map((c) => [c.key, c.score])) : undefined} />

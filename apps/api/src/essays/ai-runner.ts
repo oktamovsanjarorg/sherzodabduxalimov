@@ -1,5 +1,5 @@
 import type { PrismaClient } from "@onatili/db";
-import { ESSAY_MAX_SCORE, ESSAY_SPECIAL, NO_ESSAY_ERROR, countWords, isMostlyCyrillic, rubricScore, type EssaySpecialKey } from "@onatili/shared";
+import { ESSAY_MAX_SCORE, ESSAY_SPECIAL, NO_ESSAY_ERROR, type EssayAnnotations, type PageAnnotations, type TextMark, countWords, isMostlyCyrillic, rubricScore, type EssaySpecialKey } from "@onatili/shared";
 import type { AiEssayResult } from "../ai/deepseek";
 import type { SendFn } from "../billing/reminders";
 import { esc } from "../notify/telegram";
@@ -7,11 +7,51 @@ import { esc } from "../notify/telegram";
 export type GradeFn = (topic: string, text: string, handwritten: boolean) => Promise<AiEssayResult>;
 /** Varoq rasmlarini matnga aylantiradi (nisbiy yo'llar: essays/<id>/<n>.jpg) */
 export type ReadFn = (imagePaths: string[]) => Promise<string>;
+/** Xato iboralarning varoqdagi joyi: [ymin, xmin, ymax, xmax] 0..1000 */
+export type LocateFn = (imagePaths: string[], phrases: string[]) => Promise<{ i: number; page: number; box: [number, number, number, number] }[]>;
+
+/**
+ * AI topgan xatolarni ustoz belgilari formatiga o'giradi:
+ * qo'lyozmada — so'z tagiga qizil chiziq va ustida "Imlo: to'g'risi" yorlig'i; yozilgan matnda — matndagi o'rni.
+ */
+export async function aiAnnotations(
+  mistakes: AiEssayResult["mistakes"],
+  opts: { pages: string[]; text: string | null; locate?: LocateFn },
+): Promise<EssayAnnotations | null> {
+  if (!mistakes.length) return null;
+  if (opts.pages.length && opts.locate) {
+    const found = await opts.locate(opts.pages, mistakes.map((m) => m.wrong)).catch(() => []);
+    if (!found.length) return null;
+    const pages: PageAnnotations[] = opts.pages.map(() => ({ strokes: [], marks: [] }));
+    for (const f of found) {
+      const m = mistakes[f.i];
+      const [ymin, xmin, ymax, xmax] = f.box.map((v) => v / 1000);
+      const y = Math.min(1, ymax + 0.004);
+      pages[f.page].strokes.push({ tool: "pen", width: 0.003, points: [[xmin, y], [xmax, y]] });
+      pages[f.page].marks.push({ x: xmin, y: ymin, type: m.type, note: m.right.slice(0, 120) || null });
+    }
+    return { pages, text: [] };
+  }
+  if (opts.text) {
+    const marks: TextMark[] = [];
+    const lower = opts.text.toLowerCase();
+    for (const m of mistakes) {
+      let at = opts.text.indexOf(m.wrong);
+      if (at < 0) at = lower.indexOf(m.wrong.toLowerCase());
+      if (at < 0) continue;
+      const end = at + m.wrong.length;
+      if (marks.some((x) => x.start < end && at < x.end)) continue;
+      marks.push({ start: at, end, type: m.type, note: m.right.slice(0, 120) || null });
+    }
+    return marks.length ? { pages: [], text: marks } : null;
+  }
+  return null;
+}
 
 export { NO_ESSAY_ERROR };
 
 /** Bitta esseni AI bilan baholaydi va natijani saqlaydi. Worker chaqiradi; testda grade soxta bo'ladi. */
-export async function gradeEssayJob(prisma: PrismaClient, essayId: string, grade: GradeFn, send: SendFn, miniAppUrl: string | undefined, read?: ReadFn) {
+export async function gradeEssayJob(prisma: PrismaClient, essayId: string, grade: GradeFn, send: SendFn, miniAppUrl: string | undefined, read?: ReadFn, locate?: LocateFn) {
   const e = await prisma.essay.findUnique({ where: { id: essayId }, include: { user: { select: { telegramId: true } } } });
   if (!e || e.status !== "AI_CHECKING") return null; // o'chirilgan yoki allaqachon tekshirilgan
   const handwritten = e.imageUrls.length > 0;
@@ -38,9 +78,13 @@ export async function gradeEssayJob(prisma: PrismaClient, essayId: string, grade
   const scored = rubricScore(special, r.criteria);
   const criteria = scored.criteria.map((c) => ({ ...c, comment: r.criteria.find((x) => x.key === c.key)?.comment ?? null }));
   const total = scored.total;
+  // Xatolarni varoqda (yoki matnda) belgilash — topilmasa ham baho saqlanadi
+  const annotations = await aiAnnotations(r.mistakes, { pages: handwritten ? e.imageUrls : [], text: handwritten ? null : text, locate }).catch(() => null);
   const { count } = await prisma.essay.updateMany({ where: { id: essayId, status: "AI_CHECKING" }, data: { status: "AI_CHECKED", error: null } });
   if (!count) return null;
-  await prisma.essayReview.create({ data: { essayId, source: "AI", provider: "deepseek", criteria, special, mistakes: r.mistakes, totalScore: total, feedback: r.feedback || null } });
+  await prisma.essayReview.create({
+    data: { essayId, source: "AI", provider: "deepseek", criteria, special, mistakes: r.mistakes, annotations: annotations ?? undefined, totalScore: total, feedback: r.feedback || null },
+  });
   if (e.user.telegramId !== null) await send(
     e.user.telegramId,
     `🤖 <b>AI essengizni tekshirdi</b>\n«${esc(e.prompt.slice(0, 80))}»\nTaxminiy ball: <b>${total} / ${ESSAY_MAX_SCORE}</b>`,
