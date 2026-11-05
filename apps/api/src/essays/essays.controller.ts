@@ -1,5 +1,5 @@
 import { Body, Controller, Delete, Get, HttpCode, Param, ParseIntPipe, Post, Put, Query, Res } from "@nestjs/common";
-import { createEssayInput, teacherEssayReviewInput } from "@onatili/shared";
+import { createEssayInput, essayAnnotationsSchema, teacherEssayReviewInput } from "@onatili/shared";
 import type { FastifyReply } from "fastify";
 import { z } from "zod";
 import { parse } from "../admin/zod";
@@ -64,6 +64,10 @@ export class AdminHwEssaysController {
 
   @Get() list(@Query("status") status?: string) {
     return this.svc.adminList(status === "reviewed" ? "reviewed" : "pending");
+  }
+
+  @Put(":id/annotations") annotate(@CurrentUser() u: JwtUser, @Param("id") id: string, @Body() b: unknown) {
+    return this.svc.saveAnnotations(u.sub, id, parse(essayAnnotationsSchema, b));
   }
 
   @Post(":id/review") @HttpCode(200) review(@CurrentUser() u: JwtUser, @Param("id") id: string, @Body() b: unknown) {

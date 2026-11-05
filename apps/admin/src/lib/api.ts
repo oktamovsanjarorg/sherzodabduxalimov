@@ -3,6 +3,8 @@ import type {
   AdminPlan,
   AdminSubscriptions,
   VoiceView,
+  EssayAnnotations,
+  TextMark,
   RosterRow,
   StudentCreateInput,
   StudentDetail,
@@ -111,6 +113,8 @@ export const api = {
   remindDebtors: (groupId: string, month: string) => request<{ students: number; messages: number }>("/admin/offline-payments/remind", json("POST", { groupId, month })),
   grantSubscription: (d: { userId: string; planId: string; note: string | null }) => request<{ ok: true; endsAt: string }>("/admin/subscriptions", json("POST", d)),
   cancelSubscription: (id: string) => request(`/admin/subscriptions/${id}/cancel`, json("POST")),
+  saveHwAnnotations: (id: string, a: EssayAnnotations) => request<{ ok: true; counts: Record<string, number> }>(`/admin/hw-essays/${id}/annotations`, json("PUT", a)),
+  saveMockMarks: (attemptId: string, questionId: string, marks: TextMark[]) => request(`/admin/essays/${attemptId}/${questionId}/annotations`, json("PUT", marks)),
   /** Ovozli izoh: xom audio (Content-Type — yozuv formati) */
   uploadHwVoice: (id: string, audio: Blob) =>
     request<VoiceView>(`/admin/hw-essays/${id}/voice`, { method: "POST", body: audio, headers: { "Content-Type": audio.type || "audio/webm" } }),

@@ -203,6 +203,7 @@ export interface AdminEssay {
   rubric: { key: string; label: string; max: number; score: number }[] | null;
   special: string | null;
   voice: { id: string; status: "PROCESSING" | "READY" | "FAILED"; durationSec: number | null } | null;
+  textMarks: import("./annotation-types").TextMark[] | null;
 }
 
 /**

@@ -159,6 +159,8 @@ export interface MyEssayDetail extends MyEssaySummary {
   payment: MyPayment | null;
   reviews: EssayReviewView[];
   voice: VoiceView | null;
+  /** Ustozning belgilari (varoqlar va matn ustida) */
+  annotations: import("./annotation-types").EssayAnnotations | null;
 }
 
 export interface EssayConfig {
@@ -204,6 +206,8 @@ export interface AdminHwEssay {
   createdAt: string;
   reviews: EssayReviewView[];
   voice: VoiceView | null;
+  /** Ustozning belgilari (varoqlar va matn ustida) */
+  annotations: import("./annotation-types").EssayAnnotations | null;
 }
 
 /** Rubrika bo'yicha umumiy ball: maxsus holat bo'lsa uning bali, aks holda 12 band (har biri 0..2, 0,5 qadam) yig'indisi */

@@ -265,6 +265,7 @@ export class AttemptsService {
         reviewComment: given?.reviewComment ?? null,
         rubric: q.type === "ESSAY" ? ((given?.rubric as ResultQuestion["rubric"]) ?? null) : null,
         voice: q.type === "ESSAY" ? (voices.get(q.id) ?? null) : null,
+        textMarks: q.type === "ESSAY" ? ((given?.annotations as ResultQuestion["textMarks"]) ?? null) : null,
         special: given?.special && given.special in ESSAY_SPECIAL ? { key: given.special, label: ESSAY_SPECIAL[given.special as EssaySpecialKey].label } : null,
       };
     });

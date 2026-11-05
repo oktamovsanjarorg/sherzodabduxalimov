@@ -195,6 +195,16 @@ describe("Esse: AI (bepul) va ustoz (pullik, qo'lyozma) (e2e)", () => {
     // Baholangan esseni o'chirib bo'lmaydi
     expect((await req("DELETE", `/essays/${e.id}`, undefined, S)).statusCode).toBe(409);
 
+    // Varoq ustidagi belgilar: chizgi va xato yorliqlari; o'quvchiga ko'rinadi, soni turlar bo'yicha
+    const anno = {
+      pages: [{ strokes: [{ tool: "pen", width: 0.004, points: [[0.1, 0.2], [0.3, 0.2]] }], marks: [{ x: 0.2, y: 0.2, type: "spelling", note: "do'st" }, { x: 0.5, y: 0.5, type: "punctuation" }] }],
+      text: [],
+    };
+    expect((await req("PUT", `/admin/hw-essays/${e.id}/annotations`, anno)).json()).toEqual({ ok: true, counts: { spelling: 1, punctuation: 1 } });
+    expect((await req("PUT", `/admin/hw-essays/${e.id}/annotations`, { pages: [anno.pages[0], anno.pages[0]], text: [] })).statusCode).toBe(400); // 1 ta varoq bor
+    expect((await req("PUT", `/admin/hw-essays/${e.id}/annotations`, anno, S)).statusCode).toBe(403);
+    expect((await req("GET", `/essays/${e.id}`, undefined, S)).json().annotations.pages[0].marks[0]).toMatchObject({ type: "spelling", note: "do'st" });
+
     // Ustozning ovozli izohi: faqat baholangandan keyin; o'quvchi o'zinikini tinglaydi, begona — yo'q
     const audio = Buffer.concat([Buffer.from([0x1a, 0x45, 0xdf, 0xa3]), Buffer.alloc(4000, 3)]); // webm sarlavhasi + ma'lumot
     const up = (url: string, body: Buffer, type = "audio/webm") => app.inject({ method: "POST", url: `/api${url}`, headers: { ...H, "content-type": type }, payload: body });

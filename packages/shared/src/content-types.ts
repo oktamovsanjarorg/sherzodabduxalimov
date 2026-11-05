@@ -126,6 +126,8 @@ export interface ResultQuestion extends Omit<AttemptQuestion, "points"> {
   special: { key: string; label: string } | null;
   /** Esse: ustozning ovozli izohi */
   voice: { id: string; status: "PROCESSING" | "READY" | "FAILED"; durationSec: number | null } | null;
+  /** Esse matnidagi ustoz belgilagan xatolar */
+  textMarks: import("./annotation-types").TextMark[] | null;
 }
 
 export interface AttemptResult {

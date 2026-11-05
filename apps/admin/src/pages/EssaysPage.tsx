@@ -1,4 +1,5 @@
-import { essayTo75, type AdminEssay } from "@onatili/shared";
+import { countMarks, essayTo75, type AdminEssay, type TextMark } from "@onatili/shared";
+import { MarkCounts, TextAnnotator } from "../components/Annotate";
 import { RubricForm, rubricComplete, rubricTotal, type RubricValue } from "../components/RubricForm";
 import { VoicePlayer, VoiceRecorder } from "../components/VoiceRecorder";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -81,18 +82,22 @@ function ReviewModal({ essay, onClose }: { essay: AdminEssay; onClose: () => voi
     scores: Object.fromEntries((essay.rubric ?? []).map((c) => [c.key, c.score])),
   }));
   const [voice, setVoice] = useState<Blob | null>(null);
+  const [marks, setMarks] = useState<TextMark[]>(essay.textMarks ?? []);
   const value = Number(points.replace(",", "."));
   const valid = essay.milliy ? rubricComplete(rubric) : points.trim() !== "" && Number.isFinite(value) && value >= 0 && value <= essay.maxPoints;
 
   const save = useMutation({
-    mutationFn: () =>
-      api.reviewEssay(
+    mutationFn: async () => {
+      // Matndagi belgilar baho bilan birga saqlanadi
+      if (essay.milliy) await api.saveMockMarks(essay.attemptId, essay.questionId, marks);
+      return api.reviewEssay(
         essay.attemptId,
         essay.questionId,
         essay.milliy
           ? { special: rubric.special, criteria: Object.entries(rubric.scores).map(([key, score]) => ({ key, score: score ?? 0 })), comment: comment.trim() || null }
           : { points: value, comment: comment.trim() || null },
-      ),
+      );
+    },
     onSuccess: async (r) => {
       if (voice) await api.uploadMockVoice(essay.attemptId, essay.questionId, voice).catch((e) => toast(`Baho saqlandi, lekin ovoz yuborilmadi: ${errMsg(e)}`, "error"));
       toast(`Saqlandi${voice ? " · ovozli izoh bilan" : ""}. O'quvchiga yuborildi`);
@@ -128,9 +133,20 @@ function ReviewModal({ essay, onClose }: { essay: AdminEssay; onClose: () => voi
             <span className="label mb-0">Esse</span>
             <span className="text-xs font-semibold text-slate-500">{essay.words} ta so'z</span>
           </div>
-          <div className="max-h-[45vh] overflow-y-auto whitespace-pre-line rounded-xl border border-slate-200 bg-white p-4 text-[15px] leading-relaxed">
-            {essay.text}
-          </div>
+          {essay.milliy ? (
+            <div className="max-h-[55vh] overflow-y-auto">
+              <TextAnnotator text={essay.text} value={marks} onChange={setMarks} />
+            </div>
+          ) : (
+            <div className="max-h-[45vh] overflow-y-auto whitespace-pre-line rounded-xl border border-slate-200 bg-white p-4 text-[15px] leading-relaxed">
+              {essay.text}
+            </div>
+          )}
+          {essay.milliy && (
+            <div className="mt-2">
+              <MarkCounts counts={countMarks({ pages: [], text: marks })} />
+            </div>
+          )}
         </div>
 
         {essay.milliy ? (

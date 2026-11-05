@@ -1,4 +1,4 @@
-import { ESSAY_STATUS_LABELS, MAX_ESSAY_PAGES, NO_ESSAY_ERROR, formatCard, formatSum, type EssayConfig, type EssayReviewView, type MyEssayDetail } from "@onatili/shared";
+import { ESSAY_STATUS_LABELS, MAX_ESSAY_PAGES, NO_ESSAY_ERROR, formatCard, formatSum, type EssayConfig, type EssayReviewView, type MyEssayDetail, type PageAnnotations } from "@onatili/shared";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Bot, Clock, GraduationCap, ImagePlus, Loader2, RotateCcw, Trash2, X, XCircle } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
@@ -6,6 +6,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { CopyLine } from "../components/CopyLine";
 import { FullPage } from "../components/FullPage";
 import { VoiceNote } from "../components/VoiceNote";
+import { MarkedText, MarksLegend, PageOverlay } from "../components/Marked";
 import { api, ApiError } from "../lib/api";
 import { formatDate, useBackButton } from "../lib/hooks";
 import { compressImage } from "../lib/image";
@@ -33,6 +34,7 @@ export function EssayPage() {
     qc.invalidateQueries({ queryKey: ["essays"] });
   };
   const e = q.data;
+  const hasMarks = !!e?.annotations && e.annotations.pages.some((p) => p.strokes.length || p.marks.length);
 
   return (
     <FullPage>
@@ -70,13 +72,27 @@ export function EssayPage() {
 
           {e.status !== "DRAFT" && e.pages > 0 && (
             <>
-              <p className="mb-2 mt-6 px-1 text-sm font-bold text-hint">Yuborilgan varoqlar</p>
-              <div className="grid grid-cols-2 gap-2">
-                {Array.from({ length: e.pages }, (_, n) => (
-                  <PageThumb key={n} id={e.id} n={n} />
-                ))}
-              </div>
+              <p className="mb-2 mt-6 px-1 text-sm font-bold text-hint">{hasMarks ? "Ustoz belgilagan xatolar" : "Yuborilgan varoqlar"}</p>
+              {hasMarks ? (
+                <div className="space-y-3">
+                  <MarksLegend a={e.annotations!} />
+                  {Array.from({ length: e.pages }, (_, n) => (
+                    <AnnotatedPage key={n} id={e.id} n={n} a={e.annotations!.pages[n] ?? { strokes: [], marks: [] }} />
+                  ))}
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 gap-2">
+                  {Array.from({ length: e.pages }, (_, n) => (
+                    <PageThumb key={n} id={e.id} n={n} />
+                  ))}
+                </div>
+              )}
             </>
+          )}
+          {e.mode === "TEACHER" && e.text && !!e.annotations?.text.length && (
+            <div className="card mt-4 text-sm">
+              <MarkedText text={e.text} marks={e.annotations.text} />
+            </div>
           )}
           {e.mode === "AI" && e.text && (
             <details className="card mt-6">
@@ -188,6 +204,33 @@ function ReviewCard({ r }: { r: EssayReviewView }) {
         </div>
       )}
     </div>
+  );
+}
+
+/** Ustoz belgilagan varoq: bosilsa to'liq ekranda kattalashtirib ko'rish */
+function AnnotatedPage({ id, n, a }: { id: string; n: number; a: PageAnnotations }) {
+  const img = useQuery({ queryKey: ["essay-page", id, n], queryFn: () => api.essayPage(id, n), staleTime: Infinity });
+  const [ratio, setRatio] = useState(1.4);
+  const [full, setFull] = useState(false);
+  if (!img.data) return <div className="skeleton aspect-[3/4] w-full" />;
+  const page = (
+    <div className="relative w-full">
+      <img src={img.data} alt={`${n + 1}-varoq`} className="block w-full" onLoad={(ev) => setRatio(ev.currentTarget.naturalHeight / ev.currentTarget.naturalWidth || 1.4)} />
+      <PageOverlay a={a} ratio={ratio} />
+    </div>
+  );
+  return (
+    <>
+      <button onClick={() => setFull(true)} className="block w-full overflow-hidden rounded-xl bg-section text-left">
+        {page}
+        <span className="block px-3 py-1.5 text-xs text-hint">{n + 1}-varoq · kattalashtirish uchun bosing</span>
+      </button>
+      {full && (
+        <div className="fixed inset-0 z-50 overflow-auto bg-black/90" onClick={() => setFull(false)}>
+          <div className="mx-auto w-[200%] max-w-none sm:w-full sm:max-w-3xl">{page}</div>
+        </div>
+      )}
+    </>
   );
 }
 

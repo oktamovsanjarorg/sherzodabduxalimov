@@ -313,6 +313,8 @@ model AttemptAnswer {
   /// Esse: rasmiy mezon bo'yicha 12 band bahosi [{key,label,max,score}] va maxsus holat
   rubric        Json?
   special       String?
+  /// Esse matnidagi ustoz belgilagan xatolar [{start,end,type,note}]
+  annotations   Json?
   reviewedById  String?
   reviewedAt    DateTime?
 
@@ -348,6 +350,8 @@ model Essay {
   status    EssayStatus   @default(DRAFT)
   error     String?
   priceUzs  Int? // ustoz tekshiruvi narxi (yuborilgan paytdagi)
+  /// Ustozning belgilari: varoq rasmlari ustidagi chizgilar va xato yorliqlari, matndagi xatolar (vektor JSON)
+  annotations Json?
   payment   Payment?
   reviews   EssayReview[]
   voice     VoiceNote?

@@ -133,6 +133,12 @@ describe("Milliy sertifikat formatidagi mock (e2e)", () => {
     const jobs = (await queue.getJobs(["waiting", "delayed"])).map((j) => j.data.text);
     expect(jobs.some((t) => t.includes("esse tekshirildi") && t.includes("<b>71.2</b> / 75") && t.includes("A+"))).toBe(true);
 
+    // Matndagi xatolarni belgilash: chegaradan tashqari rad etiladi; natijada o'quvchiga ko'rinadi
+    expect((await req("PUT", `/admin/essays/${e.attemptId}/${qEssay}/annotations`, [{ start: 0, end: 99999, type: "spelling" }])).statusCode).toBe(400);
+    expect((await req("PUT", `/admin/essays/${e.attemptId}/${qEssay}/annotations`, [{ start: 0, end: 7, type: "spelling", note: "Reklama," }])).statusCode).toBe(200);
+    const marked = (await req("GET", `/attempts/${e.attemptId}`, undefined, S)).json();
+    expect(marked.questions.find((q: { id: string }) => q.id === qEssay).textMarks).toEqual([{ start: 0, end: 7, type: "spelling", note: "Reklama," }]);
+
     // Ovozli izoh mock essesiga ham (baholangandan keyin); natijada ko'rinadi
     const audio = Buffer.concat([Buffer.from([0x1a, 0x45, 0xdf, 0xa3]), Buffer.alloc(4000, 3)]);
     const v = await app.inject({ method: "POST", url: `/api/admin/essays/${e.attemptId}/${qEssay}/voice`, headers: { ...H, "content-type": "audio/webm" }, payload: audio });

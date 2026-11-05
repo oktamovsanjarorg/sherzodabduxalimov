@@ -4,6 +4,8 @@ import {
   AI_ESSAY_DAILY_LIMIT,
   ESSAY_MAX_SCORE,
   ESSAY_SPECIAL,
+  countMarks,
+  type EssayAnnotations,
   rubricScore,
   type EssaySpecialKey,
   MAX_ESSAY_PAGES,
@@ -259,6 +261,7 @@ export class EssaysService implements OnModuleDestroy {
       payment: p ? { id: p.id, planName: "Esse tekshiruvi", amountUzs: p.amountUzs, status: p.status, reviewNote: p.reviewNote, createdAt: p.createdAt.toISOString() } : null,
       reviews: e.reviews.map(toReviewView),
       voice: toVoiceView(e.voice),
+      annotations: (e.annotations as EssayAnnotations | null) ?? null,
     };
   }
 
@@ -293,6 +296,7 @@ export class EssaysService implements OnModuleDestroy {
       createdAt: e.createdAt.toISOString(),
       reviews: e.reviews.map(toReviewView),
       voice: toVoiceView(e.voice),
+      annotations: (e.annotations as EssayAnnotations | null) ?? null,
     }));
   }
 
@@ -319,6 +323,18 @@ export class EssaysService implements OnModuleDestroy {
       this.env.MINIAPP_URL ? { text: "Natijani ko'rish", webAppUrl: `${this.env.MINIAPP_URL.replace(/\/$/, "")}/essays/${id}` } : undefined,
     );
     return { totalScore: total };
+  }
+
+  /** Ustozning belgilari: varoqlar soni va matn uzunligidan oshmasligi tekshiriladi */
+  async saveAnnotations(actorId: string, id: string, d: EssayAnnotations) {
+    const e = await this.prisma.essay.findUnique({ where: { id }, select: { mode: true, imageUrls: true, text: true } });
+    if (!e) throw new NotFoundException("Esse topilmadi");
+    if (d.pages.length > e.imageUrls.length) throw new BadRequestException("Varoqlar soni mos emas");
+    const len = e.text?.length ?? 0;
+    if (d.text.some((m) => m.end > len || m.start >= m.end)) throw new BadRequestException("Matndagi belgi chegarasi noto'g'ri");
+    await this.prisma.essay.update({ where: { id }, data: { annotations: d } });
+    await this.prisma.auditLog.create({ data: { actorId, action: "essay.annotate", entity: "Essay", entityId: id, meta: { marks: countMarks(d) } } });
+    return { ok: true, counts: countMarks(d) };
   }
 
   // ---------------- Yordamchilar ----------------

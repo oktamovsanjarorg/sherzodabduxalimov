@@ -1,8 +1,9 @@
-import { ESSAY_MAX_SCORE, type AdminHwEssay, type EssayReviewView } from "@onatili/shared";
+import { ESSAY_MAX_SCORE, countMarks, type AdminHwEssay, type EssayAnnotations, type EssayReviewView, type PageAnnotations } from "@onatili/shared";
+import { AnnotationOverlay, MarkCounts, PageAnnotator } from "../components/Annotate";
 import { RubricForm, emptyRubric, rubricComplete, rubricTotal, type RubricValue } from "../components/RubricForm";
 import { VoicePlayer, VoiceRecorder } from "../components/VoiceRecorder";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ChevronRight, ImageOff, Phone } from "lucide-react";
+import { ChevronRight, ImageOff, Pencil, Phone } from "lucide-react";
 import { useState } from "react";
 import { Badge, Empty, Modal, Spinner } from "../components/ui";
 import { api, errMsg } from "../lib/api";
@@ -50,19 +51,51 @@ export function HwEssays() {
   );
 }
 
-function PageImage({ id, n }: { id: string; n: number }) {
-  const [zoom, setZoom] = useState(false);
+function PageImage({ id, n, anno, onSave }: { id: string; n: number; anno: PageAnnotations; onSave: (a: PageAnnotations) => Promise<void> }) {
+  const [edit, setEdit] = useState<PageAnnotations | null>(null);
+  const [ratio, setRatio] = useState(1.4);
+  const [saving, setSaving] = useState(false);
   const img = useQuery({ queryKey: ["essay-page", id, n], queryFn: () => api.essayPage(id, n), staleTime: Infinity, gcTime: 10 * 60_000 });
   if (img.isPending) return <div className="flex h-64 items-center justify-center rounded-xl bg-slate-100"><Spinner className="text-slate-400" /></div>;
   if (!img.data) return <div className="flex h-24 items-center justify-center gap-2 rounded-xl bg-slate-100 text-sm text-slate-500"><ImageOff size={16} /> Rasm yuklanmadi</div>;
+  const marks = anno.marks.length + anno.strokes.length;
   return (
     <>
-      <button onClick={() => setZoom(true)} className="block w-full overflow-hidden rounded-xl bg-slate-100" title="Kattalashtirish">
-        <img src={img.data} alt={`${n + 1}-varoq`} className="mx-auto max-h-[70vh] object-contain" />
-      </button>
-      {zoom && (
-        <div className="fixed inset-0 z-[60] overflow-auto bg-black/90 p-2" onClick={() => setZoom(false)}>
-          <img src={img.data} alt="" className="mx-auto max-w-none sm:max-w-full" />
+      <div className="relative overflow-hidden rounded-xl bg-slate-100">
+        <div className="relative mx-auto w-full max-w-[640px]">
+          <img src={img.data} alt={`${n + 1}-varoq`} className="block w-full" onLoad={(e) => setRatio(e.currentTarget.naturalHeight / e.currentTarget.naturalWidth || 1.4)} />
+          <AnnotationOverlay a={anno} ratio={ratio} />
+        </div>
+        <button className="btn-primary btn-sm absolute right-2 top-2 shadow" onClick={() => setEdit(anno)}>
+          <Pencil size={13} /> Belgilash{marks ? ` (${anno.marks.length})` : ""}
+        </button>
+      </div>
+      {edit && (
+        <div className="fixed inset-0 z-[70] flex flex-col bg-white p-3" style={{ paddingTop: "max(12px, env(safe-area-inset-top, 0px))" }}>
+          <div className="mb-2 flex items-center gap-2">
+            <p className="flex-1 font-extrabold">{n + 1}-varoqni belgilash</p>
+            <button className="btn-secondary btn-sm" onClick={() => setEdit(null)}>
+              Bekor qilish
+            </button>
+            <button
+              className="btn-primary btn-sm"
+              disabled={saving}
+              onClick={async () => {
+                setSaving(true);
+                try {
+                  await onSave(edit);
+                  setEdit(null);
+                } finally {
+                  setSaving(false);
+                }
+              }}
+            >
+              Saqlash
+            </button>
+          </div>
+          <div className="min-h-0 flex-1">
+            <PageAnnotator src={img.data} value={edit} onChange={setEdit} />
+          </div>
         </div>
       )}
     </>
@@ -99,6 +132,22 @@ function ReviewModal({ essay, onClose }: { essay: AdminHwEssay; onClose: () => v
   );
   const [feedback, setFeedback] = useState(prev?.feedback ?? "");
   const [voice, setVoice] = useState<Blob | null>(null);
+  const [anno, setAnno] = useState<EssayAnnotations>(() => ({
+    pages: Array.from({ length: essay.pages }, (_, i) => essay.annotations?.pages[i] ?? { strokes: [], marks: [] }),
+    text: essay.annotations?.text ?? [],
+  }));
+  const savePage = async (n: number, page: PageAnnotations) => {
+    const next = { ...anno, pages: anno.pages.map((p, i) => (i === n ? page : p)) };
+    try {
+      await api.saveHwAnnotations(essay.id, next);
+      setAnno(next);
+      qc.invalidateQueries({ queryKey: ["hw-essays"] });
+      toast("Belgilar saqlandi");
+    } catch (e) {
+      toast(errMsg(e), "error");
+      throw e;
+    }
+  };
   const total = rubricTotal(rubric);
   const sendVoice = useMutation({
     mutationFn: () => api.uploadHwVoice(essay.id, voice!),
@@ -160,13 +209,18 @@ function ReviewModal({ essay, onClose }: { essay: AdminHwEssay; onClose: () => v
           {Array.from({ length: essay.pages }, (_, n) => (
             <div key={n}>
               <p className="mb-1 text-xs font-bold text-slate-400">{n + 1}-varoq</p>
-              <PageImage id={essay.id} n={n} />
+              <PageImage id={essay.id} n={n} anno={anno.pages[n]} onSave={(p) => savePage(n, p)} />
             </div>
           ))}
           {essay.text && <p className="whitespace-pre-wrap rounded-lg bg-slate-50 p-3 text-sm">{essay.text}</p>}
           {ai && <AiHint r={ai} />}
         </div>
         <div className="space-y-3">
+          <div className="rounded-lg border border-slate-200 p-3">
+            <p className="mb-1.5 text-xs font-bold uppercase tracking-wide text-slate-500">Belgilangan xatolar</p>
+            <MarkCounts counts={countMarks(anno)} />
+            <p className="mt-1.5 text-[11px] text-slate-400">Mezondagi "1–2 o'rinda", "3–4 o'rinda" bandlarini shunga qarab qo'ying. Bir xil xato takrorlansa — bitta.</p>
+          </div>
           <RubricForm value={rubric} onChange={setRubric} aiHint={ai ? Object.fromEntries(ai.criteria.map((c) => [c.key, c.score])) : undefined} />
           <textarea
             className="input min-h-[100px] py-2 text-sm"

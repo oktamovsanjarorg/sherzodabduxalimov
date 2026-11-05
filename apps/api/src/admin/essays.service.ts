@@ -1,5 +1,5 @@
 import { BadRequestException, ConflictException, Injectable, NotFoundException } from "@nestjs/common";
-import { ESSAY_MAX_SCORE, rubricScore, type AdminEssay, type EssaySpecialKey } from "@onatili/shared";
+import { ESSAY_MAX_SCORE, rubricScore, type AdminEssay, type EssaySpecialKey, type TextMark } from "@onatili/shared";
 import { NotifyService } from "../notify/notify.service";
 import { esc } from "../notify/telegram";
 import { PrismaService } from "../prisma/prisma.service";
@@ -52,9 +52,21 @@ export class EssaysService {
         rubric: (r.rubric as AdminEssay["rubric"]) ?? null,
         special: r.special,
         voice: voiceOf(r.attemptId, r.questionId),
+        textMarks: (r.annotations as TextMark[] | null) ?? null,
         submittedAt: (r.attempt.finishedAt ?? r.answeredAt).toISOString(),
         reviewedAt: r.reviewedAt?.toISOString() ?? null,
       }));
+  }
+
+  /** Mock essesi matnidagi xatolarni belgilash */
+  async saveMarks(actorId: string, attemptId: string, questionId: string, marks: TextMark[]) {
+    const a = await this.prisma.attemptAnswer.findUnique({ where: { attemptId_questionId: { attemptId, questionId } }, select: { textAnswer: true, question: { select: { type: true } } } });
+    if (!a || a.question.type !== "ESSAY") throw new NotFoundException("Esse topilmadi");
+    const len = a.textAnswer?.length ?? 0;
+    if (marks.some((m) => m.end > len || m.start >= m.end)) throw new BadRequestException("Belgi chegarasi noto'g'ri");
+    await this.prisma.attemptAnswer.update({ where: { attemptId_questionId: { attemptId, questionId } }, data: { annotations: marks } });
+    await this.prisma.auditLog.create({ data: { actorId, action: "essay.annotate", entity: "AttemptAnswer", entityId: `${attemptId}:${questionId}`, meta: { marks: marks.length } } });
+    return { ok: true };
   }
 
   async review(

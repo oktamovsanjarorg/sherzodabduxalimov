@@ -7,6 +7,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { FullPage } from "../components/FullPage";
 import { VoiceNote } from "../components/VoiceNote";
+import { MarkedText, MarksLegend } from "../components/Marked";
 import { api } from "../lib/api";
 import { formatClock, useBackButton } from "../lib/hooks";
 
@@ -205,8 +206,13 @@ function QuestionReview({ q, n, milliy }: { q: ResultQuestion; n: number; milliy
         <div className="mt-3 space-y-2 text-sm">
           {q.yourText ? (
             <details>
-              <summary className="cursor-pointer font-semibold text-brand">Yozgan essengiz</summary>
-              <p className="mt-2 whitespace-pre-line rounded-xl bg-surface p-3">{q.yourText}</p>
+              <summary className="cursor-pointer font-semibold text-brand">
+                Yozgan essengiz{q.textMarks?.length ? ` · ustoz ${q.textMarks.length} ta xatoni belgilagan` : ""}
+              </summary>
+              <div className="mt-2 space-y-2 rounded-xl bg-surface p-3">
+                {q.textMarks?.length ? <MarksLegend a={{ pages: [], text: q.textMarks }} /> : null}
+                {q.textMarks?.length ? <MarkedText text={q.yourText} marks={q.textMarks} /> : <p className="whitespace-pre-line">{q.yourText}</p>}
+              </div>
             </details>
           ) : (
             <p className="text-hint">Esse yozilmagan</p>
