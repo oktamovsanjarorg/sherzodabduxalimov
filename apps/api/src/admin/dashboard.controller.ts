@@ -1,5 +1,5 @@
 import { Controller, Get } from "@nestjs/common";
-import { Roles } from "../auth/decorators";
+import { CurrentUser, Roles, type JwtUser } from "../auth/decorators";
 import { PrismaService } from "../prisma/prisma.service";
 
 export interface AdminDashboard {
@@ -21,7 +21,9 @@ export class DashboardController {
   constructor(private readonly prisma: PrismaService) {}
 
   @Get()
-  async get(): Promise<AdminDashboard> {
+  async get(@CurrentUser() u: JwtUser): Promise<AdminDashboard> {
+    // Pulga oid ko'rsatkichlar (cheklar, obunalar) faqat egaga; yordamchiga 0
+    const isTeacher = u.role === "TEACHER";
     const today = new Date(`${new Date(Date.now() + 5 * 3600_000).toISOString().slice(0, 10)}T00:00:00.000Z`);
     const now = new Date();
     // Hammasi parallel: dashboard har 30 soniyada yangilanadi
@@ -53,8 +55,8 @@ export class DashboardController {
     return {
       pendingParents,
       pendingEssays: pendingEssays + pendingHwEssays,
-      pendingPayments,
-      expiringSubscriptions,
+      pendingPayments: isTeacher ? pendingPayments : 0,
+      expiringSubscriptions: isTeacher ? expiringSubscriptions : 0,
       videos: { processing, failed },
       students: { total, withoutApprovedParent: total - withApproved },
       attendanceToday: { groups: groups.map((g) => ({ id: g.id, name: g.name, schedule: g.schedule, marked: g.attendance.length, total: g._count.students })) },

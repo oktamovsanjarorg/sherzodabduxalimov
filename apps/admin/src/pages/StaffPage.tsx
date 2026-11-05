@@ -29,7 +29,27 @@ export function StaffPage() {
 
   return (
     <>
-      <PageHeader title="Xodimlar" subtitle="Yordamchilar dars, test va savollarni boshqaradi. Xodimlar va sozlamalarga faqat egalar kira oladi." />
+      <PageHeader title="Xodimlar" subtitle="Yangi yordamchini Telegram username orqali taklif qiling." />
+      <div className="card mb-5 grid gap-4 p-4 text-sm sm:grid-cols-2 sm:p-5">
+        <div>
+          <p className="mb-1 font-bold text-emerald-700">✓ Yordamchi qila oladi</p>
+          <ul className="list-disc space-y-0.5 pl-5 text-slate-600">
+            <li>Darslar, savollar, testlar, videolar</li>
+            <li>Esselarni baholash</li>
+            <li>O'quvchilarni kiritish, guruhlar, davomat</li>
+            <li>Ota-onalarni tasdiqlash yoki bekor qilish</li>
+          </ul>
+        </div>
+        <div>
+          <p className="mb-1 font-bold text-red-700">✕ Faqat ega (ustoz)</p>
+          <ul className="list-disc space-y-0.5 pl-5 text-slate-600">
+            <li>To'lovlar, cheklar, obunalar, qarzdorlar — umuman ko'rinmaydi</li>
+            <li>Tariflar, karta raqami, esse narxi, oylik summalar</li>
+            <li>O'quvchini bloklash, bepul ochish/yopish, botdagi o'quvchini o'chirish</li>
+            <li>Xodimlarni qo'shish va olib tashlash</li>
+          </ul>
+        </div>
+      </div>
 
       <form
         className="card mb-6 flex flex-wrap items-end gap-3 p-5"

@@ -105,7 +105,8 @@ export class StudentsService {
       group: r.group ? { id: r.group.id, name: r.group.name } : null,
       telegramLinked: r.user.telegramId !== null,
       parents: { approved: r.parents.filter((p) => p.status === "APPROVED").length, pending: r.parents.filter((p) => p.status === "PENDING").length },
-      subscriptionEndsAt: r.user.subscriptions[0]?.endsAt.toISOString() ?? null,
+      // Obuna (to'lov) ma'lumoti faqat egaga
+      subscriptionEndsAt: isTeacher ? (r.user.subscriptions[0]?.endsAt.toISOString() ?? null) : null,
       paidThisMonth: isTeacher && r.group ? r.offlinePayments.length > 0 : null,
       attendance30: { present, absent: r.attendance.filter((a) => a.status === "ABSENT").length, total: r.attendance.length },
       lastActiveAt: r.user.telegramId !== null ? r.user.updatedAt.toISOString() : null,
