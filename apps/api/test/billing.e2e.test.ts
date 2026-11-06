@@ -151,6 +151,22 @@ describe("Qo'lda to'lov va obuna (e2e)", () => {
     expect((await req("GET", "/me", undefined, S)).json().subscription).toBeNull();
   });
 
+  it("tasdiqlangan to'lovni bekor qilish: obuna yopiladi; faqat ega; ikkinchi marta bo'lmaydi", async () => {
+    await req("POST", "/admin/subscriptions", { userId: studentId, planId, note: "Naqd" });
+    expect((await req("GET", "/me", undefined, S)).json().subscription).not.toBeNull();
+    const pay = await prisma.payment.findFirstOrThrow({ where: { userId: studentId, status: "APPROVED" }, orderBy: { createdAt: "desc" } });
+
+    expect((await req("POST", `/admin/payments/${pay.id}/revoke`, { reason: "Xato tasdiqlangan" }, A)).statusCode).toBe(403);
+    expect((await req("POST", `/admin/payments/${pay.id}/revoke`, { reason: "x" })).statusCode).toBe(400);
+    expect((await req("POST", `/admin/payments/${pay.id}/revoke`, { reason: "Xato tasdiqlangan" })).statusCode).toBe(200);
+    expect((await req("POST", `/admin/payments/${pay.id}/revoke`, { reason: "Xato tasdiqlangan" })).statusCode).toBe(409);
+
+    const after = await prisma.payment.findUniqueOrThrow({ where: { id: pay.id }, include: { subscription: true } });
+    expect(after.status).toBe("REJECTED");
+    expect(after.subscription?.status).toBe("CANCELLED");
+    expect((await req("GET", "/me", undefined, S)).json().subscription).toBeNull();
+  });
+
   it("chekni bir vaqtda ikki marta yuborsa ham bitta to'lov yaratiladi", async () => {
     const [a, b] = await Promise.all([upload(`/billing/payments?planId=${planId}`, JPEG), upload(`/billing/payments?planId=${planId}`, JPEG)]);
     expect([a.statusCode, b.statusCode].sort()).toEqual([201, 409]);

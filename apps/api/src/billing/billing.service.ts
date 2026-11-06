@@ -371,21 +371,55 @@ export class BillingService {
    */
   async cancelSubscription(actorId: string, id: string) {
     await this.prisma.$transaction(async (tx) => {
-      const sub = await tx.subscription.findUnique({ where: { id } });
-      if (!sub || sub.status !== "ACTIVE") throw new NotFoundException("Faol obuna topilmadi");
-      await tx.subscription.update({ where: { id }, data: { status: "CANCELLED" } });
-      const now = Date.now();
-      const shift = sub.endsAt.getTime() - Math.max(sub.startsAt.getTime(), now);
-      if (shift <= 0) return;
-      const later = await tx.subscription.findMany({ where: { userId: sub.userId, status: "ACTIVE", id: { not: id }, startsAt: { gte: sub.endsAt } } });
-      for (const l of later)
-        await tx.subscription.update({
-          where: { id: l.id },
-          data: { startsAt: new Date(l.startsAt.getTime() - shift), endsAt: new Date(l.endsAt.getTime() - shift) },
-        });
+      if (!(await this.cancelSubTx(tx, id))) throw new NotFoundException("Faol obuna topilmadi");
     });
     await this.audit(actorId, "subscription.cancel", "Subscription", id);
     return { ok: true };
+  }
+
+  /**
+   * Tasdiqlangan to'lovni bekor qiladi (xato tasdiqlangan yoki pul qaytarilgan).
+   * Obuna to'lovi: unga bog'langan obuna yopiladi. Esse to'lovi: esse hali tekshirilmagan bo'lsa navbatdan chiqadi.
+   */
+  async revoke(actorId: string, id: string, reason: string) {
+    const p = await this.prisma.$transaction(async (tx) => {
+      const { count } = await tx.payment.updateMany({
+        where: { id, status: "APPROVED" },
+        data: { status: "REJECTED", reviewedById: actorId, reviewNote: `Bekor qilindi: ${reason}` },
+      });
+      if (!count) {
+        throw (await tx.payment.count({ where: { id } })) ? new ConflictException("Faqat tasdiqlangan to'lovni bekor qilish mumkin") : new NotFoundException("To'lov topilmadi");
+      }
+      const p = await tx.payment.findUniqueOrThrow({ where: { id }, include: { plan: true, user: { select: { telegramId: true } } } });
+      if (p.subscriptionId) await this.cancelSubTx(tx, p.subscriptionId);
+      if (p.essayId) await tx.essay.updateMany({ where: { id: p.essayId, status: "SUBMITTED" }, data: { status: "AWAITING_PAYMENT" } });
+      return p;
+    });
+    await this.audit(actorId, "payment.revoke", "Payment", id, { reason, subscriptionId: p.subscriptionId, essayId: p.essayId });
+    await this.notify.send(
+      p.user.telegramId,
+      `↩️ <b>To'lov bekor qilindi</b>\n${p.plan ? esc(p.plan.name) : "Esse tekshiruvi"} · ${formatSum(p.amountUzs)} so'm\nSabab: ${esc(reason)}\n\nSavol bo'lsa, ustozga murojaat qiling.`,
+    );
+    return { ok: true };
+  }
+
+  /**
+   * Obunani yopadi. Undan keyin navbatda turgan (uzaytirilgan) obunalar bekor qilingan qismning
+   * qolgan muddatiga oldinga suriladi. Faol obuna bo'lmasa false.
+   */
+  private async cancelSubTx(tx: Tx, id: string) {
+    const sub = await tx.subscription.findUnique({ where: { id } });
+    if (!sub || sub.status !== "ACTIVE") return false;
+    await tx.subscription.update({ where: { id }, data: { status: "CANCELLED" } });
+    const shift = sub.endsAt.getTime() - Math.max(sub.startsAt.getTime(), Date.now());
+    if (shift <= 0) return true;
+    const later = await tx.subscription.findMany({ where: { userId: sub.userId, status: "ACTIVE", id: { not: id }, startsAt: { gte: sub.endsAt } } });
+    for (const l of later)
+      await tx.subscription.update({
+        where: { id: l.id },
+        data: { startsAt: new Date(l.startsAt.getTime() - shift), endsAt: new Date(l.endsAt.getTime() - shift) },
+      });
+    return true;
   }
 
   // ---------------- Yordamchilar ----------------

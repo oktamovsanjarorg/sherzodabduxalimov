@@ -66,6 +66,11 @@ export class AdminBillingController {
     return this.svc.reject(u.sub, id, parse(paymentRejectInput, b).reason);
   }
 
+  /** Tasdiqlangan to'lovni bekor qilish (xato tasdiqlangan, pul qaytarilgan): obuna yopiladi, esse navbatdan chiqadi */
+  @Post("payments/:id/revoke") @HttpCode(200) revoke(@CurrentUser() u: JwtUser, @Param("id") id: string, @Body() b: unknown) {
+    return this.svc.revoke(u.sub, id, parse(paymentRejectInput, b).reason);
+  }
+
   @Get("subscriptions") subscriptions() {
     return this.svc.subscriptions();
   }

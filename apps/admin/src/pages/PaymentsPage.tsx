@@ -1,6 +1,6 @@
 import { formatSum, type AdminPayment, type AdminStudent, type AdminSubscription, type PaymentStatusName } from "@onatili/shared";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Check, Gift, ImageOff, Phone, Search, X } from "lucide-react";
+import { Check, Gift, ImageOff, Phone, RotateCcw, Search, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { OfflineLedgerView } from "./OfflineLedger";
@@ -11,6 +11,7 @@ import { useToast } from "../lib/toast";
 type Tab = PaymentStatusName | "SUBS" | "OFFLINE";
 const TABS: Tab[] = ["PENDING", "APPROVED", "REJECTED", "SUBS", "OFFLINE"];
 const REASONS = ["Summa to'liq emas", "Chek o'qilmaydi", "Pul kartaga tushmagan", "Boshqa to'lovning cheki"];
+const REVOKE_REASONS = ["Xato tasdiqlangan", "Pul qaytarildi", "Pul kartaga tushmagan", "Boshqa o'quvchiniki"];
 const date = (iso: string) => new Date(iso).toLocaleDateString("ru-RU");
 const dateTime = (iso: string) => new Date(iso).toLocaleString("ru-RU", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
 
@@ -98,6 +99,7 @@ function PaymentCard({ p }: { p: AdminPayment }) {
   const toast = useToast();
   const qc = useQueryClient();
   const [rejecting, setRejecting] = useState(false);
+  const [revoking, setRevoking] = useState(false);
   const done = () => {
     qc.invalidateQueries({ queryKey: ["payments"] });
     qc.invalidateQueries({ queryKey: ["subscriptions"] });
@@ -157,27 +159,33 @@ function PaymentCard({ p }: { p: AdminPayment }) {
             </button>
           </div>
         ) : p.status === "APPROVED" ? (
-          <Badge tone="green">
-            {p.hasReceipt ? "Tasdiqlangan" : p.reviewNote ?? "Qo'lda berilgan"}
-            {p.subscription ? ` · ${date(p.subscription.endsAt)} gacha` : ""}
-            {p.reviewedBy ? ` · ${p.reviewedBy}` : ""}
-          </Badge>
+          <>
+            <Badge tone="green">
+              {p.hasReceipt ? "Tasdiqlangan" : p.reviewNote ?? "Qo'lda berilgan"}
+              {p.subscription ? ` · ${date(p.subscription.endsAt)} gacha` : ""}
+              {p.reviewedBy ? ` · ${p.reviewedBy}` : ""}
+            </Badge>
+            <button className="btn-ghost btn-sm text-red-600" onClick={() => setRevoking(true)}>
+              <RotateCcw size={14} /> Bekor qilish
+            </button>
+          </>
         ) : (
           <Badge tone="red">Rad etilgan: {p.reviewNote}</Badge>
         )}
       </div>
       {rejecting && <RejectModal p={p} onClose={() => setRejecting(false)} onDone={done} />}
+      {revoking && <RejectModal p={p} revoke onClose={() => setRevoking(false)} onDone={done} />}
     </div>
   );
 }
 
-function RejectModal({ p, onClose, onDone }: { p: AdminPayment; onClose: () => void; onDone: () => void }) {
+function RejectModal({ p, revoke = false, onClose, onDone }: { p: AdminPayment; revoke?: boolean; onClose: () => void; onDone: () => void }) {
   const toast = useToast();
   const [reason, setReason] = useState("");
   const reject = useMutation({
-    mutationFn: () => api.rejectPayment(p.id, reason.trim()),
+    mutationFn: () => (revoke ? api.revokePayment(p.id, reason.trim()) : api.rejectPayment(p.id, reason.trim())),
     onSuccess: () => {
-      toast("Rad etildi. O'quvchiga sabab yuborildi");
+      toast(revoke ? "To'lov bekor qilindi. O'quvchiga xabar yuborildi" : "Rad etildi. O'quvchiga sabab yuborildi");
       onDone();
       onClose();
     },
@@ -185,24 +193,29 @@ function RejectModal({ p, onClose, onDone }: { p: AdminPayment; onClose: () => v
   });
   return (
     <Modal
-      title="Chekni rad etish"
+      title={revoke ? "Tasdiqlangan to'lovni bekor qilish" : "Chekni rad etish"}
       onClose={onClose}
       footer={
         <>
           <button className="btn-secondary" onClick={onClose}>
-            Bekor qilish
+            {revoke ? "Yopish" : "Bekor qilish"}
           </button>
           <button className="btn bg-red-600 text-white hover:bg-red-700" disabled={reason.trim().length < 3 || reject.isPending} onClick={() => reject.mutate()}>
-            Rad etish
+            {revoke ? "To'lovni bekor qilish" : "Rad etish"}
           </button>
         </>
       }
     >
       <p className="mb-3 text-sm text-slate-600">
-        <b>{p.student.name}</b> · {formatSum(p.amountUzs)} so'm. Sabab o'quvchiga bot orqali yuboriladi, u chekni qayta yuborishi mumkin.
+        <b>{p.student.name}</b> · {formatSum(p.amountUzs)} so'm.{" "}
+        {revoke
+          ? p.plan
+            ? "Shu to'lov bilan ochilgan obuna yopiladi (keyingi to'langan obuna bo'lsa, u darhol boshlanadi). Sabab o'quvchiga yuboriladi."
+            : "Esse hali tekshirilmagan bo'lsa, ustoz navbatidan chiqadi va yana to'lov kutadi. Sabab o'quvchiga yuboriladi."
+          : "Sabab o'quvchiga bot orqali yuboriladi, u chekni qayta yuborishi mumkin."}
       </p>
       <div className="mb-3 flex flex-wrap gap-2">
-        {REASONS.map((r) => (
+        {(revoke ? REVOKE_REASONS : REASONS).map((r) => (
           <button key={r} className={`rounded-full border px-3 py-1 text-xs font-semibold ${reason === r ? "border-brand bg-brand-soft text-brand-dark" : "border-slate-200"}`} onClick={() => setReason(r)}>
             {r}
           </button>

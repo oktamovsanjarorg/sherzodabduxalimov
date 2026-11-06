@@ -99,6 +99,7 @@ export const api = {
   payments: (status: PaymentStatusName) => request<AdminPayment[]>(`/admin/payments?status=${status}`),
   approvePayment: (id: string) => request<{ ok: true; endsAt: string | null }>(`/admin/payments/${id}/approve`, json("POST")),
   rejectPayment: (id: string, reason: string) => request(`/admin/payments/${id}/reject`, json("POST", { reason })),
+  revokePayment: (id: string, reason: string) => request(`/admin/payments/${id}/revoke`, json("POST", { reason })),
   /** Chek rasmi: avtorizatsiya sarlavhasi kerak, shuning uchun <img src> emas, blob */
   receipt: async (id: string) => {
     const res = await fetch(`/api/admin/payments/${id}/receipt`, { headers: { Authorization: `Bearer ${loadSession()?.token}` } });

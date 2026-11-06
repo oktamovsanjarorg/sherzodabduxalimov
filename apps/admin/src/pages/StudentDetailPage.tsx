@@ -1,6 +1,6 @@
 import { ATTENDANCE_LABELS, ESSAY_STATUS_LABELS, formatSum, monthLabel, type AttendanceStatusName, type EssayStatusName, type StudentDetail } from "@onatili/shared";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, Check, Copy, Pencil, Phone, Trash2, X } from "lucide-react";
+import { ArrowLeft, Check, Copy, Pencil, Phone, RotateCcw, Trash2, X } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { Badge, ConfirmButton, Field, Modal, Spinner } from "../components/ui";
@@ -434,6 +434,15 @@ function Billing({ s }: { s: StudentDetail }) {
     },
     onError: (e) => toast(errMsg(e), "error"),
   });
+  const unmark = useMutation({
+    mutationFn: (month: string) => api.unmarkOffline(s.studentId, month),
+    onSuccess: () => {
+      toast("To'lov belgisi olib tashlandi");
+      qc.invalidateQueries({ queryKey: ["student", s.studentId] });
+      qc.invalidateQueries({ queryKey: ["roster"] });
+    },
+    onError: (e) => toast(errMsg(e), "error"),
+  });
   return (
     <div className="space-y-4">
       {b.offlineMonths.length > 0 && (
@@ -444,10 +453,15 @@ function Billing({ s }: { s: StudentDetail }) {
               <div key={m.month} className="flex items-center gap-2 py-1.5 text-sm">
                 <span className="flex-1 capitalize">{monthLabel(m.month)}</span>
                 {m.paid ? (
-                  <Badge tone="green">
-                    {m.amountUzs ? `${formatSum(m.amountUzs)} so'm` : "to'langan"}
-                    {m.note ? ` · ${m.note}` : ""}
-                  </Badge>
+                  <>
+                    <Badge tone="green">
+                      {m.amountUzs ? `${formatSum(m.amountUzs)} so'm` : "to'langan"}
+                      {m.note ? ` · ${m.note}` : ""}
+                    </Badge>
+                    <ConfirmButton label="Qaytarilsinmi?" className="btn-ghost btn-sm text-slate-500" onConfirm={() => unmark.mutate(m.month)}>
+                      <RotateCcw size={14} /> Qaytarish
+                    </ConfirmButton>
+                  </>
                 ) : (
                   <>
                     <Badge tone="red">to'lanmagan</Badge>
