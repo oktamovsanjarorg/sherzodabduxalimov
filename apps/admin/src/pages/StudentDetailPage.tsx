@@ -310,7 +310,7 @@ function Manage({ s }: { s: StudentDetail }) {
   const del = useMutation({
     mutationFn: () => api.deleteStudent(s.studentId, true), // ism yozib tasdiqlangan
     onSuccess: () => {
-      toast("O'quvchi o'chirildi");
+      toast("O'quvchi o'chirildi. Korzinkadan 30 kun ichida tiklash mumkin");
       qc.invalidateQueries({ queryKey: ["roster"] });
       qc.invalidateQueries({ queryKey: ["groups"] });
       navigate("/students", { replace: true });
@@ -379,12 +379,12 @@ function Manage({ s }: { s: StudentDetail }) {
           ) : (
             <>
               <p className="text-xs text-slate-500">
-                Barcha natijalari, davomati va to'lovlari bilan butunlay o'chiriladi, qaytarib bo'lmaydi.
-                {s.telegramLinked && " Botga qayta kirsa, bo'sh hisob ochiladi. Vaqtincha to'xtatish uchun bloklash yaxshiroq."}
+                Barcha natijalari, davomati va to'lovlari bilan korzinkaga o'tadi: 30 kun ichida Ko'proq → Korzinka'dan to'liq tiklash mumkin.
+                {s.telegramLinked && " Vaqtincha to'xtatish uchun bloklash yaxshiroq."}
               </p>
               <input className="input mt-2 h-9 text-sm" placeholder={`Tasdiqlash uchun "${s.name.split(" ")[0]}" deb yozing`} value={confirmDelete} onChange={(e) => setConfirmDelete(e.target.value)} />
               <button className="btn-danger btn-sm mt-2" disabled={confirmDelete.trim().toLowerCase() !== s.name.split(" ")[0].toLowerCase() || del.isPending} onClick={() => del.mutate()}>
-                <Trash2 size={13} /> Butunlay o'chirish
+                <Trash2 size={13} /> O'chirish
               </button>
             </>
           )}

@@ -40,7 +40,11 @@ export function GroupManager({ groups, onClose }: { groups: AdminGroup[]; onClos
     onSuccess: refresh,
     onError: (e) => toast(errMsg(e), "error"),
   });
-  const del = useMutation({ mutationFn: (id: string) => api.deleteGroup(id), onSuccess: () => { setSel(""); refresh(); }, onError: (e) => toast(errMsg(e), "error") });
+  const del = useMutation({ mutationFn: (id: string) => api.deleteGroup(id), onSuccess: () => {
+      setSel("");
+      refresh();
+      toast("Guruh o'chirildi. Korzinkadan 30 kun ichida tiklash mumkin");
+    }, onError: (e) => toast(errMsg(e), "error") });
   const current = groups.find((g) => g.id === sel);
   const inGroup = new Set(students.data?.map((s) => s.studentId));
 

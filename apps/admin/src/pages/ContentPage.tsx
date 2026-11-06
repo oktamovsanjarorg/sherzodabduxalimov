@@ -82,7 +82,7 @@ function CourseCard({ course }: { course: AdminCourse }) {
   const r = useRefresh();
   const [newTopic, setNewTopic] = useState("");
   const update = useMutation({ mutationFn: (d: Parameters<typeof api.updateCourse>[1]) => api.updateCourse(course.id, d), onSuccess: () => r.ok("Saqlandi"), onError: r.fail });
-  const del = useMutation({ mutationFn: () => api.deleteCourse(course.id), onSuccess: () => r.ok("Kurs o'chirildi"), onError: r.fail });
+  const del = useMutation({ mutationFn: () => api.deleteCourse(course.id), onSuccess: () => r.ok("Kurs o'chirildi. Korzinkadan 30 kun ichida tiklash mumkin"), onError: r.fail });
   const addTopic = useMutation({
     mutationFn: () => api.createTopic(course.id, newTopic.trim()),
     onSuccess: () => { setNewTopic(""); r.ok("Mavzu qo'shildi"); },
@@ -130,7 +130,7 @@ function TopicBlock({ topic, index, topicIds }: { topic: AdminTopic; index: numb
   const r = useRefresh();
   const navigate = useNavigate();
   const rename = useMutation({ mutationFn: (title: string) => api.updateTopic(topic.id, title), onSuccess: () => r.ok("Saqlandi"), onError: r.fail });
-  const del = useMutation({ mutationFn: () => api.deleteTopic(topic.id), onSuccess: () => r.ok("Mavzu o'chirildi"), onError: r.fail });
+  const del = useMutation({ mutationFn: () => api.deleteTopic(topic.id), onSuccess: () => r.ok("Mavzu o'chirildi. Korzinkadan 30 kun ichida tiklash mumkin"), onError: r.fail });
   const reorder = useMutation({ mutationFn: (a: { kind: "topic" | "lesson"; ids: string[] }) => api.reorder(a.kind, a.ids), onSuccess: () => r.ok(), onError: r.fail });
   const addLesson = useMutation({
     mutationFn: () => api.createLesson(topic.id, { title: "Yangi dars" }),

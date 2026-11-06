@@ -129,7 +129,7 @@ function Newcomer({ s, groups }: { s: NewcomerRow; groups: AdminGroup[] }) {
             <ConfirmButton label="Bloklansinmi?" className="btn-ghost btn-sm h-9 text-slate-600" onConfirm={() => block.mutate()}>
               <Ban size={14} /> Bloklash
             </ConfirmButton>
-            <ConfirmButton label="Butunlay o'chirilsinmi?" className="btn-ghost btn-sm h-9 text-red-600" onConfirm={() => del.mutate()}>
+            <ConfirmButton label="Korzinkaga o'tsinmi?" className="btn-ghost btn-sm h-9 text-red-600" onConfirm={() => del.mutate()}>
               <Trash2 size={14} /> O'chirish
             </ConfirmButton>
           </>

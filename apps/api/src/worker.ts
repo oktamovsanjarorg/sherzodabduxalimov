@@ -11,6 +11,7 @@ import { runSubscriptionReminders } from "./billing/reminders";
 import { gradeEssayJob, markEssayFailed } from "./essays/ai-runner";
 import { VOICE_QUEUE, type VoiceJob } from "./voice/queue";
 import { markVoiceFailed, processVoice } from "./voice/voice-runner";
+import { purgeExpiredTrash } from "./trash/trash.service";
 import { readFile, rm } from "node:fs/promises";
 import { resolve } from "node:path";
 import { loadEnv } from "./config/env";
@@ -111,6 +112,8 @@ const cron = new Worker(
       env.MINIAPP_URL,
     );
     if (r.sent) console.log(`[cron] obuna eslatmalari: ${r.sent} ta yuborildi`);
+    const purged = await purgeExpiredTrash(prisma, env.MEDIA_DIR);
+    if (purged) console.log(`[cron] korzinka: ${purged} ta yozuv muddati o'tib butunlay o'chirildi`);
   },
   { connection: redisConnection(env.REDIS_URL), prefix: env.QUEUE_PREFIX, concurrency: 1 },
 );

@@ -18,6 +18,7 @@ import type { z } from "zod";
 import { toAdminVideo } from "../media/video-dto";
 import { VideosService } from "../media/videos.service";
 import { PrismaService } from "../prisma/prisma.service";
+import { TrashService } from "../trash/trash.service";
 
 type Q = z.output<typeof questionInput>;
 type T = z.output<typeof testInput>;
@@ -40,6 +41,7 @@ export class AdminContentService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly videos: VideosService,
+    private readonly trash: TrashService,
   ) {}
 
   private audit(actorId: string, action: string, entity: string, entityId: string, meta?: object) {
@@ -97,7 +99,7 @@ export class AdminContentService {
       "Kurs",
     );
     if (c._count.topics > 0) throw new ConflictException("Avval kursdagi mavzularni o'chiring");
-    await this.prisma.course.delete({ where: { id } });
+    await this.trash.remove({ kind: "COURSE", id, title: c.title, actorId });
     await this.audit(actorId, "delete", "Course", id, { title: c.title });
     return { ok: true };
   }
@@ -125,7 +127,7 @@ export class AdminContentService {
       "Mavzu",
     );
     if (t._count.lessons > 0 || t._count.tests > 0) throw new ConflictException("Avval mavzudagi darslar va testlarni o'chiring");
-    await this.prisma.topic.delete({ where: { id } });
+    await this.trash.remove({ kind: "TOPIC", id, title: t.title, actorId });
     await this.audit(actorId, "delete", "Topic", id, { title: t.title });
     return { ok: true };
   }
@@ -163,9 +165,8 @@ export class AdminContentService {
 
   async deleteLesson(actorId: string, id: string) {
     const l = await this.mustExist(this.prisma.lesson.findUnique({ where: { id } }), "Dars");
-    await this.prisma.lesson.delete({ where: { id } });
-    // Darsga biriktirilgan video boshqa joyda ishlatilmaydi: bazadan ham, diskdan ham o'chiramiz
-    if (l.videoId) await this.videos.purge(l.videoId);
+    // Korzinkaga: video diskda qoladi, dars 30 kun ichida tiklanmasa o'shanda o'chiriladi
+    await this.trash.remove({ kind: "LESSON", id, title: l.title, actorId, videoIds: l.videoId ? [l.videoId] : [] });
     await this.audit(actorId, "delete", "Lesson", id, { title: l.title, videoId: l.videoId });
     return { ok: true };
   }
@@ -235,10 +236,10 @@ export class AdminContentService {
   }
 
   async deleteQuestion(actorId: string, id: string) {
-    await this.mustExist(this.prisma.question.findUnique({ where: { id } }), "Savol");
+    const qn = await this.mustExist(this.prisma.question.findUnique({ where: { id } }), "Savol");
     const answered = await this.prisma.attemptAnswer.count({ where: { questionId: id } });
     if (answered > 0) throw new ConflictException("Bu savolga o'quvchilar javob bergan. O'chirish o'rniga testdan olib tashlang.");
-    await this.prisma.question.delete({ where: { id } });
+    await this.trash.remove({ kind: "QUESTION", id, title: qn.text.replace(/[#*_`]/g, "").slice(0, 120), actorId });
     await this.audit(actorId, "delete", "Question", id);
     return { ok: true };
   }
@@ -266,7 +267,7 @@ export class AdminContentService {
   async deletePassage(actorId: string, id: string) {
     const p = await this.mustExist(this.prisma.passage.findUnique({ where: { id }, include: { _count: { select: { questions: true } } } }), "Matn");
     if (p._count.questions > 0) throw new ConflictException("Matnga savollar biriktirilgan. Avval ularni boshqa matnga o'tkazing yoki o'chiring.");
-    await this.prisma.passage.delete({ where: { id } });
+    await this.trash.remove({ kind: "PASSAGE", id, title: p.title ?? p.body.slice(0, 80), actorId });
     await this.audit(actorId, "delete", "Passage", id);
     return { ok: true };
   }
@@ -335,7 +336,7 @@ export class AdminContentService {
       "Test",
     );
     if (t._count.attempts > 0) throw new ConflictException("Bu testni o'quvchilar topshirgan. O'chirish o'rniga nashrdan oling.");
-    await this.prisma.test.delete({ where: { id } });
+    await this.trash.remove({ kind: "TEST", id, title: t.title, actorId });
     await this.audit(actorId, "delete", "Test", id, { title: t.title });
     return { ok: true };
   }

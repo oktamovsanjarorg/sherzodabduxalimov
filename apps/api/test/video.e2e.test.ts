@@ -17,6 +17,7 @@ const TG_STUDENT = 900000402;
 const P = "e2e-video";
 
 async function cleanup() {
+  await prisma.trashItem.deleteMany({ where: { entityId: { startsWith: P } } });
   await prisma.course.deleteMany({ where: { id: `${P}-course` } });
   await prisma.video.deleteMany({ where: { originalName: { startsWith: "e2e-" } } });
   await prisma.user.deleteMany({ where: { telegramId: { in: [BigInt(TG_OWNER), BigInt(TG_STUDENT)] } } });
@@ -159,8 +160,13 @@ describe("Video: yuklash va himoyalangan ko'rish (e2e)", () => {
     // Darsga biriktirilgan videoni o'chirib bo'lmaydi
     expect((await req("DELETE", `/admin/videos/${v.id}`)).statusCode).toBe(409);
 
-    // Dars o'chirilsa, video ham bazadan, ham diskdan o'chadi
+    // Dars o'chirilsa korzinkaga tushadi: video tiklash uchun saqlanadi
     expect((await req("DELETE", `/admin/lessons/${P}-lesson`)).statusCode).toBe(200);
+    expect(await prisma.video.findUnique({ where: { id: v.id } })).not.toBeNull();
+    // Korzinkadan butunlay o'chirilganda video ham bazadan, ham diskdan o'chadi
+    const item = await prisma.trashItem.findFirstOrThrow({ where: { entityId: `${P}-lesson` }, orderBy: { createdAt: "desc" } });
+    expect(item.videoIds).toEqual([v.id]);
+    expect((await req("DELETE", `/admin/trash/${item.id}`)).statusCode).toBe(200);
     expect(await prisma.video.findUnique({ where: { id: v.id } })).toBeNull();
     await expect(readFile(paths.key(v.id))).rejects.toThrow();
   });

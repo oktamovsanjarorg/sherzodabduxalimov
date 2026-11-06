@@ -15,6 +15,7 @@ import {
 import { randomBytes } from "node:crypto";
 import { ENV, type Env } from "../config/env";
 import { PrismaService } from "../prisma/prisma.service";
+import { TrashService } from "../trash/trash.service";
 import { defaultMonthlyFee, effectiveFee } from "../billing/fee";
 import { esc } from "../notify/telegram";
 import { StaffService, type TelegramProfile } from "../staff/staff.service";
@@ -60,6 +61,7 @@ export class StudentsService {
     private readonly prisma: PrismaService,
     private readonly staff: StaffService,
     @Inject(ENV) private readonly env: Env,
+    private readonly trash: TrashService,
   ) {}
 
   private inviteUrl(c: string | null) {
@@ -218,7 +220,8 @@ export class StudentsService {
     const hasMoney = paid._count + offline._count > 0;
     if ((hasMoney || sp.user.telegramId !== null) && !(opts.force && opts.isTeacher))
       throw new ConflictException(opts.isTeacher ? "O'chirishni tasdiqlang: o'quvchining ismini yozing" : "Bu o'quvchini faqat ustoz o'chira oladi");
-    await this.prisma.user.delete({ where: { id: sp.user.id } });
+    // Korzinkaga: natijalari, davomati, to'lovlari bilan 30 kun saqlanadi va tiklash mumkin
+    await this.trash.remove({ kind: "STUDENT", id: sp.user.id, title: fullName(sp.user), actorId });
     await this.prisma.auditLog.create({
       data: {
         actorId,

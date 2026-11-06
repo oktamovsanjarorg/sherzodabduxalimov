@@ -15,6 +15,7 @@ import {
 import { NotifyService } from "../notify/notify.service";
 import { esc } from "../notify/telegram";
 import { PrismaService } from "../prisma/prisma.service";
+import { TrashService } from "../trash/trash.service";
 
 const studentInclude = {
   user: { select: { id: true, firstName: true, lastName: true, username: true, phone: true } },
@@ -57,6 +58,7 @@ export class AttendanceService {
     private readonly notify: NotifyService,
     private readonly staff: StaffService,
     @Inject(ENV) private readonly env: Env,
+    private readonly trash: TrashService,
   ) {}
 
   private inviteUrl(code: string | null) {
@@ -108,7 +110,7 @@ export class AttendanceService {
     if (!g) throw new NotFoundException("Guruh topilmadi");
     if (g._count.attendance > 0) throw new ConflictException("Guruhda davomat tarixi bor. O'chirish o'rniga «Faolsizlantirish»ni bosing.");
     if (g._count.students > 0) throw new ConflictException("Avval guruhdagi o'quvchilarni chiqaring");
-    await this.prisma.group.delete({ where: { id } });
+    await this.trash.remove({ kind: "GROUP", id, title: g.name, actorId });
     await this.prisma.auditLog.create({ data: { actorId, action: "delete", entity: "Group", entityId: id, meta: { name: g.name } } });
     return { ok: true };
   }

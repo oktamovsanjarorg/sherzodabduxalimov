@@ -54,7 +54,7 @@ function Editor({ lesson, onChanged }: { lesson: AdminLesson; onChanged: () => v
   const del = useMutation({
     mutationFn: () => api.deleteLesson(lesson.id),
     onSuccess: () => {
-      toast("Dars o'chirildi");
+      toast("Dars o'chirildi. Korzinkadan 30 kun ichida tiklash mumkin");
       onChanged();
       navigate("/content");
     },

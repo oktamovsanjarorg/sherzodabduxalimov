@@ -68,7 +68,7 @@ function Editor({ initial }: { initial: AdminTestDetail | null }) {
   const del = useMutation({
     mutationFn: () => api.deleteTest(initial!.id),
     onSuccess: () => {
-      toast("Test o'chirildi");
+      toast("Test o'chirildi. Korzinkadan 30 kun ichida tiklash mumkin");
       qc.invalidateQueries({ queryKey: ["tests"] });
       navigate("/tests");
     },

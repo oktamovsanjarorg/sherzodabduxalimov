@@ -143,7 +143,7 @@ export function QuestionModal({ question, defaultTopicId, onClose, onSaved }: { 
   const del = useMutation({
     mutationFn: () => api.deleteQuestion(question!.id),
     onSuccess: () => {
-      toast("Savol o'chirildi");
+      toast("Savol o'chirildi. Korzinkadan 30 kun ichida tiklash mumkin");
       qc.invalidateQueries({ queryKey: ["questions"] });
       onClose();
     },

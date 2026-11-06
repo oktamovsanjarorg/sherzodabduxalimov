@@ -642,3 +642,27 @@ model StaffInvite {
   invitedBy   User?    @relation(fields: [invitedById], references: [id], onDelete: SetNull)
   createdAt   DateTime @default(now())
 }
+
+/// Korzinka: o'chirilgan narsa va u bilan birga o'chgan barcha bog'liq yozuvlar (jadval -> qatorlar, JSON).
+/// 30 kun ichida aynan joyiga tiklanadi; keyin fayllari bilan butunlay o'chadi
+model TrashItem {
+  id          String   @id @default(cuid())
+  kind        String // STUDENT | LESSON | QUESTION | TEST | TOPIC | COURSE | GROUP | PASSAGE
+  entityId    String
+  title       String
+  /// { "Jadval": [qator, ...] } — o'chirishdagi kaskad bo'yicha
+  payload     Json
+  /// O'chirishda NULL bo'lib qolgan havolalar: [{ table, pk, col, value }]
+  setNull     Json     @default("[]")
+  /// Butunlay o'chirilganda diskdan ham o'chadigan fayllar (MEDIA_DIR ichidagi nisbiy yo'llar)
+  files       String[]
+  /// Darsning videosi: dars tiklanmasa, muddati o'tgach o'chiriladi
+  videoIds    String[]
+  rows        Int      @default(0)
+  deletedById String?
+  deletedBy   String?
+  createdAt   DateTime @default(now())
+  purgeAt     DateTime
+
+  @@index([purgeAt])
+}

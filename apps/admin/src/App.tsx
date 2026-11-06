@@ -5,6 +5,7 @@ import { AttendancePage } from "./pages/AttendancePage";
 import { ContentPage } from "./pages/ContentPage";
 import { DashboardPage } from "./pages/DashboardPage";
 import { StatsPage } from "./pages/StatsPage";
+import { TrashPage } from "./pages/TrashPage";
 import { EssaysPage } from "./pages/EssaysPage";
 import { ParentsPage } from "./pages/ParentsPage";
 import { LessonEditorPage } from "./pages/LessonEditorPage";
@@ -38,6 +39,7 @@ export function App() {
       >
         <Route index element={<DashboardPage />} />
         <Route path="stats" element={<StatsPage />} />
+        <Route path="trash" element={<TrashPage />} />
         <Route path="content" element={<ContentPage />} />
         <Route path="more" element={<Navigate to={loadSession()?.user.role === "TEACHER" ? "/payments" : "/"} replace />} />
         <Route path="essays" element={<EssaysPage />} />

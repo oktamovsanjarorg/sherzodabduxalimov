@@ -85,6 +85,16 @@ export interface AdminDashboard {
   content: { lessonsPublished: number; lessonsDraft: number; tests: number; questions: number };
 }
 
+export interface TrashRow {
+  id: string;
+  kind: string;
+  title: string;
+  rows: number;
+  deletedBy: string | null;
+  createdAt: string;
+  purgeAt: string;
+}
+
 export interface StaffList {
   staff: { id: string; firstName: string; lastName: string | null; username: string | null; role: "TEACHER" | "ASSISTANT"; isOwner: boolean }[];
   invites: { username: string; role: string; createdAt: string }[];
@@ -193,6 +203,9 @@ export const api = {
 
   groups: () => request<AdminGroup[]>("/admin/groups"),
   newcomers: () => request<NewcomerRow[]>("/admin/students/new"),
+  trash: () => request<TrashRow[]>("/admin/trash"),
+  restoreTrash: (id: string) => request<{ ok: true; kind: string; entityId: string }>(`/admin/trash/${id}/restore`, json("POST")),
+  purgeTrash: (id: string) => request(`/admin/trash/${id}`, json("DELETE")),
   acceptStudent: (id: string, groupId: string | null) => request(`/admin/students/${id}/accept`, json("POST", { groupId })),
   createGroup: (d: GroupInput) => request<AdminGroup>("/admin/groups", json("POST", d)),
   updateGroup: (id: string, d: Partial<GroupInput>) => request<AdminGroup>(`/admin/groups/${id}`, json("PATCH", d)),
