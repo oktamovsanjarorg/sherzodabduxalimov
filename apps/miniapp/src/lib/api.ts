@@ -17,6 +17,7 @@ import type {
   TestSummary,
 } from "@onatili/shared";
 import { useAuth } from "../store/auth";
+import { getInitData } from "./telegram";
 
 export interface MyParents {
   inviteUrl: string;
@@ -49,9 +50,9 @@ export class ApiError extends Error {
   }
 }
 
-async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
+const send = (path: string, init: RequestInit) => {
   const token = useAuth.getState().token;
-  const res = await fetch(`/api${path}`, {
+  return fetch(`/api${path}`, {
     ...init,
     headers: {
       ...(init.body ? { "Content-Type": "application/json" } : {}),
@@ -59,6 +60,39 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
       ...init.headers,
     },
   });
+};
+
+let relogin: Promise<boolean> | null = null;
+
+/** Yangi token oladi. Bir vaqtda kelgan so'rovlar bitta kirishni kutadi */
+function refreshToken() {
+  relogin ??= (async () => {
+    const initData = getInitData();
+    if (!initData) return false;
+    const res = await fetch("/api/auth/telegram", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ initData }) });
+    if (!res.ok) return false;
+    const auth = (await res.json()) as AuthResponse;
+    useAuth.getState().setSession(auth.token, auth.user);
+    return true;
+  })()
+    .catch(() => false)
+    .finally(() => {
+      relogin = null;
+    });
+  return relogin;
+}
+
+/** Token 1 soat amal qiladi, mock esa 3 soat davom etadi: muddati tugasa yangilab, so'rov qayta yuboriladi */
+async function authFetch(path: string, init: RequestInit = {}) {
+  const res = await send(path, init);
+  if (res.status !== 401 || path === "/auth/telegram") return res;
+  const body = await res.clone().json().catch(() => ({}));
+  if (body.code === "BLOCKED" || !(await refreshToken())) return res;
+  return send(path, init);
+}
+
+async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
+  const res = await authFetch(path, init);
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
     // Ustoz bloklagan: butun ilova o'rniga "bloklangan" ekrani
@@ -103,16 +137,17 @@ export const api = {
   removeEssayPage: (id: string, n: number) => request<MyEssayDetail>(`/essays/${id}/pages/${n}`, { method: "DELETE" }),
   finishEssay: (id: string) => post<MyEssayDetail>(`/essays/${id}/finish`),
   retryEssay: (id: string) => post<MyEssayDetail>(`/essays/${id}/retry`),
+  cancelEssay: (id: string) => post<MyEssayDetail>(`/essays/${id}/cancel`),
   deleteEssay: (id: string) => request<{ ok: true }>(`/essays/${id}`, { method: "DELETE" }),
   /** Varoq rasmi: avtorizatsiya kerak, shuning uchun blob URL */
   essayPage: async (id: string, n: number) => {
-    const res = await fetch(`/api/essays/${id}/pages/${n}`, { headers: { Authorization: `Bearer ${useAuth.getState().token}` } });
+    const res = await authFetch(`/essays/${id}/pages/${n}`);
     if (!res.ok) throw new ApiError(res.status, "Rasmni yuklab bo'lmadi");
     return URL.createObjectURL(await res.blob());
   },
 
   voiceBlob: async (id: string) => {
-    const res = await fetch(`/api/voice/${id}`, { headers: { Authorization: `Bearer ${useAuth.getState().token}` } });
+    const res = await authFetch(`/voice/${id}`);
     if (!res.ok) throw new ApiError(res.status, "Ovozli izohni yuklab bo'lmadi");
     return URL.createObjectURL(await res.blob());
   },

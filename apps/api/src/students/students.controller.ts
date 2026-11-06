@@ -16,6 +16,11 @@ export class StudentsController {
     return this.svc.roster({ groupId, q }, u.role === "TEACHER");
   }
 
+  /** O'quvchilar → Hammasi: botga kirgan hamma, umumiy holati bilan */
+  @Get("users") users(@CurrentUser() u: JwtUser, @Query("q") q?: string) {
+    return this.svc.allUsers(q, u.role === "TEACHER");
+  }
+
   /** Botdan o'zi kirgan, hali ko'rib chiqilmagan o'quvchilar */
   @Get("students/new") newcomers() {
     return this.svc.newcomers();

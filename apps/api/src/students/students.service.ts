@@ -3,9 +3,11 @@ import { Prisma } from "@onatili/db";
 import {
   ATTENDANCE_STATUSES,
   ESSAY_MAX_SCORE,
+  STAFF_ROLES,
   currentMonth,
   normUzPhone,
   parseStudentLine,
+  type AdminUserRow,
   type AttendanceStatusName,
   type RosterRow,
   type StudentCreateInput,
@@ -13,6 +15,7 @@ import {
   type NewcomerRow,
 } from "@onatili/shared";
 import { randomBytes } from "node:crypto";
+import { AccessService, isFullAccess } from "../access/access.service";
 import { ENV, type Env } from "../config/env";
 import { PrismaService } from "../prisma/prisma.service";
 import { TrashService } from "../trash/trash.service";
@@ -96,6 +99,66 @@ export class StudentsService {
       take: 1000,
     });
     return rows.map((r) => this.toRow(r, isTeacher));
+  }
+
+  /** O'quvchilar → Hammasi: botga kirgan har bir kishi va qo'lda kiritilgan o'quvchilar (xodimlarsiz), eng yangisi birinchi */
+  async allUsers(q: string | undefined, isTeacher: boolean): Promise<AdminUserRow[]> {
+    const term = (q ?? "").trim().replace(/^@/, "");
+    const digits = term.replace(/\D/g, "");
+    const rows = await this.prisma.user.findMany({
+      where: {
+        role: { in: ["STUDENT", "PARENT"] },
+        ...(term
+          ? {
+              OR: [
+                { firstName: { contains: term, mode: "insensitive" as const } },
+                { lastName: { contains: term, mode: "insensitive" as const } },
+                { username: { contains: term, mode: "insensitive" as const } },
+                ...(digits.length >= 3 ? [{ phone: { contains: digits } }] : []),
+              ],
+            }
+          : {}),
+      },
+      orderBy: { createdAt: "desc" },
+      take: 1000,
+      include: {
+        student: {
+          select: {
+            id: true,
+            accessMode: true,
+            acceptedAt: true,
+            group: { select: { id: true, name: true } },
+            parents: { where: { status: "APPROVED" }, select: { id: true } },
+            offlinePayments: { where: { month: currentMonth() }, select: { id: true } },
+          },
+        },
+        subscriptions: { where: { status: "ACTIVE", startsAt: { lte: new Date() }, endsAt: { gt: new Date(Date.now() - AccessService.GRACE_MS) } }, take: 1, select: { id: true } },
+        parentLinks: { where: { status: { in: ["PENDING", "APPROVED"] } }, select: { student: { select: { user: { select: { firstName: true, lastName: true } } } } } },
+      },
+    });
+    return rows.map((u) => {
+      const s = u.student;
+      const approvedParents = s?.parents.length ?? 0;
+      const paid = !!s?.offlinePayments.length || u.subscriptions.length > 0;
+      const full = isFullAccess(s && { ...s, approvedParents, paid });
+      const waiting: AdminUserRow["waiting"] = full || u.role !== "STUDENT" ? [] : [...(s?.acceptedAt ? [] : ["TEACHER" as const]), ...(approvedParents ? [] : ["PARENT" as const]), ...(paid || !isTeacher ? [] : ["PAYMENT" as const])];
+      return {
+        userId: u.id,
+        studentId: s?.id ?? null,
+        name: fullName(u),
+        username: u.username,
+        phone: u.phone,
+        role: u.role as AdminUserRow["role"],
+        telegramLinked: u.telegramId !== null,
+        group: s?.group ?? null,
+        children: u.parentLinks.map((l) => fullName(l.student.user)),
+        full,
+        waiting,
+        paid: isTeacher ? paid : null,
+        blocked: u.isBlocked,
+        firstSeenAt: u.createdAt.toISOString(),
+      };
+    });
   }
 
   private toRow(r: RosterProfile, isTeacher: boolean): RosterRow {
@@ -209,8 +272,9 @@ export class StudentsService {
    * Botga kirgan o'quvchi uchun faqat ega (TEACHER) va aniq tasdiq bilan (force). U qayta kirsa, bo'sh hisob ochiladi.
    */
   async remove(actorId: string, studentId: string, opts: { force: boolean; isTeacher: boolean }) {
-    const sp = await this.prisma.studentProfile.findUnique({ where: { id: studentId }, include: { user: { select: { id: true, telegramId: true, firstName: true, lastName: true } } } });
+    const sp = await this.prisma.studentProfile.findUnique({ where: { id: studentId }, include: { user: { select: { id: true, telegramId: true, firstName: true, lastName: true, role: true } } } });
     if (!sp) throw new NotFoundException("O'quvchi topilmadi");
+    if (STAFF_ROLES.includes(sp.user.role)) throw new ConflictException("Xodimni bu yerdan o'chirib bo'lmaydi");
     // To'lov tarixi bor yoki botdan foydalanayotgan o'quvchini faqat ega, ismini yozib tasdiqlagach (force) o'chiradi.
     // To'lovlar yozuvi o'chadi, lekin jami summa audit jurnalida qoladi (kim, qachon, qancha)
     const [paid, offline] = await Promise.all([
@@ -222,6 +286,7 @@ export class StudentsService {
       throw new ConflictException(opts.isTeacher ? "O'chirishni tasdiqlang: o'quvchining ismini yozing" : "Bu o'quvchini faqat ustoz o'chira oladi");
     // Korzinkaga: natijalari, davomati, to'lovlari bilan 30 kun saqlanadi va tiklash mumkin
     await this.trash.remove({ kind: "STUDENT", id: sp.user.id, title: fullName(sp.user), actorId });
+    if (sp.user.telegramId !== null) await this.prisma.pendingParent.deleteMany({ where: { telegramId: sp.user.telegramId } });
     await this.prisma.auditLog.create({
       data: {
         actorId,
@@ -408,11 +473,12 @@ export class StudentsService {
   // ---------------- Telegram hisobini bog'lash ----------------
 
   /** Bot: o'quvchi shaxsiy havolani bosdi */
-  async claimByInvite(c: string, from: TelegramProfile): Promise<{ status: "claimed" | "staff" | "used" | "invalid"; name?: string; groupName?: string }> {
+  async claimByInvite(c: string, from: TelegramProfile): Promise<{ status: "claimed" | "staff" | "parent" | "used" | "invalid"; name?: string; groupName?: string }> {
     const sp = await this.prisma.studentProfile.findUnique({ where: { inviteCode: c }, include: { user: true, group: { select: { name: true } } } });
     if (!sp) return { status: "invalid" };
     if (sp.user.telegramId !== null) return { status: sp.user.telegramId === BigInt(from.id) ? "claimed" : "used", name: fullName(sp.user), groupName: sp.group?.name };
     const existing = await this.prisma.user.findUnique({ where: { telegramId: BigInt(from.id) } });
+    if (existing?.role === "PARENT") return { status: "parent" };
     if (existing && existing.role !== "STUDENT") return { status: "staff" };
     if (existing) await this.mergeInto(sp.userId, existing.id);
     else {

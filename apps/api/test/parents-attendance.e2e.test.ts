@@ -48,13 +48,12 @@ describe("Ota-ona va davomat (e2e)", () => {
     await app?.close();
   });
 
-  it("ota-onasiz o'quvchi uchun kontent yopiq (server tomonda)", async () => {
+  it("ota-onasiz o'quvchi cheklangan rejimda: kontent ro'yxati ochiq", async () => {
     const me = (await req("GET", "/me", undefined, S.headers)).json();
     expect(me.parentStatus).toBe("NONE");
-    const res = await req("GET", "/courses", undefined, S.headers);
-    expect(res.statusCode).toBe(403);
-    expect(res.json().code).toBe("PARENT_REQUIRED");
-    expect((await req("GET", "/mocks", undefined, S.headers)).statusCode).toBe(403);
+    expect(me.trial).toMatchObject({ limited: true, accepted: false });
+    expect((await req("GET", "/courses", undefined, S.headers)).statusCode).toBe(200);
+    expect((await req("GET", "/mocks", undefined, S.headers)).statusCode).toBe(200);
   });
 
   it("o'quvchi o'z raqamini ulashadi: boshqaning kontakti qabul qilinmaydi", async () => {
@@ -88,11 +87,14 @@ describe("Ota-ona va davomat (e2e)", () => {
   });
 
   it("kutilayotgan ota-ona kodi bazada saqlanadi (bot qayta ishga tushsa ham), bir marta olinadi", async () => {
-    expect((await internal("parent-pending", { telegramId: TG.third, code: "ABCDEF12" })).statusCode).toBe(200);
-    expect((await internal("parent-pending/take", { telegramId: TG.third })).json()).toEqual({ code: "ABCDEF12" });
+    const third = tgUser(TG.third, "Uchinchi");
+    expect((await internal("parent-pending", { from: third, code })).json()).toEqual({ status: "ok" });
+    expect((await internal("parent-pending/take", { telegramId: TG.third })).json()).toEqual({ code });
     expect((await internal("parent-pending/take", { telegramId: TG.third })).json()).toEqual({ code: null });
-    expect((await internal("parent-pending", { telegramId: TG.third, code: "ABCDEF12" }, "wrong")).statusCode).toBe(401);
-    expect((await internal("parent-pending", { telegramId: TG.third, code: "not-hex!" })).statusCode).toBe(400);
+    expect((await internal("parent-pending", { from: third, code }, "wrong")).statusCode).toBe(401);
+    expect((await internal("parent-pending", { from: third, code: "not-hex!" })).statusCode).toBe(400);
+    expect((await internal("parent-pending", { from: third, code: "00000000" })).json()).toEqual({ status: "invalid" });
+    expect((await internal("parent-pending", { from: tgUser(TG.student, "Aziz"), code })).json()).toEqual({ status: "self" });
   });
 
   it("ona ulanadi: PENDING, ilova ochiladi; shubhali 'ota' belgilanadi; 3-ota-ona rad etiladi", async () => {

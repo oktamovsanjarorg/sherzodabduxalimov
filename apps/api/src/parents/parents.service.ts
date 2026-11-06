@@ -1,14 +1,13 @@
-import { BadRequestException, ConflictException, ForbiddenException, Inject, Injectable, NotFoundException } from "@nestjs/common";
+import { BadRequestException, ConflictException, Inject, Injectable, NotFoundException } from "@nestjs/common";
 import type { Prisma } from "@onatili/db";
-import { ERROR_CODES, type AdminParentLink, type ChildView } from "@onatili/shared";
+import type { AdminParentLink, ChildView } from "@onatili/shared";
 import { ENV, type Env } from "../config/env";
 import { esc } from "../notify/telegram";
 import { NotifyService } from "../notify/notify.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { StudentsService } from "../students/students.service";
 import { StaffService, type TelegramProfile } from "../staff/staff.service";
-
-const PENDING_TTL_MS = 24 * 3600 * 1000;
+import { PARENT_INVITE_TTL_MS } from "../users/users.service";
 
 /** Bitta o'quvchiga ulanishi mumkin bo'lgan faol (kutilayotgan yoki tasdiqlangan) ota-onalar soni */
 export const MAX_PARENTS = 2;
@@ -61,19 +60,28 @@ export class ParentsService {
     return { status: merged ? ("merged" as const) : ("saved" as const) };
   }
 
-  async setPending(telegramId: number, code: string) {
-    const id = BigInt(telegramId);
+  /**
+   * Ota-ona havolani ochdi: kod tekshiriladi va raqam kelguncha saqlanadi.
+   * Havola orqali birinchi marta kelgan odam darhol ota-ona bo'ladi: o'quvchi sifatida ko'rinmaydi.
+   */
+  async setPending(from: TelegramProfile, code: string): Promise<{ status: "ok" | "invalid" | "self" }> {
+    const student = await this.prisma.studentProfile.findUnique({ where: { parentLinkCode: code.toUpperCase() }, select: { user: { select: { telegramId: true } } } });
+    if (!student) return { status: "invalid" };
+    const id = BigInt(from.id);
+    if (student.user.telegramId === id) return { status: "self" };
+    const { user, created } = await this.staff.upsertTelegramUserEx(from);
+    if (created && user.role === "STUDENT") await this.prisma.user.update({ where: { id: user.id }, data: { role: "PARENT" } });
     await this.prisma.pendingParent.upsert({ where: { telegramId: id }, update: { code, createdAt: new Date() }, create: { telegramId: id, code } });
-    return { ok: true };
+    return { status: "ok" };
   }
 
-  /** Kod 24 soat amal qiladi; olingach o'chiriladi */
+  /** Kod 24 soat amal qiladi; olingach o'chiriladi. Muddati o'tgan bo'lsa expired: raqam oddiy saqlanmaydi, ota-onaga aytiladi */
   async takePending(telegramId: number) {
     const id = BigInt(telegramId);
     const p = await this.prisma.pendingParent.findUnique({ where: { telegramId: id } });
     if (!p) return { code: null };
     await this.prisma.pendingParent.delete({ where: { telegramId: id } }).catch(() => {});
-    return { code: Date.now() - p.createdAt.getTime() < PENDING_TTL_MS ? p.code : null };
+    return Date.now() - p.createdAt.getTime() < PARENT_INVITE_TTL_MS ? { code: p.code } : { code: null, expired: true };
   }
 
   /**
@@ -197,6 +205,7 @@ export class ParentsService {
       l.parent.telegramId,
       `✅ Siz <b>${esc(fullName(l.student.user))}</b>ning ota-onasi sifatida tasdiqlandingiz.\n\nEndi farzandingizning davomati haqidagi xabarlar shu yerga keladi.`,
     );
+    await this.notify.send(l.student.user.telegramId, `✅ Ota-onangiz <b>${esc(fullName(l.parent))}</b> tasdiqlandi.`);
     return { ok: true };
   }
 
@@ -215,6 +224,7 @@ export class ParentsService {
       l.student.user.telegramId,
       `❌ Ota-ona ulanish so'rovi rad etildi.\nSabab: ${esc(r)}\n\nIlovani ochib, haqiqiy ota-onangizni qayta ulang.`,
     );
+    await this.notify.send(l.parent.telegramId, `❌ <b>${esc(fullName(l.student.user))}</b>ning ota-onasi sifatida ulanish so'rovingiz rad etildi.\nSabab: ${esc(r)}\n\nSavollar bo'lsa, ustozga murojaat qiling.`);
     return { ok: true };
   }
 
@@ -225,15 +235,6 @@ export class ParentsService {
     await this.prisma.parentLink.delete({ where: { id } });
     await this.prisma.auditLog.create({ data: { actorId, action: "parent.delete", entity: "ParentLink", entityId: id, meta: { parent: fullName(l.parent), student: fullName(l.student.user) } } });
     return { ok: true };
-  }
-
-  /** O'quvchi uchun: ota-ona ulanmagan bo'lsa (kamida bitta kutilayotgan yoki tasdiqlangan), kontent yopiq */
-  async assertStudentLinked(userId: string, role: string) {
-    if (role !== "STUDENT") return;
-    const ok = await this.prisma.parentLink.count({
-      where: { student: { userId }, status: { in: ["PENDING", "APPROVED"] } },
-    });
-    if (!ok) throw new ForbiddenException({ code: ERROR_CODES.PARENT_REQUIRED, message: "Avval ota-onangizni ulang" });
   }
 
   private toAdmin(l: Prisma.ParentLinkGetPayload<{ include: typeof linkInclude }>): AdminParentLink {

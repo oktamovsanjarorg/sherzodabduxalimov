@@ -3,6 +3,7 @@ import type { Type } from "@nestjs/common";
 import { FastifyAdapter, type NestFastifyApplication } from "@nestjs/platform-fastify";
 import { Test } from "@nestjs/testing";
 import { PrismaClient } from "@onatili/db";
+import { currentMonth } from "@onatili/shared";
 import { signInitData } from "@onatili/shared/server";
 import { AppModule } from "../src/app.module";
 import { loadEnv } from "../src/config/env";
@@ -43,9 +44,10 @@ export const parentTgId = (tgId: number) => BigInt(tgId) + 1_000_000_000n;
 
 /**
  * Telegram orqali kirib, Authorization sarlavhasini qaytaradi.
- * O'quvchiga avtomatik "kutilayotgan" ota-ona ulanadi (aks holda kontent yopiq). withParent: false bilan o'chiriladi.
+ * O'quvchiga avtomatik tasdiqlangan ota-ona ulanadi, ustoz qabul qiladi va shu oy to'lovi yoziladi (to'liq foydalanish).
+ * withParent: false, accepted: false yoki paid: false bilan tegishli qadam o'tkazib yuboriladi.
  */
-export async function login(app: NestFastifyApplication, tgId: number, firstName = "Test", username?: string, opts: { withParent?: boolean } = {}) {
+export async function login(app: NestFastifyApplication, tgId: number, firstName = "Test", username?: string, opts: { withParent?: boolean; accepted?: boolean; paid?: boolean } = {}) {
   const res = await app.inject({
     method: "POST",
     url: "/api/auth/telegram",
@@ -63,8 +65,11 @@ export async function login(app: NestFastifyApplication, tgId: number, firstName
     await prisma.parentLink.upsert({
       where: { parentId_studentId: { parentId: parent.id, studentId: sp.id } },
       update: {},
-      create: { parentId: parent.id, studentId: sp.id },
+      create: { parentId: parent.id, studentId: sp.id, status: "APPROVED" },
     });
+    if (opts.accepted !== false) await prisma.studentProfile.update({ where: { id: sp.id }, data: { acceptedAt: sp.acceptedAt ?? new Date() } });
+    const month = currentMonth();
+    if (opts.paid !== false) await prisma.offlinePayment.upsert({ where: { studentId_month: { studentId: sp.id, month } }, update: {}, create: { studentId: sp.id, month, amountUzs: 0 } });
   }
   return { headers: { authorization: `Bearer ${token}` }, userId: user.id as string, role: user.role as string };
 }

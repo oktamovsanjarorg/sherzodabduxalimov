@@ -45,6 +45,13 @@ export function LessonPage() {
       <FullPage>
         {e instanceof ApiError && e.code === "SUBSCRIPTION_REQUIRED" ? (
           <Paywall />
+        ) : e instanceof ApiError && e.code === "TRIAL_LIMIT" ? (
+          <div className="card text-center">
+            <p className="text-sm text-hint">{e.message}</p>
+            <button className="btn-primary mt-3" onClick={() => navigate("/parents")}>
+              Ota-ona holatini ko'rish
+            </button>
+          </div>
         ) : (
           <p className="card text-center text-sm text-hint">
             {e instanceof ApiError && e.status === 404 ? "Dars topilmadi" : `Xatolik: ${e.message}`}

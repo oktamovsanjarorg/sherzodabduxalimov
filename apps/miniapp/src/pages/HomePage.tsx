@@ -1,6 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
 import { ChevronRight, ClipboardCheck, FileText, ListChecks, PlayCircle } from "lucide-react";
+import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { TrialBanner } from "../components/TrialBanner";
 import { Badge, QuickAction, SectionTitle } from "../components/ui";
 import { api } from "../lib/api";
 import { haptic } from "../lib/telegram";
@@ -8,7 +10,14 @@ import { useAuth } from "../store/auth";
 
 export function HomePage() {
   const user = useAuth((s) => s.user)!;
+  const token = useAuth((s) => s.token);
+  const setSession = useAuth((s) => s.setSession);
   const navigate = useNavigate();
+  // Tasdiq yoki rad etish ilova ochiq turganda ham ko'rinsin
+  const me = useQuery({ queryKey: ["me"], queryFn: api.me, staleTime: 0, refetchOnMount: "always", refetchInterval: 30_000 });
+  useEffect(() => {
+    if (me.data && token) setSession(token, me.data);
+  }, [me.data, token, setSession]);
   const stats = useQuery({ queryKey: ["stats"], queryFn: api.stats });
   const sub = user.subscription;
   const s = stats.data;
@@ -34,6 +43,8 @@ export function HomePage() {
         </div>
         <button className="-my-2.5 py-2.5" onClick={go("/subscribe")}>{sub ? <Badge>Obuna faol</Badge> : user.offlineGroup ? <Badge>Offline guruh</Badge> : <Badge tone="muted">Bepul</Badge>}</button>
       </header>
+
+      <TrialBanner user={user} />
 
       {/* Davom ettirish yoki boshlash kartasi */}
       {stats.isPending ? (

@@ -164,6 +164,7 @@ describe("O'quvchilar: botsiz kiritish, ro'yxat, karta, hisobni bog'lash (e2e)",
 
       // Ota-ona: tasdiqlash -> bekor qilish -> qayta tasdiqlash -> o'chirish
       const link = await prisma.parentLink.findFirstOrThrow({ where: { studentId: sp.id } });
+      await prisma.parentLink.update({ where: { id: link.id }, data: { status: "PENDING" } });
       expect((await req("POST", `/admin/parent-links/${link.id}/approve`)).statusCode).toBe(200);
       expect((await req("POST", `/admin/parent-links/${link.id}/reject`, { reason: "Xato ulangan" })).statusCode).toBe(200);
       expect((await prisma.parentLink.findUniqueOrThrow({ where: { id: link.id } })).status).toBe("REJECTED");
@@ -191,8 +192,8 @@ describe("O'quvchilar: botsiz kiritish, ro'yxat, karta, hisobni bog'lash (e2e)",
     expect(log.meta).toMatchObject({ payments: { offline: 1, offlineUzs: 250000 } });
   });
   it("botdan yangi kirganlar: ro'yxatda chiqadi; guruhga qo'shilsa yoki bloklansa ro'yxatdan chiqadi", async () => {
-    const nb = await login(app, TG.newbie, "Yangi");
-    const st = await login(app, TG.stranger, "Begona");
+    const nb = await login(app, TG.newbie, "Yangi", undefined, { accepted: false });
+    const st = await login(app, TG.stranger, "Begona", undefined, { accepted: false });
     const list = (await req("GET", "/admin/students/new")).json() as { userId: string; studentId: string }[];
     const mine = list.find((x) => x.userId === nb.userId)!;
     const other = list.find((x) => x.userId === st.userId)!;

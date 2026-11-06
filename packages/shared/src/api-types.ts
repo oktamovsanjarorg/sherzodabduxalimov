@@ -13,7 +13,7 @@ export const meSchema = z.object({
   role: z.enum(ROLES),
   /** Telegram orqali tasdiqlangan telefon (request_contact) */
   phone: z.string().nullable(),
-  /** O'quvchi uchun: ota-ona ulanganmi (NONE bo'lsa ilova yopiq) */
+  /** O'quvchi uchun: ota-ona ulanganmi */
   parentStatus: z.enum(["NONE", "PENDING", "APPROVED"]),
   subscription: z
     .object({ planName: z.string(), endsAt: z.string() })
@@ -22,6 +22,19 @@ export const meSchema = z.object({
   offlineGroup: z.object({ name: z.string() }).nullable().default(null),
   /** Ustoz belgilagan kirish rejimi (o'quvchi uchun) */
   accessMode: z.enum(["AUTO", "FREE", "CLOSED"]).default("AUTO"),
+  /** Cheklangan rejim: ustoz va ota-ona tasdig'i hamda to'lovgacha har bo'limdan bir martadan */
+  trial: z
+    .object({
+      limited: z.boolean(),
+      /** Ustoz o'quvchini tasdiqlaganmi */
+      accepted: z.boolean(),
+      /** Faol obuna yoki shu oy uchun belgilangan offline to'lov bor */
+      paid: z.boolean(),
+      used: z.array(z.enum(["LESSON", "TOPIC_TEST", "MOCK", "ESSAY"])),
+    })
+    .default({ limited: false, accepted: true, paid: true, used: [] }),
+  /** Ota-ona havolasi orqali kelgan, raqamini hali ulashmagan */
+  pendingParentInvite: z.boolean().default(false),
 });
 export type Me = z.infer<typeof meSchema>;
 

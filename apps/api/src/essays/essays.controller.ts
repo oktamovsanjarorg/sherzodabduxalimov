@@ -47,6 +47,10 @@ export class EssaysController {
     return this.svc.finish(u.sub, id);
   }
 
+  @Post(":id/cancel") @HttpCode(200) cancel(@CurrentUser() u: JwtUser, @Param("id") id: string) {
+    return this.svc.cancel(u.sub, id);
+  }
+
   @Post(":id/retry") @HttpCode(200) retry(@CurrentUser() u: JwtUser, @Param("id") id: string) {
     return this.svc.retry(u.sub, id);
   }

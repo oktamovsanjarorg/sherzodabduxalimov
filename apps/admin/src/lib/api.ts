@@ -23,6 +23,7 @@ import type {
   PassageInput,
   AdminGroup,
   AdminParentLink,
+  AdminUserRow,
   AdminStudent,
   AttendanceDay,
   AttendanceMonth,
@@ -101,6 +102,7 @@ export interface StaffList {
 }
 
 export const api = {
+  users: (q: string) => request<AdminUserRow[]>(`/admin/users?${new URLSearchParams(q ? { q } : {})}`),
   roster: (groupId: string, q: string) => request<RosterRow[]>(`/admin/roster?${new URLSearchParams({ ...(groupId ? { groupId } : {}), ...(q ? { q } : {}) })}`),
   student: (id: string) => request<StudentDetail>(`/admin/students/${id}`),
   createStudent: (d: StudentCreateInput) => request<{ studentId: string }>("/admin/students", json("POST", d)),
@@ -210,8 +212,6 @@ export const api = {
   createGroup: (d: GroupInput) => request<AdminGroup>("/admin/groups", json("POST", d)),
   updateGroup: (id: string, d: Partial<GroupInput>) => request<AdminGroup>(`/admin/groups/${id}`, json("PATCH", d)),
   deleteGroup: (id: string) => request(`/admin/groups/${id}`, json("DELETE")),
-  resetGroupInvite: (id: string) => request<{ inviteUrl: string }>(`/admin/groups/${id}/invite`, json("POST")),
-  disableGroupInvite: (id: string) => request<{ inviteUrl: null }>(`/admin/groups/${id}/invite`, json("DELETE")),
   groupStudents: (id: string) => request<AdminStudent[]>(`/admin/groups/${id}/students`),
   addToGroup: (id: string, studentIds: string[]) => request(`/admin/groups/${id}/students`, json("POST", { studentIds })),
   removeFromGroup: (id: string, studentId: string) => request(`/admin/groups/${id}/students/${studentId}`, json("DELETE")),

@@ -118,3 +118,25 @@ export interface NewcomerRow {
   /** Ilovada nimadir qilganmi (dars, test, esse) */
   activity: { lessons: number; tests: number; essays: number };
 }
+
+/** O'quvchilar → Hammasi: botga kirgan har bir kishi va qo'lda kiritilgan o'quvchilar (xodimlarsiz) */
+export interface AdminUserRow {
+  userId: string;
+  studentId: string | null;
+  name: string;
+  username: string | null;
+  phone: string | null;
+  role: "STUDENT" | "PARENT";
+  telegramLinked: boolean;
+  group: { id: string; name: string } | null;
+  /** Ota-ona uchun: ulangan farzandlari */
+  children: string[];
+  /** O'quvchi to'liq foydalana oladimi */
+  full: boolean;
+  /** To'liq ochilishi uchun nima kutilmoqda. PAYMENT faqat egaga ko'rinadi */
+  waiting: ("TEACHER" | "PARENT" | "PAYMENT")[];
+  /** Faqat egaga; yordamchida null */
+  paid: boolean | null;
+  blocked: boolean;
+  firstSeenAt: string;
+}

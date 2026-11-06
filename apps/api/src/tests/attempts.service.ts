@@ -17,7 +17,6 @@ import {
 import { AccessService } from "../access/access.service";
 import type { JwtUser } from "../auth/decorators";
 import { ContentService } from "../content/content.service";
-import { ParentsService } from "../parents/parents.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { DEADLINE_GRACE_MS, isAnswerCorrect, isPastDeadline, seededShuffle } from "./grading";
 import { milliyOf } from "./milliy";
@@ -45,12 +44,10 @@ export class AttemptsService {
     private readonly prisma: PrismaService,
     private readonly access: AccessService,
     private readonly content: ContentService,
-    private readonly parents: ParentsService,
     private readonly rasch: RaschService,
   ) {}
 
   async listMocks(user: JwtUser): Promise<TestSummary[]> {
-    await this.parents.assertStudentLinked(user.sub, user.role);
     const tests = await this.prisma.test.findMany({
       // Xodimlar qoralamalarni ham ko'radi: nashrdan oldin o'quvchi ko'zi bilan sinab ko'rish uchun
       where: { type: "MOCK", ...(this.access.isStaff(user.role) ? {} : { isPublished: true }) },
@@ -63,7 +60,6 @@ export class AttemptsService {
 
   /** Testni boshlaydi. Tugallanmagan urinish bo'lsa, o'shani davom ettiradi. */
   async start(user: JwtUser, testId: string): Promise<AttemptState> {
-    await this.parents.assertStudentLinked(user.sub, user.role);
     const test = await this.prisma.test.findFirst({
       where: { id: testId, ...(this.access.isStaff(user.role) ? {} : { isPublished: true }) },
     });
@@ -79,6 +75,7 @@ export class AttemptsService {
       if (!(await this.expireIfNeeded(a))) return this.toState(a);
     }
 
+    await this.access.useTrial(user.sub, test.type === "MOCK" ? "MOCK" : "TOPIC_TEST");
     const now = new Date();
     const created = await this.prisma.attempt.create({
       data: {

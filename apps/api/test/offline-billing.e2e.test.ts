@@ -42,9 +42,9 @@ describe("Offline guruh: kirish va oylik to'lov; online obuna eslatmalari (e2e)"
     await queue.obliterate({ force: true });
     app = await createApp();
     H = (await login(app, TG.owner, "Ega", OWNER)).headers;
-    OFF = (await login(app, TG.offline, "Offline")).headers;
-    ON = (await login(app, TG.online, "Online")).headers;
-    await login(app, TG.paid, "Tolagan");
+    OFF = (await login(app, TG.offline, "Offline", undefined, { paid: false })).headers;
+    ON = (await login(app, TG.online, "Online", undefined, { paid: false })).headers;
+    await login(app, TG.paid, "Tolagan", undefined, { paid: false });
     // Ota-onalarni tasdiqlaymiz: eslatmalar faqat tasdiqlangan ota-onaga boradi
     await prisma.parentLink.updateMany({ where: { parent: { telegramId: { in: [parentTgId(TG.offline), parentTgId(TG.paid)] } } }, data: { status: "APPROVED" } });
 
@@ -85,38 +85,16 @@ describe("Offline guruh: kirish va oylik to'lov; online obuna eslatmalari (e2e)"
     await req("PATCH", `/admin/groups/${groupId}`, { isActive: true });
   });
 
-  it("guruh havolasi: o'quvchi botda bosib o'zi qo'shiladi; yangilansa eskisi ishlamaydi", async () => {
-    const join = (code: string, id: number) =>
-      app.inject({
-        method: "POST",
-        url: "/api/internal/join-group",
-        headers: { "x-internal-key": internalKey(BOT_TOKEN) },
-        payload: { code, from: { id, first_name: "Yangi", username: "yangi_e2e" } },
-      });
-    const url = (await req("POST", `/admin/groups/${groupId}/invite`)).json().inviteUrl as string;
-    expect(url).toMatch(/^https:\/\/t\.me\/\w+\?start=g_[A-Za-z0-9_-]{8}$/);
-    const code = url.split("g_")[1];
-    expect((await req("GET", "/admin/groups")).json().find((g: { id: string }) => g.id === groupId).inviteUrl).toBe(url);
-
-    // Hali botga kirmagan o'quvchi ham yaratiladi va guruhga tushadi
-    expect((await join(code, TG.joiner)).json()).toMatchObject({ status: "joined", groupName: `${TAG} 1-guruh`, parentLinked: false });
-    // Egaga xabar: yangi o'quvchi guruhga qo'shildi
-    expect((await jobs()).some((j) => j.chatId === String(TG.owner) && j.text.includes("Yangi o'quvchi") && j.text.includes(`${TAG} 1-guruh`))).toBe(true);
-    expect((await join(code, TG.joiner)).json().status).toBe("already");
-    const sp = await prisma.studentProfile.findFirstOrThrow({ where: { user: { telegramId: BigInt(TG.joiner) } } });
-    expect(sp).toMatchObject({ groupId, mode: "OFFLINE" });
-    expect((await join(code, TG.owner)).json().status).toBe("staff");
-    // Kalitsiz chaqirib bo'lmaydi
-    expect((await app.inject({ method: "POST", url: "/api/internal/join-group", payload: { code, from: { id: 1, first_name: "x" } } })).statusCode).toBe(401);
-
-    // Yangi havola: eskisi ishlamaydi; o'chirilsa ham
-    const url2 = (await req("POST", `/admin/groups/${groupId}/invite`)).json().inviteUrl as string;
-    expect(url2).not.toBe(url);
-    expect((await join(code, TG.joiner)).json().status).toBe("invalid");
-    await req("DELETE", `/admin/groups/${groupId}/invite`);
-    expect((await join(url2.split("g_")[1], TG.joiner)).json().status).toBe("invalid");
-    // Testning qolgan qismi uchun guruhdan chiqaramiz
-    await req("DELETE", `/admin/groups/${groupId}/students/${sp.id}`);
+  it("guruh havolasi olib tashlangan: botdan o'zi qo'shilib, pullik kontentga kira olmaydi", async () => {
+    const join = await app.inject({
+      method: "POST",
+      url: "/api/internal/join-group",
+      headers: { "x-internal-key": internalKey(BOT_TOKEN) },
+      payload: { code: "abcdefgh", from: { id: TG.joiner, first_name: "Yangi" } },
+    });
+    expect(join.statusCode).toBe(404);
+    expect((await req("POST", `/admin/groups/${groupId}/invite`)).statusCode).toBe(404);
+    expect((await req("GET", "/admin/groups")).json().find((g: { id: string }) => g.id === groupId).inviteUrl).toBeUndefined();
   });
 
   it("ega: oylik summa, to'lovni belgilash (ota-onaga xabar), qarzdorlarga eslatma", async () => {

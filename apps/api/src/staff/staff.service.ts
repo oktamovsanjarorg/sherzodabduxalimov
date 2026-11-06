@@ -3,6 +3,7 @@ import { JwtService, type JwtSignOptions } from "@nestjs/jwt";
 import { STAFF_ROLES, type AuthResponse, type RoleName } from "@onatili/shared";
 import { createHash, randomBytes } from "node:crypto";
 import { ENV, type Env } from "../config/env";
+import { esc } from "../notify/telegram";
 import { NotifyService } from "../notify/notify.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { UsersService } from "../users/users.service";
@@ -50,6 +51,19 @@ export class StaffService {
   async alertOwners(text: string) {
     const owners = await this.prisma.user.findMany({ where: { role: "TEACHER", isBlocked: false, telegramId: { not: null } }, select: { telegramId: true } });
     await Promise.all(owners.map((o) => this.notify.send(o.telegramId, text).catch(() => null)));
+  }
+
+  /** Yangi o'quvchi birinchi marta paydo bo'ldi (botda yoki ilovada) */
+  async alertNewStudent(user: { firstName: string; lastName: string | null; username: string | null }) {
+    const who = esc([user.firstName, user.lastName].filter(Boolean).join(" ")) + (user.username ? ` (@${esc(user.username)})` : "");
+    await this.alertOwners(`🆕 <b>Yangi o'quvchi</b> keldi: ${who}\n\nAdmin panel → O'quvchilar → «Ko'rib chiqish kerak»: tasdiqlang, guruhiga qo'shing yoki begona bo'lsa bloklang`);
+  }
+
+  /** Bot: oddiy /start. Botga kirgan har bir kishi admin panelda ko'rinishi uchun yoziladi */
+  async recordVisit(tg: TelegramProfile) {
+    const { user, created } = await this.upsertTelegramUserEx(tg);
+    if (created && user.role === "STUDENT") await this.alertNewStudent(user);
+    return { ok: true };
   }
 
   /** upsertTelegramUser + yangi yaratilganmi */

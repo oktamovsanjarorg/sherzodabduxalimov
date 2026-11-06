@@ -33,7 +33,7 @@ describe("Yordamchi pulga oid ma'lumotlarni ko'rmaydi (e2e)", () => {
     await login(app, TG.assistant, "Yordamchi");
     await prisma.user.update({ where: { telegramId: BigInt(TG.assistant) }, data: { role: "ASSISTANT" } });
     A = (await login(app, TG.assistant, "Yordamchi")).headers;
-    await login(app, TG.student, "Pulli");
+    await login(app, TG.student, "Pulli", undefined, { paid: false });
 
     // Pulga oid ma'lumotlar: guruh, tarif, obuna, kutilayotgan chek, offline to'lov
     const u = await prisma.user.findUniqueOrThrow({ where: { telegramId: BigInt(TG.student) }, include: { student: true } });

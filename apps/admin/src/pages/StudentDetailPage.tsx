@@ -319,7 +319,7 @@ function Manage({ s }: { s: StudentDetail }) {
   });
   const modes = [
     ["AUTO", "Avtomatik", "Obuna yoki offline guruh bo'yicha"],
-    ["FREE", "Bepul ochiq", "To'lovsiz hamma narsa ochiq"],
+    ["FREE", "Bepul ochiq", "To'lovsiz va tasdiqsiz hamma narsa ochiq"],
     ["CLOSED", "Yopiq", "Pullik kontent yopiq (obuna/guruh bo'lsa ham)"],
   ] as const;
   const canDelete = !s.telegramLinked || isTeacher;

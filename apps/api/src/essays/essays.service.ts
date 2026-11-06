@@ -1,6 +1,7 @@
 import { BadRequestException, ConflictException, ForbiddenException, Inject, Injectable, NotFoundException, OnModuleDestroy, ServiceUnavailableException } from "@nestjs/common";
 import { Prisma } from "@onatili/db";
 import {
+  ESSAY_CANCELLED,
   AI_ESSAY_DAILY_LIMIT,
   ESSAY_MAX_SCORE,
   ESSAY_SPECIAL,
@@ -24,6 +25,7 @@ import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { ESSAY_AI_QUEUE, type EssayAiJob } from "../ai/queue";
 import { BillingService, sniffImage } from "../billing/billing.service";
+import { AccessService } from "../access/access.service";
 import { ENV, type Env } from "../config/env";
 import { redisConnection } from "../media/queue";
 import { NotifyService } from "../notify/notify.service";
@@ -68,6 +70,7 @@ export class EssaysService implements OnModuleDestroy {
     private readonly prisma: PrismaService,
     private readonly notify: NotifyService,
     private readonly billing: BillingService,
+    private readonly access: AccessService,
     @Inject(ENV) private readonly env: Env,
   ) {
     this.mediaRoot = resolve(env.MEDIA_DIR);
@@ -138,10 +141,11 @@ export class EssaysService implements OnModuleDestroy {
     if (d.mode === "AI") {
       if (!this.aiEnabled) throw new ConflictException("AI tekshiruvi hozircha o'chirilgan");
       await this.assertAiLimit(userId);
+      if (!d.text && !this.aiPhotoEnabled) throw new ConflictException("AI hozircha faqat yozilgan matnni tekshira oladi");
+      if (!d.text) await this.assertFewDrafts(userId);
+      await this.access.useTrial(userId, "ESSAY");
       if (!d.text) {
         // Qo'lyozma: avval varoq rasmlari yuklanadi, keyin "finish"
-        if (!this.aiPhotoEnabled) throw new ConflictException("AI hozircha faqat yozilgan matnni tekshira oladi");
-        await this.assertFewDrafts(userId);
         const e = await this.prisma.essay.create({ data: { userId, mode: "AI", prompt: d.prompt, status: "DRAFT" } });
         return this.detail(userId, e.id);
       }
@@ -154,6 +158,7 @@ export class EssaysService implements OnModuleDestroy {
     const staff = !!author && STAFF_ROLES.includes(author.role);
     if (!staff && (!price || !(await this.billing.card()))) throw new ConflictException("Ustoz tekshiruvi hali yoqilmagan");
     await this.assertFewDrafts(userId);
+    await this.access.useTrial(userId, "ESSAY");
     const e = await this.prisma.essay.create({ data: { userId, mode: "TEACHER", prompt: d.prompt, text: d.text, priceUzs: price, status: "DRAFT" } });
     return this.detail(userId, e.id);
   }
@@ -231,6 +236,15 @@ export class EssaysService implements OnModuleDestroy {
     return this.detail(userId, id);
   }
 
+  /** AI tekshiruvini bekor qilish. Ishlayotgan vazifa natijasi yozilmaydi: ai-runner holatni AI_CHECKING deb tekshiradi */
+  async cancel(userId: string, id: string): Promise<MyEssayDetail> {
+    await this.own(userId, id);
+    const { count } = await this.prisma.essay.updateMany({ where: { id, userId, status: "AI_CHECKING" }, data: { status: "AI_FAILED", error: ESSAY_CANCELLED } });
+    if (!count) throw new ConflictException("Bu tekshiruvni bekor qilib bo'lmaydi");
+    await this.queue.remove(id).catch(() => 0);
+    return this.detail(userId, id);
+  }
+
   /** Navbatga qo'yib bo'lmasa (Redis uzilgan), esse "AI tekshirmoqda"da qotib qolmasin: qayta urinish mumkin bo'lsin */
   private async enqueue(essayId: string, jobId = essayId) {
     try {
@@ -246,6 +260,8 @@ export class EssaysService implements OnModuleDestroy {
     const pending = await this.prisma.payment.count({ where: { essayId: id, status: { in: ["PENDING", "APPROVED"] } } });
     if (!["DRAFT", "AWAITING_PAYMENT", "AI_FAILED"].includes(e.status) || pending) throw new ConflictException("Bu esseni o'chirib bo'lmaydi");
     await this.prisma.essay.delete({ where: { id } });
+    // Tekshirilmagan esse o'chirildi: cheklangan rejimdagi bir martalik imkoniyat qaytadi
+    await this.prisma.trialUse.deleteMany({ where: { userId, kind: "ESSAY" } });
     await rm(join(this.mediaRoot, "essays", id), { recursive: true, force: true });
     return { ok: true };
   }

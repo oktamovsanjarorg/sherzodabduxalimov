@@ -48,11 +48,20 @@ bot.command("start", async (ctx) => {
   const m = /^p_([0-9A-Fa-f]{8})$/.exec(payload);
   if (m) {
     // Kod bazada saqlanadi: bot qayta ishga tushsa (har deploy) ham ota-ona keyinroq raqam ulashishi mumkin
+    let status: string;
     try {
-      await internal("parent-pending", { telegramId: ctx.from.id, code: m[1] });
+      ({ status } = await internal<{ status: string }>("parent-pending", { from: fromOf(ctx.from), code: m[1] }));
     } catch (e) {
       console.error("parent-pending:", redact(e));
       await ctx.reply("Hozir ulab bo'lmadi, birozdan keyin havolani qayta oching.");
+      return;
+    }
+    if (status === "self") {
+      await ctx.reply("Bu sizning shaxsiy havolangiz. Uni ota-onangizga yuboring: ular bosib, o'z raqamini ulashadi.", { reply_markup: openAppKeyboard() });
+      return;
+    }
+    if (status !== "ok") {
+      await ctx.reply("Havola noto'g'ri yoki eskirgan. Farzandingizdan havolani qayta yuborishini so'rang.");
       return;
     }
     await ctx.reply(
@@ -72,34 +81,13 @@ bot.command("start", async (ctx) => {
         claimed: `✅ Xush kelibsiz, <b>${esc(r.name ?? "")}</b>!${r.groupName ? ` Siz <b>${esc(r.groupName)}</b> guruhidasiz.` : ""}\n\nIlovani oching: darslar, testlar va natijalaringiz shu yerda.`,
         used: "Bu havola boshqa Telegram hisobiga bog'langan. Xato bo'lsa, ustozga yozing.",
         staff: "Siz xodimsiz: bu havola o'quvchi uchun.",
+        parent: "Siz ota-ona sifatida ulangansiz: bu havola o'quvchi uchun. Uni farzandingizga yuboring.",
         invalid: "Havola eskirgan. Ustozdan yangisini so'rang.",
       };
       await ctx.reply(msg[r.status] ?? msg.invalid, { parse_mode: "HTML", reply_markup: r.status === "claimed" ? openAppKeyboard() : undefined });
     } catch (e) {
       console.error("claim-student:", redact(e));
       await ctx.reply("Hozir bog'lab bo'lmadi, birozdan keyin havolani qayta bosing.");
-    }
-    return;
-  }
-
-  // O'quvchi: offline guruh havolasi orqali keldi
-  const g = /^g_([A-Za-z0-9_-]{6,16})$/.exec(payload);
-  if (g) {
-    try {
-      const r = await internal<{ status: string; groupName?: string; parentLinked?: boolean }>("join-group", { code: g[1], from: fromOf(ctx.from) });
-      const group = esc(r.groupName ?? "");
-      const parentNote = r.parentLinked ? "" : "\n\nIlovani birinchi ochganingizda <b>ota-onangizni ulash</b> so'raladi: bu majburiy.";
-      const msg: Record<string, string> = {
-        joined: `✅ Siz <b>${group}</b> guruhiga qo'shildingiz!\n\nEndi barcha videodarslar, testlar va mock imtihonlar siz uchun ochiq.${parentNote}`,
-        moved: `✅ Siz <b>${group}</b> guruhiga o'tkazildingiz.\n\nBarcha darslar va testlar ochiq.${parentNote}`,
-        already: `Siz allaqachon <b>${group}</b> guruhidasiz 👍`,
-        staff: `Siz xodimsiz: bu havola o'quvchilar uchun. Uni guruh chatiga yuboring.`,
-        invalid: "Bu havola eskirgan yoki o'chirilgan. Ustozdan yangi havola so'rang.",
-      };
-      await ctx.reply(msg[r.status] ?? msg.invalid, { parse_mode: "HTML", reply_markup: r.status === "invalid" ? undefined : openAppKeyboard() });
-    } catch (e) {
-      console.error("join-group:", redact(e));
-      await ctx.reply("Hozir guruhga qo'shib bo'lmadi, birozdan keyin havolani qayta bosing.");
     }
     return;
   }
@@ -111,6 +99,9 @@ bot.command("start", async (ctx) => {
     });
     return;
   }
+
+  // Botga kirgan har bir kishi admin panelda ko'rinadi. Xato bo'lsa ham salomlashuv chiqadi
+  await internal("visit", fromOf(ctx.from)).catch((e) => console.error("visit:", redact(e)));
 
   const name = ctx.from?.first_name ?? "";
   await ctx.reply(
@@ -150,7 +141,11 @@ bot.on("message:contact", async (ctx) => {
     return;
   }
   try {
-    const pending = await internal<{ code: string | null }>("parent-pending/take", { telegramId: from.id });
+    const pending = await internal<{ code: string | null; expired?: boolean }>("parent-pending/take", { telegramId: from.id });
+    if (pending.expired) {
+      await ctx.reply("Havola muddati o'tgan (24 soat). Farzandingizdan havolani qayta yuborishini so'rang va uni qaytadan oching.", done);
+      return;
+    }
     if (pending.code) {
       const r = await internal<{ status: string; studentName?: string; linkStatus?: string }>("parent-link", {
         code: pending.code,
@@ -166,7 +161,7 @@ Ustoz yoki yordamchi tasdiqlagach, sizga xabar keladi.`,
             ? "Siz allaqachon ulangansiz va tasdiqlangansiz ✅"
             : "So'rovingiz allaqachon yuborilgan, tasdiqlanishini kuting ⏳",
         invalid_code: "Havola noto'g'ri yoki eskirgan. Farzandingizdan havolani qayta yuborishini so'rang.",
-        self: "Bu havolani farzandingizga emas, ota-onasiga yuborish kerak. O'z havolangiz orqali o'zingizni ulab bo'lmaydi.",
+        self: "Bu sizning shaxsiy havolangiz. Uni ota-onangizga yuboring: o'zingizni ulab bo'lmaydi.",
         limit: "Bu o'quvchiga allaqachon 2 ta ota-ona ulangan.",
         rejected_before: "Avvalgi so'rovingiz rad etilgan. Savollar bo'lsa, ustozga murojaat qiling.",
         not_own_contact: "Iltimos, o'z raqamingizni ulashing.",

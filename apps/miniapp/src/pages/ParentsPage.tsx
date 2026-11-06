@@ -10,7 +10,7 @@ export function ParentsPage() {
   return (
     <FullPage>
       <h1 className="mb-4 px-1 text-xl font-extrabold">Ota-onam</h1>
-      <ParentGatePage embedded />
+      <ParentGatePage />
     </FullPage>
   );
 }

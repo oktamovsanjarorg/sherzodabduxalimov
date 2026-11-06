@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, useState } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
 import { AppLayout } from "./components/AppLayout";
 import { api, ApiError } from "./lib/api";
@@ -39,8 +39,8 @@ const EssaysPage = page(() => import("./pages/EssaysPage"), "EssaysPage");
 const NewEssayPage = page(() => import("./pages/EssaysPage"), "NewEssayPage");
 const LessonPage = page(() => import("./pages/LessonPage"), "LessonPage");
 const MocksPage = page(() => import("./pages/MocksPage"), "MocksPage");
-const ParentGatePage = page(() => import("./pages/ParentGatePage"), "ParentGatePage");
 const ParentHomePage = page(() => import("./pages/ParentHomePage"), "ParentHomePage");
+const ParentPhonePage = lazy(() => import("./pages/ParentPhonePage").then((m) => ({ default: m.ParentPhonePage })));
 const ParentsPage = page(() => import("./pages/ParentsPage"), "ParentsPage");
 const MyAttendancePage = page(() => import("./pages/MyAttendancePage"), "MyAttendancePage");
 const SettingsPage = page(() => import("./pages/SettingsPage"), "SettingsPage");
@@ -53,6 +53,7 @@ export function App() {
   const setSession = useAuth((s) => s.setSession);
   const user = useAuth((s) => s.user);
   const blocked = useAuth((s) => s.blocked);
+  const [phoneSkipped, setPhoneSkipped] = useState(false);
 
   const session = useQuery({
     queryKey: ["session"],
@@ -75,11 +76,11 @@ export function App() {
       />
     );
   if (session.isError) return <FullScreen title="Kirishda xatolik" text={session.error.message} />;
-  // Ota-onasi ulanmagan o'quvchi: majburiy qadam (server ham kontentni yopiq tutadi)
-  if (user?.role === "STUDENT" && user.parentStatus === "NONE")
+  // Ota-ona havolasi orqali kelgan: raqam ilovaning o'zida so'raladi
+  if (user?.pendingParentInvite && !phoneSkipped)
     return (
       <Suspense fallback={<Splash />}>
-        <ParentGatePage />
+        <ParentPhonePage onSkip={() => setPhoneSkipped(true)} />
       </Suspense>
     );
   if (user?.role === "PARENT")

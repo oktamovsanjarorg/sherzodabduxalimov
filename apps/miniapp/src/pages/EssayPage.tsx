@@ -1,4 +1,4 @@
-import { ESSAY_RUBRIC, ESSAY_STATUS_LABELS, MAX_ESSAY_PAGES, NO_ESSAY_ERROR, formatCard, formatSum, type EssayConfig, type EssayReviewView, type MyEssayDetail, type PageAnnotations, formatScore } from "@onatili/shared";
+import { ESSAY_CANCELLED, ESSAY_RUBRIC, ESSAY_STATUS_LABELS, MAX_ESSAY_PAGES, NO_ESSAY_ERROR, formatCard, formatSum, type EssayConfig, type EssayReviewView, type MyEssayDetail, type PageAnnotations, formatScore } from "@onatili/shared";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Bot, Clock, GraduationCap, ImagePlus, Lightbulb, Loader2, RotateCcw, Trash2, X, XCircle } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
@@ -113,6 +113,7 @@ export function EssayPage() {
               )}
             </details>
           )}
+          {e.status === "AI_CHECKING" && <CancelCheck id={e.id} onChange={set} />}
           {(e.status === "DRAFT" || e.status === "AI_FAILED" || (e.status === "AWAITING_PAYMENT" && e.payment?.status !== "PENDING")) && (
             <DeleteButton id={e.id} />
           )}
@@ -140,7 +141,7 @@ function Failed({ e, onChange }: { e: MyEssayDetail; onChange: (e: MyEssayDetail
   return (
     <div className="card mt-4 text-center">
       <XCircle size={36} className="mx-auto text-danger" />
-      <p className="mt-2 font-bold">{noEssay ? "Rasmda esse topilmadi" : ESSAY_STATUS_LABELS.AI_FAILED}</p>
+      <p className="mt-2 font-bold">{noEssay ? "Rasmda esse topilmadi" : e.error === ESSAY_CANCELLED ? "Tekshiruv bekor qilindi" : ESSAY_STATUS_LABELS.AI_FAILED}</p>
       <p className="mt-1 text-sm text-hint">
         {noEssay
           ? "Yuklangan rasmda esse matni ko'rinmadi (boshqa material, xira yoki bo'sh varoq bo'lishi mumkin). Esse yozilgan varoqni yorug' joyda, tekis qilib suratga oling. Bu urinish kunlik limitga hisoblanmadi."
@@ -426,6 +427,24 @@ function PayBox({ e, card, onDone }: { e: MyEssayDetail; card: EssayConfig["card
         {send.isPending && <Loader2 size={18} className="animate-spin" />}
         Chekni yuborish
       </button>
+    </>
+  );
+}
+
+function CancelCheck({ id, onChange }: { id: string; onChange: (e: MyEssayDetail) => void }) {
+  const cancel = useMutation({ mutationFn: () => api.cancelEssay(id), onSuccess: onChange });
+  return (
+    <>
+      <button
+        className="mx-auto mt-6 flex items-center gap-1 text-sm font-semibold text-danger disabled:opacity-50"
+        disabled={cancel.isPending}
+        onClick={async () => {
+          if (await confirmDialog("Tekshiruv bekor qilinsinmi?")) cancel.mutate();
+        }}
+      >
+        <XCircle size={14} /> Tekshiruvni bekor qilish
+      </button>
+      {cancel.isError && <p className="mt-2 text-center text-xs text-danger">{cancel.error.message}</p>}
     </>
   );
 }

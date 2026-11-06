@@ -4,7 +4,7 @@ import { ChevronRight, ClipboardCheck, ListChecks, Loader2, Lock } from "lucide-
 import { useNavigate } from "react-router-dom";
 import { api, ApiError } from "../lib/api";
 import { formatDuration } from "../lib/hooks";
-import { haptic } from "../lib/telegram";
+import { confirmDialog, haptic } from "../lib/telegram";
 
 export function TestCard({ test }: { test: TestSummary }) {
   const navigate = useNavigate();
@@ -12,8 +12,9 @@ export function TestCard({ test }: { test: TestSummary }) {
     mutationFn: () =>
       test.inProgressAttemptId ? Promise.resolve({ id: test.inProgressAttemptId }) : api.startTest(test.id),
     onSuccess: (a) => navigate(`/attempt/${a.id}`),
-    onError: (e) => {
+    onError: async (e) => {
       if (e instanceof ApiError && e.code === "SUBSCRIPTION_REQUIRED") navigate("/subscribe");
+      if (e instanceof ApiError && e.code === "TRIAL_LIMIT" && (await confirmDialog(`${e.message} Ota-ona holatini ko'rasizmi?`))) navigate("/parents");
     },
   });
 

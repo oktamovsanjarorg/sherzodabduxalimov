@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ChevronRight, ListPlus, Search, Settings2, UserPlus } from "lucide-react";
 import { useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
+import { AllUsers } from "../components/AllUsers";
 import { GroupManager } from "../components/GroupManager";
 import { Inbox } from "../components/Inbox";
 import { Badge, Empty, Field, Modal, PageHeader, Spinner } from "../components/ui";
@@ -19,7 +20,7 @@ export function StudentsPage() {
   const [adding, setAdding] = useState<"one" | "bulk" | null>(null);
   const [managing, setManaging] = useState(params.get("groups") === "1");
   const groups = useQuery({ queryKey: ["groups"], queryFn: api.groups });
-  const roster = useQuery({ queryKey: ["roster", groupId, q.trim()], queryFn: () => api.roster(groupId, q.trim()), placeholderData: (p) => p });
+  const roster = useQuery({ queryKey: ["roster", groupId, q.trim()], queryFn: () => api.roster(groupId, q.trim()), placeholderData: (p) => p, enabled: !!groupId });
   const isTeacher = loadSession()?.user.role === "TEACHER";
   const active = groups.data?.filter((g) => g.isActive) ?? [];
   const setGroup = (g: string) => setParams(g ? { group: g } : {}, { replace: true });
@@ -65,19 +66,20 @@ export function StudentsPage() {
         <input className="input pl-9" placeholder="Ism, @username yoki telefon" value={q} onChange={(e) => setQ(e.target.value)} />
       </div>
 
-      {roster.isPending && <Spinner className="text-slate-400" />}
-      {roster.data?.length === 0 && (
+      {!groupId && <AllUsers q={q.trim()} groups={groups.data ?? []} isTeacher={isTeacher} />}
+      {!!groupId && roster.isPending && <Spinner className="text-slate-400" />}
+      {!!groupId && roster.data?.length === 0 && (
         <Empty
           title={q ? "Topilmadi" : "Bu yerda hali o'quvchi yo'q"}
           hint={q ? undefined : "«O'quvchi qo'shish» yoki «Ro'yxat bilan» tugmasi orqali kiriting."}
         />
       )}
-      {!!roster.data?.length && (
+      {!!groupId && !!roster.data?.length && (
         <>
           <p className="mb-2 text-xs text-slate-500">{roster.data.length} ta o'quvchi</p>
           <div className="card divide-y divide-slate-100">
             {roster.data.map((r) => (
-              <Row key={r.studentId} r={r} isTeacher={isTeacher} showGroup={!groupId} />
+              <Row key={r.studentId} r={r} isTeacher={isTeacher} showGroup={groupId === "none"} />
             ))}
           </div>
         </>

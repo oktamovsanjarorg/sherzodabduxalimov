@@ -26,6 +26,17 @@ export class StaffController {
     return { url: await this.staff.createLoginLink(p.data) };
   }
 
+  /** Bot chaqiradi: oddiy /start */
+  @Public()
+  @UseGuards(InternalGuard)
+  @Post("internal/visit")
+  @HttpCode(200)
+  visit(@Body() body: unknown) {
+    const p = loginLinkBody.safeParse(body);
+    if (!p.success) throw new BadRequestException();
+    return this.staff.recordVisit(p.data);
+  }
+
   @Public()
   @Post("auth/admin-link")
   @HttpCode(200)

@@ -3,7 +3,6 @@ import { JwtService } from "@nestjs/jwt";
 import { ERROR_CODES } from "@onatili/shared";
 import { InitDataError, validateInitData, type AuthResponse } from "@onatili/shared/server";
 import { ENV, type Env } from "../config/env";
-import { esc } from "../notify/telegram";
 import { StaffService } from "../staff/staff.service";
 import { UsersService } from "../users/users.service";
 
@@ -28,10 +27,7 @@ export class AuthService {
     const { user, created } = await this.staff.upsertTelegramUserEx(tg);
     if (user.isBlocked)
       throw new UnauthorizedException({ code: ERROR_CODES.BLOCKED, message: user.blockedReason ? `Hisob bloklangan: ${user.blockedReason}` : "Hisob bloklangan" });
-    if (created && user.role === "STUDENT") {
-      const who = esc([user.firstName, user.lastName].filter(Boolean).join(" ")) + (user.username ? ` (@${esc(user.username)})` : "");
-      await this.staff.alertOwners(`🆕 <b>Yangi o'quvchi</b> ilovaga kirdi: ${who}\n\nAdmin panel → O'quvchilar → «Ko'rib chiqish kerak»: guruhiga qo'shing yoki begona bo'lsa bloklang`);
-    }
+    if (created && user.role === "STUDENT") await this.staff.alertNewStudent(user);
 
     const token = await this.jwt.signAsync({ sub: user.id, role: user.role });
     return { token, expiresIn: this.env.JWT_TTL, user: await this.users.me(user.id) };

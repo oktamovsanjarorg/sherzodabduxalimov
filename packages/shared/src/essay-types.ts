@@ -106,6 +106,8 @@ export const countWords = (t: string) => (t.trim().match(/[\p{L}\p{N}'ʻʼ`-]+/g
 
 export const MAX_ESSAY_PAGES = 4;
 /** AI varoq rasmida esse matnini topmadi (boshqa narsaning rasmi, xira yoki bo'sh varoq). Limitga hisoblanmaydi */
+/** O'quvchi AI tekshiruvini o'zi bekor qilganda yoziladi */
+export const ESSAY_CANCELLED = "Qayta yuborishingiz yoki esseni o'chirishingiz mumkin.";
 export const NO_ESSAY_ERROR = "Rasmda esse matni topilmadi. Varoqni yorug' joyda, tekis va aniq qilib suratga oling.";
 export const AI_ESSAY_DAILY_LIMIT = 2;
 export const ESSAY_STATUS_LABELS: Record<EssayStatusName, string> = {

@@ -1,16 +1,12 @@
 import { useQuery } from "@tanstack/react-query";
-import { CheckCircle2, Clock, Copy, Phone, Send, ShieldCheck, XCircle } from "lucide-react";
+import { CheckCircle2, Clock, Copy, Phone, Send, XCircle } from "lucide-react";
 import { useEffect, useState } from "react";
-import { SafeTopBar } from "../components/AppLayout";
 import { api } from "../lib/api";
 import { hapticResult, openExternal, requestOwnPhone } from "../lib/telegram";
 import { useAuth } from "../store/auth";
 
-/**
- * Majburiy qadam: o'quvchi o'z raqamini va ota-onasini ulaydi.
- * Ota-ona botda raqamini ulashishi bilan ilova ochiladi (ustoz keyinroq tasdiqlaydi).
- */
-export function ParentGatePage({ embedded = false }: { embedded?: boolean }) {
+/** O'quvchi o'z raqamini va ota-onasini ulaydi. To'liq foydalanish uchun ota-ona va ustoz tasdig'i kerak */
+export function ParentGatePage() {
   const { token, user, setSession } = useAuth();
   const [copied, setCopied] = useState(false);
   const [asked, setAsked] = useState(false);
@@ -21,7 +17,7 @@ export function ParentGatePage({ embedded = false }: { embedded?: boolean }) {
   const parents = useQuery({ queryKey: ["my-parents"], queryFn: api.myParents, refetchInterval: hasPhone ? 3000 : false });
   useEffect(() => {
     if (!me.data || !token) return;
-    if (me.data.phone !== user?.phone || me.data.parentStatus !== user?.parentStatus) {
+    if (me.data.phone !== user?.phone || me.data.parentStatus !== user?.parentStatus || me.data.trial.limited !== user?.trial.limited) {
       if (me.data.parentStatus !== "NONE" && user?.parentStatus === "NONE") hapticResult("success");
       setSession(token, me.data);
     }
@@ -31,20 +27,8 @@ export function ParentGatePage({ embedded = false }: { embedded?: boolean }) {
   const list = parents.data?.parents ?? [];
   const active = list.filter((p) => p.status !== "REJECTED");
 
-  const body = (
+  return (
     <div className="mx-auto max-w-md">
-      {!embedded && (
-        <div className="mb-5 flex flex-col items-center text-center">
-          <span className="flex h-16 w-16 items-center justify-center rounded-2xl bg-brand-soft text-brand">
-            <ShieldCheck size={32} />
-          </span>
-          <h1 className="mt-3 text-xl font-extrabold">Ota-onangizni ulang</h1>
-          <p className="mt-1 text-sm text-hint">
-            Darsdagi davomatingiz haqidagi xabarlar ota-onangizga yuboriladi. Bu majburiy qadam: 1 daqiqa vaqt oladi.
-          </p>
-        </div>
-      )}
-
       <Step n={1} done={hasPhone} title="Telefon raqamingiz" hint={hasPhone ? user!.phone! : "Telegram'dagi raqamingiz ulashiladi"}>
         {!hasPhone && (
           <button
@@ -111,19 +95,7 @@ export function ParentGatePage({ embedded = false }: { embedded?: boolean }) {
         )}
       </Step>
 
-      {!embedded && (
-        <p className="mt-4 px-2 text-center text-xs text-hint">
-          Diqqat: havolani o'zingizning boshqa akkauntingizga yuborsangiz, ustoz so'rovni rad etadi.
-        </p>
-      )}
-    </div>
-  );
-
-  if (embedded) return body;
-  return (
-    <div className="min-h-full">
-      <SafeTopBar />
-      <main className="px-4 pb-10 pt-[calc(theme(spacing.safe-top)+24px)]">{body}</main>
+      <p className="mt-4 px-2 text-center text-xs text-hint">Diqqat: havolani o'zingizning boshqa akkauntingizga yuborsangiz, ustoz so'rovni rad etadi.</p>
     </div>
   );
 }

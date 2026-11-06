@@ -58,6 +58,26 @@ model User {
   videos                Video[]
   invitesSent           StaffInvite[]
   followUpsWritten      PaymentFollowUp[] @relation("FollowUpAuthor")
+  trialUses             TrialUse[]
+}
+
+enum TrialKind {
+  LESSON
+  TOPIC_TEST
+  MOCK
+  ESSAY
+}
+
+/// Cheklangan rejim: tasdiqlanmagan o'quvchi har bo'limdan bir martadan foydalanadi. Bir tur uchun bitta yozuv
+model TrialUse {
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  kind      TrialKind
+  /// Dars uchun: ochilgan dars (o'sha darsni qayta ochish mumkin)
+  refId     String?
+  createdAt DateTime  @default(now())
+
+  @@id([userId, kind])
 }
 
 model StudentProfile {

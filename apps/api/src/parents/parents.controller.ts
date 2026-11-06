@@ -37,8 +37,8 @@ export class ParentsController {
   @Post("internal/parent-pending")
   @HttpCode(200)
   parentPending(@Body() b: unknown) {
-    const d = parse(z.object({ telegramId: z.number().int().positive(), code: z.string().regex(/^[0-9A-Fa-f]{8}$/) }), b);
-    return this.parents.setPending(d.telegramId, d.code);
+    const d = parse(z.object({ from, code: z.string().regex(/^[0-9A-Fa-f]{8}$/) }), b);
+    return this.parents.setPending(d.from, d.code);
   }
 
   /** Kontakt keldi: kutilayotgan ota-ona kodi bo'lsa, qaytaradi va o'chiradi */
