@@ -29,7 +29,10 @@ export function AttendancePage() {
   const groups = useQuery({ queryKey: ["groups"], queryFn: api.groups });
   const [params] = useSearchParams();
   const [groupId, setGroupId] = useState<string>(() => params.get("group") ?? localStorage.getItem(GROUP_KEY) ?? "");
-  const [date, setDate] = useState(todayTashkent());
+  const [date, setDate] = useState(() => {
+    const d = params.get("date");
+    return d && /^\d{4}-\d{2}-\d{2}$/.test(d) && d <= todayTashkent() ? d : todayTashkent();
+  });
   const [view, setView] = useState<"day" | "month">("day");
   const [managing, setManaging] = useState(false);
 

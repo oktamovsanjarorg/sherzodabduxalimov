@@ -23,7 +23,16 @@ export function useNavGroups(): NavGroup[] {
   // Kutayotgan ota-ona so'rovlari soni: navigatsiya tugmasida ko'rsatiladi
   const dash = useQuery({ queryKey: ["dashboard"], queryFn: api.dashboard, refetchInterval: 30_000 });
   return [
-    { to: "/", label: "Asosiy", Icon: Home, match: /^\/$/ },
+    {
+      to: "/",
+      label: "Asosiy",
+      Icon: Home,
+      match: /^\/($|stats)/,
+      sub: [
+        { to: "/", label: "Bugun", match: /^\/$/ },
+        { to: "/stats", label: "Statistika", match: /^\/stats/ },
+      ],
+    },
     {
       to: "/content",
       label: "Kontent",

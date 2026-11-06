@@ -1,4 +1,5 @@
 import type {
+  TeacherStats,
   AdminPayment,
   AdminPlan,
   AdminSubscriptions,
@@ -76,7 +77,8 @@ export interface AdminDashboard {
   expiringSubscriptions: number;
   videos: { processing: number; failed: number };
   students: { total: number; withoutApprovedParent: number };
-  attendanceToday: { groups: { id: string; name: string; schedule: string | null; marked: number; total: number }[] };
+  attendanceToday: { date: string; groups: { id: string; name: string; schedule: string | null; marked: number; total: number }[] };
+  attendanceMissed: { groupId: string; name: string; date: string }[];
   content: { lessonsPublished: number; lessonsDraft: number; tests: number; questions: number };
 }
 
@@ -206,6 +208,7 @@ export const api = {
   rejectParent: (id: string, reason: string) => request(`/admin/parent-links/${id}/reject`, json("POST", { reason })),
 
   dashboard: () => request<AdminDashboard>("/admin/dashboard"),
+  stats: (month: string) => request<TeacherStats>(`/admin/stats?month=${month}`),
   passages: () => request<AdminPassage[]>("/admin/passages"),
   createPassage: (d: PassageInput) => request<AdminPassage>("/admin/passages", json("POST", d)),
   updatePassage: (id: string, d: Partial<PassageInput>) => request(`/admin/passages/${id}`, json("PATCH", d)),

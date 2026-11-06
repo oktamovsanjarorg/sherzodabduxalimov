@@ -82,6 +82,19 @@ describe("Yordamchi pulga oid ma'lumotlarni ko'rmaydi (e2e)", () => {
     expect((await req("GET", "/admin/payments", H)).statusCode).toBe(200);
   });
 
+  it("statistika: yordamchi daromadni ko'rmaydi, ega ko'radi; oy formati tekshiriladi", async () => {
+    const t = await req("GET", "/admin/stats", H);
+    const a = await req("GET", "/admin/stats", A);
+    expect(t.statusCode).toBe(200);
+    expect(a.statusCode).toBe(200);
+    expect(t.json().income.months).toHaveLength(6);
+    expect(a.json().income).toBeNull();
+    expect(a.json().students.total).toBe(t.json().students.total);
+    expect(t.json().weeks).toHaveLength(8);
+    expect((await req("GET", "/admin/stats?month=2026-13", H)).statusCode).toBe(400);
+    expect((await req("GET", "/admin/stats?month=2026-01", H)).json().month).toBe("2026-01");
+  });
+
   it("umumiy sahifalarda pul ma'lumoti yashirin: bosh sahifa, o'quvchilar ro'yxati va kartasi", async () => {
     const dt = (await req("GET", "/admin/dashboard", H)).json();
     const da = (await req("GET", "/admin/dashboard", A)).json();

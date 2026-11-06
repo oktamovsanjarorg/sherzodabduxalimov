@@ -1,3 +1,4 @@
+import { dayLabel } from "@onatili/shared";
 import { useQuery } from "@tanstack/react-query";
 import { FileText, AlertTriangle, BookOpen, CalendarCheck, CheckCircle2, ChevronRight, ClipboardList, CreditCard, Film, LibraryBig, Plus, ShieldCheck, Users } from "lucide-react";
 import type { ReactNode } from "react";
@@ -17,7 +18,7 @@ export function DashboardPage() {
   const unmarked = x.attendanceToday.groups.filter((g) => g.total > 0 && g.marked < g.total);
   const payments = isTeacher ? x.pendingPayments : 0;
   const expiring = isTeacher ? x.expiringSubscriptions : 0;
-  const todo = (expiring ? 1 : 0) + (payments ? 1 : 0) + (x.pendingEssays ? 1 : 0) + (x.pendingParents ? 1 : 0) + (unmarked.length ? 1 : 0) + (x.videos.failed ? 1 : 0);
+  const todo = (expiring ? 1 : 0) + (payments ? 1 : 0) + (x.pendingEssays ? 1 : 0) + (x.pendingParents ? 1 : 0) + (unmarked.length ? 1 : 0) + (x.attendanceMissed.length ? 1 : 0) + (x.videos.failed ? 1 : 0);
 
   return (
     <div className="space-y-6">
@@ -47,8 +48,18 @@ export function DashboardPage() {
             to={`/attendance?group=${g.id}`}
             tone="brand"
             Icon={CalendarCheck}
-            title={`${g.name}: davomat olinmagan`}
-            hint={`${g.marked}/${g.total} belgilangan${g.schedule ? ` · ${g.schedule}` : ""}`}
+            title={`${g.name} · bugungi dars (${dayLabel(x.attendanceToday.date)}): davomat olinmagan`}
+            hint={`${g.marked}/${g.total} o'quvchi belgilangan${g.schedule ? ` · jadval: ${g.schedule}` : ""}`}
+          />
+        ))}
+        {x.attendanceMissed.slice(0, 5).map((m) => (
+          <Todo
+            key={`${m.groupId}-${m.date}`}
+            to={`/attendance?group=${m.groupId}&date=${m.date}`}
+            tone="amber"
+            Icon={CalendarCheck}
+            title={`${m.name} · ${dayLabel(m.date)} darsi: davomat olinmay qolgan`}
+            hint="Jadval bo'yicha dars kuni edi. Dars bo'lmagan bo'lsa, e'tibor bermang — 7 kundan keyin o'zi yo'qoladi"
           />
         ))}
         {x.videos.failed > 0 && (
@@ -77,7 +88,12 @@ export function DashboardPage() {
 
       {/* Ko'rsatkichlar */}
       <section>
-        <h2 className="label mb-2">Ko'rsatkichlar</h2>
+        <div className="mb-2 flex items-center justify-between">
+          <h2 className="label">Ko'rsatkichlar</h2>
+          <Link to="/stats" className="flex items-center gap-1 text-sm font-bold text-brand hover:underline">
+            Batafsil statistika <ChevronRight size={15} />
+          </Link>
+        </div>
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
           <Stat Icon={Users} value={x.students.total} label="O'quvchi" hint={x.students.withoutApprovedParent ? `${x.students.withoutApprovedParent} tasida ota-ona tasdiqlanmagan` : "Hammasida ota-ona tasdiqlangan"} />
           <Stat Icon={BookOpen} value={x.content.lessonsPublished} label="Nashr qilingan dars" hint={x.content.lessonsDraft ? `${x.content.lessonsDraft} ta qoralama` : undefined} />

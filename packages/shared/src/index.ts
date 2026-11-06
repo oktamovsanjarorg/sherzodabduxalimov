@@ -9,3 +9,4 @@ export * from "./essay-types";
 export * from "./students-types";
 export * from "./rasch";
 export * from "./annotation-types";
+export * from "./stats-types";
