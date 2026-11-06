@@ -50,6 +50,18 @@ export async function aiAnnotations(
 
 export { NO_ESSAY_ERROR };
 
+/** Tekshirilmaydigan holatlar uchun tayyor tavsiyalar */
+const SPECIAL_TIPS: Partial<Record<EssaySpecialKey, AiEssayResult["tips"]>> = {
+  TOO_SHORT: [
+    { focus: "parts", text: "Kamida 100 so'z yozing: kirish (2–3 gap), asosiy qism (ikki qarash va shaxsiy fikr, dalillar bilan) va xulosa (2–3 gap).", example: null },
+    { focus: "evidence", text: "Har bir qarashni bitta hayotiy misol yoki dalil bilan asoslang — bu ham hajmni, ham mazmunni oshiradi.", example: null },
+  ],
+  CYRILLIC: [{ focus: "spelling", text: "Esse faqat lotin yozuvida yozilishi shart: to'liq kirillcha esse tekshirilmaydi va 0 ball oladi.", example: null }],
+  OFF_TOPIC: [{ focus: "views", text: "Topshiriqdagi vaziyatni diqqat bilan o'qing va asosiy qism hamda xulosada aynan shu vaziyat haqida fikr yuriting.", example: null }],
+  COPIED: [{ focus: "style", text: "Vaziyat matnini yoki boshqa manbani ko'chirmang: fikrlarni o'z so'zlaringiz bilan bayon qiling.", example: null }],
+  ONLY_INTRO: [{ focus: "parts", text: "Kirishdan keyin asosiy qism (ikki qarash, shaxsiy fikr, dalillar) va xulosani ham yozing.", example: null }],
+};
+
 /** Bitta esseni AI bilan baholaydi va natijani saqlaydi. Worker chaqiradi; testda grade soxta bo'ladi. */
 export async function gradeEssayJob(prisma: PrismaClient, essayId: string, grade: GradeFn, send: SendFn, miniAppUrl: string | undefined, read?: ReadFn, locate?: LocateFn) {
   const e = await prisma.essay.findUnique({ where: { id: essayId }, include: { user: { select: { telegramId: true } } } });
@@ -72,7 +84,13 @@ export async function gradeEssayJob(prisma: PrismaClient, essayId: string, grade
   // Mezon: to'liq kirillcha -> 0; 100 so'zdan kam -> 2 (tekshirilmaydi). Buni AI emas, server aniq hisoblaydi
   const auto: EssaySpecialKey | null = isMostlyCyrillic(text) ? "CYRILLIC" : countWords(text) < 100 ? "TOO_SHORT" : null;
   const r = auto
-    ? { special: auto, criteria: [], feedback: `${ESSAY_SPECIAL[auto].label}: mezon bo'yicha esse tekshirilmaydi va ${ESSAY_SPECIAL[auto].score} ball bilan baholanadi.${auto === "TOO_SHORT" ? ` Matningizda ${countWords(text)} ta so'z bor, kamida 100 ta kerak.` : ""}`, mistakes: [] }
+    ? {
+        special: auto,
+        criteria: [],
+        feedback: `${ESSAY_SPECIAL[auto].label}: mezon bo'yicha esse tekshirilmaydi va ${ESSAY_SPECIAL[auto].score} ball bilan baholanadi.${auto === "TOO_SHORT" ? ` Matningizda ${countWords(text)} ta so'z bor, kamida 100 ta kerak.` : ""}`,
+        mistakes: [],
+        tips: SPECIAL_TIPS[auto] ?? [],
+      }
     : await grade(e.prompt, text, handwritten);
   const special = (r.special ?? null) as EssaySpecialKey | null;
   const scored = rubricScore(special, r.criteria);
@@ -83,7 +101,18 @@ export async function gradeEssayJob(prisma: PrismaClient, essayId: string, grade
   const { count } = await prisma.essay.updateMany({ where: { id: essayId, status: "AI_CHECKING" }, data: { status: "AI_CHECKED", error: null } });
   if (!count) return null;
   await prisma.essayReview.create({
-    data: { essayId, source: "AI", provider: "deepseek", criteria, special, mistakes: r.mistakes, annotations: annotations ?? undefined, totalScore: total, feedback: r.feedback || null },
+    data: {
+      essayId,
+      source: "AI",
+      provider: "deepseek",
+      criteria,
+      special,
+      mistakes: r.mistakes,
+      tips: r.tips.length ? r.tips : (special ? SPECIAL_TIPS[special] : undefined) ?? undefined,
+      annotations: annotations ?? undefined,
+      totalScore: total,
+      feedback: r.feedback || null,
+    },
   });
   if (e.user.telegramId !== null) await send(
     e.user.telegramId,

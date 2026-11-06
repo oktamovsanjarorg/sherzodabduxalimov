@@ -379,6 +379,8 @@ model EssayReview {
   mistakes   Json         @default("[]") // AI: [{wrong,right,note}]
   /// AI: xatolarning varoqdagi joyi (chizgi + yorliq) yoki matndagi o'rni — ustoz belgilari bilan bir xil format
   annotations Json?
+  /// AI: aniq tavsiyalar [{focus, text, example}] — eng zaif bandlar bo'yicha, o'quvchining o'z jumlasi namunasi bilan
+  tips       Json?
   totalScore Float
   /// Esse tekshirilmaydigan holat (OFF_TOPIC, TOO_SHORT, ...)
   special    String?

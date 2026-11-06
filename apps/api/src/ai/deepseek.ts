@@ -8,6 +8,8 @@ export interface AiEssayResult {
   criteria: { key: string; score: number; comment: string | null }[];
   feedback: string;
   mistakes: { wrong: string; right: string; note: string | null; type: ErrorTypeKey }[];
+  /** Aniq tavsiyalar: eng zaif bandlar bo'yicha, o'quvchining o'z jumlasi yaxshilangan namunasi bilan */
+  tips: { focus: string | null; text: string; example: string | null }[];
 }
 
 /** DeepSeek (OpenAI bilan mos API). IPv4 majburiy: serverda IPv6 ishlamaydi. */
@@ -46,6 +48,7 @@ const resultSchema = z.object({
   criteria: z.array(z.object({ key: z.string(), score: z.coerce.number(), comment: z.string().nullish() })).default([]),
   feedback: z.string().default(""),
   mistakes: z.array(z.object({ wrong: z.string(), right: z.string(), note: z.string().nullish(), type: z.string().nullish() })).default([]),
+  tips: z.array(z.object({ focus: z.string().nullish(), text: z.string(), example: z.string().nullish() })).default([]).catch([]),
 });
 
 const TYPE_KEYS = ERROR_TYPES.map((t) => t.key as string);
@@ -90,9 +93,10 @@ ESSE TEKSHIRILMAYDIGAN HOLATLAR ("special"):
 Bunday holatda "special" ga shu qiymatni yoz, aks holda null.
 
 JAVOB (faqat JSON):
-{"special": null, "criteria": [{"key": "style", "score": 1.5, "comment": "..."}, ... 12 ta band ...], "feedback": "...", "mistakes": [{"wrong": "...", "right": "...", "type": "spelling|punctuation|affix|word|style|logic|other", "note": "qisqa qoida"}]}
+{"special": null, "criteria": [{"key": "style", "score": 1.5, "comment": "..."}, ... 12 ta band ...], "feedback": "...", "mistakes": [{"wrong": "...", "right": "...", "type": "spelling|punctuation|affix|word|style|logic|other", "note": "qisqa qoida"}], "tips": [{"focus": "evidence", "text": "...", "example": "..."}]}
 - "comment": har bir bandga 1–2 jumla, xatolar sonini ko'rsat (masalan, "imlo xatosi 3 o'rinda").
 - "feedback": ekspert taqrizi — 3–5 jumlali xulosa va yaxshilash bo'yicha aniq maslahat.
+- "tips": 3–5 ta ANIQ tavsiya — eng past ball olgan bandlardan boshlab. "focus" — band kaliti (style, views, evidence, parts, structure, coherence, spelling, punctuation, affixes, wordUsage, lexicon, purity). "text" — nima qilish kerakligi (1–2 jumla, umumiy gap emas: aynan shu essega tegishli). "example" — o'quvchi essesidagi bitta jumlaning yaxshilangan namunasi yoki shu esse uchun yozilishi mumkin bo'lgan namunaviy jumla (masalan, kirish, dalil yoki xulosa jumlasi); kerak bo'lmasa null.
 - "mistakes": eng muhim xatolar (ko'pi bilan 15 ta). "wrong" — matndan AYNAN ko'chirilgan qism (1–4 so'z, keyin varoqdan topiladi), "right" — to'g'risi. "type": spelling (imlo), punctuation (tinish belgisi), affix (qo'shimcha), word (so'z qo'llash), style (uslub), logic (mantiq/izchillik), other. "wrong" va "right" bir xil bo'lmasin; ishonching komil bo'lmasa kiritma.
 Barcha izohlar o'zbek tilida (lotin).`;
   const note = handwritten
@@ -187,7 +191,8 @@ export function parseFirstJson(raw: string): unknown {
 }
 
 /** Mezon kalitlari va ball qadamlari bizning jadval bo'yicha tekshiriladi (AI'ga to'liq ishonilmaydi) */
-export function normalize(r: z.infer<typeof resultSchema>): AiEssayResult {
+export function normalize(raw: z.input<typeof resultSchema>): AiEssayResult {
+  const r = resultSchema.parse(raw);
   const criteria = ESSAY_RUBRIC.map((c) => {
     const got = r.criteria.find((x) => x.key === c.key);
     const score = Math.max(0, Math.min(c.max, Math.round((got?.score ?? 0) * 2) / 2));
@@ -202,5 +207,13 @@ export function normalize(r: z.infer<typeof resultSchema>): AiEssayResult {
       .filter((m) => m.wrong.trim() && m.wrong.trim().toLowerCase() !== m.right.trim().toLowerCase())
       .slice(0, 15)
       .map((m) => ({ wrong: m.wrong.slice(0, 200), right: m.right.slice(0, 200), note: m.note?.slice(0, 300) || null, type: mistakeType(m.type, m.note) })),
+    tips: r.tips
+      .filter((t) => t.text.trim())
+      .slice(0, 5)
+      .map((t) => ({
+        focus: t.focus && ESSAY_RUBRIC.some((c) => c.key === t.focus) ? t.focus : null,
+        text: t.text.trim().slice(0, 500),
+        example: t.example?.trim().slice(0, 500) || null,
+      })),
   };
 }

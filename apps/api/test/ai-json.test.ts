@@ -55,3 +55,23 @@ describe("AI belgilari", () => {
     expect(await aiAnnotations([], { pages: [], text: "x" })).toBeNull();
   });
 });
+
+describe("AI tavsiyalari", () => {
+  it("ko'pi bilan 5 ta; noma'lum band kaliti null; bo'sh matnli tavsiya tashlanadi", () => {
+    const r = normalize({
+      special: null,
+      criteria: [],
+      feedback: "",
+      mistakes: [],
+      tips: [
+        { focus: "evidence", text: "Dalil keltiring", example: "Masalan, ..." },
+        { focus: "nomalum", text: "Boshqa", example: null },
+        { focus: "style", text: "  ", example: null },
+        ...Array.from({ length: 5 }, (_, i) => ({ focus: "spelling", text: `T${i}`, example: null })),
+      ],
+    });
+    expect(r.tips).toHaveLength(5);
+    expect(r.tips[0]).toEqual({ focus: "evidence", text: "Dalil keltiring", example: "Masalan, ..." });
+    expect(r.tips[1].focus).toBeNull();
+  });
+});

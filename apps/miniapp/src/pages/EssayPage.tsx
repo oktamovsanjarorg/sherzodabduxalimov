@@ -1,6 +1,6 @@
-import { ESSAY_STATUS_LABELS, MAX_ESSAY_PAGES, NO_ESSAY_ERROR, formatCard, formatSum, type EssayConfig, type EssayReviewView, type MyEssayDetail, type PageAnnotations } from "@onatili/shared";
+import { ESSAY_RUBRIC, ESSAY_STATUS_LABELS, MAX_ESSAY_PAGES, NO_ESSAY_ERROR, formatCard, formatSum, type EssayConfig, type EssayReviewView, type MyEssayDetail, type PageAnnotations } from "@onatili/shared";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Bot, Clock, GraduationCap, ImagePlus, Loader2, RotateCcw, Trash2, X, XCircle } from "lucide-react";
+import { Bot, Clock, GraduationCap, ImagePlus, Lightbulb, Loader2, RotateCcw, Trash2, X, XCircle } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { CopyLine } from "../components/CopyLine";
@@ -201,6 +201,30 @@ function ReviewCard({ r }: { r: EssayReviewView }) {
         <div className="card">
           <p className="mb-1 text-sm font-bold">Xulosa</p>
           <p className="whitespace-pre-wrap text-sm leading-relaxed">{r.feedback}</p>
+        </div>
+      )}
+      {r.tips?.length > 0 && (
+        <div className="card border border-brand/30">
+          <p className="mb-2 flex items-center gap-2 text-sm font-bold">
+            <Lightbulb size={18} className="text-brand" /> Tavsiyalar: keyingi esseni yaxshilash uchun
+          </p>
+          <ol className="space-y-3">
+            {r.tips.map((t, i) => (
+              <li key={i} className="flex gap-2.5 text-sm">
+                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-brand text-xs font-bold text-white">{i + 1}</span>
+                <div className="min-w-0">
+                  {t.focus && <p className="text-xs font-bold text-brand">{ESSAY_RUBRIC.find((c) => c.key === t.focus)?.label ?? t.focus}</p>}
+                  <p className="leading-relaxed">{t.text}</p>
+                  {t.example && (
+                    <p className="mt-1.5 rounded-lg border-l-4 border-brand bg-brand-soft px-3 py-2 text-[13px] italic leading-relaxed">
+                      <span className="not-italic font-semibold text-brand">Namuna: </span>
+                      {t.example}
+                    </p>
+                  )}
+                </div>
+              </li>
+            ))}
+          </ol>
         </div>
       )}
       {r.mistakes.length > 0 && (

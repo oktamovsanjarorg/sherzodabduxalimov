@@ -131,6 +131,8 @@ export interface EssayReviewView {
   special: { key: string; label: string } | null;
   /** AI: xatolarning varoq/matndagi joyi */
   annotations: import("./annotation-types").EssayAnnotations | null;
+  /** AI: aniq tavsiyalar (eng zaif bandlar bo'yicha, namuna jumla bilan) */
+  tips: { focus: string | null; text: string; example: string | null }[];
   createdAt: string;
 }
 
