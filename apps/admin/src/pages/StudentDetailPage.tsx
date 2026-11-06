@@ -426,9 +426,14 @@ function Billing({ s }: { s: StudentDetail }) {
   const toast = useToast();
   const qc = useQueryClient();
   const b = s.billing!;
+  const [askMonth, setAskMonth] = useState<string | null>(null);
+  const [amount, setAmount] = useState("");
   const mark = useMutation({
-    mutationFn: (month: string) => api.markOffline({ studentId: s.studentId, month, note: "Naqd" }),
+    mutationFn: (month: string) =>
+      api.markOffline({ studentId: s.studentId, month, note: "Naqd", ...(b.groupFeeUzs ? {} : { amountUzs: Number(amount.replace(/\D/g, "")) }) }),
     onSuccess: () => {
+      setAskMonth(null);
+      setAmount("");
       toast("To'lov belgilandi");
       qc.invalidateQueries({ queryKey: ["student", s.studentId] });
       qc.invalidateQueries({ queryKey: ["roster"] });
@@ -466,15 +471,26 @@ function Billing({ s }: { s: StudentDetail }) {
                 ) : (
                   <>
                     <Badge tone="red">to'lanmagan</Badge>
-                    <button className="btn-primary btn-sm" disabled={mark.isPending} onClick={() => mark.mutate(m.month)}>
-                      To'ladi
-                    </button>
+                    {askMonth === m.month ? (
+                      <span className="flex items-center gap-1">
+                        <input className="input h-8 w-28 text-sm" inputMode="numeric" placeholder="Summa" value={amount} onChange={(e) => setAmount(e.target.value)} autoFocus />
+                        <button className="btn-primary btn-sm" disabled={mark.isPending || !Number(amount.replace(/\D/g, ""))} onClick={() => mark.mutate(m.month)}>
+                          Saqlash
+                        </button>
+                      </span>
+                    ) : (
+                      <button className="btn-primary btn-sm" disabled={mark.isPending} onClick={() => (b.groupFeeUzs ? mark.mutate(m.month) : setAskMonth(m.month))}>
+                        To'ladi
+                      </button>
+                    )}
                   </>
                 )}
               </div>
             ))}
           </div>
-          <p className="mt-1 text-xs text-slate-500">Summa guruhning oylik summasidan olinadi. Boshqa summa uchun: Ko'proq → To'lovlar → Offline guruhlar.</p>
+          <p className="mt-1 text-xs text-slate-500">
+            {b.groupFeeUzs ? `Summa guruhning oylik summasidan olinadi (${formatSum(b.groupFeeUzs)} so'm).` : "Guruhga oylik summa kiritilmagan: to'lovda summani yozasiz."} Boshqa summa uchun: To'lovlar → Offline guruhlar.
+          </p>
         </div>
       )}
       <div>

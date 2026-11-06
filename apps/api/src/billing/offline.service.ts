@@ -73,7 +73,9 @@ export class OfflineBillingService {
     if (!s) throw new NotFoundException("O'quvchi topilmadi");
     const existing = await this.prisma.offlinePayment.findUnique({ where: { studentId_month: { studentId: d.studentId, month: d.month } } });
     if (!existing && !s.group) throw new ConflictException("O'quvchi hech qaysi guruhda emas");
-    const amountUzs = d.amountUzs ?? existing?.amountUzs ?? s.group?.monthlyFeeUzs ?? 0;
+    const amountUzs = d.amountUzs ?? existing?.amountUzs ?? s.group?.monthlyFeeUzs ?? null;
+    // Summa noma'lum (guruhga oylik summa kiritilmagan): 0 so'm deb saqlanmaydi, aks holda hisobotlar buziladi
+    if (amountUzs === null) throw new BadRequestException("Guruhning oylik summasi kiritilmagan: to'lov summasini yozing (yoki guruhga oylik summa kiriting)");
     const p = await this.prisma.offlinePayment.upsert({
       where: { studentId_month: { studentId: d.studentId, month: d.month } },
       // Guruhdan chiqqan o'quvchining eski to'lovini tahrirlash ham mumkin: unda create ishlamaydi (existing bor)

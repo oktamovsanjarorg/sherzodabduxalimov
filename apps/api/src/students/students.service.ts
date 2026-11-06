@@ -41,7 +41,7 @@ const rosterInclude = (month: string, since: Date) =>
         subscriptions: { where: { status: "ACTIVE", endsAt: { gt: new Date() } }, orderBy: { endsAt: "desc" }, take: 1, select: { endsAt: true } },
       },
     },
-    group: { select: { id: true, name: true, isActive: true } },
+    group: { select: { id: true, name: true, isActive: true, monthlyFeeUzs: true } },
     parents: { where: { status: { in: ["PENDING", "APPROVED"] } }, select: { status: true } },
     offlinePayments: { where: { month }, select: { id: true } },
     attendance: { where: { date: { gte: since } }, select: { status: true } },
@@ -375,6 +375,7 @@ export class StudentsService {
                   return { month: m, paid: !!p, amountUzs: p?.amountUzs ?? null, note: p?.note ?? null };
                 })
               : [],
+            groupFeeUzs: sp.group?.monthlyFeeUzs ?? null,
             subscription: sub ? { planName: sub.plan.name, endsAt: sub.endsAt.toISOString() } : null,
             payments: payments.map((p) => ({ id: p.id, title: p.plan?.name ?? "Esse tekshiruvi", amountUzs: p.amountUzs, status: p.status, createdAt: p.createdAt.toISOString() })),
           }

@@ -217,7 +217,7 @@ export class StatsController {
   private async income(month: string, offline: { student: { id: string; group: { monthlyFeeUzs: number | null } | null } | null }[]) {
     const months = Array.from({ length: 6 }, (_, i) => shiftMonth(month, i - 5));
     const [pays, off, paidNow] = await Promise.all([
-      this.prisma.payment.findMany({ where: { status: "APPROVED", createdAt: { gte: monthStart(months[0]), lt: monthStart(shiftMonth(month, 1)) } }, select: { amountUzs: true, createdAt: true } }),
+      this.prisma.payment.findMany({ where: { status: "APPROVED", createdAt: { gte: monthStart(months[0]), lt: monthStart(shiftMonth(month, 1)) } }, select: { amountUzs: true, createdAt: true, essayId: true } }),
       this.prisma.offlinePayment.groupBy({ by: ["month"], where: { month: { in: months } }, _sum: { amountUzs: true } }),
       this.prisma.offlinePayment.findMany({ where: { month }, select: { studentId: true } }),
     ]);
@@ -225,10 +225,13 @@ export class StatsController {
     return {
       months: months.map((m) => ({
         month: m,
-        online: pays.filter((x) => monthOf(x.createdAt) === m).reduce((s, x) => s + x.amountUzs, 0),
+        online: pays.filter((x) => !x.essayId && monthOf(x.createdAt) === m).reduce((s, x) => s + x.amountUzs, 0),
+        essays: pays.filter((x) => x.essayId && monthOf(x.createdAt) === m).reduce((s, x) => s + x.amountUzs, 0),
         offline: off.find((x) => x.month === m)?._sum.amountUzs ?? 0,
       })),
-      offlineDebtors: offline.filter((s) => s.student?.group?.monthlyFeeUzs && !paid.has(s.student.id)).length,
+      // Oylik summasi kiritilmagan guruhdagilar ham qarzdor sanaladi (summasi noma'lum bo'lsa ham to'lashi kerak)
+      offlineDebtors: offline.filter((s) => !paid.has(s.student!.id)).length,
+      feeMissing: offline.filter((s) => !s.student?.group?.monthlyFeeUzs).length,
     };
   }
 }

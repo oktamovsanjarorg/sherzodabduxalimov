@@ -19,13 +19,33 @@ export function PaymentInsightsView({ month }: { month: string }) {
   const d = q.data;
   return (
     <div className="space-y-5">
+      {d.offline.feeMissing > 0 && <FeeMissing d={d} />}
       <Headline d={d} />
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <Kpi label="Shu oy tushishi kerak" value={sum(d.total.expectedUzs)} hint={`Offline ${sum(d.offline.expectedUzs)} · online ${sum(d.online.expectedUzs)}`} />
-        <Kpi label="Tushdi" value={sum(d.total.collectedUzs)} hint={d.total.percent === null ? "—" : `${d.total.percent}% · ${d.day}/${d.daysInMonth}-kun`} strong />
-        <Kpi label="Qolgan qarz" value={sum(Math.max(0, d.offline.expectedUzs - d.offline.collectedUzs) + d.debtors.filter((x) => x.kind === "ONLINE").reduce((s, x) => s + x.amountUzs, 0))} hint={`${d.debtors.length} ta o'quvchi to'lamagan`} warn />
+        <Kpi
+          label="Shu oy tushishi kerak"
+          value={d.total.expectedUzs || d.total.complete ? sum(d.total.expectedUzs) : "—"}
+          hint={d.total.complete ? `Offline ${sum(d.offline.expectedUzs)} · online obuna ${sum(d.online.expectedUzs)}` : `${d.offline.feeMissing} o'quvchi hisobga olinmadi: guruh summasi kiritilmagan`}
+        />
+        <Kpi
+          label="Tushdi"
+          value={sum(d.total.collectedUzs)}
+          hint={`Offline ${formatSum(d.offline.collectedUzs)} · obuna ${formatSum(d.online.collectedUzs)} · esse ${formatSum(d.essays.collectedUzs)}`}
+          strong
+        />
+        <Kpi
+          label="Qolgan qarz"
+          value={d.total.complete || debt(d) > 0 ? sum(debt(d)) : "—"}
+          hint={`${d.debtors.length} ta o'quvchi to'lamagan${d.total.complete ? "" : " · summasi noma'lumlar qo'shilmagan"}`}
+          warn
+        />
         <Kpi label="Prognoz: oy oxiriga" value={sum(d.forecast.endOfMonthUzs)} hint={`Keyingi oy kutilmoqda: ${sum(d.forecast.nextMonthExpectedUzs)}`} />
       </div>
+      {d.offline.paidNoAmount > 0 && (
+        <p className="-mt-2 flex items-start gap-1.5 text-xs text-amber-700">
+          <AlertTriangle size={14} className="mt-px shrink-0" /> {d.offline.paidNoAmount} ta to'lov summasi yozilmay belgilangan (0 so'm). O'quvchi sahifasida «Qaytarish» qilib, summa bilan qayta belgilang.
+        </p>
+      )}
       <p className="-mt-2 text-xs text-slate-500">
         <TrendingUp size={12} className="mr-1 inline" />
         Prognoz qanday hisoblandi: {d.forecast.basis}.
@@ -64,7 +84,10 @@ export function PaymentInsightsView({ month }: { month: string }) {
               <AlertTriangle size={15} /> {d.online.pendingReceipts} ta chek tasdiqlanishini kutmoqda ({sum(d.online.pendingUzs)})
             </Link>
           )}
-          <p className="mt-3 text-xs text-slate-500">Shu oy online jami tushgan (yangi va uzaytirilgan obunalar): {sum(d.online.collectedUzs)}</p>
+          <p className="mt-3 text-xs text-slate-500">Shu oy obunalardan tushgan (yangi va uzaytirilgan): {sum(d.online.collectedUzs)}</p>
+          <p className="mt-1 text-xs text-slate-500">
+            Esse tekshiruvi: {d.essays.count} ta · {sum(d.essays.collectedUzs)}
+          </p>
         </Card>
       </div>
 
@@ -95,12 +118,67 @@ export function PaymentInsightsView({ month }: { month: string }) {
   );
 }
 
+const debt = (d: Insights) =>
+  Math.max(0, d.offline.expectedUzs - d.offline.collectedUzs) + d.debtors.filter((x) => x.kind === "ONLINE").reduce((s, x) => s + x.amountUzs, 0);
+
+/** Guruhga oylik summa kiritilmagan: hisobotlar to'liq emas. Shu yerning o'zida kiritiladi */
+function FeeMissing({ d }: { d: Insights }) {
+  const toast = useToast();
+  const qc = useQueryClient();
+  const missing = d.offline.groups.filter((g) => !g.feeUzs);
+  const [vals, setVals] = useState<Record<string, string>>({});
+  const save = useMutation({
+    mutationFn: (groupId: string) => api.setGroupFee(groupId, Number((vals[groupId] ?? "").replace(/\D/g, ""))),
+    onSuccess: () => {
+      toast("Oylik summa saqlandi");
+      qc.invalidateQueries({ queryKey: ["payment-insights"] });
+      qc.invalidateQueries({ queryKey: ["stats"] });
+    },
+    onError: (e) => toast(errMsg(e), "error"),
+  });
+  return (
+    <section className="rounded-2xl border border-amber-300 bg-amber-50 p-4 sm:p-5">
+      <p className="flex items-center gap-2 font-extrabold text-amber-900">
+        <AlertTriangle size={18} /> Guruhlarga oylik to'lov summasi kiritilmagan
+      </p>
+      <p className="mt-1 text-sm text-amber-900/80">
+        Shu sababli {d.offline.feeMissing} ta o'quvchidan qancha pul tushishi kerakligini hisoblab bo'lmayapti. Summani kiriting — hisobot, qarz va prognoz darhol to'g'rilanadi.
+      </p>
+      <div className="mt-3 space-y-2">
+        {missing.map((g) => (
+          <div key={g.groupId} className="flex flex-wrap items-center gap-2">
+            <span className="min-w-[160px] text-sm font-bold">
+              {g.name} <span className="font-normal text-slate-500">· {g.students} o'quvchi</span>
+            </span>
+            <input
+              className="input h-9 w-40 text-sm"
+              inputMode="numeric"
+              placeholder="Masalan: 300 000"
+              value={vals[g.groupId] ?? ""}
+              onChange={(e) => setVals({ ...vals, [g.groupId]: e.target.value })}
+            />
+            <span className="text-sm text-slate-500">so'm / oy</span>
+            <button
+              className="btn-primary btn-sm h-9"
+              disabled={save.isPending || !Number((vals[g.groupId] ?? "").replace(/\D/g, ""))}
+              onClick={() => save.mutate(g.groupId)}
+            >
+              <Check size={14} /> Saqlash
+            </button>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
 function Headline({ d }: { d: Insights }) {
   const o = d.offline;
   const parts: ReactNode[] = [];
   if (o.students) parts.push(<Fragment key="o">{o.students} ta offline o'quvchidan <b>{o.paid} tasi</b> to'ladi</Fragment>);
   if (d.online.due) parts.push(<Fragment key="n">{d.online.due} ta online obunadan <b>{d.online.renewed} tasi</b> uzaytirildi</Fragment>);
   const pct = d.total.percent ?? 0;
+  const planned = d.total.plannedCollectedUzs;
   const timePct = Math.round((d.day / d.daysInMonth) * 100);
   return (
     <section className="card p-4 sm:p-5">
@@ -122,7 +200,7 @@ function Headline({ d }: { d: Insights }) {
             {d.day < d.daysInMonth && <div className="absolute inset-y-0 w-0.5 bg-slate-500" style={{ left: `${timePct}%` }} title={`Oyning ${timePct}% i o'tdi`} />}
           </div>
           <p className="mt-1.5 text-xs text-slate-500">
-            {sum(d.total.collectedUzs)} / {sum(d.total.expectedUzs)} · {pct}% tushdi
+            {sum(planned)} / {sum(d.total.expectedUzs)} · {pct}% tushdi
             {d.day < d.daysInMonth ? ` · oyning ${timePct}% i o'tdi (kulrang chiziq)` : ""}
           </p>
         </div>
@@ -175,8 +253,10 @@ function Debtor({ x, month }: { x: DebtorRow; month: string }) {
     },
     onError: (e) => toast(errMsg(e), "error"),
   });
+  const [amount, setAmount] = useState("");
+  const [asking, setAsking] = useState(false);
   const paid = useMutation({
-    mutationFn: () => api.markOffline({ studentId: x.studentId, month, note: "Naqd" }),
+    mutationFn: () => api.markOffline({ studentId: x.studentId, month, note: "Naqd", ...(x.amountUzs ? {} : { amountUzs: Number(amount.replace(/\D/g, "")) }) }),
     onSuccess: () => {
       toast(`${x.name}: to'lov belgilandi`);
       refresh();
@@ -196,7 +276,7 @@ function Debtor({ x, month }: { x: DebtorRow; month: string }) {
           </p>
           <p className="text-xs text-slate-500">
             {x.kind === "OFFLINE" ? "Offline" : "Online"}
-            {x.where ? ` · ${x.where}` : ""} · {sum(x.amountUzs)}
+            {x.where ? ` · ${x.where}` : ""} · {x.amountUzs ? sum(x.amountUzs) : "oylik summa kiritilmagan"}
           </p>
         </Link>
         <div className="flex flex-wrap items-center gap-1">
@@ -279,11 +359,22 @@ function Debtor({ x, month }: { x: DebtorRow; month: string }) {
           <button className="btn-secondary btn-sm h-8" onClick={() => setForm("REASON")}>
             Sababi
           </button>
-          {x.kind === "OFFLINE" && (
-            <button className="btn-primary btn-sm h-8" disabled={paid.isPending} onClick={() => paid.mutate()}>
-              <Check size={13} /> To'ladi
-            </button>
-          )}
+          {x.kind === "OFFLINE" &&
+            (asking ? (
+              <span className="flex items-center gap-1">
+                <input className="input h-8 w-32 text-sm" inputMode="numeric" placeholder="Summa, so'm" value={amount} onChange={(e) => setAmount(e.target.value)} autoFocus />
+                <button className="btn-primary btn-sm h-8" disabled={paid.isPending || !Number(amount.replace(/\D/g, ""))} onClick={() => paid.mutate()}>
+                  <Check size={13} /> Saqlash
+                </button>
+                <button className="btn-ghost btn-sm h-8" onClick={() => setAsking(false)}>
+                  <X size={13} />
+                </button>
+              </span>
+            ) : (
+              <button className="btn-primary btn-sm h-8" disabled={paid.isPending} onClick={() => (x.amountUzs ? paid.mutate() : setAsking(true))}>
+                <Check size={13} /> To'ladi
+              </button>
+            ))}
           {x.kind === "ONLINE" && (
             <Link to="/payments?tab=SUBS" className="btn-secondary btn-sm h-8">
               Obuna berish

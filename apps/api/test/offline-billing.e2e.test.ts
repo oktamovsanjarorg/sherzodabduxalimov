@@ -171,6 +171,18 @@ describe("Offline guruh: kirish va oylik to'lov; online obuna eslatmalari (e2e)"
     // Avvalgi testdagi bot eslatmasi tarixga yozilgan
     expect(me.followUps.some((f: { kind: string }) => f.kind === "BOT")).toBe(true);
     expect(d.forecast.endOfMonthUzs).toBeGreaterThanOrEqual(d.total.collectedUzs);
+    expect(d.total).toHaveProperty("plannedCollectedUzs");
+    expect(d.essays).toHaveProperty("collectedUzs");
+
+    // Oylik summasi yo'q guruh: summasiz "to'ladi" 0 so'm bo'lib saqlanmaydi
+    const g3 = (await req("POST", "/admin/groups", { name: `${TAG} 3-guruh` })).json().id;
+    await req("POST", `/admin/groups/${g3}/students`, { studentIds: [offlineStudentId] });
+    expect((await req("PUT", "/admin/offline-payments", { studentId: offlineStudentId, month: "2026-01" })).statusCode).toBe(400);
+    const d3 = (await req("GET", `/admin/stats/payments?month=${month}`)).json();
+    expect(d3.offline.feeMissing).toBeGreaterThanOrEqual(1);
+    expect(d3.total.complete).toBe(false);
+    await req("POST", `/admin/groups/${groupId}/students`, { studentIds: [offlineStudentId] });
+    await req("DELETE", `/admin/groups/${g3}`);
 
     expect((await req("POST", "/admin/payment-followups", { studentId: offlineStudentId, month, kind: "PROMISE" })).statusCode).toBe(400); // sana kerak
     const f = await req("POST", "/admin/payment-followups", { studentId: offlineStudentId, month, kind: "PROMISE", promisedAt: `${month}-20`, note: "Otasi oylikdan keyin" });

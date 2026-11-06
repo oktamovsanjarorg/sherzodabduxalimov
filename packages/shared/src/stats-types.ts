@@ -44,7 +44,7 @@ export interface TeacherStats {
   /** Oxirgi 8 hafta faolligi (eskidan yangiga) */
   weeks: { start: string; lessons: number; tests: number; essays: number }[];
   /** Faqat egaga (yordamchiga null): oxirgi 6 oy daromadi, so'm */
-  income: { months: { month: string; online: number; offline: number }[]; offlineDebtors: number } | null;
+  income: { months: { month: string; online: number; offline: number; essays: number }[]; offlineDebtors: number; feeMissing: number } | null;
 }
 
 const DAY_PREFIX: [string, number][] = [
@@ -138,7 +138,11 @@ export interface PaymentInsights {
     collectedUzs: number;
     /** Guruhlarning oylik summasi kiritilmagan bo'lsa, kutilgan summani hisoblab bo'lmaydi */
     feeMissing: number;
+    /** Summa yozilmay "to'ladi" deb belgilanganlar (eski yozuvlar): summasini tuzatish kerak */
+    paidNoAmount: number;
   };
+  /** Esse tekshiruvi uchun to'lovlar (rejalashtirilmaydi, faqat tushum) */
+  essays: { count: number; collectedUzs: number };
   online: {
     /** Shu oyda obunasi tugaydigan/tugagan o'quvchilar */
     due: number;
@@ -150,7 +154,8 @@ export interface PaymentInsights {
     pendingReceipts: number;
     pendingUzs: number;
   };
-  total: { expectedUzs: number; collectedUzs: number; percent: number | null };
+  /** collectedUzs = offline + online obuna + esse. percent: faqat rejadagi qism (offline + obuna) bo'yicha */
+  total: { expectedUzs: number; collectedUzs: number; plannedCollectedUzs: number; percent: number | null; complete: boolean };
   /** Oy oxirigacha prognoz: hozirgi tushum + kutilayotgan cheklar + qolgan qarzning odatdagi undirilish ulushi */
   forecast: { endOfMonthUzs: number; basis: string; nextMonthExpectedUzs: number };
   /** Oxirgi 3 oy: kutilgan va tushgan (offline guruhlar bo'yicha) */

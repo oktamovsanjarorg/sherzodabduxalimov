@@ -160,6 +160,7 @@ Markdown: faqat **qalin** va ro'yxat. 1200 belgidan oshmasin.`;
       expectedUzs: groupRows.reduce((s, g) => s + g.expectedUzs, 0),
       collectedUzs: groupRows.reduce((s, g) => s + g.collectedUzs, 0),
       feeMissing: groupRows.filter((g) => !g.feeUzs).reduce((s, g) => s + g.students, 0),
+      paidNoAmount: offPays.filter((x) => x.month === month && x.amountUzs === 0).length,
     };
 
     // ---------- online ----------
@@ -175,8 +176,9 @@ Markdown: faqat **qalin** va ro'yxat. 1200 belgidan oshmasin.`;
     const lastPerUser = new Map<string, (typeof dueSubs)[number]>();
     for (const s of dueSubs) if (!lastPerUser.has(s.userId) || lastPerUser.get(s.userId)!.endsAt < s.endsAt) lastPerUser.set(s.userId, s);
     const due = [...lastPerUser.values()];
-    const [onlinePaid, pending] = await Promise.all([
+    const [onlinePaid, essayPaid, pending] = await Promise.all([
       p.payment.aggregate({ where: { status: "APPROVED", planId: { not: null }, createdAt: { gte: from, lt: to } }, _sum: { amountUzs: true } }),
+      p.payment.aggregate({ where: { status: "APPROVED", essayId: { not: null }, createdAt: { gte: from, lt: to } }, _sum: { amountUzs: true }, _count: true }),
       p.payment.findMany({ where: { status: "PENDING", planId: { not: null } }, select: { userId: true, amountUzs: true } }),
     ]);
     const pendingUsers = new Set(pending.map((x) => x.userId));
@@ -250,7 +252,10 @@ Markdown: faqat **qalin** va ro'yxat. 1200 belgidan oshmasin.`;
 
     // ---------- jami, tarix, prognoz ----------
     const expectedUzs = off.expectedUzs + online.expectedUzs;
-    const collectedUzs = off.collectedUzs + online.collectedUzs;
+    const essays = { count: essayPaid._count, collectedUzs: essayPaid._sum.amountUzs ?? 0 };
+    // Rejadagi tushum (offline oylik + online obuna) va jami (esse bilan)
+    const plannedCollectedUzs = off.collectedUzs + online.collectedUzs;
+    const collectedUzs = plannedCollectedUzs + essays.collectedUzs;
     const history = [3, 2, 1].map((k) => {
       const m = shiftMonth(month, -k);
       const exp = offStudents.filter((s) => monthOf(s.createdAt) <= m).reduce((sum, s) => sum + (fee.get(s.groupId!) ?? 0), 0);
@@ -265,6 +270,7 @@ Markdown: faqat **qalin** va ro'yxat. 1200 belgidan oshmasin.`;
     const basis = isCurrent
       ? `Hozir tushgan ${formatSum(collectedUzs)} so'm + kutilayotgan cheklar ${formatSum(online.pendingUzs)} so'm + offline qarzning ${Math.round(usedRate * 100)}% i (${rate === null ? "taxminiy ulush: oldingi oylar ma'lumoti yo'q" : "oxirgi 3 oyda shuncha undirilgan"})`
       : "O'tgan oy: haqiqatda tushgan summa";
+    const basisFull = off.feeMissing ? `${basis}. Diqqat: ${off.feeMissing} o'quvchining guruhida oylik summa kiritilmagan — ular hisobga olinmadi` : basis;
     const nextFrom = to;
     const nextTo = monthStart(shiftMonth(month, 2));
     const nextOnline = await p.subscription.findMany({
@@ -281,8 +287,15 @@ Markdown: faqat **qalin** va ro'yxat. 1200 belgidan oshmasin.`;
       daysInMonth: daysIn(month),
       offline: off,
       online,
-      total: { expectedUzs, collectedUzs, percent: expectedUzs ? Math.round((collectedUzs / expectedUzs) * 100) : null },
-      forecast: { endOfMonthUzs, basis, nextMonthExpectedUzs },
+      essays,
+      total: {
+        expectedUzs,
+        collectedUzs,
+        plannedCollectedUzs,
+        percent: expectedUzs ? Math.min(100, Math.round((plannedCollectedUzs / expectedUzs) * 100)) : null,
+        complete: off.feeMissing === 0,
+      },
+      forecast: { endOfMonthUzs, basis: basisFull, nextMonthExpectedUzs },
       history,
       debtors,
     };

@@ -218,19 +218,25 @@ function Body({ s }: { s: TeacherStats }) {
       </Card>
 
       {s.income && (
-        <Card title="Daromad" hint="Oxirgi 6 oy: online (tasdiqlangan cheklar) va offline guruhlar to'lovi. Faqat sizga ko'rinadi" Icon={Wallet}>
+        <Card title="Daromad" hint="Oxirgi 6 oy: offline guruhlar oylik to'lovi, online obunalar va esse tekshiruvi. Faqat sizga ko'rinadi" Icon={Wallet}>
           <Columns
             series={[
-              { name: "Online", color: S1 },
-              { name: "Offline", color: S2 },
+              { name: "Offline (oylik)", color: S1 },
+              { name: "Online obuna", color: S2 },
+              { name: "Esse tekshiruvi", color: S3 },
             ]}
-            data={s.income.months.map((m) => ({ key: m.month, label: shortMonth(m.month), title: monthLabel(m.month), values: [m.online, m.offline] }))}
+            data={s.income.months.map((m) => ({ key: m.month, label: shortMonth(m.month), title: monthLabel(m.month), values: [m.offline, m.online, m.essays] }))}
             format={(n) => `${formatSum(n)} so'm`}
             total
           />
           <Link to="/stats?tab=pay" className="mt-3 mr-4 inline-flex items-center gap-1 text-sm font-bold text-brand hover:underline">
             To'lovlar tahlili: kim to'lamadi, prognoz, AI xulosa <ChevronRight size={15} />
           </Link>
+          {s.income.feeMissing > 0 && (
+            <p className="mt-3 flex items-start gap-1.5 text-xs text-amber-700">
+              <AlertTriangle size={14} className="mt-px shrink-0" /> {s.income.feeMissing} ta offline o'quvchining guruhida oylik summa kiritilmagan — offline daromad to'liq ko'rinmaydi.
+            </p>
+          )}
           {s.income.offlineDebtors > 0 && (
             <Link to="/payments?tab=OFFLINE" className="mt-3 inline-flex items-center gap-1 text-sm font-bold text-amber-700 hover:underline">
               <AlertTriangle size={15} /> <span className="capitalize">{monthLabel(s.month)}</span>: {s.income.offlineDebtors} ta offline o'quvchi hali to'lamagan
