@@ -5,7 +5,7 @@ import { useState, type ReactNode } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { loadSession } from "../lib/session";
 import { PaymentInsightsView } from "./PaymentInsights";
-import { PageHeader, Spinner } from "../components/ui";
+import { PageHeader, Spinner, Segmented } from "../components/ui";
 import { api, errMsg } from "../lib/api";
 
 // Diagramma ranglari (rang ko'rlikka tekshirilgan): 1 — moviy-yashil, 2 — to'q sariq, 3 — binafsha
@@ -47,18 +47,15 @@ export function StatsPage() {
         }
       />
       {isTeacher && (
-        <div className="mb-5 inline-flex rounded-lg border border-slate-200 bg-white p-1 text-sm font-bold">
-          {(
-            [
-              ["main", "Umumiy"],
-              ["pay", "To'lovlar tahlili"],
-            ] as const
-          ).map(([k, l]) => (
-            <button key={k} onClick={() => setParams(k === "pay" ? { tab: "pay" } : {}, { replace: true })} className={`h-9 rounded-md px-3 ${tab === k ? "bg-brand text-white" : "text-slate-600"}`}>
-              {l}
-            </button>
-          ))}
-        </div>
+        <Segmented
+          className="mb-5"
+          value={tab}
+          onChange={(k) => setParams(k === "pay" ? { tab: "pay" } : {}, { replace: true })}
+          options={[
+            ["main", "Umumiy"],
+            ["pay", "To'lovlar tahlili"],
+          ] as const}
+        />
       )}
       {tab === "pay" ? (
         <PaymentInsightsView month={month} />

@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Plus } from "lucide-react";
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { Badge, Empty, PageHeader, Spinner } from "../components/ui";
+import { Badge, Empty, PageHeader, Spinner, Chips } from "../components/ui";
 import { api } from "../lib/api";
 
 export function TestsPage() {
@@ -23,11 +23,7 @@ export function TestsPage() {
           </>
         }
       />
-      <div className="mb-4 inline-flex rounded-lg border border-slate-200 bg-white p-1 text-sm font-bold">
-        {([["ALL", "Hammasi"], ["TOPIC", "Mavzu testlari"], ["MOCK", "Mock"]] as const).map(([k, l]) => (
-          <button key={k} onClick={() => setTab(k)} className={`rounded-md px-3 py-1.5 ${tab === k ? "bg-brand text-white" : "text-slate-600"}`}>{l}</button>
-        ))}
-      </div>
+      <Chips className="mb-4" value={tab} onChange={setTab} options={[["ALL", "Hammasi"], ["TOPIC", "Mavzu testlari"], ["MOCK", "Mock testlar"]] as const} />
       {tests.isPending && <Spinner className="text-slate-400" />}
       {tests.data && list.length === 0 && <Empty title="Test yo'q" />}
       <div className="card divide-y divide-slate-100 overflow-hidden">

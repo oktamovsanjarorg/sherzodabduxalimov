@@ -1,6 +1,6 @@
-import { ATTENDANCE_LABELS, ESSAY_STATUS_LABELS, formatSum, monthLabel, type AttendanceStatusName, type EssayStatusName, type StudentDetail } from "@onatili/shared";
+import { ATTENDANCE_LABELS, ESSAY_STATUS_LABELS, formatSum, monthLabel, type AttendanceStatusName, type EssayStatusName, type StudentDetail, formatScore } from "@onatili/shared";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, Check, Copy, Pencil, Phone, RotateCcw, Trash2, X } from "lucide-react";
+import { ArrowLeft, Bot, Check, ClipboardCheck, Copy, GraduationCap, Pencil, Phone, RotateCcw, Trash2, X } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { Badge, ConfirmButton, Field, Modal, Spinner } from "../components/ui";
@@ -77,7 +77,6 @@ function CopyField({ value }: { value: string }) {
 function Header({ s }: { s: StudentDetail }) {
   const toast = useToast();
   const qc = useQueryClient();
-  const navigate = useNavigate();
   const [editing, setEditing] = useState(false);
   const groups = useQuery({ queryKey: ["groups"], queryFn: api.groups });
   const refresh = () => {
@@ -272,7 +271,7 @@ function Parents({ s }: { s: StudentDetail }) {
         </div>
       ))}
       <div>
-        <p className="mb-1 text-xs text-slate-500">Ota-onaga yuboring: bosib, botda raqamini ulashadi (keyin shu yerda yoki «Ota-onalar» bo'limida tasdiqlaysiz)</p>
+        <p className="mb-1 text-xs text-slate-500">Ota-onaga yuboring: bosib, botda raqamini ulashadi (keyin shu yerda yoki O'quvchilar sahifasidagi «Ko'rib chiqish kerak» blokida tasdiqlaysiz)</p>
         <CopyField value={s.parentInviteUrl} />
       </div>
     </div>
@@ -552,9 +551,9 @@ function Stats({ s }: { s: StudentDetail }) {
             {st.recentAttempts.map((a) => (
               <div key={a.id} className="flex items-center gap-2 py-1.5 text-sm">
                 <span className="w-24 shrink-0 text-slate-500">{date(a.finishedAt)}</span>
-                <span className="min-w-0 flex-1 truncate">
-                  {a.type === "MOCK" ? "📋 " : ""}
-                  {a.title}
+                <span className="flex min-w-0 flex-1 items-center gap-1.5 truncate">
+                  {a.type === "MOCK" && <ClipboardCheck size={14} className="shrink-0 text-slate-400" aria-label="Mock" />}
+                  <span className="truncate">{a.title}</span>
                 </span>
                 <Badge tone={a.percent >= 80 ? "green" : a.percent >= 50 ? "brand" : "red"}>{a.percent}%</Badge>
               </div>
@@ -569,11 +568,11 @@ function Stats({ s }: { s: StudentDetail }) {
             {st.essays.map((e) => (
               <div key={e.id} className="flex items-center gap-2 py-1.5 text-sm">
                 <span className="w-24 shrink-0 text-slate-500">{date(e.createdAt)}</span>
-                <span className="min-w-0 flex-1 truncate">
-                  {e.mode === "AI" ? "🤖 " : "👨‍🏫 "}
-                  {e.prompt}
+                <span className="flex min-w-0 flex-1 items-center gap-1.5 truncate">
+                  {e.mode === "AI" ? <Bot size={14} className="shrink-0 text-slate-400" aria-label="AI" /> : <GraduationCap size={14} className="shrink-0 text-slate-400" aria-label="Ustoz" />}
+                  <span className="truncate">{e.prompt}</span>
                 </span>
-                {e.score !== null ? <Badge tone="green">{e.score}/24</Badge> : <Badge>{ESSAY_STATUS_LABELS[e.status as EssayStatusName] ?? e.status}</Badge>}
+                {e.score !== null ? <Badge tone="green">{formatScore(e.score)}/24</Badge> : <Badge>{ESSAY_STATUS_LABELS[e.status as EssayStatusName] ?? e.status}</Badge>}
               </div>
             ))}
           </div>

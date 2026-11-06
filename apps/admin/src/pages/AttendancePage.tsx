@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { CheckCheck, Plus } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import { Empty, PageHeader, Spinner } from "../components/ui";
+import { Empty, PageHeader, Spinner, Segmented } from "../components/ui";
 import { api, errMsg } from "../lib/api";
 import { useToast } from "../lib/toast";
 import { ParentState } from "../components/GroupManager";
@@ -84,13 +84,7 @@ export function AttendancePage() {
                 <input type="date" className="input" value={date} max={todayTashkent()} onChange={(e) => e.target.value && setDate(e.target.value)} />
               </div>
             ) : null}
-            <div className="inline-flex rounded-lg border border-slate-200 bg-white p-1 text-sm font-bold">
-              {([["day", "Kunlik"], ["month", "Oylik"]] as const).map(([k, l]) => (
-                <button key={k} onClick={() => setView(k)} className={`h-9 rounded-md px-3 ${view === k ? "bg-brand text-white" : "text-slate-600"}`}>
-                  {l}
-                </button>
-              ))}
-            </div>
+            <Segmented value={view} onChange={setView} options={[["day", "Kunlik"], ["month", "Oylik"]] as const} />
           </div>
           {view === "day" ? <DayView key={`${groupId}-${date}`} groupId={groupId} date={date} /> : <MonthView groupId={groupId} />}
         </>

@@ -21,7 +21,7 @@ export function MocksPage() {
         <p className="text-hint">45 ta topshiriq · 3 soat</p>
         <ul className="list-disc space-y-0.5 pl-5 text-hint">
           <li>1–35: test (javob variantli), matn va g'azalga tayangan savollar</li>
-          <li>36–44: javobni o'zingiz yozasiz</li>
+          <li>36–44: javobni o'zingiz yozasiz (a va b qismlari alohida savol bo'lib sanaladi, shuning uchun testda savollar soni 45 dan ko'p ko'rinadi)</li>
           <li>45: esse (24 ball), ustoz tekshiradi</li>
         </ul>
         <p className="pt-1 text-xs text-hint">

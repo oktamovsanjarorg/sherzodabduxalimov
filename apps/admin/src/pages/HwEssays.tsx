@@ -5,7 +5,7 @@ import { VoicePlayer, VoiceRecorder } from "../components/VoiceRecorder";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ChevronRight, ImageOff, Pencil, Phone } from "lucide-react";
 import { useState } from "react";
-import { Badge, Empty, Modal, Spinner } from "../components/ui";
+import { Badge, Empty, Modal, Spinner, Chips } from "../components/ui";
 import { api, errMsg } from "../lib/api";
 import { fmtShortDateTime } from "../lib/format";
 import { useToast } from "../lib/toast";
@@ -18,13 +18,12 @@ export function HwEssays() {
   const list = useQuery({ queryKey: ["hw-essays", tab], queryFn: () => api.hwEssays(tab), refetchInterval: tab === "pending" ? 30_000 : false });
   return (
     <>
-      <div className="mb-4 inline-flex rounded-lg border border-slate-200 bg-white p-1 text-sm font-bold">
-        {([["pending", `Tekshirilmagan${tab === "pending" && list.data?.length ? ` (${list.data.length})` : ""}`], ["reviewed", "Tekshirilgan"]] as const).map(([k, l]) => (
-          <button key={k} onClick={() => setTab(k)} className={`rounded-md px-3 py-1.5 ${tab === k ? "bg-brand text-white" : "text-slate-600"}`}>
-            {l}
-          </button>
-        ))}
-      </div>
+      <Chips
+        className="mb-4"
+        value={tab}
+        onChange={setTab}
+        options={[["pending", `Tekshirilmagan${tab === "pending" && list.data?.length ? ` (${list.data.length})` : ""}`], ["reviewed", "Tekshirilgan"]] as const}
+      />
       {list.isPending && <Spinner className="text-slate-400" />}
       {list.data?.length === 0 && (
         <Empty title={tab === "pending" ? "Tekshiriladigan esse yo'q" : "Hali esse tekshirilmagan"} hint={tab === "pending" ? "To'lovi tasdiqlangan esselar shu yerga tushadi." : undefined} />

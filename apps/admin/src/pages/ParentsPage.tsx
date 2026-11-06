@@ -2,7 +2,7 @@ import { PARENT_FLAG_LABELS, type AdminParentLink } from "@onatili/shared";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { AlertTriangle, Check, Phone, ShieldCheck, X } from "lucide-react";
 import { useState } from "react";
-import { Badge, ConfirmButton, Empty, Modal, PageHeader, Spinner } from "../components/ui";
+import { Badge, ConfirmButton, Empty, Modal, PageHeader, Spinner, Chips } from "../components/ui";
 import { api, errMsg } from "../lib/api";
 import { fmtShortDateTime } from "../lib/format";
 import { useToast } from "../lib/toast";
@@ -22,19 +22,16 @@ export function ParentsPage() {
         title="Ota-onalar"
         subtitle="O'quvchi yuborgan havola orqali ota-ona botda o'z raqamini ulashadi. Raqamga qo'ng'iroq qilib, haqiqatan ota-onasi ekanini tekshiring."
       />
-      <div className="mb-4 inline-flex rounded-lg border border-slate-200 bg-white p-1 text-sm font-bold">
-        {(
-          [
-            ["PENDING", `Kutilmoqda${pendingCount ? ` (${pendingCount})` : ""}`],
-            ["APPROVED", "Tasdiqlangan"],
-            ["REJECTED", "Rad etilgan"],
-          ] as const
-        ).map(([k, l]) => (
-          <button key={k} onClick={() => setTab(k)} className={`rounded-md px-3 py-1.5 ${tab === k ? "bg-brand text-white" : "text-slate-600"}`}>
-            {l}
-          </button>
-        ))}
-      </div>
+      <Chips
+        className="mb-4"
+        value={tab}
+        onChange={setTab}
+        options={[
+          ["PENDING", `Kutilmoqda${pendingCount ? ` (${pendingCount})` : ""}`],
+          ["APPROVED", "Tasdiqlangan"],
+          ["REJECTED", "Rad etilgan"],
+        ] as const}
+      />
       {links.isPending && <Spinner className="text-slate-400" />}
       {links.data?.length === 0 && (
         <Empty title={tab === "PENDING" ? "Tekshiriladigan so'rov yo'q" : "Ro'yxat bo'sh"} hint={tab === "PENDING" ? "Yangi so'rovlar shu yerda paydo bo'ladi." : undefined} />

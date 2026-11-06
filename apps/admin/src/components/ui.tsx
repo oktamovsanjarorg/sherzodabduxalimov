@@ -125,3 +125,45 @@ export function Field({ label, children, hint }: { label: string; children: Reac
     </div>
   );
 }
+
+/**
+ * Sahifaning asosiy ko'rinishlarini almashtirish (masalan: Kunlik / Oylik, Umumiy / To'lovlar tahlili).
+ * Ro'yxatni saralash uchun Chips ishlatiladi — admin panel bo'ylab bitta qoida.
+ */
+export function Segmented<T extends string>({ value, onChange, options, className = "" }: { value: T; onChange: (v: T) => void; options: readonly (readonly [T, ReactNode])[]; className?: string }) {
+  return (
+    <div className={`max-w-full overflow-x-auto ${className}`}>
+      <div className="inline-flex rounded-lg border border-slate-200 bg-white p-1 text-sm font-bold">
+        {options.map(([k, l]) => (
+          <button
+            key={k}
+            type="button"
+            ref={value === k ? (el) => el?.scrollIntoView({ block: "nearest", inline: "nearest" }) : undefined}
+            onClick={() => onChange(k)}
+            className={`h-9 whitespace-nowrap rounded-md px-3 ${value === k ? "bg-brand text-white" : "text-slate-600 hover:bg-slate-50"}`}
+          >
+            {l}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/** Ro'yxat filtri: yumaloq tugmalar (guruh, holat, tur) */
+export function Chips<T extends string>({ value, onChange, options, className = "" }: { value: T; onChange: (v: T) => void; options: readonly (readonly [T, ReactNode])[]; className?: string }) {
+  return (
+    <div className={`flex gap-2 overflow-x-auto pb-1 ${className}`}>
+      {options.map(([k, l]) => (
+        <button
+          key={k}
+          type="button"
+          onClick={() => onChange(k)}
+          className={`h-9 shrink-0 whitespace-nowrap rounded-full px-4 text-sm font-bold ${value === k ? "bg-slate-900 text-white" : "bg-slate-100 text-slate-600 hover:bg-slate-200"}`}
+        >
+          {l}
+        </button>
+      ))}
+    </div>
+  );
+}

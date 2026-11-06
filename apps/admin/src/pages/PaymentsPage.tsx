@@ -4,7 +4,7 @@ import { Check, Gift, ImageOff, MessageSquare, Phone, RotateCcw, Search, X } fro
 import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { OfflineLedgerView } from "./OfflineLedger";
-import { Badge, ConfirmButton, Empty, Field, Modal, PageHeader, Spinner } from "../components/ui";
+import { Badge, ConfirmButton, Empty, Field, Modal, PageHeader, Spinner, Segmented } from "../components/ui";
 import { api, errMsg } from "../lib/api";
 import { fmtDate, fmtShortDateTime } from "../lib/format";
 import { useToast } from "../lib/toast";
@@ -35,27 +35,18 @@ export function PaymentsPage() {
           </button>
         }
       />
-      <div className="mb-4 flex max-w-full overflow-x-auto">
-        <div className="inline-flex rounded-lg border border-slate-200 bg-white p-1 text-sm font-bold">
-          {(
-            [
-              ["PENDING", `Kutilmoqda${n ? ` (${n})` : ""}`],
-              ["APPROVED", "Tasdiqlangan"],
-              ["REJECTED", "Rad etilgan"],
-              ["SUBS", "Online obunalar"],
-              ["OFFLINE", "Offline guruhlar"],
-            ] as const
-          ).map(([k, l]) => (
-            <button
-              key={k}
-              ref={tab === k ? (el) => el?.scrollIntoView({ block: "nearest", inline: "nearest" }) : undefined}
-              onClick={() => setTab(k)}
-              className={`whitespace-nowrap rounded-md px-3 py-1.5 ${tab === k ? "bg-brand text-white" : "text-slate-600"}`}>
-              {l}
-            </button>
-          ))}
-        </div>
-      </div>
+      <Segmented
+        className="mb-4"
+        value={tab}
+        onChange={setTab}
+        options={[
+          ["PENDING", `Kutilmoqda${n ? ` (${n})` : ""}`],
+          ["APPROVED", "Tasdiqlangan"],
+          ["REJECTED", "Rad etilgan"],
+          ["SUBS", "Online obunalar"],
+          ["OFFLINE", "Offline guruhlar"],
+        ] as const}
+      />
       {tab === "SUBS" ? <Subscribers /> : tab === "OFFLINE" ? <OfflineLedgerView /> : <PaymentList status={tab} />}
       {granting && <GrantModal onClose={() => setGranting(false)} />}
     </>
@@ -265,7 +256,7 @@ function Subscribers() {
             ["lapsed", `Uzaytirmagan (${subs.data?.lapsed.length ?? 0})`],
           ] as const
         ).map(([k, l]) => (
-          <button key={k} onClick={() => setView(k)} className={`h-8 rounded-full px-3 text-xs font-bold ${view === k ? "bg-slate-900 text-white" : "bg-slate-100 text-slate-600"}`}>
+          <button key={k} onClick={() => setView(k)} className={`h-9 shrink-0 rounded-full px-4 text-sm font-bold ${view === k ? "bg-slate-900 text-white" : "bg-slate-100 text-slate-600 hover:bg-slate-200"}`}>
             {l}
           </button>
         ))}
