@@ -1,4 +1,5 @@
 import { BadRequestException, ConflictException, Injectable, NotFoundException } from "@nestjs/common";
+import { defaultMonthlyFee, effectiveFee } from "./fee";
 import { currentMonth, formatSum, monthLabel, MONTH_RE, type MyOfflineBilling, type OfflineLedger } from "@onatili/shared";
 import { NotifyService } from "../notify/notify.service";
 import { esc } from "../notify/telegram";
@@ -28,8 +29,11 @@ export class OfflineBillingService {
 
   async ledger(groupId: string, month: string): Promise<OfflineLedger> {
     this.checkMonth(month);
-    const group = await this.prisma.group.findUnique({ where: { id: groupId }, select: { id: true, name: true, monthlyFeeUzs: true } });
-    if (!group) throw new NotFoundException("Guruh topilmadi");
+    const g = await this.prisma.group.findUnique({ where: { id: groupId }, select: { id: true, name: true, monthlyFeeUzs: true } });
+    if (!g) throw new NotFoundException("Guruh topilmadi");
+    const defaultFee = await defaultMonthlyFee(this.prisma);
+    // monthlyFeeUzs: amaldagi narx (guruhniki yoki umumiy); ownFeeUzs: faqat shu guruhga yozilgan narx
+    const group = { id: g.id, name: g.name, monthlyFeeUzs: effectiveFee(g.monthlyFeeUzs, defaultFee), ownFeeUzs: g.monthlyFeeUzs, defaultFeeUzs: defaultFee };
     // Hozirgi a'zolar + shu oyda shu guruhda to'lagan, keyin chiqib ketganlar
     const students = await this.prisma.studentProfile.findMany({
       where: { OR: [{ groupId }, { offlinePayments: { some: { groupId, month } } }] },
@@ -73,9 +77,9 @@ export class OfflineBillingService {
     if (!s) throw new NotFoundException("O'quvchi topilmadi");
     const existing = await this.prisma.offlinePayment.findUnique({ where: { studentId_month: { studentId: d.studentId, month: d.month } } });
     if (!existing && !s.group) throw new ConflictException("O'quvchi hech qaysi guruhda emas");
-    const amountUzs = d.amountUzs ?? existing?.amountUzs ?? s.group?.monthlyFeeUzs ?? null;
+    const amountUzs = d.amountUzs ?? existing?.amountUzs ?? effectiveFee(s.group?.monthlyFeeUzs, await defaultMonthlyFee(this.prisma));
     // Summa noma'lum (guruhga oylik summa kiritilmagan): 0 so'm deb saqlanmaydi, aks holda hisobotlar buziladi
-    if (amountUzs === null) throw new BadRequestException("Guruhning oylik summasi kiritilmagan: to'lov summasini yozing (yoki guruhga oylik summa kiriting)");
+    if (amountUzs === null) throw new BadRequestException("Oylik narx noma'lum: Tariflarda oylik tarif yo'q. To'lov summasini yozing");
     const p = await this.prisma.offlinePayment.upsert({
       where: { studentId_month: { studentId: d.studentId, month: d.month } },
       // Guruhdan chiqqan o'quvchining eski to'lovini tahrirlash ham mumkin: unda create ishlamaydi (existing bor)
@@ -151,7 +155,7 @@ export class OfflineBillingService {
     const paid = await this.prisma.offlinePayment.findMany({ where: { studentId: s.id, month: { in: months } } });
     return {
       groupName: s.group.name,
-      monthlyFeeUzs: s.group.monthlyFeeUzs,
+      monthlyFeeUzs: effectiveFee(s.group.monthlyFeeUzs, await defaultMonthlyFee(this.prisma)),
       months: months.map((m) => {
         const p = paid.find((x) => x.month === m);
         return { month: m, paid: !!p, amountUzs: p?.amountUzs ?? null };

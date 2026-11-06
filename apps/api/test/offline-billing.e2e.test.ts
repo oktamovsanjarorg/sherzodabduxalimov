@@ -174,13 +174,19 @@ describe("Offline guruh: kirish va oylik to'lov; online obuna eslatmalari (e2e)"
     expect(d.total).toHaveProperty("plannedCollectedUzs");
     expect(d.essays).toHaveProperty("collectedUzs");
 
-    // Oylik summasi yo'q guruh: summasiz "to'ladi" 0 so'm bo'lib saqlanmaydi
+    // Guruhga narx yozilmagan: Tariflardagi umumiy oylik narx olinadi (0 so'm emas)
     const g3 = (await req("POST", "/admin/groups", { name: `${TAG} 3-guruh` })).json().id;
     await req("POST", `/admin/groups/${g3}/students`, { studentIds: [offlineStudentId] });
-    expect((await req("PUT", "/admin/offline-payments", { studentId: offlineStudentId, month: "2026-01" })).statusCode).toBe(400);
+    const l3 = (await req("GET", `/admin/offline-payments?groupId=${g3}&month=${month}`)).json();
+    expect(l3.group.ownFeeUzs).toBeNull();
+    expect(l3.group.monthlyFeeUzs).toBe(l3.group.defaultFeeUzs);
+    expect(l3.group.defaultFeeUzs).toBeGreaterThan(0);
+    expect((await req("PUT", "/admin/offline-payments", { studentId: offlineStudentId, month: "2026-01" })).statusCode).toBe(200);
+    expect((await prisma.offlinePayment.findFirstOrThrow({ where: { studentId: offlineStudentId, month: "2026-01" } })).amountUzs).toBe(l3.group.defaultFeeUzs);
+    await req("DELETE", `/admin/offline-payments/${offlineStudentId}/2026-01`);
     const d3 = (await req("GET", `/admin/stats/payments?month=${month}`)).json();
-    expect(d3.offline.feeMissing).toBeGreaterThanOrEqual(1);
-    expect(d3.total.complete).toBe(false);
+    expect(d3.offline.groups.find((x: { groupId: string }) => x.groupId === g3).feeUzs).toBe(l3.group.defaultFeeUzs);
+    expect(d3.offline.feeMissing).toBe(0);
     await req("POST", `/admin/groups/${groupId}/students`, { studentIds: [offlineStudentId] });
     await req("DELETE", `/admin/groups/${g3}`);
 

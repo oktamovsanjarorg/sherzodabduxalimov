@@ -139,10 +139,14 @@ function FeeMissing({ d }: { d: Insights }) {
   return (
     <section className="rounded-2xl border border-amber-300 bg-amber-50 p-4 sm:p-5">
       <p className="flex items-center gap-2 font-extrabold text-amber-900">
-        <AlertTriangle size={18} /> Guruhlarga oylik to'lov summasi kiritilmagan
+        <AlertTriangle size={18} /> Oylik to'lov narxi noma'lum
       </p>
       <p className="mt-1 text-sm text-amber-900/80">
-        Shu sababli {d.offline.feeMissing} ta o'quvchidan qancha pul tushishi kerakligini hisoblab bo'lmayapti. Summani kiriting — hisobot, qarz va prognoz darhol to'g'rilanadi.
+        Tariflarda oylik tarif yo'q, shuning uchun {d.offline.feeMissing} ta o'quvchidan qancha pul tushishi kerakligini hisoblab bo'lmayapti.{" "}
+        <Link to="/billing" className="font-bold underline">
+          Tariflarda oylik tarif yarating
+        </Link>{" "}
+        (hamma guruhga shu narx olinadi) yoki pastda guruhga alohida narx yozing.
       </p>
       <div className="mt-3 space-y-2">
         {missing.map((g) => (

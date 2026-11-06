@@ -62,7 +62,7 @@ export function OfflineLedgerView() {
             <ChevronRight size={18} />
           </button>
         </div>
-        {l && <FeeEditor groupId={l.group.id} fee={l.group.monthlyFeeUzs} onSaved={refresh} />}
+        {l && <FeeEditor groupId={l.group.id} fee={l.group.ownFeeUzs} defaultFee={l.group.defaultFeeUzs} onSaved={refresh} />}
       </div>
 
       {!l ? (
@@ -140,7 +140,8 @@ function Stat({ label, value, tone }: { label: string; value: string; tone: stri
   );
 }
 
-function FeeEditor({ groupId, fee, onSaved }: { groupId: string; fee: number | null; onSaved: () => void }) {
+/** Guruhga alohida narx (ixtiyoriy). Bo'sh bo'lsa Tariflardagi umumiy oylik narx ishlatiladi */
+function FeeEditor({ groupId, fee, defaultFee, onSaved }: { groupId: string; fee: number | null; defaultFee: number | null; onSaved: () => void }) {
   const toast = useToast();
   const [v, setV] = useState(fee ? String(fee) : "");
   useEffect(() => setV(fee ? String(fee) : ""), [fee, groupId]);
@@ -161,8 +162,15 @@ function FeeEditor({ groupId, fee, onSaved }: { groupId: string; fee: number | n
         save.mutate();
       }}
     >
-      <input className="input w-36" inputMode="numeric" placeholder="Oylik summa" value={v} onChange={(e) => setV(e.target.value.replace(/\D/g, ""))} />
-      <span className="text-sm text-slate-500">so'm/oy</span>
+      <input
+        className="input w-40"
+        inputMode="numeric"
+        placeholder={defaultFee ? `Umumiy: ${formatSum(defaultFee)}` : "Oylik summa"}
+        title="Bo'sh qoldirilsa, Tariflardagi umumiy oylik narx olinadi"
+        value={v}
+        onChange={(e) => setV(e.target.value.replace(/\D/g, ""))}
+      />
+      <span className="text-sm text-slate-500">{v ? "so'm/oy (shu guruh uchun)" : defaultFee ? "umumiy narx" : "so'm/oy"}</span>
       {changed && (
         <button className="btn-primary btn-sm" disabled={save.isPending}>
           Saqlash

@@ -2,6 +2,7 @@ import { BadRequestException, Controller, Get, Query } from "@nestjs/common";
 import { MILLIY_LEVELS, type TeacherStats } from "@onatili/shared";
 import { CurrentUser, Roles, type JwtUser } from "../auth/decorators";
 import { PrismaService } from "../prisma/prisma.service";
+import { defaultMonthlyFee } from "../billing/fee";
 import { milliyOf, milliySelect } from "../tests/milliy";
 
 const TZ = 5 * 3600_000; // Toshkent
@@ -222,6 +223,7 @@ export class StatsController {
       this.prisma.offlinePayment.findMany({ where: { month }, select: { studentId: true } }),
     ]);
     const paid = new Set(paidNow.map((x) => x.studentId));
+    const defaultFee = await defaultMonthlyFee(this.prisma);
     return {
       months: months.map((m) => ({
         month: m,
@@ -231,7 +233,7 @@ export class StatsController {
       })),
       // Oylik summasi kiritilmagan guruhdagilar ham qarzdor sanaladi (summasi noma'lum bo'lsa ham to'lashi kerak)
       offlineDebtors: offline.filter((s) => !paid.has(s.student!.id)).length,
-      feeMissing: offline.filter((s) => !s.student?.group?.monthlyFeeUzs).length,
+      feeMissing: defaultFee ? 0 : offline.filter((s) => !s.student?.group?.monthlyFeeUzs).length,
     };
   }
 }

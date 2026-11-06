@@ -15,6 +15,7 @@ import {
 import { randomBytes } from "node:crypto";
 import { ENV, type Env } from "../config/env";
 import { PrismaService } from "../prisma/prisma.service";
+import { defaultMonthlyFee, effectiveFee } from "../billing/fee";
 import { esc } from "../notify/telegram";
 import { StaffService, type TelegramProfile } from "../staff/staff.service";
 
@@ -375,7 +376,7 @@ export class StudentsService {
                   return { month: m, paid: !!p, amountUzs: p?.amountUzs ?? null, note: p?.note ?? null };
                 })
               : [],
-            groupFeeUzs: sp.group?.monthlyFeeUzs ?? null,
+            groupFeeUzs: sp.group ? effectiveFee(sp.group.monthlyFeeUzs, await defaultMonthlyFee(this.prisma)) : null,
             subscription: sub ? { planName: sub.plan.name, endsAt: sub.endsAt.toISOString() } : null,
             payments: payments.map((p) => ({ id: p.id, title: p.plan?.name ?? "Esse tekshiruvi", amountUzs: p.amountUzs, status: p.status, createdAt: p.createdAt.toISOString() })),
           }

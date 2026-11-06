@@ -5,6 +5,7 @@ import { deepseekText } from "../ai/deepseek";
 import { CurrentUser, Roles, type JwtUser } from "../auth/decorators";
 import { ENV, type Env } from "../config/env";
 import { PrismaService } from "../prisma/prisma.service";
+import { defaultMonthlyFee, effectiveFee } from "../billing/fee";
 import { parse } from "./zod";
 
 const TZ = 5 * 3600_000;
@@ -139,6 +140,9 @@ Markdown: faqat **qalin** va ro'yxat. 1200 belgidan oshmasin.`;
       _count: true,
     });
     const came = new Map(attendance.map((a) => [a.studentId, a._count]));
+    // Guruhga alohida narx yozilmagan bo'lsa: Tariflardagi umumiy oylik narx
+    const defaultFee = await defaultMonthlyFee(p);
+    for (const g of groups) g.monthlyFeeUzs = effectiveFee(g.monthlyFeeUzs, defaultFee);
     const fee = new Map(groups.map((g) => [g.id, g.monthlyFeeUzs]));
     const groupRows = groups.map((g) => {
       const list = offStudents.filter((s) => s.groupId === g.id);

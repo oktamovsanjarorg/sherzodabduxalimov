@@ -153,7 +153,8 @@ export interface OfflineLedgerRow {
 }
 
 export interface OfflineLedger {
-  group: { id: string; name: string; monthlyFeeUzs: number | null };
+  /** monthlyFeeUzs: amaldagi narx (guruhniki, bo'lmasa umumiy oylik tarif); ownFeeUzs: faqat shu guruhga yozilgan */
+  group: { id: string; name: string; monthlyFeeUzs: number | null; ownFeeUzs: number | null; defaultFeeUzs: number | null };
   month: string;
   rows: OfflineLedgerRow[];
   totals: { students: number; paid: number; debtors: number; sumUzs: number };
