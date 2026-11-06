@@ -92,7 +92,7 @@ function Body({ s }: { s: TeacherStats }) {
         />
       </div>
 
-      <div className="grid gap-5 lg:grid-cols-2">
+      <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
         <Card title="E'tibor kerak" hint="Ko'p dars qoldirgan, natijasi past yoki uzoq vaqt ilovaga kirmagan o'quvchilar" Icon={AlertTriangle}>
           {s.attention.length === 0 ? (
             <Calm text="Hammasi joyida: e'tibor talab qiladigan o'quvchi yo'q" />

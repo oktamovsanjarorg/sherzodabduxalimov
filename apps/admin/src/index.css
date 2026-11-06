@@ -26,3 +26,15 @@
   .btn-ghost { @apply btn px-2 text-slate-600 hover:bg-slate-100; }
   .btn-sm { @apply h-8 px-3 text-xs; }
 }
+
+/* Telefonda (barmoq bilan) mayda matnli havola va tugmalarni bosish oson bo'lsin: bosiladigan maydon
+   kattalashadi, ko'rinish va joylashuv o'zgarmaydi (padding va manfiy margin bir-birini yopadi) */
+@media (pointer: coarse) {
+  a[href^="tel:"],
+  .tap {
+    padding-top: 10px;
+    padding-bottom: 10px;
+    margin-top: -10px;
+    margin-bottom: -10px;
+  }
+}

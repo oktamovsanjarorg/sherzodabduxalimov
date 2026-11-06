@@ -20,13 +20,13 @@ export function StudentDetailPage() {
   const s = q.data;
   return (
     <div className="mx-auto max-w-5xl space-y-4">
-      <Link to={s.group ? `/students?group=${s.group.id}` : "/students"} className="inline-flex items-center gap-1 text-sm font-semibold text-slate-500 hover:text-slate-800">
+      <Link to={s.group ? `/students?group=${s.group.id}` : "/students"} className="tap inline-flex items-center gap-1 text-sm font-semibold text-slate-500 hover:text-slate-800">
         <ArrowLeft size={16} /> O'quvchilar
       </Link>
       <Header s={s} />
       {!s.telegramLinked && <ConnectCard s={s} />}
       <Manage s={s} />
-      <div className="grid gap-4 lg:grid-cols-2">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <Section title="Ota-onalar">
           <Parents s={s} />
         </Section>
@@ -326,7 +326,7 @@ function Manage({ s }: { s: StudentDetail }) {
 
   return (
     <Section title="Boshqaruv">
-      <div className="grid gap-4 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         {isTeacher && (
           <div>
             <p className="label">Ilovaga kirish</p>

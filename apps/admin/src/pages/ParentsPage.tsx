@@ -36,7 +36,7 @@ export function ParentsPage() {
       {links.data?.length === 0 && (
         <Empty title={tab === "PENDING" ? "Tekshiriladigan so'rov yo'q" : "Ro'yxat bo'sh"} hint={tab === "PENDING" ? "Yangi so'rovlar shu yerda paydo bo'ladi." : undefined} />
       )}
-      <div className="grid gap-3 lg:grid-cols-2">
+      <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
         {links.data?.map((l) => <LinkCard key={l.id} link={l} />)}
       </div>
     </>

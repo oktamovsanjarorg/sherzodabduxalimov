@@ -21,7 +21,7 @@ export function PaymentInsightsView({ month }: { month: string }) {
     <div className="space-y-5">
       {d.offline.feeMissing > 0 && <FeeMissing d={d} />}
       <Headline d={d} />
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <Kpi
           label="Shu oy tushishi kerak"
           value={d.total.expectedUzs || d.total.complete ? sum(d.total.expectedUzs) : "—"}
@@ -53,7 +53,7 @@ export function PaymentInsightsView({ month }: { month: string }) {
 
       <AiReport month={d.month} />
 
-      <div className="grid gap-5 lg:grid-cols-2">
+      <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
         <Card title="Offline guruhlar" hint="Oylik to'lov: nechtasi to'ladi va qancha tushdi">
           {d.offline.groups.length === 0 ? (
             <Calm text="Faol offline guruh yo'q" />
@@ -227,7 +227,7 @@ function GroupLine({ g, month }: { g: Insights["offline"]["groups"][number]; mon
       <div className="mt-1 flex flex-wrap items-center gap-3 text-xs">
         <span className="text-slate-500">{g.feeUzs ? `Oylik: ${sum(g.feeUzs)}` : "Oylik summa kiritilmagan"}</span>
         {unpaid > 0 && (
-          <button className="inline-flex items-center gap-1 font-bold text-brand hover:underline disabled:opacity-50" disabled={remind.isPending} onClick={() => remind.mutate()}>
+          <button className="tap inline-flex items-center gap-1 font-bold text-brand hover:underline disabled:opacity-50" disabled={remind.isPending} onClick={() => remind.mutate()}>
             <BellRing size={13} /> {unpaid} qarzdorga va ota-onasiga bot orqali eslatish
           </button>
         )}

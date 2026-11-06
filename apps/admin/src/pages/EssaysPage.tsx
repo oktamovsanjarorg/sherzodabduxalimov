@@ -153,7 +153,7 @@ function ReviewModal({ essay, onClose }: { essay: AdminEssay; onClose: () => voi
             <VoiceRecorder value={voice} onChange={setVoice} />
           </>
         ) : (
-        <div className="grid gap-3 sm:grid-cols-[180px_minmax(0,1fr)]">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-[180px_minmax(0,1fr)]">
           <Field label={`Ball (0 – ${formatScore(essay.maxPoints)})`}>
             <input className="input text-lg font-bold" inputMode="decimal" value={points} onChange={(e) => setPoints(e.target.value.replace(/[^\d.,]/g, ""))} placeholder="0" />
             <div className="mt-2 flex flex-wrap gap-1">

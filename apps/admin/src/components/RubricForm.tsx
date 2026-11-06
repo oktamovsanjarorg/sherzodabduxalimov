@@ -59,7 +59,7 @@ export function RubricForm({ value, onChange, aiHint }: { value: RubricValue; on
                   {i + 1}. {c.label}
                   {aiHint?.[c.key] !== undefined && <span className="ml-2 text-xs font-semibold text-sky-700">AI: {fmt(aiHint[c.key])}</span>}
                 </p>
-                <div className="mt-2 grid gap-1 sm:grid-cols-5">
+                <div className="mt-2 grid grid-cols-1 gap-1 sm:grid-cols-5">
                   {RUBRIC_STEPS.map((step, j) => {
                     const on = cur === step;
                     return (

@@ -50,7 +50,7 @@ export function GroupManager({ groups, onClose }: { groups: AdminGroup[]; onClos
 
   return (
     <Modal title="Guruhlar" wide onClose={onClose}>
-      <div className="grid gap-5 md:grid-cols-[240px_minmax(0,1fr)]">
+      <div className="grid grid-cols-1 gap-5 md:grid-cols-[240px_minmax(0,1fr)]">
         <div className="space-y-3">
           <div className="space-y-1">
             {groups.map((g) => (

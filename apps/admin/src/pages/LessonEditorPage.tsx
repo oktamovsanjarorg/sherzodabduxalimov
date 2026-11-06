@@ -63,7 +63,7 @@ function Editor({ lesson, onChanged }: { lesson: AdminLesson; onChanged: () => v
 
   return (
     <>
-      <Link to="/content" className="mb-3 inline-flex items-center gap-1 text-sm font-semibold text-slate-500 hover:text-slate-800">
+      <Link to="/content" className="tap mb-3 inline-flex items-center gap-1 text-sm font-semibold text-slate-500 hover:text-slate-800">
         <ArrowLeft size={16} /> Darslar
       </Link>
       <PageHeader
@@ -80,7 +80,7 @@ function Editor({ lesson, onChanged }: { lesson: AdminLesson; onChanged: () => v
         }
       />
 
-      <div className="grid min-w-0 gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
+      <div className="grid grid-cols-1 min-w-0 gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
         <div className="space-y-6">
           <section className="card p-5">
             <h2 className="mb-4 font-extrabold">Videodars</h2>

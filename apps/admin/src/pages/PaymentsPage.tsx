@@ -59,7 +59,7 @@ function PaymentList({ status }: { status: PaymentStatusName }) {
   if (!list.data?.length)
     return <Empty title={status === "PENDING" ? "Tekshiriladigan chek yo'q" : "Ro'yxat bo'sh"} hint={status === "PENDING" ? "Yangi cheklar shu yerda paydo bo'ladi, botga ham xabar keladi." : undefined} />;
   return (
-    <div className="grid gap-3 lg:grid-cols-2">
+    <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
       {list.data.map((p) => (
         <PaymentCard key={p.id} p={p} />
       ))}
@@ -120,9 +120,9 @@ function PaymentCard({ p }: { p: AdminPayment }) {
             )}
           </p>
         </div>
-        <div className="shrink-0 text-right">
-          <p className="text-lg font-extrabold">{formatSum(p.amountUzs)} so'm</p>
-          <p className="max-w-[180px] truncate text-xs text-slate-500">
+        <div className="min-w-0 max-w-[55%] shrink-0 text-right">
+          <p className="whitespace-nowrap text-lg font-extrabold">{formatSum(p.amountUzs)} so'm</p>
+          <p className="truncate text-xs text-slate-500">
             {p.plan ? `${p.plan.name} · ${p.plan.durationDays} kun` : `Esse tekshiruvi: ${p.essay?.prompt ?? ""}`}
           </p>
         </div>

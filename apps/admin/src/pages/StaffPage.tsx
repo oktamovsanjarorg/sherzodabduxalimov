@@ -30,7 +30,7 @@ export function StaffPage() {
   return (
     <>
       <PageHeader title="Xodimlar" subtitle="Yangi yordamchini Telegram username orqali taklif qiling." />
-      <div className="card mb-5 grid gap-4 p-4 text-sm sm:grid-cols-2 sm:p-5">
+      <div className="card mb-5 grid grid-cols-1 gap-4 p-4 text-sm sm:grid-cols-2 sm:p-5">
         <div>
           <p className="mb-1 flex items-center gap-1.5 font-bold text-emerald-700">
             <Check size={16} /> Yordamchi qila oladi

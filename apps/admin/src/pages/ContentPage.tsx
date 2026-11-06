@@ -60,7 +60,7 @@ function InlineTitle({ value, onSave, className = "" }: { value: string; onSave:
   const [v, setV] = useState(value);
   if (!edit)
     return (
-      <button className={`group flex min-w-0 items-center gap-2 text-left ${className}`} onClick={() => { setV(value); setEdit(true); }}>
+      <button className={`tap group flex min-w-0 items-center gap-2 text-left ${className}`} onClick={() => { setV(value); setEdit(true); }}>
         <span className="min-w-0 break-words">{value}</span>
         <Pencil size={14} className="shrink-0 text-slate-300 group-hover:text-slate-500" />
       </button>
@@ -203,7 +203,7 @@ function LessonRow({ lesson, first, last, onMove }: { lesson: AdminLesson; first
   return (
     <li className="group flex flex-wrap items-center gap-x-2 gap-y-1.5 rounded-lg px-2 py-2 hover:bg-slate-50 sm:px-3">
       <Film size={16} className="shrink-0 text-brand" />
-      <Link to={`/lessons/${lesson.id}`} className="min-w-0 flex-1 text-sm font-semibold hover:text-brand sm:truncate">
+      <Link to={`/lessons/${lesson.id}`} className="tap min-w-0 flex-1 text-sm font-semibold hover:text-brand sm:truncate">
         {lesson.title}
       </Link>
       {/* Telefonda: nom tagida alohida qator; kompyuterda: o'ng tomonda */}

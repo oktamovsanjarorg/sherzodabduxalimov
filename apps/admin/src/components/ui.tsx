@@ -74,7 +74,12 @@ const tones = {
   brand: "bg-brand-soft text-brand-dark",
 };
 export function Badge({ tone = "gray", children }: { tone?: keyof typeof tones; children: ReactNode }) {
-  return <span className={`inline-flex shrink-0 items-center gap-1 whitespace-nowrap rounded-full px-2 py-0.5 text-[11px] font-bold ${tones[tone]}`}>{children}</span>;
+  // Telefonda uzun yorliq ekrandan chiqib ketmasin: kerak bo'lsa keyingi qatorga o'tadi
+  return (
+    <span className={`inline-flex max-w-full items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-bold leading-tight [overflow-wrap:anywhere] sm:shrink-0 sm:whitespace-nowrap ${tones[tone]}`}>
+      {children}
+    </span>
+  );
 }
 
 /** Ikki bosqichli o'chirish tugmasi: birinchi bosishda tasdiq so'raydi */

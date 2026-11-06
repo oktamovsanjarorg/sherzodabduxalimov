@@ -197,7 +197,7 @@ function ReviewModal({ essay, onClose }: { essay: AdminHwEssay; onClose: () => v
         </>
       }
     >
-      <div className="grid gap-5 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]">
+      <div className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]">
         <div className="space-y-3">
           <p className="text-sm">
             <span className="text-slate-500">Mavzu:</span> <b>{essay.prompt}</b>

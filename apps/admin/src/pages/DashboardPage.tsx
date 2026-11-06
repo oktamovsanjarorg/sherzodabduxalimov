@@ -93,7 +93,7 @@ export function DashboardPage() {
       <section>
         <div className="mb-2 flex items-center justify-between">
           <h2 className="label">Ko'rsatkichlar</h2>
-          <Link to="/stats" className="flex items-center gap-1 text-sm font-bold text-brand hover:underline">
+          <Link to="/stats" className="tap flex items-center gap-1 text-sm font-bold text-brand hover:underline">
             Batafsil statistika <ChevronRight size={15} />
           </Link>
         </div>

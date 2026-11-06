@@ -46,7 +46,7 @@ export function Inbox({ groups }: { groups: AdminGroup[] }) {
             </Link>
           </p>
           <p className="mb-3 text-xs text-slate-600">Raqamga qo'ng'iroq qilib, haqiqatan ota-onasi ekanini tekshiring.</p>
-          <div className="grid gap-3 lg:grid-cols-2">
+          <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
             {parents.data!.map((l) => (
               <LinkCard key={l.id} link={l} />
             ))}

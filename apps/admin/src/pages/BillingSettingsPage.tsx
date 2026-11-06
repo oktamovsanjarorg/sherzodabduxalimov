@@ -10,7 +10,7 @@ export function BillingSettingsPage() {
   return (
     <>
       <PageHeader title="Tariflar va karta" subtitle="O'quvchilar Mini App'dagi “Obuna” bo'limida shu tariflar va karta raqamini ko'radi." />
-      <div className="grid gap-5 lg:grid-cols-2 [&>*]:min-w-0">
+      <div className="grid grid-cols-1 gap-5 lg:grid-cols-2 [&>*]:min-w-0">
         <div className="space-y-5">
           <CardForm />
           <EssayPrice />

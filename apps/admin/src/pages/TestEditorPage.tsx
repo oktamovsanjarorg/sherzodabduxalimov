@@ -87,7 +87,7 @@ function Editor({ initial }: { initial: AdminTestDetail | null }) {
 
   return (
     <>
-      <Link to="/tests" className="mb-3 inline-flex items-center gap-1 text-sm font-semibold text-slate-500 hover:text-slate-800">
+      <Link to="/tests" className="tap mb-3 inline-flex items-center gap-1 text-sm font-semibold text-slate-500 hover:text-slate-800">
         <ArrowLeft size={16} /> Testlar
       </Link>
       <PageHeader
@@ -108,7 +108,7 @@ function Editor({ initial }: { initial: AdminTestDetail | null }) {
       )}
       {err && <p className="mb-4 rounded-lg bg-red-50 px-3 py-2 text-sm font-semibold text-red-700">{err}</p>}
 
-      <div className="grid min-w-0 gap-6 lg:grid-cols-[320px_minmax(0,1fr)]">
+      <div className="grid grid-cols-1 min-w-0 gap-6 lg:grid-cols-[320px_minmax(0,1fr)]">
         <aside className="card h-fit space-y-4 p-5">
           <Field label="Turi">
             <select className="input" value={type} onChange={(e) => setType(e.target.value as "TOPIC" | "MOCK")}>
