@@ -4,6 +4,7 @@ import { AlertTriangle, Check, Phone, ShieldCheck, X } from "lucide-react";
 import { useState } from "react";
 import { Badge, ConfirmButton, Empty, Modal, PageHeader, Spinner } from "../components/ui";
 import { api, errMsg } from "../lib/api";
+import { fmtShortDateTime } from "../lib/format";
 import { useToast } from "../lib/toast";
 
 type Tab = "PENDING" | "APPROVED" | "REJECTED";
@@ -103,7 +104,7 @@ function LinkCard({ link }: { link: AdminParentLink }) {
       )}
 
       <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-slate-100 pt-3">
-        <span className="text-xs text-slate-400">{new Date(link.createdAt).toLocaleString("uz-UZ")}</span>
+        <span className="text-xs text-slate-400">{fmtShortDateTime(link.createdAt)}</span>
         <span className="flex-1" />
         {link.status === "PENDING" ? (
           <div className="flex w-full gap-2 sm:w-auto">

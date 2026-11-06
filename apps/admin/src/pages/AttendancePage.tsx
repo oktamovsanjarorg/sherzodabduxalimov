@@ -437,12 +437,12 @@ function InviteBox({ group, onChange }: { group: AdminGroup; onChange: () => voi
       </div>
       <p className="mt-2 text-xs text-slate-600">Guruh chatiga tashlang. Havolani bosgan har bir o'quvchi shu guruhga qo'shiladi va unga barcha darslar ochiladi.</p>
       <div className="mt-2 flex flex-wrap gap-3 text-xs font-semibold">
-        <button className="text-brand-dark hover:underline" disabled={reset.isPending} onClick={() => confirm("Yangi havola yaratilsinmi? Eskisi ishlamay qoladi.") && reset.mutate()}>
+        <ConfirmButton label="Eskisi ishlamay qoladi. Yangilansinmi?" className="text-brand-dark hover:underline" onConfirm={() => reset.mutate()}>
           Yangi havola (eskisi ishlamaydi)
-        </button>
-        <button className="text-red-600 hover:underline" disabled={off.isPending} onClick={() => off.mutate()}>
+        </ConfirmButton>
+        <ConfirmButton label="Havola o'chirilsinmi?" className="text-red-600 hover:underline" onConfirm={() => off.mutate()}>
           Havolani o'chirish
-        </button>
+        </ConfirmButton>
       </div>
     </div>
   );

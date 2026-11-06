@@ -4,6 +4,7 @@ import { CheckCircle2, Circle, Plus, Search, Square, SquareCheck, Trash2 } from 
 import { useMemo, useState } from "react";
 import { Badge, ConfirmButton, Empty, Field, Modal, PageHeader, Spinner } from "../components/ui";
 import { api, errMsg } from "../lib/api";
+import { plainText } from "../lib/format";
 import { useToast } from "../lib/toast";
 
 export const TYPE_LABELS: Record<string, string> = { SINGLE: "Bitta javob", MULTIPLE: "Bir nechta javob", TEXT: "Yozma javob", ESSAY: "Esse", MATCHING: "Moslashtirish" };
@@ -64,7 +65,7 @@ export function QuestionsPage() {
         {qs.data?.items.map((q) => (
           <button key={q.id} onClick={() => setEditing(q)} className="card flex w-full items-start gap-3 p-4 text-left transition hover:border-brand">
             <div className="min-w-0 flex-1">
-              <p className="line-clamp-2 text-sm font-semibold">{q.text}</p>
+              <p className="line-clamp-2 text-sm font-semibold">{plainText(q.text)}</p>
               <div className="mt-2 flex flex-wrap gap-1.5">
                 <Badge tone="blue">{TYPE_LABELS[q.type]}</Badge>
                 {q.topicTitle && <Badge>{q.topicTitle}</Badge>}

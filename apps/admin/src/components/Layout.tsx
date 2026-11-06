@@ -12,8 +12,10 @@ interface NavGroup {
   /** Shu guruhga tegishli sahifalar */
   match: RegExp;
   /** Guruh ichidagi bo'limlar (yuqorida almashtirgich sifatida chiqadi) */
-  sub?: { to: string; label: string; match: RegExp }[];
+  sub?: { to: string; label: string; match: RegExp; badge?: number }[];
   badge?: number;
+  /** Kompyuter sidebar'ida shu guruh ichida ko'rsatiladi (telefonda pastki tugma alohida) */
+  sidebarIn?: string;
 }
 
 export function useNavGroups(): NavGroup[] {
@@ -32,7 +34,7 @@ export function useNavGroups(): NavGroup[] {
         { to: "/content", label: "Darslar", match: /^\/(content|lessons)/ },
         { to: "/questions", label: "Savollar", match: /^\/questions/ },
         { to: "/tests", label: "Testlar", match: /^\/tests/ },
-        { to: "/essays", label: `Esselar${dash.data?.pendingEssays ? ` (${dash.data.pendingEssays})` : ""}`, match: /^\/essays/ },
+        { to: "/essays", label: "Esselar", match: /^\/essays/, badge: dash.data?.pendingEssays },
       ],
     },
     {
@@ -45,7 +47,7 @@ export function useNavGroups(): NavGroup[] {
         { to: "/attendance", label: "Davomat", match: /^\/attendance/ },
       ],
     },
-    { to: "/parents", label: "Ota-onalar", Icon: ShieldCheck, match: /^\/parents/, badge: dash.data?.pendingParents },
+    { to: "/parents", label: "Ota-onalar", Icon: ShieldCheck, match: /^\/parents/, badge: dash.data?.pendingParents, sidebarIn: "/students" },
     {
       to: "/more",
       label: "Ko'proq",
@@ -56,7 +58,7 @@ export function useNavGroups(): NavGroup[] {
       sub: isTeacher
         ? [
             { to: "/more", label: "Profil", match: /^\/more/ },
-            { to: "/payments", label: `To'lovlar${dash.data?.pendingPayments ? ` (${dash.data.pendingPayments})` : ""}`, match: /^\/payments/ },
+            { to: "/payments", label: "To'lovlar", match: /^\/payments/, badge: dash.data?.pendingPayments },
             { to: "/billing", label: "Tariflar", match: /^\/billing/ },
             { to: "/staff", label: "Xodimlar", match: /^\/staff/ },
           ]
@@ -89,8 +91,9 @@ export function Layout() {
           <span className="text-sm font-extrabold">Ona tili · Admin</span>
         </div>
         <nav className="flex-1 space-y-4 overflow-y-auto px-3 pb-4">
-          {groups.map((g) => {
-            const items = g.sub ?? [{ to: g.to, label: g.label, match: g.match }];
+          {groups.filter((g) => !g.sidebarIn).map((g) => {
+            const extra = groups.filter((x) => x.sidebarIn === g.to).map((x) => ({ to: x.to, label: x.label, match: x.match, badge: x.badge }));
+            const items = [...(g.sub ?? [{ to: g.to, label: g.label, match: g.match, badge: g.badge }]), ...extra];
             return (
               <div key={g.to}>
                 {g.sub && (
@@ -111,8 +114,10 @@ export function Layout() {
                         >
                           {!g.sub && <g.Icon size={16} />}
                           <span className="min-w-0 flex-1 truncate">{t.label}</span>
-                          {!g.sub && g.badge ? (
-                            <span className="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-red-600 px-1.5 text-[11px] font-extrabold text-white">{g.badge}</span>
+                          {t.badge ? (
+                            <span className="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-red-600 px-1.5 text-[11px] font-extrabold text-white">
+                              {t.badge > 99 ? "99+" : t.badge}
+                            </span>
                           ) : null}
                         </NavLink>
                       </li>
@@ -123,10 +128,10 @@ export function Layout() {
             );
           })}
         </nav>
-        <div className="border-t border-slate-200 px-5 py-3 text-xs leading-tight">
-          <p className="font-bold">{s.user.firstName}</p>
-          <p className="text-slate-500">{ROLE_LABELS[s.user.role]}</p>
-        </div>
+        <NavLink to="/more" className="block border-t border-slate-200 px-5 py-3 text-xs leading-tight hover:bg-slate-50">
+          <p className="truncate font-bold">{[s.user.firstName, s.user.lastName].filter(Boolean).join(" ")}</p>
+          <p className="text-slate-500">{ROLE_LABELS[s.user.role]} · profil va chiqish</p>
+        </NavLink>
       </aside>
 
       {/* Telefon/planshet: yuqorida sarlavha va guruh ichidagi bo'limlar */}
@@ -148,6 +153,7 @@ export function Layout() {
                   }`}
                 >
                   {t.label}
+                  {t.badge ? <span className={`ml-1.5 ${active ? "text-red-300" : "text-red-600"}`}>{t.badge}</span> : null}
                 </NavLink>
               );
             })}

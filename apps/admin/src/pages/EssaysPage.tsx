@@ -7,6 +7,7 @@ import { ChevronRight } from "lucide-react";
 import { useState } from "react";
 import { Badge, Empty, Field, Modal, PageHeader, Spinner } from "../components/ui";
 import { api, errMsg } from "../lib/api";
+import { fmtShortDateTime } from "../lib/format";
 import { useToast } from "../lib/toast";
 import { HwEssays } from "./HwEssays";
 
@@ -58,7 +59,7 @@ function MockEssays() {
             <div className="min-w-0 flex-1">
               <p className="truncate font-bold">{e.student.name}</p>
               <p className="truncate text-xs text-slate-500">
-                {e.testTitle} · {e.words} ta so'z · {new Date(e.submittedAt).toLocaleString("uz-UZ")}
+                {e.testTitle} · {e.words} ta so'z · {fmtShortDateTime(e.submittedAt)}
               </p>
             </div>
             {e.points !== null ? <Badge tone="green">{fmt(e.points)}/{fmt(e.maxPoints)}</Badge> : <Badge tone="amber">{fmt(e.maxPoints)} ball</Badge>}

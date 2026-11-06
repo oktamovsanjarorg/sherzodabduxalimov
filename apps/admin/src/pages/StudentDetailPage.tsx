@@ -5,10 +5,11 @@ import { useState, type ReactNode } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { Badge, ConfirmButton, Field, Modal, Spinner } from "../components/ui";
 import { api, errMsg } from "../lib/api";
+import { fmtDate } from "../lib/format";
 import { loadSession } from "../lib/session";
 import { useToast } from "../lib/toast";
 
-const date = (iso: string) => new Date(iso).toLocaleDateString("ru-RU");
+const date = fmtDate;
 const ATT_TONE: Record<AttendanceStatusName, "green" | "amber" | "red" | "blue"> = { PRESENT: "green", LATE: "amber", ABSENT: "red", EXCUSED: "blue" };
 
 export function StudentDetailPage() {
@@ -411,7 +412,7 @@ function Attendance({ s }: { s: StudentDetail }) {
       <div className="max-h-56 divide-y divide-slate-100 overflow-y-auto">
         {s.attendance.recent.map((a) => (
           <div key={a.date} className="flex items-center gap-2 py-1.5 text-sm">
-            <span className="w-24 shrink-0 text-slate-500">{new Date(a.date).toLocaleDateString("ru-RU")}</span>
+            <span className="w-24 shrink-0 text-slate-500">{fmtDate(a.date)}</span>
             <Badge tone={ATT_TONE[a.status]}>{ATTENDANCE_LABELS[a.status]}</Badge>
             {a.note && <span className="truncate text-xs text-slate-500">{a.note}</span>}
           </div>

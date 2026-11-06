@@ -1,6 +1,6 @@
 import { formatCard, formatSum, type AdminPlan, type PlanInput } from "@onatili/shared";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { CreditCard, Pencil, Plus, Save } from "lucide-react";
+import { CreditCard, PenLine, Pencil, Plus, Save } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Badge, Field, Modal, PageHeader, Spinner, Toggle } from "../components/ui";
 import { api, errMsg } from "../lib/api";
@@ -108,7 +108,9 @@ function EssayPrice() {
         save.mutate();
       }}
     >
-      <h2 className="font-extrabold">📝 Esseni ustoz tekshirishi</h2>
+      <h2 className="flex items-center gap-2 font-extrabold">
+        <PenLine size={18} className="text-brand" /> Esseni ustoz tekshirishi
+      </h2>
       <p className="text-sm text-slate-500">O'quvchi varoqqa yozgan essesining rasmini yuboradi va shu summani to'laydi. AI tekshiruvi bepul (kuniga 2 ta).</p>
       <Field label="Bitta esse narxi (so'm)" hint="Bo'sh qoldirilsa, ustoz tekshiruvi o'chiq turadi">
         <input className="input" inputMode="numeric" placeholder="Masalan: 25000" value={v} onChange={(e) => setV(e.target.value.replace(/\D/g, ""))} />

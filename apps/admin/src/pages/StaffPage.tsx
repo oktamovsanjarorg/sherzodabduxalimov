@@ -1,6 +1,6 @@
 import { ROLE_LABELS } from "@onatili/shared";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Clock, UserPlus } from "lucide-react";
+import { Check, Clock, UserPlus, X } from "lucide-react";
 import { useState } from "react";
 import { Badge, ConfirmButton, PageHeader, Spinner } from "../components/ui";
 import { api, errMsg } from "../lib/api";
@@ -32,7 +32,9 @@ export function StaffPage() {
       <PageHeader title="Xodimlar" subtitle="Yangi yordamchini Telegram username orqali taklif qiling." />
       <div className="card mb-5 grid gap-4 p-4 text-sm sm:grid-cols-2 sm:p-5">
         <div>
-          <p className="mb-1 font-bold text-emerald-700">✓ Yordamchi qila oladi</p>
+          <p className="mb-1 flex items-center gap-1.5 font-bold text-emerald-700">
+            <Check size={16} /> Yordamchi qila oladi
+          </p>
           <ul className="list-disc space-y-0.5 pl-5 text-slate-600">
             <li>Darslar, savollar, testlar, videolar</li>
             <li>Esselarni baholash</li>
@@ -41,7 +43,9 @@ export function StaffPage() {
           </ul>
         </div>
         <div>
-          <p className="mb-1 font-bold text-red-700">✕ Faqat ega (ustoz)</p>
+          <p className="mb-1 flex items-center gap-1.5 font-bold text-red-700">
+            <X size={16} /> Faqat ega (ustoz)
+          </p>
           <ul className="list-disc space-y-0.5 pl-5 text-slate-600">
             <li>To'lovlar, cheklar, obunalar, qarzdorlar — umuman ko'rinmaydi</li>
             <li>Tariflar, karta raqami, esse narxi, oylik summalar</li>

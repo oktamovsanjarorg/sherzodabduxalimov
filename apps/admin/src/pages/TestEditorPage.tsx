@@ -5,6 +5,7 @@ import { useState } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { Badge, ConfirmButton, Field, Modal, PageHeader, Spinner, Toggle } from "../components/ui";
 import { api, errMsg } from "../lib/api";
+import { plainText } from "../lib/format";
 import { useToast } from "../lib/toast";
 import { KeyBadge, QuestionModal, TYPE_LABELS, useTopics } from "./QuestionsPage";
 
@@ -152,7 +153,7 @@ function Editor({ initial }: { initial: AdminTestDetail | null }) {
               <li key={it.question.id} className="flex flex-wrap items-start gap-x-3 gap-y-2 px-4 py-3 sm:flex-nowrap sm:px-5">
                 <span className="mt-1 w-6 shrink-0 text-sm font-extrabold text-slate-400">{i + 1}.</span>
                 <div className="min-w-0 flex-1 basis-[calc(100%-3rem)] sm:basis-auto">
-                  <p className="line-clamp-2 text-sm font-semibold">{it.question.text}</p>
+                  <p className="line-clamp-2 text-sm font-semibold">{plainText(it.question.text)}</p>
                   <div className="mt-1 flex gap-1.5">
                     <Badge tone="blue">{TYPE_LABELS[it.question.type]}</Badge>
                     {it.question.topicTitle && <Badge>{it.question.topicTitle}</Badge>}
@@ -238,7 +239,7 @@ function Picker({ defaultTopicId, exclude, onClose, onPick }: { defaultTopicId: 
                 onChange={() => setSel((m) => { const n = new Map(m); if (on) n.delete(q.id); else n.set(q.id, q); return n; })}
               />
               <span className="min-w-0 flex-1">
-                <span className="line-clamp-2 text-sm font-semibold">{q.text}</span>
+                <span className="line-clamp-2 text-sm font-semibold">{plainText(q.text)}</span>
                 <span className="mt-1 flex gap-1.5"><Badge tone="blue">{TYPE_LABELS[q.type]}</Badge>{q.topicTitle && <Badge>{q.topicTitle}</Badge>}</span>
               </span>
             </label>

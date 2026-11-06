@@ -4,6 +4,7 @@ import { Bell, Check, ChevronLeft, ChevronRight, Phone, Undo2 } from "lucide-rea
 import { useEffect, useState } from "react";
 import { Badge, Empty, Field, Modal, Spinner } from "../components/ui";
 import { api, errMsg } from "../lib/api";
+import { fmtShortDateTime } from "../lib/format";
 import { useToast } from "../lib/toast";
 
 const shiftMonth = (m: string, by: number) => {
@@ -80,7 +81,7 @@ export function OfflineLedgerView() {
               </button>
               <span className="text-xs text-slate-500">
                 Ota-onasiga (tasdiqlangan bo'lsa) va o'quvchining o'ziga bot orqali.
-                {l.lastReminderAt && ` Oxirgi marta: ${new Date(l.lastReminderAt).toLocaleString("ru-RU", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}`}
+                {l.lastReminderAt && ` Oxirgi marta: ${fmtShortDateTime(l.lastReminderAt)}`}
               </span>
             </div>
           )}

@@ -5,6 +5,7 @@ import { useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Badge, Empty, Field, Modal, PageHeader, Spinner } from "../components/ui";
 import { api, errMsg } from "../lib/api";
+import { fmtDate } from "../lib/format";
 import { loadSession } from "../lib/session";
 import { useToast } from "../lib/toast";
 
@@ -107,7 +108,7 @@ function Row({ r, isTeacher, showGroup }: { r: RosterRow; isTeacher: boolean; sh
         {r.parents.approved ? <Badge tone="green">ota-ona ✓</Badge> : r.parents.pending ? <Badge tone="blue">ota-ona kutilmoqda</Badge> : <Badge>ota-ona yo'q</Badge>}
         {isTeacher && r.paidThisMonth !== null && (r.paidThisMonth ? <Badge tone="green">shu oy to'lagan</Badge> : <Badge tone="red">qarzdor</Badge>)}
         {r.subscriptionEndsAt && (
-          <Badge tone={soon ? "amber" : "green"}>obuna {new Date(r.subscriptionEndsAt).toLocaleDateString("ru-RU")} gacha</Badge>
+          <Badge tone={soon ? "amber" : "green"}>obuna {fmtDate(r.subscriptionEndsAt)} gacha</Badge>
         )}
         {r.attendance30.total > 0 && (
           <Badge tone={r.attendance30.absent > r.attendance30.total / 3 ? "red" : "gray"}>

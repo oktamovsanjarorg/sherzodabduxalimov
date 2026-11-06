@@ -7,6 +7,7 @@ import { ChevronRight, ImageOff, Pencil, Phone } from "lucide-react";
 import { useState } from "react";
 import { Badge, Empty, Modal, Spinner } from "../components/ui";
 import { api, errMsg } from "../lib/api";
+import { fmtShortDateTime } from "../lib/format";
 import { useToast } from "../lib/toast";
 
 const fmt = (n: number) => String(Math.round(n * 10) / 10).replace(".", ",");
@@ -37,7 +38,7 @@ export function HwEssays() {
               <div className="min-w-0 flex-1">
                 <p className="truncate font-bold">{e.student.name}</p>
                 <p className="truncate text-xs text-slate-500">
-                  «{e.prompt}» · {e.pages} varoq · {new Date(e.createdAt).toLocaleString("ru-RU", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}
+                  «{e.prompt}» · {e.pages} varoq · {fmtShortDateTime(e.createdAt)}
                 </p>
               </div>
               {t ? <Badge tone="green">{fmt(t.totalScore)}/{ESSAY_MAX_SCORE}</Badge> : <Badge tone="amber">Kutmoqda</Badge>}

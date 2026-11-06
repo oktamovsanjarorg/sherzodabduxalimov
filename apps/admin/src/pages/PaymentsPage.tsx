@@ -1,19 +1,20 @@
 import { formatSum, type AdminPayment, type AdminStudent, type AdminSubscription, type PaymentStatusName } from "@onatili/shared";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Check, Gift, ImageOff, Phone, RotateCcw, Search, X } from "lucide-react";
+import { Check, Gift, ImageOff, MessageSquare, Phone, RotateCcw, Search, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { OfflineLedgerView } from "./OfflineLedger";
 import { Badge, ConfirmButton, Empty, Field, Modal, PageHeader, Spinner } from "../components/ui";
 import { api, errMsg } from "../lib/api";
+import { fmtDate, fmtShortDateTime } from "../lib/format";
 import { useToast } from "../lib/toast";
 
 type Tab = PaymentStatusName | "SUBS" | "OFFLINE";
 const TABS: Tab[] = ["PENDING", "APPROVED", "REJECTED", "SUBS", "OFFLINE"];
 const REASONS = ["Summa to'liq emas", "Chek o'qilmaydi", "Pul kartaga tushmagan", "Boshqa to'lovning cheki"];
 const REVOKE_REASONS = ["Xato tasdiqlangan", "Pul qaytarildi", "Pul kartaga tushmagan", "Boshqa o'quvchiniki"];
-const date = (iso: string) => new Date(iso).toLocaleDateString("ru-RU");
-const dateTime = (iso: string) => new Date(iso).toLocaleString("ru-RU", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
+const date = fmtDate;
+const dateTime = fmtShortDateTime;
 
 export function PaymentsPage() {
   const [params, setParams] = useSearchParams();
@@ -131,7 +132,7 @@ function PaymentCard({ p }: { p: AdminPayment }) {
         <div className="shrink-0 text-right">
           <p className="text-lg font-extrabold">{formatSum(p.amountUzs)} so'm</p>
           <p className="max-w-[180px] truncate text-xs text-slate-500">
-            {p.plan ? `${p.plan.name} · ${p.plan.durationDays} kun` : `📝 Esse tekshiruvi: ${p.essay?.prompt ?? ""}`}
+            {p.plan ? `${p.plan.name} · ${p.plan.durationDays} kun` : `Esse tekshiruvi: ${p.essay?.prompt ?? ""}`}
           </p>
         </div>
       </div>
@@ -141,7 +142,9 @@ function PaymentCard({ p }: { p: AdminPayment }) {
           <ReceiptImage id={p.id} />
         </div>
       )}
-      {p.payerNote && <p className="mt-2 rounded-lg bg-slate-50 px-3 py-2 text-sm">💬 {p.payerNote}</p>}
+      {p.payerNote && <p className="mt-2 flex items-start gap-2 rounded-lg bg-slate-50 px-3 py-2 text-sm">
+          <MessageSquare size={15} className="mt-0.5 shrink-0 text-slate-400" /> {p.payerNote}
+        </p>}
       {p.status === "PENDING" && p.activeUntil && (
         <p className="mt-2 text-xs text-slate-500">Hozir obunasi bor: {date(p.activeUntil)} gacha. Tasdiqlansa shu sanadan uzaytiriladi.</p>
       )}
