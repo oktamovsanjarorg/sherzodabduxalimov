@@ -1,25 +1,52 @@
 import { useQuery } from "@tanstack/react-query";
+import { lazy, Suspense } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
 import { AppLayout } from "./components/AppLayout";
 import { api, ApiError } from "./lib/api";
 import { getInitData } from "./lib/telegram";
-import { AttemptPage } from "./pages/AttemptPage";
-import { EssayPage } from "./pages/EssayPage";
-import { EssaysPage, NewEssayPage } from "./pages/EssaysPage";
 import { HomePage } from "./pages/HomePage";
-import { LessonPage } from "./pages/LessonPage";
 import { LessonsPage } from "./pages/LessonsPage";
-import { MocksPage } from "./pages/MocksPage";
-import { ParentGatePage } from "./pages/ParentGatePage";
-import { ParentHomePage } from "./pages/ParentHomePage";
-import { ParentsPage } from "./pages/ParentsPage";
 import { ProfilePage } from "./pages/ProfilePage";
-import { MyAttendancePage } from "./pages/MyAttendancePage";
-import { SettingsPage } from "./pages/SettingsPage";
-import { StatsPage } from "./pages/StatsPage";
-import { SubscribePage } from "./pages/SubscribePage";
-import { TopicTestsPage } from "./pages/TopicTestsPage";
 import { useAuth } from "./store/auth";
+
+/**
+ * Sahifani alohida bo'lak (chunk) sifatida yuklaydi. Yangi versiya chiqqanda eski bo'lak fayllari
+ * serverdan o'chadi: ochiq turgan eski ilova ularni topolmasa, bir marta sahifani yangilaymiz.
+ */
+function page<M extends Record<string, unknown>>(load: () => Promise<M>, name: keyof M) {
+  return lazy(() =>
+    load().then(
+      (m) => {
+        sessionStorage.removeItem("chunk-reload");
+        return { default: m[name] as React.ComponentType };
+      },
+      (e: unknown) => {
+        if (!sessionStorage.getItem("chunk-reload")) {
+          sessionStorage.setItem("chunk-reload", "1");
+          location.reload();
+          return new Promise<never>(() => {});
+        }
+        throw e;
+      },
+    ),
+  );
+}
+
+// Asosiy tablar darhol yuklanadi; qolgan sahifalar (video pleyer, test, esse) ochilganda
+const AttemptPage = page(() => import("./pages/AttemptPage"), "AttemptPage");
+const EssayPage = page(() => import("./pages/EssayPage"), "EssayPage");
+const EssaysPage = page(() => import("./pages/EssaysPage"), "EssaysPage");
+const NewEssayPage = page(() => import("./pages/EssaysPage"), "NewEssayPage");
+const LessonPage = page(() => import("./pages/LessonPage"), "LessonPage");
+const MocksPage = page(() => import("./pages/MocksPage"), "MocksPage");
+const ParentGatePage = page(() => import("./pages/ParentGatePage"), "ParentGatePage");
+const ParentHomePage = page(() => import("./pages/ParentHomePage"), "ParentHomePage");
+const ParentsPage = page(() => import("./pages/ParentsPage"), "ParentsPage");
+const MyAttendancePage = page(() => import("./pages/MyAttendancePage"), "MyAttendancePage");
+const SettingsPage = page(() => import("./pages/SettingsPage"), "SettingsPage");
+const StatsPage = page(() => import("./pages/StatsPage"), "StatsPage");
+const SubscribePage = page(() => import("./pages/SubscribePage"), "SubscribePage");
+const TopicTestsPage = page(() => import("./pages/TopicTestsPage"), "TopicTestsPage");
 
 export function App() {
   const initData = getInitData();
@@ -49,31 +76,43 @@ export function App() {
     );
   if (session.isError) return <FullScreen title="Kirishda xatolik" text={session.error.message} />;
   // Ota-onasi ulanmagan o'quvchi: majburiy qadam (server ham kontentni yopiq tutadi)
-  if (user?.role === "STUDENT" && user.parentStatus === "NONE") return <ParentGatePage />;
-  if (user?.role === "PARENT") return <ParentHomePage />;
+  if (user?.role === "STUDENT" && user.parentStatus === "NONE")
+    return (
+      <Suspense fallback={<Splash />}>
+        <ParentGatePage />
+      </Suspense>
+    );
+  if (user?.role === "PARENT")
+    return (
+      <Suspense fallback={<Splash />}>
+        <ParentHomePage />
+      </Suspense>
+    );
 
   return (
-    <Routes>
-      <Route element={<AppLayout />}>
-        <Route index element={<HomePage />} />
-        <Route path="lessons" element={<LessonsPage />} />
-        <Route path="profile" element={<ProfilePage />} />
-      </Route>
-      {/* Pastki navigatsiyasiz ichki sahifalar */}
-      <Route path="lesson/:id" element={<LessonPage />} />
-      <Route path="attempt/:id" element={<AttemptPage />} />
-      <Route path="mocks" element={<MocksPage />} />
-      <Route path="tests" element={<TopicTestsPage />} />
-      <Route path="essays" element={<EssaysPage />} />
-      <Route path="essays/new" element={<NewEssayPage />} />
-      <Route path="essays/:id" element={<EssayPage />} />
-      <Route path="subscribe" element={<SubscribePage />} />
-      <Route path="parents" element={<ParentsPage />} />
-      <Route path="stats" element={<StatsPage />} />
-      <Route path="my-attendance" element={<MyAttendancePage />} />
-      <Route path="settings" element={<SettingsPage />} />
-      <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
+    <Suspense fallback={<Splash />}>
+      <Routes>
+        <Route element={<AppLayout />}>
+          <Route index element={<HomePage />} />
+          <Route path="lessons" element={<LessonsPage />} />
+          <Route path="profile" element={<ProfilePage />} />
+        </Route>
+        {/* Pastki navigatsiyasiz ichki sahifalar */}
+        <Route path="lesson/:id" element={<LessonPage />} />
+        <Route path="attempt/:id" element={<AttemptPage />} />
+        <Route path="mocks" element={<MocksPage />} />
+        <Route path="tests" element={<TopicTestsPage />} />
+        <Route path="essays" element={<EssaysPage />} />
+        <Route path="essays/new" element={<NewEssayPage />} />
+        <Route path="essays/:id" element={<EssayPage />} />
+        <Route path="subscribe" element={<SubscribePage />} />
+        <Route path="parents" element={<ParentsPage />} />
+        <Route path="stats" element={<StatsPage />} />
+        <Route path="my-attendance" element={<MyAttendancePage />} />
+        <Route path="settings" element={<SettingsPage />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </Suspense>
   );
 }
 

@@ -10,3 +10,6 @@ allowBuilds:
   prisma: true
   # BullMQ'ning ixtiyoriy native tezlashtirgichi: kerak emas, JS fallback ishlaydi
   msgpackr-extract: false
+overrides:
+  # @nestjs/platform-fastify o'z fastify nusxasini olib keladi: xavfsizlik yamoqlari bor versiyaga majburlaymiz
+  fastify: ^5.12.8

@@ -1,5 +1,5 @@
 import { BadRequestException, ForbiddenException, Inject, Injectable, NotFoundException, UnauthorizedException } from "@nestjs/common";
-import { JwtService } from "@nestjs/jwt";
+import { JwtService, type JwtSignOptions } from "@nestjs/jwt";
 import { STAFF_ROLES, type AuthResponse, type RoleName } from "@onatili/shared";
 import { createHash, randomBytes } from "node:crypto";
 import { ENV, type Env } from "../config/env";
@@ -125,7 +125,7 @@ export class StaffService {
     if (count === 0) throw new UnauthorizedException("Havola allaqachon ishlatilgan");
     if (row.user.isBlocked || !STAFF_ROLES.includes(row.user.role)) throw new ForbiddenException("Ruxsat yo'q");
 
-    const tokenJwt = await this.jwt.signAsync({ sub: row.user.id, role: row.user.role }, { expiresIn: this.env.ADMIN_JWT_TTL });
+    const tokenJwt = await this.jwt.signAsync({ sub: row.user.id, role: row.user.role }, { expiresIn: this.env.ADMIN_JWT_TTL as JwtSignOptions["expiresIn"] });
     return { token: tokenJwt, expiresIn: this.env.ADMIN_JWT_TTL, user: await this.users.me(row.user.id) };
   }
 
