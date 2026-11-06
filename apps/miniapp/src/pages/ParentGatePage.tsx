@@ -71,23 +71,24 @@ export function ParentGatePage({ embedded = false }: { embedded?: boolean }) {
         {hasPhone && parents.data && (
           <>
             {list.map((p) => (
-              <div key={p.id} className="mt-3 flex items-center gap-2 rounded-xl bg-surface px-3 py-2 text-sm">
-                {p.status === "APPROVED" ? (
-                  <CheckCircle2 size={18} className="text-success" />
-                ) : p.status === "PENDING" ? (
-                  <Clock size={18} className="text-brand" />
-                ) : (
-                  <XCircle size={18} className="text-danger" />
-                )}
-                <span className="flex-1 font-semibold">{p.name}</span>
-                <span className="text-xs text-hint">
-                  {p.status === "APPROVED" ? "Tasdiqlangan" : p.status === "PENDING" ? "Tekshirilmoqda" : "Rad etilgan"}
-                </span>
+              <div key={p.id} className="mt-3 rounded-xl bg-surface px-3 py-2 text-sm">
+                <div className="flex items-center gap-2">
+                  {p.status === "APPROVED" ? (
+                    <CheckCircle2 size={18} className="text-success" />
+                  ) : p.status === "PENDING" ? (
+                    <Clock size={18} className="text-brand" />
+                  ) : (
+                    <XCircle size={18} className="text-danger" />
+                  )}
+                  <span className="flex-1 font-semibold">{p.name}</span>
+                  <span className="text-xs text-hint">
+                    {p.status === "APPROVED" ? "Tasdiqlangan" : p.status === "PENDING" ? "Tekshirilmoqda" : "Rad etilgan"}
+                  </span>
+                </div>
+                {/* Sabab o'sha rad etilgan ota-onaning o'zi tagida */}
+                {p.status === "REJECTED" && p.rejectReason && <p className="mt-1 pl-[26px] text-xs text-danger">Sabab: {p.rejectReason}</p>}
               </div>
             ))}
-            {list.some((p) => p.status === "REJECTED" && p.rejectReason) && (
-              <p className="mt-2 text-xs text-danger">Sabab: {list.find((p) => p.status === "REJECTED")?.rejectReason}</p>
-            )}
             {active.length < parents.data.maxParents && (
               <div className="mt-3 flex gap-2">
                 <button className="btn-primary" onClick={() => openExternal(parents.data!.shareUrl)}>

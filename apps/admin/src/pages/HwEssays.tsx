@@ -1,4 +1,4 @@
-import { ESSAY_MAX_SCORE, countMarks, type AdminHwEssay, type EssayAnnotations, type EssayReviewView, type PageAnnotations } from "@onatili/shared";
+import { ESSAY_MAX_SCORE, countMarks, type AdminHwEssay, type EssayAnnotations, type EssayReviewView, type PageAnnotations, formatScore } from "@onatili/shared";
 import { AnnotationOverlay, MarkCounts, PageAnnotator } from "../components/Annotate";
 import { RubricForm, emptyRubric, rubricComplete, rubricTotal, type RubricValue } from "../components/RubricForm";
 import { VoicePlayer, VoiceRecorder } from "../components/VoiceRecorder";
@@ -10,7 +10,6 @@ import { api, errMsg } from "../lib/api";
 import { fmtShortDateTime } from "../lib/format";
 import { useToast } from "../lib/toast";
 
-const fmt = (n: number) => String(Math.round(n * 10) / 10).replace(".", ",");
 
 /** Qo'lyozma esselar: o'quvchi varoq rasmlarini yuklagan va ustoz tekshiruvi uchun to'lagan */
 export function HwEssays() {
@@ -41,7 +40,7 @@ export function HwEssays() {
                   «{e.prompt}» · {e.pages} varoq · {fmtShortDateTime(e.createdAt)}
                 </p>
               </div>
-              {t ? <Badge tone="green">{fmt(t.totalScore)}/{ESSAY_MAX_SCORE}</Badge> : <Badge tone="amber">Kutmoqda</Badge>}
+              {t ? <Badge tone="green">{formatScore(t.totalScore)}/{ESSAY_MAX_SCORE}</Badge> : <Badge tone="amber">Kutmoqda</Badge>}
               <ChevronRight size={18} className="text-slate-400" />
             </button>
           );
@@ -109,13 +108,13 @@ function AiHint({ r }: { r: EssayReviewView }) {
   return (
     <details className="rounded-lg bg-sky-50 p-3 text-sm">
       <summary className="cursor-pointer font-bold text-sky-900">
-        AI bahosi (taxminiy): {fmt(r.totalScore)}/{r.maxScore}
+        AI bahosi (taxminiy): {formatScore(r.totalScore)}/{r.maxScore}
         {r.special ? ` · ${r.special.label}` : ""}
       </summary>
       <ul className="mt-2 space-y-1 text-sky-900">
         {r.criteria.map((c) => (
           <li key={c.key}>
-            <b>{c.label}:</b> {fmt(c.score)}/{c.max} {c.comment && <span className="text-sky-800/80">— {c.comment}</span>}
+            <b>{c.label}:</b> {formatScore(c.score)}/{c.max} {c.comment && <span className="text-sky-800/80">— {c.comment}</span>}
           </li>
         ))}
       </ul>
@@ -172,7 +171,7 @@ function ReviewModal({ essay, onClose }: { essay: AdminHwEssay; onClose: () => v
     onSuccess: async (r) => {
       // Ovozli izoh baholash saqlangandan keyin yuboriladi (server shuni talab qiladi)
       if (voice) await api.uploadHwVoice(essay.id, voice).catch((e) => toast(`Baho saqlandi, lekin ovoz yuborilmadi: ${errMsg(e)}`, "error"));
-      toast(`Saqlandi: ${fmt(r.totalScore)}/${ESSAY_MAX_SCORE}${voice ? " · ovozli izoh bilan" : ""}. O'quvchiga yuborildi`);
+      toast(`Saqlandi: ${formatScore(r.totalScore)}/${ESSAY_MAX_SCORE}${voice ? " · ovozli izoh bilan" : ""}. O'quvchiga yuborildi`);
       qc.invalidateQueries({ queryKey: ["hw-essays"] });
       qc.invalidateQueries({ queryKey: ["dashboard"] });
       onClose();
@@ -188,7 +187,7 @@ function ReviewModal({ essay, onClose }: { essay: AdminHwEssay; onClose: () => v
       footer={
         <>
           <span className="mr-auto self-center text-sm font-bold">
-            Jami: {fmt(total)} / {ESSAY_MAX_SCORE}
+            Jami: {formatScore(total)} / {ESSAY_MAX_SCORE}
           </span>
           <button className="btn-secondary" onClick={onClose}>
             Yopish

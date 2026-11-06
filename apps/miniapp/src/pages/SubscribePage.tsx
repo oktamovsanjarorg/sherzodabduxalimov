@@ -35,7 +35,7 @@ export function SubscribePage() {
   const accessMode = useAuth((s) => s.user?.accessMode ?? "AUTO");
   return (
     <FullPage>
-      <h1 className="px-1 text-xl font-extrabold">Obuna</h1>
+      <h1 className="px-1 text-xl font-extrabold">To'lov va obuna</h1>
       {billing.isPending && <div className="skeleton mt-4 h-64" />}
       {billing.isError && <p className="card mt-4 text-center text-sm text-danger">Ma'lumotni yuklab bo'lmadi</p>}
       {b && (
@@ -123,7 +123,7 @@ function OfflineCard({ o }: { o: MyOfflineBilling }) {
             {m.paid ? <CheckCircle2 size={20} className="shrink-0 text-success" /> : <Clock size={20} className="shrink-0 text-hint" />}
             <span className="flex-1 text-sm font-semibold capitalize">{monthLabel(m.month)}</span>
             <span className={`text-xs font-bold ${m.paid ? "text-success" : "text-hint"}`}>
-              {m.paid ? `To'langan${m.amountUzs ? ` · ${formatSum(m.amountUzs)}` : ""}` : "To'lanmagan"}
+              {m.paid ? `To'langan${m.amountUzs ? ` · ${formatSum(m.amountUzs)} so'm` : ""}` : "To'lanmagan"}
             </span>
           </div>
         ))}

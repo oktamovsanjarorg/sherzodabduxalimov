@@ -1,5 +1,5 @@
 import { BadRequestException, ConflictException, Injectable, NotFoundException } from "@nestjs/common";
-import { ESSAY_MAX_SCORE, rubricScore, type AdminEssay, type EssaySpecialKey, type TextMark } from "@onatili/shared";
+import { ESSAY_MAX_SCORE, rubricScore, type AdminEssay, type EssaySpecialKey, type TextMark, formatScore } from "@onatili/shared";
 import { NotifyService } from "../notify/notify.service";
 import { esc } from "../notify/telegram";
 import { PrismaService } from "../prisma/prisma.service";
@@ -115,14 +115,16 @@ export class EssaysService {
 
     const row = await this.prisma.attempt.findUniqueOrThrow({ where: { id: attemptId }, select: milliySelect });
     const m = milliyOf(row);
-    const level = m?.total != null ? `\nUmumiy ball: <b>${m.total}</b> / 75 · ${m.level!.label}` : "";
-    await this.notify.send(
+    const level = m?.total != null ? `\nUmumiy ball: <b>${formatScore(m.total)}</b> / 75 · ${m.level!.label}` : "";
+    await this.notify.sendApp(
       ans.attempt.user.telegramId,
-      `📝 <b>${esc(ans.attempt.test.title)}</b>: esse tekshirildi.\nEsse: ${p} / ${max} ball${m?.essay ? ` → ${m.essay.scaled} / 75` : ""}${
-        m ? level : `\nUmumiy natija: <b>${score}</b> / ${round1(ans.attempt.maxScore ?? 0)} ball`
+      `📝 <b>${esc(ans.attempt.test.title)}</b>: esse tekshirildi.\nEsse: ${formatScore(p)} / ${formatScore(max)} ball${m?.essay ? ` → ${formatScore(m.essay.scaled)} / 75` : ""}${
+        m ? level : `\nUmumiy natija: <b>${formatScore(score)}</b> / ${formatScore(ans.attempt.maxScore ?? 0)} ball`
       }${
         comment?.trim() ? `\n\nUstoz izohi: ${esc(comment.trim())}` : ""
       }`,
+      `/attempt/${attemptId}`,
+      "Natijani ko'rish",
     );
     return { points: p, score };
   }

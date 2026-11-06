@@ -1,5 +1,5 @@
 import type { PrismaClient } from "@onatili/db";
-import { ESSAY_MAX_SCORE, ESSAY_SPECIAL, NO_ESSAY_ERROR, type EssayAnnotations, type PageAnnotations, type TextMark, countWords, isMostlyCyrillic, rubricScore, type EssaySpecialKey } from "@onatili/shared";
+import { ESSAY_MAX_SCORE, ESSAY_SPECIAL, NO_ESSAY_ERROR, type EssayAnnotations, type PageAnnotations, type TextMark, countWords, isMostlyCyrillic, rubricScore, type EssaySpecialKey, formatScore } from "@onatili/shared";
 import type { AiEssayResult } from "../ai/deepseek";
 import type { SendFn } from "../billing/reminders";
 import { esc } from "../notify/telegram";
@@ -121,7 +121,7 @@ export async function gradeEssayJob(prisma: PrismaClient, essayId: string, grade
   if (!saved) return null;
   if (e.user.telegramId !== null) await send(
     e.user.telegramId,
-    `🤖 <b>AI essengizni tekshirdi</b>\n«${esc(e.prompt.slice(0, 80))}»\nTaxminiy ball: <b>${total} / ${ESSAY_MAX_SCORE}</b>`,
+    `🤖 <b>AI essengizni tekshirdi</b>\n«${esc(e.prompt.slice(0, 80))}»\nTaxminiy ball: <b>${formatScore(total)} / ${ESSAY_MAX_SCORE}</b>`,
     miniAppUrl ? { text: "Natija va xatolarni ko'rish", webAppUrl: `${miniAppUrl.replace(/\/$/, "")}/essays/${essayId}` } : undefined,
   );
   return total;

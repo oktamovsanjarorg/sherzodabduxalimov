@@ -1,3 +1,4 @@
+import { formatDuration } from "@onatili/shared";
 import { useQuery } from "@tanstack/react-query";
 import { Plus } from "lucide-react";
 import { useState } from "react";
@@ -36,7 +37,7 @@ export function TestsPage() {
               <p className="font-bold">{t.title}</p>
               <p className="text-xs text-slate-500">
                 {t.type === "MOCK" ? "Mock test" : `Mavzu: ${t.topicTitle ?? "—"}`} · {t.questionCount} savol
-                {t.timeLimitSec ? ` · ${Math.round(t.timeLimitSec / 60)} daqiqa` : ""} · {t.attemptCount} marta topshirilgan
+                {t.timeLimitSec ? ` · ${formatDuration(t.timeLimitSec)}` : ""} · {t.attemptCount} marta topshirilgan
               </p>
             </div>
             {t.isFree && <Badge tone="brand">Bepul</Badge>}

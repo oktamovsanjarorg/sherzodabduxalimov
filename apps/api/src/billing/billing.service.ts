@@ -202,7 +202,7 @@ export class BillingService {
     const who = esc(fullName(p.user)) + (p.user.username ? ` (@${esc(p.user.username)})` : "");
     await Promise.all(
       teachers.map((t) =>
-        this.notify.send(t.telegramId, `💳 <b>Yangi to'lov cheki</b>\n${who}\n${esc(item.title)} · ${formatSum(item.amountUzs)} so'm\n\nAdmin panel → Ko'proq → To'lovlar`),
+        this.notify.send(t.telegramId, `💳 <b>Yangi to'lov cheki</b>\n${who}\n${esc(item.title)} · ${formatSum(item.amountUzs)} so'm\n\nAdmin panel → To'lovlar`),
       ),
     );
     return { id: p.id, planName: item.title, amountUzs: p.amountUzs, status: "PENDING", reviewNote: null, createdAt: p.createdAt.toISOString() };
@@ -282,15 +282,19 @@ export class BillingService {
     });
     await this.audit(actorId, "payment.approve", "Payment", id, sub ? { subscriptionId: sub.id, endsAt: sub.endsAt } : { essayId: payment.essayId });
     if (!sub) {
-      await this.notify.send(
+      await this.notify.sendApp(
         payment.user.telegramId,
         `✅ <b>To'lovingiz tasdiqlandi</b>\nEsse «${esc(payment.essay?.prompt.slice(0, 80) ?? "")}» ustozga yuborildi. Tekshirilgach bot orqali xabar keladi.`,
+        `/essays/${payment.essayId}`,
+        "Esseni ko'rish",
       );
       return { ok: true, endsAt: null };
     }
-    await this.notify.send(
+    await this.notify.sendApp(
       payment.user.telegramId,
       `✅ <b>To'lovingiz tasdiqlandi</b>\n${esc(payment.plan!.name)} · ${formatSum(payment.amountUzs)} so'm\nObuna <b>${fmtDate(sub.endsAt)}</b> gacha faol. Barcha darslar va testlar ochildi!`,
+      "/",
+      "Ilovani ochish",
     );
     return { ok: true, endsAt: sub.endsAt.toISOString() };
   }
@@ -304,9 +308,11 @@ export class BillingService {
     }
     const p = await this.prisma.payment.findUniqueOrThrow({ where: { id }, include: { user: { select: { telegramId: true } } } });
     await this.audit(actorId, "payment.reject", "Payment", id, { reason });
-    await this.notify.send(
+    await this.notify.sendApp(
       p.user.telegramId,
-      `❌ <b>To'lov cheki qabul qilinmadi</b>\nSabab: ${esc(reason)}\n\n${p.essayId ? "Ilovada «Esselarim» bo'limidan" : "Ilovada «Obuna» bo'limidan"} chekni qayta yuborishingiz mumkin.`,
+      `❌ <b>To'lov cheki qabul qilinmadi</b>\nSabab: ${esc(reason)}\n\nChekni ilovada qayta yuborishingiz mumkin.`,
+      p.essayId ? `/essays/${p.essayId}` : "/subscribe",
+      "Chekni qayta yuborish",
     );
     return { ok: true };
   }
@@ -329,7 +335,7 @@ export class BillingService {
       return sub;
     });
     await this.audit(actorId, "subscription.grant", "Subscription", sub.id, { userId, planId, note });
-    await this.notify.send(user.telegramId, `✅ <b>Obuna faollashtirildi</b>\n${esc(plan.name)} · <b>${fmtDate(sub.endsAt)}</b> gacha. Barcha darslar va testlar ochildi!`);
+    await this.notify.sendApp(user.telegramId, `✅ <b>Obuna faollashtirildi</b>\n${esc(plan.name)} · <b>${fmtDate(sub.endsAt)}</b> gacha. Barcha darslar va testlar ochildi!`, "/", "Ilovani ochish");
     return { ok: true, endsAt: sub.endsAt.toISOString() };
   }
 
@@ -396,9 +402,11 @@ export class BillingService {
       return p;
     });
     await this.audit(actorId, "payment.revoke", "Payment", id, { reason, subscriptionId: p.subscriptionId, essayId: p.essayId });
-    await this.notify.send(
+    await this.notify.sendApp(
       p.user.telegramId,
       `↩️ <b>To'lov bekor qilindi</b>\n${p.plan ? esc(p.plan.name) : "Esse tekshiruvi"} · ${formatSum(p.amountUzs)} so'm\nSabab: ${esc(reason)}\n\nSavol bo'lsa, ustozga murojaat qiling.`,
+      "/subscribe",
+      "To'lov va obuna",
     );
     return { ok: true };
   }

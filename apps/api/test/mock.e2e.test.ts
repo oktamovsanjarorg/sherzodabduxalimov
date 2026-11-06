@@ -131,7 +131,7 @@ describe("Milliy sertifikat formatidagi mock (e2e)", () => {
 
     expect((await req("GET", "/admin/essays?status=pending")).json().some((x: { questionId: string }) => x.questionId === qEssay)).toBe(false);
     const jobs = (await queue.getJobs(["waiting", "delayed"])).map((j) => j.data.text);
-    expect(jobs.some((t) => t.includes("esse tekshirildi") && t.includes("<b>71.2</b> / 75") && t.includes("A+"))).toBe(true);
+    expect(jobs.some((t) => t.includes("esse tekshirildi") && t.includes("<b>71,2</b> / 75") && t.includes("A+"))).toBe(true);
 
     // Matndagi xatolarni belgilash: chegaradan tashqari rad etiladi; natijada o'quvchiga ko'rinadi
     expect((await req("PUT", `/admin/essays/${e.attemptId}/${qEssay}/annotations`, [{ start: 0, end: 99999, type: "spelling" }])).statusCode).toBe(400);

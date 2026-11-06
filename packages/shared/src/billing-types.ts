@@ -121,6 +121,18 @@ export const formatCard = (n: string) => n.replace(/\D/g, "").replace(/(\d{4})(?
 /** 150000 -> "150 000" */
 export const formatSum = (n: number) => String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, " ");
 
+/** Davomiylik: 45 soniya · 10 daqiqa · 3 soat · 1 soat 30 daqiqa. Ilova va admin panelda bir xil */
+export function formatDuration(sec: number | null | undefined): string | null {
+  if (!sec) return null;
+  if (sec < 60) return `${Math.round(sec)} soniya`;
+  const m = Math.round(sec / 60);
+  if (m < 60) return `${m} daqiqa`;
+  return `${Math.floor(m / 60)} soat${m % 60 ? ` ${m % 60} daqiqa` : ""}`;
+}
+
+/** Ball: 0,1 aniqlikda, o'nlik vergul bilan (17,5). Ilova, admin panel va bot xabarlarida bir xil */
+export const formatScore = (n: number) => String(Math.round(n * 10) / 10).replace(".", ",");
+
 // ===================== Offline guruh to'lovlari =====================
 
 export const MONTH_RE = /^\d{4}-(0[1-9]|1[0-2])$/;

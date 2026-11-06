@@ -79,7 +79,7 @@ describe("Esse: AI (bepul) va ustoz (pullik, qo'lyozma) (e2e)", () => {
     expect(d.status).toBe("AI_CHECKED");
     expect(d.reviews[0]).toMatchObject({ source: "AI", totalScore: 3.5, maxScore: 24, feedback: "Yaxshi" });
     expect(d.reviews[0].mistakes).toEqual([{ wrong: "dust", right: "do'st", note: null, type: "other" }]);
-    expect(sent[0]).toContain("3.5 / 24");
+    expect(sent[0]).toContain("3,5 / 24");
     expect(d.reviews[0].criteria).toHaveLength(12);
 
     // Muvaffaqiyatsiz bo'lsa limitga hisoblanmaydi va qayta urinish mumkin
@@ -197,7 +197,7 @@ describe("Esse: AI (bepul) va ustoz (pullik, qo'lyozma) (e2e)", () => {
     expect(d.reviews.find((x: { source: string }) => x.source === "TEACHER")).toMatchObject({ feedback: "Barakalla", reviewer: "Ega" });
     const texts = (await notifyQ.getJobs(["waiting", "delayed"])).map((j) => j.data.text);
     expect(texts.some((t) => t.includes("ustozga yuborildi"))).toBe(true);
-    expect(texts.some((t) => t.includes("Essengiz tekshirildi") && t.includes("4.5 / 24"))).toBe(true);
+    expect(texts.some((t) => t.includes("Essengiz tekshirildi") && t.includes("4,5 / 24"))).toBe(true);
 
     // Baholangan esseni o'chirib bo'lmaydi
     expect((await req("DELETE", `/essays/${e.id}`, undefined, S)).statusCode).toBe(409);

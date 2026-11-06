@@ -17,7 +17,7 @@ import {
   type MyEssayDetail,
   type MyEssaySummary,
   type RoleName,
-  type TeacherEssayReviewInput,
+  type TeacherEssayReviewInput, formatScore
 } from "@onatili/shared";
 import { Queue } from "bullmq";
 import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
@@ -321,7 +321,7 @@ export class EssaysService implements OnModuleDestroy {
     await this.prisma.auditLog.create({ data: { actorId, action: "essay.review", entity: "Essay", entityId: id, meta: { total } } });
     await this.notify.sendWithButton(
       e.user.telegramId,
-      `📝 <b>Essengiz ${first ? "tekshirildi" : "qayta baholandi"}</b>\n«${esc(e.prompt.slice(0, 80))}»\nBall: <b>${total} / ${ESSAY_MAX_SCORE}</b>`,
+      `📝 <b>Essengiz ${first ? "tekshirildi" : "qayta baholandi"}</b>\n«${esc(e.prompt.slice(0, 80))}»\nBall: <b>${formatScore(total)} / ${ESSAY_MAX_SCORE}</b>`,
       this.env.MINIAPP_URL ? { text: "Natijani ko'rish", webAppUrl: `${this.env.MINIAPP_URL.replace(/\/$/, "")}/essays/${id}` } : undefined,
     );
     return { totalScore: total };

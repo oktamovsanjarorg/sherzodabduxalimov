@@ -68,12 +68,7 @@ export function formatClock(sec: number) {
   return h ? `${h}:${mm}:${ss}` : `${mm}:${ss}`;
 }
 
-export function formatDuration(sec: number | null) {
-  if (!sec) return null;
-  if (sec < 60) return `${sec} s`;
-  const m = Math.round(sec / 60);
-  return m >= 60 ? `${Math.floor(m / 60)} soat ${m % 60 ? `${m % 60} daq` : ""}`.trim() : `${m} daq`;
-}
+export { formatDuration } from "@onatili/shared";
 
 /** 2026-11-04T... -> 04.11.2026 (uz-UZ locale ba'zi qurilmalarda ISO ko'rinishda chiqadi) */
 export function formatDate(iso: string) {

@@ -25,8 +25,10 @@ export function createNotifyQueue(redisUrl: string, prefix: string) {
 @Injectable()
 export class NotifyService implements OnModuleDestroy {
   private readonly queue;
+  private readonly appUrl: string | undefined;
   constructor(@Inject(ENV) env: Env) {
     this.queue = createNotifyQueue(env.REDIS_URL, env.QUEUE_PREFIX);
+    this.appUrl = env.MINIAPP_URL?.replace(/\/$/, "");
   }
   async onModuleDestroy() {
     await this.queue.close();
@@ -35,6 +37,10 @@ export class NotifyService implements OnModuleDestroy {
   async send(chatId: bigint | string | null, text: string, attendanceId?: string) {
     if (chatId === null) return null;
     return this.queue.add("send", { chatId: String(chatId), text, attendanceId });
+  }
+  /** O'quvchiga xabar va ostida ilovaning kerakli sahifasini ochadigan tugma (MINIAPP_URL bo'lmasa tugmasiz) */
+  async sendApp(chatId: bigint | string | null, text: string, path: string, label = "Ilovada ko'rish") {
+    return this.sendWithButton(chatId, text, this.appUrl ? { text: label, webAppUrl: `${this.appUrl}${path}` } : undefined);
   }
   async sendWithButton(chatId: bigint | string | null, text: string, button?: NotifyJob["button"]) {
     if (chatId === null) return null;

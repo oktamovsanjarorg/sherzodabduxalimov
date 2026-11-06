@@ -1,4 +1,4 @@
-import { countMarks, essayTo75, type AdminEssay, type TextMark } from "@onatili/shared";
+import { countMarks, essayTo75, type AdminEssay, type TextMark, formatScore } from "@onatili/shared";
 import { MarkCounts, TextAnnotator } from "../components/Annotate";
 import { RubricForm, rubricComplete, rubricTotal, type RubricValue } from "../components/RubricForm";
 import { VoicePlayer, VoiceRecorder } from "../components/VoiceRecorder";
@@ -11,7 +11,6 @@ import { fmtShortDateTime } from "../lib/format";
 import { useToast } from "../lib/toast";
 import { HwEssays } from "./HwEssays";
 
-const fmt = (n: number) => String(Math.round(n * 10) / 10).replace(".", ",");
 
 export function EssaysPage() {
   const [source, setSource] = useState<"hw" | "mock">("hw");
@@ -62,7 +61,7 @@ function MockEssays() {
                 {e.testTitle} · {e.words} ta so'z · {fmtShortDateTime(e.submittedAt)}
               </p>
             </div>
-            {e.points !== null ? <Badge tone="green">{fmt(e.points)}/{fmt(e.maxPoints)}</Badge> : <Badge tone="amber">{fmt(e.maxPoints)} ball</Badge>}
+            {e.points !== null ? <Badge tone="green">{formatScore(e.points)}/{formatScore(e.maxPoints)}</Badge> : <Badge tone="amber">{formatScore(e.maxPoints)} ball</Badge>}
             <ChevronRight size={18} className="text-slate-400" />
           </button>
         ))}
@@ -75,7 +74,7 @@ function MockEssays() {
 function ReviewModal({ essay, onClose }: { essay: AdminEssay; onClose: () => void }) {
   const toast = useToast();
   const qc = useQueryClient();
-  const [points, setPoints] = useState(essay.points !== null ? fmt(essay.points) : "");
+  const [points, setPoints] = useState(essay.points !== null ? formatScore(essay.points) : "");
   const [comment, setComment] = useState(essay.reviewComment ?? "");
   // Milliy sertifikat: rasmiy mezon (12 band) bilan baholanadi, ball shundan chiqadi
   const [rubric, setRubric] = useState<RubricValue>(() => ({
@@ -153,7 +152,7 @@ function ReviewModal({ essay, onClose }: { essay: AdminEssay; onClose: () => voi
         {essay.milliy ? (
           <>
             <RubricForm value={rubric} onChange={setRubric} />
-            <p className="text-sm font-bold">Jami: {fmt(rubricTotal(rubric))} / 24 → 75 ballik shkalada {essayTo75(rubricTotal(rubric))}</p>
+            <p className="text-sm font-bold">Jami: {formatScore(rubricTotal(rubric))} / 24 → 75 ballik shkalada {essayTo75(rubricTotal(rubric))}</p>
             <Field label="Taqriz (o'quvchiga yuboriladi)">
               <textarea className="textarea min-h-[110px]" value={comment} onChange={(e) => setComment(e.target.value)} placeholder="Ekspert xulosasi: kuchli tomonlari, xatolari, tavsiyalar…" />
             </Field>
@@ -167,12 +166,12 @@ function ReviewModal({ essay, onClose }: { essay: AdminEssay; onClose: () => voi
           </>
         ) : (
         <div className="grid gap-3 sm:grid-cols-[180px_minmax(0,1fr)]">
-          <Field label={`Ball (0 – ${fmt(essay.maxPoints)})`}>
+          <Field label={`Ball (0 – ${formatScore(essay.maxPoints)})`}>
             <input className="input text-lg font-bold" inputMode="decimal" value={points} onChange={(e) => setPoints(e.target.value.replace(/[^\d.,]/g, ""))} placeholder="0" />
             <div className="mt-2 flex flex-wrap gap-1">
               {[0.25, 0.5, 0.75, 1].map((f) => (
-                <button key={f} type="button" className="btn-sm btn border border-slate-200 text-slate-600" onClick={() => setPoints(fmt(essay.maxPoints * f))}>
-                  {fmt(essay.maxPoints * f)}
+                <button key={f} type="button" className="btn-sm btn border border-slate-200 text-slate-600" onClick={() => setPoints(formatScore(essay.maxPoints * f))}>
+                  {formatScore(essay.maxPoints * f)}
                 </button>
               ))}
             </div>
@@ -182,7 +181,7 @@ function ReviewModal({ essay, onClose }: { essay: AdminEssay; onClose: () => voi
           </Field>
         </div>
         )}
-        {!essay.milliy && points.trim() !== "" && !valid && <p className="text-sm font-semibold text-red-600">Ball 0 dan {fmt(essay.maxPoints)} gacha bo'lishi kerak</p>}
+        {!essay.milliy && points.trim() !== "" && !valid && <p className="text-sm font-semibold text-red-600">Ball 0 dan {formatScore(essay.maxPoints)} gacha bo'lishi kerak</p>}
       </div>
     </Modal>
   );

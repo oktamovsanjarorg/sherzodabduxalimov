@@ -7,7 +7,7 @@ import { useAuth } from "../store/auth";
 
 const TONE: Record<AttendanceStatusName, string> = {
   PRESENT: "bg-success/15 text-success",
-  LATE: "bg-brand-soft text-brand",
+  LATE: "bg-amber-500/15 text-amber-600",
   ABSENT: "bg-danger/15 text-danger",
   EXCUSED: "bg-hint/15 text-hint",
 };

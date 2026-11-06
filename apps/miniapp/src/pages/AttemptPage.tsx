@@ -1,4 +1,4 @@
-import { ESSAY_REQUIREMENTS, type AttemptQuestion, type AttemptResult, type AttemptState } from "@onatili/shared";
+import { ESSAY_REQUIREMENTS, type AttemptQuestion, type AttemptResult, type AttemptState, formatScore } from "@onatili/shared";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { BookOpenText, ChevronLeft, ChevronRight, Clock, Grid3x3, Loader2, X } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -250,7 +250,7 @@ function Runner({ state }: { state: AttemptState }) {
   );
 }
 
-export const fmtPoints = (n: number) => String(Math.round(n * 10) / 10).replace(".", ",");
+export const fmtPoints = formatScore;
 const countWords = (t: string) => (t.trim().match(/\S+/g) ?? []).length;
 
 /** Umumiy matn (o'qish matni, she'r, g'azal): yig'iladigan karta */

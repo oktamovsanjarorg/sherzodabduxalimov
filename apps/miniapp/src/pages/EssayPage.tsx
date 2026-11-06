@@ -1,4 +1,4 @@
-import { ESSAY_RUBRIC, ESSAY_STATUS_LABELS, MAX_ESSAY_PAGES, NO_ESSAY_ERROR, formatCard, formatSum, type EssayConfig, type EssayReviewView, type MyEssayDetail, type PageAnnotations } from "@onatili/shared";
+import { ESSAY_RUBRIC, ESSAY_STATUS_LABELS, MAX_ESSAY_PAGES, NO_ESSAY_ERROR, formatCard, formatSum, type EssayConfig, type EssayReviewView, type MyEssayDetail, type PageAnnotations, formatScore } from "@onatili/shared";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Bot, Clock, GraduationCap, ImagePlus, Lightbulb, Loader2, RotateCcw, Trash2, X, XCircle } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
@@ -12,7 +12,6 @@ import { formatDate, useBackButton } from "../lib/hooks";
 import { compressImage } from "../lib/image";
 import { confirmDialog, hapticResult } from "../lib/telegram";
 
-const fmt = (n: number) => String(Math.round(n * 10) / 10).replace(".", ",");
 const errText = (e: unknown) => (e instanceof ApiError ? e.message : "Xatolik, internetni tekshiring");
 
 export function EssayPage() {
@@ -167,7 +166,7 @@ function ReviewCard({ r }: { r: EssayReviewView }) {
     <div className="mt-4 space-y-3">
       <div className="card flex items-center gap-4">
         <div className="flex h-16 w-16 shrink-0 flex-col items-center justify-center rounded-full bg-brand text-white">
-          <span className="text-xl font-extrabold leading-none">{fmt(r.totalScore)}</span>
+          <span className="text-xl font-extrabold leading-none">{formatScore(r.totalScore)}</span>
           <span className="text-[10px] font-bold opacity-80">/ {r.maxScore}</span>
         </div>
         <div className="min-w-0">
@@ -186,7 +185,7 @@ function ReviewCard({ r }: { r: EssayReviewView }) {
             <div className="flex items-center gap-2">
               <span className="flex-1 text-sm font-semibold">{c.label}</span>
               <span className="text-sm font-extrabold">
-                {fmt(c.score)}
+                {formatScore(c.score)}
                 <span className="text-hint">/{c.max}</span>
               </span>
             </div>

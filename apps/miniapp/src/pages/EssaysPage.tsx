@@ -1,4 +1,4 @@
-import { ESSAY_REQUIREMENTS, ESSAY_STATUS_LABELS, MAX_ESSAY_PAGES, formatSum, type EssayModeName, type MyEssaySummary } from "@onatili/shared";
+import { ESSAY_REQUIREMENTS, ESSAY_STATUS_LABELS, MAX_ESSAY_PAGES, formatSum, type EssayModeName, type MyEssaySummary, formatScore } from "@onatili/shared";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Bot, ChevronRight, GraduationCap, Info, Loader2, Plus } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
@@ -10,7 +10,6 @@ import { formatDate, useBackButton } from "../lib/hooks";
 import { compressImage } from "../lib/image";
 import { haptic, hapticResult } from "../lib/telegram";
 
-const fmt = (n: number) => String(Math.round(n * 10) / 10).replace(".", ",");
 const words = (t: string) => (t.trim().match(/\S+/g) ?? []).length;
 
 /** Esselarim: ro'yxat */
@@ -67,7 +66,7 @@ function EssayRow({ e }: { e: MyEssaySummary }) {
         <Loader2 size={18} className="animate-spin text-hint" />
       ) : done && e.score ? (
         <span className="rounded-full bg-brand-soft px-2 py-1 text-xs font-extrabold text-brand">
-          {fmt(e.score.total)}/{e.score.max}
+          {formatScore(e.score.total)}/{e.score.max}
         </span>
       ) : (
         <ChevronRight size={18} className="text-hint" />
