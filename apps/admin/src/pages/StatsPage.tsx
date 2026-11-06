@@ -2,7 +2,9 @@ import { formatScore, formatSum, monthLabel, type TeacherStats } from "@onatili/
 import { useQuery } from "@tanstack/react-query";
 import { AlertTriangle, BookOpen, CalendarCheck, ChevronLeft, ChevronRight, ClipboardList, FileText, Trophy, Users, Wallet, type LucideIcon } from "lucide-react";
 import { useState, type ReactNode } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
+import { loadSession } from "../lib/session";
+import { PaymentInsightsView } from "./PaymentInsights";
 import { PageHeader, Spinner } from "../components/ui";
 import { api, errMsg } from "../lib/api";
 
@@ -21,7 +23,10 @@ const ddmm = (iso: string) => `${iso.slice(8, 10)}.${iso.slice(5, 7)}`;
 
 export function StatsPage() {
   const [month, setMonth] = useState(thisMonth());
-  const q = useQuery({ queryKey: ["stats", month], queryFn: () => api.stats(month) });
+  const [params, setParams] = useSearchParams();
+  const isTeacher = loadSession()?.user.role === "TEACHER";
+  const tab = isTeacher && params.get("tab") === "pay" ? "pay" : "main";
+  const q = useQuery({ queryKey: ["stats", month], queryFn: () => api.stats(month), enabled: tab === "main" });
   const current = month >= thisMonth();
 
   return (
@@ -41,7 +46,29 @@ export function StatsPage() {
           </div>
         }
       />
-      {q.isPending ? <Spinner className="text-slate-400" /> : q.isError ? <p className="text-sm text-red-600">{errMsg(q.error)}</p> : <Body s={q.data} />}
+      {isTeacher && (
+        <div className="mb-5 inline-flex rounded-lg border border-slate-200 bg-white p-1 text-sm font-bold">
+          {(
+            [
+              ["main", "Umumiy"],
+              ["pay", "To'lovlar tahlili"],
+            ] as const
+          ).map(([k, l]) => (
+            <button key={k} onClick={() => setParams(k === "pay" ? { tab: "pay" } : {}, { replace: true })} className={`h-9 rounded-md px-3 ${tab === k ? "bg-brand text-white" : "text-slate-600"}`}>
+              {l}
+            </button>
+          ))}
+        </div>
+      )}
+      {tab === "pay" ? (
+        <PaymentInsightsView month={month} />
+      ) : q.isPending ? (
+        <Spinner className="text-slate-400" />
+      ) : q.isError ? (
+        <p className="text-sm text-red-600">{errMsg(q.error)}</p>
+      ) : (
+        <Body s={q.data} />
+      )}
     </>
   );
 }
@@ -201,6 +228,9 @@ function Body({ s }: { s: TeacherStats }) {
             format={(n) => `${formatSum(n)} so'm`}
             total
           />
+          <Link to="/stats?tab=pay" className="mt-3 mr-4 inline-flex items-center gap-1 text-sm font-bold text-brand hover:underline">
+            To'lovlar tahlili: kim to'lamadi, prognoz, AI xulosa <ChevronRight size={15} />
+          </Link>
           {s.income.offlineDebtors > 0 && (
             <Link to="/payments?tab=OFFLINE" className="mt-3 inline-flex items-center gap-1 text-sm font-bold text-amber-700 hover:underline">
               <AlertTriangle size={15} /> <span className="capitalize">{monthLabel(s.month)}</span>: {s.income.offlineDebtors} ta offline o'quvchi hali to'lamagan

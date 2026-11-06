@@ -82,3 +82,78 @@ export function dayLabel(isoDate: string): string {
   const months = ["yanvar", "fevral", "mart", "aprel", "may", "iyun", "iyul", "avgust", "sentabr", "oktabr", "noyabr", "dekabr"];
   return `${d.getUTCDate()}-${months[d.getUTCMonth()]}, ${WEEKDAY_NAMES[d.getUTCDay()]}`;
 }
+
+// ---------------- To'lovlar tahlili (faqat ega) ----------------
+
+export type FollowUpKindName = "CALL" | "MESSAGE" | "PROMISE" | "REASON" | "BOT";
+export const FOLLOW_UP_LABELS: Record<FollowUpKindName, string> = {
+  CALL: "Qo'ng'iroq qilindi",
+  MESSAGE: "Yozildi",
+  PROMISE: "To'lashga va'da berdi",
+  REASON: "Sababi",
+  BOT: "Bot eslatdi",
+};
+
+export interface FollowUpView {
+  id: string;
+  kind: FollowUpKindName;
+  note: string | null;
+  promisedAt: string | null;
+  by: string | null;
+  createdAt: string;
+}
+
+/** To'lamagan o'quvchi: kim, qancha, qachondan beri, kim bilan gaplashildi */
+export interface DebtorRow {
+  studentId: string;
+  userId: string;
+  name: string;
+  phone: string | null;
+  kind: "OFFLINE" | "ONLINE";
+  /** Offline: guruh nomi; online: tarif nomi */
+  where: string | null;
+  amountUzs: number;
+  /** Offline: ketma-ket necha oy to'lamagan (shu oy bilan); online: obuna tugaganiga necha kun */
+  overdue: { months?: number; days?: number };
+  /** Offline: shu oy darsga necha marta kelgan (keladi-yu to'lamayaptimi?) */
+  attended: number | null;
+  /** Online: oxirgi marta ilovada nimadir qilganiga necha kun */
+  idleDays: number | null;
+  parent: { name: string; phone: string | null } | null;
+  /** Kutilayotgan chek (o'quvchi yuborgan, siz hali tasdiqlamagansiz) */
+  pendingReceipt: boolean;
+  followUps: FollowUpView[];
+}
+
+export interface PaymentInsights {
+  month: string;
+  /** Oyning nechanchi kuni (joriy oy bo'lsa), aks holda oyning oxirgi kuni */
+  day: number;
+  daysInMonth: number;
+  offline: {
+    groups: { groupId: string; name: string; feeUzs: number | null; students: number; paid: number; expectedUzs: number; collectedUzs: number }[];
+    students: number;
+    paid: number;
+    expectedUzs: number;
+    collectedUzs: number;
+    /** Guruhlarning oylik summasi kiritilmagan bo'lsa, kutilgan summani hisoblab bo'lmaydi */
+    feeMissing: number;
+  };
+  online: {
+    /** Shu oyda obunasi tugaydigan/tugagan o'quvchilar */
+    due: number;
+    renewed: number;
+    /** Tugagan va uzaytirilmagan */
+    lapsed: number;
+    expectedUzs: number;
+    collectedUzs: number;
+    pendingReceipts: number;
+    pendingUzs: number;
+  };
+  total: { expectedUzs: number; collectedUzs: number; percent: number | null };
+  /** Oy oxirigacha prognoz: hozirgi tushum + kutilayotgan cheklar + qolgan qarzning odatdagi undirilish ulushi */
+  forecast: { endOfMonthUzs: number; basis: string; nextMonthExpectedUzs: number };
+  /** Oxirgi 3 oy: kutilgan va tushgan (offline guruhlar bo'yicha) */
+  history: { month: string; expectedUzs: number; collectedUzs: number }[];
+  debtors: DebtorRow[];
+}

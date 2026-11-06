@@ -217,3 +217,27 @@ export function normalize(raw: z.input<typeof resultSchema>): AiEssayResult {
       })),
   };
 }
+
+/** Oddiy matnli javob (hisobotlar uchun) */
+export async function deepseekText(opts: { apiKey: string; model: string; system: string; user: string; maxTokens?: number }): Promise<string> {
+  const r = await postJson(
+    "api.deepseek.com",
+    "/chat/completions",
+    opts.apiKey,
+    {
+      model: opts.model,
+      temperature: 0.3,
+      max_tokens: opts.maxTokens ?? 1500,
+      messages: [
+        { role: "system", content: opts.system },
+        { role: "user", content: opts.user },
+      ],
+    },
+    90_000,
+  );
+  const j = r.json as { choices?: { message?: { content?: string } }[]; error?: { message?: string } } | null;
+  if (r.status !== 200) throw new Error(`DeepSeek ${r.status}: ${j?.error?.message ?? "javob yo'q"}`);
+  const content = j?.choices?.[0]?.message?.content?.trim();
+  if (!content) throw new Error("DeepSeek bo'sh javob qaytardi");
+  return content;
+}

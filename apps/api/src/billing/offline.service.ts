@@ -118,6 +118,16 @@ export class OfflineBillingService {
       }
       await this.notify.send(s.user.telegramId, `🔔 ${monthLabel(month)} oyi uchun to'lov${fee} hali qabul qilinmagan. Iltimos, keyingi darsda to'lovni amalga oshiring.`);
       messages++;
+      // Qarzdor bilan ishlash tarixiga: kimga yuborildi
+      await this.prisma.paymentFollowUp.create({
+        data: {
+          studentId: s.id,
+          month,
+          kind: "BOT",
+          note: s.parents.length ? `Ota-onaga (${s.parents.length}) va o'quvchiga eslatma yuborildi` : "O'quvchiga eslatma yuborildi (ota-ona ulanmagan)",
+          createdById: actorId,
+        },
+      });
     }
     await this.prisma.auditLog.create({ data: { actorId, action: "offline.remind", entity: "Group", entityId: `${groupId}:${month}`, meta: { students: debtors.length, messages } } });
     return { students: debtors.length, messages };

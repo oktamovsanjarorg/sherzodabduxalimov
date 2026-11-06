@@ -1,4 +1,5 @@
 import type {
+  PaymentInsights,
   NewcomerRow,
   TeacherStats,
   AdminPayment,
@@ -213,6 +214,11 @@ export const api = {
 
   dashboard: () => request<AdminDashboard>("/admin/dashboard"),
   stats: (month: string) => request<TeacherStats>(`/admin/stats?month=${month}`),
+  paymentInsights: (month: string) => request<PaymentInsights>(`/admin/stats/payments?month=${month}`),
+  paymentAi: (month: string) => request<{ text: string; generatedAt: string }>(`/admin/stats/payments/ai?month=${month}`, json("POST")),
+  addFollowUp: (d: { studentId: string; month: string; kind: "CALL" | "MESSAGE" | "PROMISE" | "REASON"; note?: string | null; promisedAt?: string | null }) =>
+    request<{ id: string }>("/admin/payment-followups", json("POST", d)),
+  removeFollowUp: (id: string) => request(`/admin/payment-followups/${id}`, json("DELETE")),
   passages: () => request<AdminPassage[]>("/admin/passages"),
   createPassage: (d: PassageInput) => request<AdminPassage>("/admin/passages", json("POST", d)),
   updatePassage: (id: string, d: Partial<PassageInput>) => request(`/admin/passages/${id}`, json("PATCH", d)),

@@ -22,61 +22,63 @@ enum StudyMode {
 }
 
 model User {
-  id           String   @id @default(cuid())
+  id            String   @id @default(cuid())
   /// Ustoz qo'lda kiritgan o'quvchida null: botga kirganda (telefon yoki shaxsiy havola orqali) bog'lanadi
-  telegramId   BigInt?  @unique
-  username     String?
-  firstName    String
-  lastName     String?
-  phone        String?
-  photoUrl     String?
-  languageCode String?
-  role         Role     @default(STUDENT)
+  telegramId    BigInt?  @unique
+  username      String?
+  firstName     String
+  lastName      String?
+  phone         String?
+  photoUrl      String?
+  languageCode  String?
+  role          Role     @default(STUDENT)
   /// Ism-familiyani ustoz yozgan: Telegram'dan kirganda ustiga yozilmaydi
-  nameLocked   Boolean  @default(false)
-  isBlocked    Boolean  @default(false)
+  nameLocked    Boolean  @default(false)
+  isBlocked     Boolean  @default(false)
   /// Bloklash sababi (foydalanuvchiga ko'rsatiladi)
   blockedReason String?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
-  student       StudentProfile?
-  parentLinks   ParentLink[]     @relation("ParentOf")
-  parentLinksReviewed ParentLink[] @relation("ParentLinkReviewer")
-  attempts      Attempt[]
-  essays        Essay[]
-  essayReviews  EssayReview[]    @relation("Reviewer")
-  subscriptions Subscription[]
-  payments      Payment[]
-  paymentsReviewed Payment[]     @relation("PaymentReviewer")
-  attendanceMarked Attendance[]  @relation("AttendanceMarker")
-  offlinePaymentsMarked OfflinePayment[] @relation("OfflinePaymentMarker")
-  voiceNotes    VoiceNote[]    @relation("VoiceAuthor")
-  lessonProgress LessonProgress[]
-  auditLogs     AuditLog[]
-  loginTokens   LoginToken[]
-  videos        Video[]
-  invitesSent   StaffInvite[]
+  student               StudentProfile?
+  parentLinks           ParentLink[]      @relation("ParentOf")
+  parentLinksReviewed   ParentLink[]      @relation("ParentLinkReviewer")
+  attempts              Attempt[]
+  essays                Essay[]
+  essayReviews          EssayReview[]     @relation("Reviewer")
+  subscriptions         Subscription[]
+  payments              Payment[]
+  paymentsReviewed      Payment[]         @relation("PaymentReviewer")
+  attendanceMarked      Attendance[]      @relation("AttendanceMarker")
+  offlinePaymentsMarked OfflinePayment[]  @relation("OfflinePaymentMarker")
+  voiceNotes            VoiceNote[]       @relation("VoiceAuthor")
+  lessonProgress        LessonProgress[]
+  auditLogs             AuditLog[]
+  loginTokens           LoginToken[]
+  videos                Video[]
+  invitesSent           StaffInvite[]
+  followUpsWritten      PaymentFollowUp[] @relation("FollowUpAuthor")
 }
 
 model StudentProfile {
-  id             String     @id @default(cuid())
-  userId         String     @unique
-  user           User       @relation(fields: [userId], references: [id], onDelete: Cascade)
-  mode           StudyMode  @default(ONLINE)
-  groupId        String?
-  group          Group?     @relation(fields: [groupId], references: [id], onDelete: SetNull)
-  parentLinkCode String     @unique // ota-ona botga shu kod bilan ulanadi
+  id              String            @id @default(cuid())
+  userId          String            @unique
+  user            User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  mode            StudyMode         @default(ONLINE)
+  groupId         String?
+  group           Group?            @relation(fields: [groupId], references: [id], onDelete: SetNull)
+  parentLinkCode  String            @unique // ota-ona botga shu kod bilan ulanadi
   /// Qo'lda kiritilgan o'quvchining shaxsiy havolasi (t.me/bot?start=s_<kod>): bosganda Telegram hisobi shu yozuvga bog'lanadi
-  inviteCode     String?    @unique
+  inviteCode      String?           @unique
   /// Ilovaga kirish: AUTO — obuna yoki offline guruh bo'yicha; FREE — ustoz bepul ochib bergan; CLOSED — ustoz yopib qo'ygan
-  accessMode     StudentAccess @default(AUTO)
+  accessMode      StudentAccess     @default(AUTO)
+  followUps       PaymentFollowUp[]
   /// Ustoz ko'rib chiqqan (guruhga qo'shgan yoki "o'quvchim" deb tasdiqlagan). Botdan o'zi kirgan yangi o'quvchida null
-  acceptedAt     DateTime?
-  parents        ParentLink[]
-  attendance     Attendance[]
+  acceptedAt      DateTime?
+  parents         ParentLink[]
+  attendance      Attendance[]
   offlinePayments OfflinePayment[]
-  createdAt      DateTime   @default(now())
+  createdAt       DateTime          @default(now())
 }
 
 enum StudentAccess {
@@ -120,18 +122,18 @@ model ParentLink {
 }
 
 model Group {
-  id        String           @id @default(cuid())
-  name      String
-  schedule  String? // masalan: "Du/Chor/Ju 14:00"
+  id              String           @id @default(cuid())
+  name            String
+  schedule        String? // masalan: "Du/Chor/Ju 14:00"
   /// Offline guruhning oylik to'lovi (so'm). To'lovni belgilashda standart summa
-  monthlyFeeUzs Int?
+  monthlyFeeUzs   Int?
   /// Guruh havolasi (t.me/bot?start=g_<kod>): o'quvchi bosib, o'zi qo'shiladi. null = havola o'chiq
-  inviteCode String?         @unique
-  isActive  Boolean          @default(true)
-  students  StudentProfile[]
-  attendance Attendance[]
+  inviteCode      String?          @unique
+  isActive        Boolean          @default(true)
+  students        StudentProfile[]
+  attendance      Attendance[]
   offlinePayments OfflinePayment[]
-  createdAt DateTime         @default(now())
+  createdAt       DateTime         @default(now())
 }
 
 // ===================== Kontent =====================
@@ -160,22 +162,22 @@ model Topic {
 }
 
 model Lesson {
-  id          String   @id @default(cuid())
+  id          String           @id @default(cuid())
   topicId     String
-  topic       Topic    @relation(fields: [topicId], references: [id], onDelete: Cascade)
+  topic       Topic            @relation(fields: [topicId], references: [id], onDelete: Cascade)
   title       String
   videoUrl    String? // tashqi havola (YouTube va h.k.)
-  videoId     String?  @unique // serverga yuklangan himoyalangan video
-  video       Video?   @relation(fields: [videoId], references: [id], onDelete: SetNull)
+  videoId     String?          @unique // serverga yuklangan himoyalangan video
+  video       Video?           @relation(fields: [videoId], references: [id], onDelete: SetNull)
   content     String? // konspekt (markdown)
-  attachments Json     @default("[]") // [{name,url}]
+  attachments Json             @default("[]") // [{name,url}]
   durationSec Int?
-  order       Int      @default(0)
-  isFree      Boolean  @default(false)
-  isPublished Boolean  @default(false)
+  order       Int              @default(0)
+  isFree      Boolean          @default(false)
+  isPublished Boolean          @default(false)
   progress    LessonProgress[]
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
 }
 
 model LessonProgress {
@@ -210,23 +212,23 @@ model Passage {
 }
 
 model Question {
-  id          String       @id @default(cuid())
+  id          String          @id @default(cuid())
   topicId     String?
-  topic       Topic?       @relation(fields: [topicId], references: [id], onDelete: SetNull)
-  type        QuestionType @default(SINGLE)
+  topic       Topic?          @relation(fields: [topicId], references: [id], onDelete: SetNull)
+  type        QuestionType    @default(SINGLE)
   passageId   String?
-  passage     Passage?     @relation(fields: [passageId], references: [id], onDelete: SetNull)
+  passage     Passage?        @relation(fields: [passageId], references: [id], onDelete: SetNull)
   text        String
   imageUrl    String?
   explanation String?
-  difficulty  Int          @default(2) // 1..5
+  difficulty  Int             @default(2) // 1..5
   correctText String? // TEXT turi uchun
   aiReview    Json? // AI tekshiruv natijasi
   options     Option[]
   tests       TestQuestion[]
   answers     AttemptAnswer[]
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
 }
 
 model Option {
@@ -309,15 +311,15 @@ model Attempt {
 }
 
 model AttemptAnswer {
-  attemptId   String
-  attempt     Attempt  @relation(fields: [attemptId], references: [id], onDelete: Cascade)
-  questionId  String
-  question    Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
-  optionIds   String[]
-  textAnswer  String?
-  isCorrect   Boolean?
-  points      Float? // ESSAY uchun ustoz baholaguncha null
-  answeredAt  DateTime @default(now())
+  attemptId     String
+  attempt       Attempt   @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+  questionId    String
+  question      Question  @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  optionIds     String[]
+  textAnswer    String?
+  isCorrect     Boolean?
+  points        Float? // ESSAY uchun ustoz baholaguncha null
+  answeredAt    DateTime  @default(now())
   reviewComment String?
   /// Esse: rasmiy mezon bo'yicha 12 band bahosi [{key,label,max,score}] va maxsus holat
   rubric        Json?
@@ -349,23 +351,23 @@ enum EssayMode {
 
 /// Erkin esse (testdan tashqari): o'quvchi yozadi, AI yoki ustoz tekshiradi
 model Essay {
-  id        String        @id @default(cuid())
-  userId    String
-  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  mode      EssayMode     @default(AI)
-  prompt    String // esse mavzusi
-  text      String?
-  imageUrls String[] // MEDIA_DIR ichidagi nisbiy yo'llar: essays/<id>/<n>.jpg
-  status    EssayStatus   @default(DRAFT)
-  error     String?
-  priceUzs  Int? // ustoz tekshiruvi narxi (yuborilgan paytdagi)
+  id          String        @id @default(cuid())
+  userId      String
+  user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  mode        EssayMode     @default(AI)
+  prompt      String // esse mavzusi
+  text        String?
+  imageUrls   String[] // MEDIA_DIR ichidagi nisbiy yo'llar: essays/<id>/<n>.jpg
+  status      EssayStatus   @default(DRAFT)
+  error       String?
+  priceUzs    Int? // ustoz tekshiruvi narxi (yuborilgan paytdagi)
   /// Ustozning belgilari: varoq rasmlari ustidagi chizgilar va xato yorliqlari, matndagi xatolar (vektor JSON)
   annotations Json?
-  payment   Payment?
-  reviews   EssayReview[]
-  voice     VoiceNote?
-  createdAt DateTime      @default(now())
-  updatedAt DateTime      @updatedAt
+  payment     Payment?
+  reviews     EssayReview[]
+  voice       VoiceNote?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
 
   @@index([status, createdAt])
   @@index([userId, createdAt])
@@ -377,24 +379,24 @@ enum ReviewSource {
 }
 
 model EssayReview {
-  id         String       @id @default(cuid())
-  essayId    String
-  essay      Essay        @relation(fields: [essayId], references: [id], onDelete: Cascade)
-  source     ReviewSource
-  reviewerId String?
-  reviewer   User?        @relation("Reviewer", fields: [reviewerId], references: [id], onDelete: SetNull)
-  provider   String? // deepseek | claude
-  criteria   Json // [{key,label,score,max,comment}]
-  mistakes   Json         @default("[]") // AI: [{wrong,right,note}]
+  id          String       @id @default(cuid())
+  essayId     String
+  essay       Essay        @relation(fields: [essayId], references: [id], onDelete: Cascade)
+  source      ReviewSource
+  reviewerId  String?
+  reviewer    User?        @relation("Reviewer", fields: [reviewerId], references: [id], onDelete: SetNull)
+  provider    String? // deepseek | claude
+  criteria    Json // [{key,label,score,max,comment}]
+  mistakes    Json         @default("[]") // AI: [{wrong,right,note}]
   /// AI: xatolarning varoqdagi joyi (chizgi + yorliq) yoki matndagi o'rni — ustoz belgilari bilan bir xil format
   annotations Json?
   /// AI: aniq tavsiyalar [{focus, text, example}] — eng zaif bandlar bo'yicha, o'quvchining o'z jumlasi namunasi bilan
-  tips       Json?
-  totalScore Float
+  tips        Json?
+  totalScore  Float
   /// Esse tekshirilmaydigan holat (OFF_TOPIC, TOO_SHORT, ...)
-  special    String?
-  feedback   String?
-  createdAt  DateTime     @default(now())
+  special     String?
+  feedback    String?
+  createdAt   DateTime     @default(now())
 }
 
 // ===================== Davomat =====================
@@ -445,18 +447,18 @@ enum SubscriptionStatus {
 }
 
 model Subscription {
-  id        String             @id @default(cuid())
-  userId    String
-  user      User               @relation(fields: [userId], references: [id], onDelete: Cascade)
-  planId    String
-  plan      Plan               @relation(fields: [planId], references: [id])
-  startsAt  DateTime
-  endsAt    DateTime
-  status    SubscriptionStatus @default(ACTIVE)
+  id            String             @id @default(cuid())
+  userId        String
+  user          User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  planId        String
+  plan          Plan               @relation(fields: [planId], references: [id])
+  startsAt      DateTime
+  endsAt        DateTime
+  status        SubscriptionStatus @default(ACTIVE)
   /// Yuborilgan eslatma bosqichi: 0 yo'q, 1 "3 kun qoldi", 2 "1 kun qoldi", 3 "tugadi"
-  reminderStage Int            @default(0)
-  payment   Payment?
-  createdAt DateTime           @default(now())
+  reminderStage Int                @default(0)
+  payment       Payment?
+  createdAt     DateTime           @default(now())
 
   @@index([userId, endsAt])
 }
@@ -501,6 +503,31 @@ model Payment {
 }
 
 /// Offline guruh o'quvchisining oylik to'lovi (naqd/karta, darsda olinadi). Bir oyga bitta yozuv.
+/// Qarzdor bilan ishlash tarixi: qo'ng'iroq, xabar, va'da, sabab. Bot eslatmalari ham yoziladi (kind BOT)
+model PaymentFollowUp {
+  id          String         @id @default(cuid())
+  studentId   String
+  student     StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  month       String // "2026-11"
+  kind        FollowUpKind
+  note        String?
+  /// Va'da qilingan to'lov sanasi
+  promisedAt  DateTime?      @db.Date
+  createdById String?
+  createdBy   User?          @relation("FollowUpAuthor", fields: [createdById], references: [id], onDelete: SetNull)
+  createdAt   DateTime       @default(now())
+
+  @@index([month, studentId])
+}
+
+enum FollowUpKind {
+  CALL // ota-ona/o'quvchiga qo'ng'iroq qilindi
+  MESSAGE // yozildi
+  PROMISE // to'lashga va'da berdi (promisedAt)
+  REASON // to'lamaslik sababi (qiyin ahvol, ketmoqchi va h.k.)
+  BOT // bot orqali avtomatik eslatma
+}
+
 model OfflinePayment {
   id         String         @id @default(cuid())
   studentId  String

@@ -160,6 +160,28 @@ describe("Offline guruh: kirish va oylik to'lov; online obuna eslatmalari (e2e)"
     expect((await req("GET", `/admin/offline-payments?groupId=${groupId}&month=${month}`)).json().totals.paid).toBe(0);
   });
 
+  it("to'lovlar tahlili: qarzdorlar, bot eslatmasi tarixda, qo'ng'iroq/va'da yozuvlari; faqat ega", async () => {
+    expect((await req("GET", `/admin/stats/payments?month=${month}`, undefined, OFF)).statusCode).toBe(403);
+    const d = (await req("GET", `/admin/stats/payments?month=${month}`)).json();
+    const g = d.offline.groups.find((x: { groupId: string }) => x.groupId === groupId);
+    expect(g).toMatchObject({ feeUzs: 300000, students: 2, paid: 0, expectedUzs: 600000 });
+    const me = d.debtors.find((x: { studentId: string }) => x.studentId === offlineStudentId);
+    expect(me).toMatchObject({ kind: "OFFLINE", amountUzs: 300000 });
+    expect(me.overdue.months).toBeGreaterThanOrEqual(1);
+    // Avvalgi testdagi bot eslatmasi tarixga yozilgan
+    expect(me.followUps.some((f: { kind: string }) => f.kind === "BOT")).toBe(true);
+    expect(d.forecast.endOfMonthUzs).toBeGreaterThanOrEqual(d.total.collectedUzs);
+
+    expect((await req("POST", "/admin/payment-followups", { studentId: offlineStudentId, month, kind: "PROMISE" })).statusCode).toBe(400); // sana kerak
+    const f = await req("POST", "/admin/payment-followups", { studentId: offlineStudentId, month, kind: "PROMISE", promisedAt: `${month}-20`, note: "Otasi oylikdan keyin" });
+    expect(f.statusCode).toBe(201);
+    const again = (await req("GET", `/admin/stats/payments?month=${month}`)).json().debtors.find((x: { studentId: string }) => x.studentId === offlineStudentId);
+    expect(again.followUps[0]).toMatchObject({ kind: "PROMISE", promisedAt: `${month}-20`, note: "Otasi oylikdan keyin" });
+    expect((await req("DELETE", `/admin/payment-followups/${f.json().id}`)).statusCode).toBe(200);
+    const bot = again.followUps.find((x: { kind: string }) => x.kind === "BOT");
+    expect((await req("DELETE", `/admin/payment-followups/${bot.id}`)).statusCode).toBe(404); // bot yozuvi o'chmaydi
+  });
+
   it("online obuna: 3 kun, 1 kun qolganda va tugaganda bittadan eslatma; uzaytirilganga yuborilmaydi", async () => {
     const now = new Date();
     expect([5, 2.5, 0.5, -0.1].map((d) => reminderStageFor(new Date(now.getTime() + d * DAY), now))).toEqual([0, 1, 2, 3]);
