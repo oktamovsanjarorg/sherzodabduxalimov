@@ -8,6 +8,8 @@ import { PrismaService } from "../prisma/prisma.service";
 import { StudentsService } from "../students/students.service";
 import { StaffService, type TelegramProfile } from "../staff/staff.service";
 
+const PENDING_TTL_MS = 24 * 3600 * 1000;
+
 /** Bitta o'quvchiga ulanishi mumkin bo'lgan faol (kutilayotgan yoki tasdiqlangan) ota-onalar soni */
 export const MAX_PARENTS = 2;
 const MANY_CHILDREN = 3;
@@ -51,10 +53,27 @@ export class ParentsService {
     if (!contact.user_id || BigInt(contact.user_id) !== BigInt(from.id)) return { status: "not_own_contact" as const };
     const user = await this.staff.upsertTelegramUser(from);
     const phone = normPhone(contact.phone_number);
-    // Ustoz shu raqam bilan qo'lda kiritgan o'quvchi bo'lsa: guruh, davomat, to'lovlar shu hisobga o'tadi
-    const merged = await this.students.claimByPhone(user.id, phone).catch(() => false);
+    // Ustoz shu raqam bilan qo'lda kiritgan o'quvchi bo'lsa: guruh, davomat, to'lovlar shu hisobga o'tadi.
+    // Ota-ona (ulanish so'rovi bor) bo'lsa birlashtirilmaydi: ustoz farzandni ota-onasi raqami bilan kiritgan bo'lishi mumkin
+    const isParent = (await this.prisma.parentLink.count({ where: { parentId: user.id } })) > 0;
+    const merged = isParent ? false : await this.students.claimByPhone(user.id, phone).catch(() => false);
     await this.prisma.user.update({ where: { id: user.id }, data: { phone } });
     return { status: merged ? ("merged" as const) : ("saved" as const) };
+  }
+
+  async setPending(telegramId: number, code: string) {
+    const id = BigInt(telegramId);
+    await this.prisma.pendingParent.upsert({ where: { telegramId: id }, update: { code, createdAt: new Date() }, create: { telegramId: id, code } });
+    return { ok: true };
+  }
+
+  /** Kod 24 soat amal qiladi; olingach o'chiriladi */
+  async takePending(telegramId: number) {
+    const id = BigInt(telegramId);
+    const p = await this.prisma.pendingParent.findUnique({ where: { telegramId: id } });
+    if (!p) return { code: null };
+    await this.prisma.pendingParent.delete({ where: { telegramId: id } }).catch(() => {});
+    return { code: Date.now() - p.createdAt.getTime() < PENDING_TTL_MS ? p.code : null };
   }
 
   /**

@@ -89,6 +89,13 @@ enum ParentLinkStatus {
   REJECTED
 }
 
+/// Ota-ona botda havolani ochdi, kontakt ulashishini kutyapmiz. Bazada: bot qayta ishga tushsa ham yo'qolmaydi
+model PendingParent {
+  telegramId BigInt   @id
+  code       String
+  createdAt  DateTime @default(now())
+}
+
 /// O'quvchi va ota-ona bog'lanishi. Ota-ona bot orqali o'z raqamini ulashadi, ustoz/yordamchi tasdiqlaydi.
 model ParentLink {
   id           String           @id @default(cuid())

@@ -38,13 +38,13 @@ export function milliyOf(a: Row): MilliyBreakdown | null {
   const theta = estimateTheta(responses, b);
   const scaled = calibrated ? raschT(theta, t.raschMu!, t.raschSigma!) : raschT(theta, 0, 1);
 
-  // Esse: ustoz mezon bo'yicha 24 ballik baho qo'yadi (eski urinishlarda boshqa maksimum bo'lsa, 24 ga keltiriladi)
+  // Esse: Milliy sertifikatda ball har doim rasmiy mezon bo'yicha 0..24 saqlanadi (savolning "points"i ishlatilmaydi)
   let essayScore24: number | null = null;
   let essayPending = false;
   for (const q of essays) {
     const g = ans.get(q.questionId);
     if (g?.textAnswer?.trim() && g.points == null) essayPending = true;
-    if (g?.points != null) essayScore24 = (essayScore24 ?? 0) + (q.points > 0 && q.points !== ESSAY_MAX_SCORE ? (g.points / q.points) * ESSAY_MAX_SCORE : g.points);
+    if (g?.points != null) essayScore24 = Math.min(ESSAY_MAX_SCORE, (essayScore24 ?? 0) + g.points);
   }
 
   return milliyBreakdown({

@@ -365,9 +365,25 @@ export class BillingService {
     return { active: active.map(map), lapsed: lapsed.map(map) };
   }
 
+  /**
+   * Obunani bekor qiladi. Undan keyin navbatda turgan (uzaytirilgan, to'langan) obunalar bekor qilingan
+   * qismning qolgan muddatiga oldinga suriladi: aks holda o'quvchi to'lagan obunasi boshlanguncha kirolmay qoladi.
+   */
   async cancelSubscription(actorId: string, id: string) {
-    const { count } = await this.prisma.subscription.updateMany({ where: { id, status: "ACTIVE" }, data: { status: "CANCELLED" } });
-    if (!count) throw new NotFoundException("Faol obuna topilmadi");
+    await this.prisma.$transaction(async (tx) => {
+      const sub = await tx.subscription.findUnique({ where: { id } });
+      if (!sub || sub.status !== "ACTIVE") throw new NotFoundException("Faol obuna topilmadi");
+      await tx.subscription.update({ where: { id }, data: { status: "CANCELLED" } });
+      const now = Date.now();
+      const shift = sub.endsAt.getTime() - Math.max(sub.startsAt.getTime(), now);
+      if (shift <= 0) return;
+      const later = await tx.subscription.findMany({ where: { userId: sub.userId, status: "ACTIVE", id: { not: id }, startsAt: { gte: sub.endsAt } } });
+      for (const l of later)
+        await tx.subscription.update({
+          where: { id: l.id },
+          data: { startsAt: new Date(l.startsAt.getTime() - shift), endsAt: new Date(l.endsAt.getTime() - shift) },
+        });
+    });
     await this.audit(actorId, "subscription.cancel", "Subscription", id);
     return { ok: true };
   }

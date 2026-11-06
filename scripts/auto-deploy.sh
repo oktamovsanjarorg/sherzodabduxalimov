@@ -18,6 +18,9 @@ TRIED="$(cat "$STATE/last-attempt" 2>/dev/null || true)"
 
 [[ "$TARGET" == "$CURRENT" || "$TARGET" == "$TRIED" ]] && exit 0
 
+# Boshqa deploy (masalan, qo'lda) ketayotgan bo'lsa: bu urinish hisoblanmaydi, keyingi safar qayta tekshiriladi
+flock -n "$STATE/lock" true || exit 0
+
 echo "$TARGET" > "$STATE/last-attempt"
 echo "=== $(date -Is) yangi commit: ${TARGET:0:7} (hozirgi: ${CURRENT:0:7})"
 "$DIR/scripts/deploy.sh" "$TARGET"

@@ -2,7 +2,8 @@
 # Kunlik zaxira nusxa (backup): baza + media (cheklar, esse rasmlari, videolar).
 #
 #  1. Postgres: pg_dump (custom format), so'ng pg_restore --list bilan butunligi tekshiriladi
-#  2. Media: tar.gz
+#  2. Media: cheklar va esse rasmlari har kuni tar.gz; videolar katta bo'lgani uchun alohida
+#     ko'zgu nusxaga ($ROOT/videos) faqat yangi/o'zgargan fayllar qo'shiladi (har kuni to'liq nusxa emas)
 #  3. Serverda saqlanadi: 14 kunlik + 8 haftalik (yakshanba) + 12 oylik (oyning 1-kuni)
 #  4. Server tashqarisiga (offsite): baza nusxasi AES-256 bilan shifrlanib, egalarga Telegram orqali yuboriladi
 #     (bot fayl chegarasi ~50 MB; media katta bo'lsa faqat baza yuboriladi)
@@ -57,14 +58,19 @@ docker exec onatili-postgres pg_dump -U onatili -d onatili -Fc -Z 9 > "$DIR/db.d
 docker exec -i onatili-postgres pg_restore --list < "$DIR/db.dump" > /dev/null || fail "nusxa buzuq (pg_restore --list)"
 [[ -s "$DIR/db.dump" ]] || fail "bo'sh nusxa"
 
-# 2. Media
-docker exec onatili-api tar -C /data -czf - media > "$DIR/media.tar.gz" || fail "media tar"
+# 2. Media (videolarsiz)
+docker exec onatili-api tar -C /data -czf - --exclude=media/videos media > "$DIR/media.tar.gz" || fail "media tar"
+# Videolar: ko'zgu nusxa, faqat yangi fayllar ko'chiriladi (konteyner foydalanuvchisi node = uid 1000)
+mkdir -p "$ROOT/videos"
+docker run --rm --user 1000:1000 --entrypoint cp -v onatili_onatili_media:/src:ro -v "$ROOT/videos":/dst \
+  onatili-app:latest -a -u /src/videos/. /dst/ || fail "video nusxa"
 
 # Hajm va qatorlar soni (hisobot uchun)
 COUNTS="$(docker exec onatili-postgres psql -U onatili -d onatili -tAc \
   "select (select count(*) from \"User\" where role='STUDENT')||' o''quvchi, '||(select count(*) from \"Payment\")||' to''lov, '||(select count(*) from \"Attempt\")||' test natijasi, '||(select count(*) from \"Attendance\")||' davomat'")"
 DB_SIZE="$(du -h "$DIR/db.dump" | cut -f1)"
 MEDIA_SIZE="$(du -h "$DIR/media.tar.gz" | cut -f1)"
+VIDEO_SIZE="$(du -sh "$ROOT/videos" | cut -f1)"
 (cd "$DIR" && sha256sum db.dump media.tar.gz > SHA256SUMS)
 
 # 3. Haftalik va oylik nusxalar (qattiq havola: joy egallamaydi)
@@ -86,4 +92,4 @@ else
 fi
 rm -f "$OUT"
 
-echo "=== $(date -Is) backup tayyor: $DIR (baza ${DB_SIZE}, media ${MEDIA_SIZE}; ${COUNTS})"
+echo "=== $(date -Is) backup tayyor: $DIR (baza ${DB_SIZE}, media ${MEDIA_SIZE}, videolar ${VIDEO_SIZE}; ${COUNTS})"

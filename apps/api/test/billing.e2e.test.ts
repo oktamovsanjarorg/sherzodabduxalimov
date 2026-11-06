@@ -136,6 +136,21 @@ describe("Qo'lda to'lov va obuna (e2e)", () => {
     expect((await req("GET", "/me", undefined, S)).json().subscription).toBeNull();
   });
 
+  it("joriy obuna bekor qilinsa, navbatdagi (to'langan) obuna darhol boshlanadi", async () => {
+    await req("POST", "/admin/subscriptions", { userId: studentId, planId, note: "Naqd" });
+    await req("POST", "/admin/subscriptions", { userId: studentId, planId, note: "Naqd" });
+    const subs = await prisma.subscription.findMany({ where: { userId: studentId, status: "ACTIVE" }, orderBy: { startsAt: "asc" } });
+    expect(subs).toHaveLength(2);
+    expect(subs[1].startsAt.getTime()).toBe(subs[0].endsAt.getTime());
+    expect((await req("POST", `/admin/subscriptions/${subs[0].id}/cancel`)).statusCode).toBe(200);
+
+    const sub = (await req("GET", "/me", undefined, S)).json().subscription;
+    expect(sub).not.toBeNull();
+    expect(Math.abs(new Date(sub.endsAt).getTime() - (Date.now() + 30 * DAY))).toBeLessThan(60_000);
+    expect((await req("POST", `/admin/subscriptions/${subs[1].id}/cancel`)).statusCode).toBe(200);
+    expect((await req("GET", "/me", undefined, S)).json().subscription).toBeNull();
+  });
+
   it("chekni bir vaqtda ikki marta yuborsa ham bitta to'lov yaratiladi", async () => {
     const [a, b] = await Promise.all([upload(`/billing/payments?planId=${planId}`, JPEG), upload(`/billing/payments?planId=${planId}`, JPEG)]);
     expect([a.statusCode, b.statusCode].sort()).toEqual([201, 409]);

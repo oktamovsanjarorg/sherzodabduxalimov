@@ -393,11 +393,25 @@ export class StudentsService {
       await tx.subscription.updateMany({ where: { userId: ph.id }, data: { userId: real.id } });
       await tx.payment.updateMany({ where: { userId: ph.id }, data: { userId: real.id } });
 
-      await tx.studentProfile.update({ where: { id: rs.id }, data: { groupId: ps.groupId ?? rs.groupId, mode: (ps.groupId ?? rs.groupId) ? "OFFLINE" : "ONLINE" } });
+      // Ustoz qo'ygan kirish rejimi (ochiq/yopiq) va blok ham ko'chadi
+      await tx.studentProfile.update({
+        where: { id: rs.id },
+        data: {
+          groupId: ps.groupId ?? rs.groupId,
+          mode: (ps.groupId ?? rs.groupId) ? "OFFLINE" : "ONLINE",
+          ...(ps.accessMode !== "AUTO" ? { accessMode: ps.accessMode } : {}),
+        },
+      });
       await tx.user.delete({ where: { id: ph.id } });
       await tx.user.update({
         where: { id: real.id },
-        data: { firstName: ph.firstName, lastName: ph.lastName, nameLocked: true, ...(ph.phone && !real.phone ? { phone: ph.phone } : {}) },
+        data: {
+          firstName: ph.firstName,
+          lastName: ph.lastName,
+          nameLocked: true,
+          ...(ph.phone && !real.phone ? { phone: ph.phone } : {}),
+          ...(ph.isBlocked ? { isBlocked: true, blockedReason: ph.blockedReason } : {}),
+        },
       });
       await tx.auditLog.create({ data: { actorId: real.id, action: "student.claim", entity: "StudentProfile", entityId: rs.id, meta: { from: ps.id } } });
     });

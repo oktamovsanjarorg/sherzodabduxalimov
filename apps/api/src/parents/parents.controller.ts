@@ -31,6 +31,26 @@ export class ParentsController {
     return this.parents.linkParent(d.code, d.from, d.contact, d.relation);
   }
 
+  /** Ota-ona havolani ochdi: kod kontakt kelguncha bazada saqlanadi (bot qayta ishga tushsa ham) */
+  @Public()
+  @UseGuards(InternalGuard)
+  @Post("internal/parent-pending")
+  @HttpCode(200)
+  parentPending(@Body() b: unknown) {
+    const d = parse(z.object({ telegramId: z.number().int().positive(), code: z.string().regex(/^[0-9A-Fa-f]{8}$/) }), b);
+    return this.parents.setPending(d.telegramId, d.code);
+  }
+
+  /** Kontakt keldi: kutilayotgan ota-ona kodi bo'lsa, qaytaradi va o'chiradi */
+  @Public()
+  @UseGuards(InternalGuard)
+  @Post("internal/parent-pending/take")
+  @HttpCode(200)
+  takePending(@Body() b: unknown) {
+    const d = parse(z.object({ telegramId: z.number().int().positive() }), b);
+    return this.parents.takePending(d.telegramId);
+  }
+
   // ---- o'quvchi va ota-ona ----
   @Get("me/parents")
   mine(@CurrentUser() u: JwtUser) {

@@ -25,7 +25,9 @@ function run(cmd: string, args: string[]): Promise<string> {
  */
 export async function processVoice(prisma: PrismaClient, mediaDir: string, voiceId: string, send: SendVoiceFn) {
   const v = await prisma.voiceNote.findUnique({ where: { id: voiceId } });
-  if (!v || v.status === "READY") return null;
+  // Tayyor va yuborilgan bo'lsa — ish tugagan. Tayyor, lekin yuborilmagan (Telegram vaqtincha xato bergan) bo'lsa,
+  // qayta urinishda o'girish o'tkazib yuboriladi, faqat yuborish takrorlanadi
+  if (!v || (v.status === "READY" && v.sentAt)) return null;
   const root = resolve(mediaDir);
   const abs = (rel: string) => {
     const p = resolve(join(root, rel));
@@ -34,11 +36,14 @@ export async function processVoice(prisma: PrismaClient, mediaDir: string, voice
   };
   const ogg = `voice/${v.id}.ogg`;
   const m4a = `voice/${v.id}.m4a`;
-  await run("ffmpeg", ["-y", "-hide_banner", "-loglevel", "error", "-i", abs(v.originalPath), "-vn", "-ac", "1", "-c:a", "libopus", "-b:a", "32k", "-application", "voip", abs(ogg)]);
-  await run("ffmpeg", ["-y", "-hide_banner", "-loglevel", "error", "-i", abs(v.originalPath), "-vn", "-ac", "1", "-c:a", "aac", "-b:a", "64k", "-movflags", "+faststart", abs(m4a)]);
-  const dur = Number((await run("ffprobe", ["-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", abs(m4a)])).trim());
-  const durationSec = Number.isFinite(dur) ? Math.max(1, Math.round(dur)) : null;
-  await prisma.voiceNote.update({ where: { id: v.id }, data: { oggPath: ogg, m4aPath: m4a, durationSec, status: "READY", error: null } });
+  let durationSec = v.durationSec;
+  if (v.status !== "READY") {
+    await run("ffmpeg", ["-y", "-hide_banner", "-loglevel", "error", "-i", abs(v.originalPath), "-vn", "-ac", "1", "-c:a", "libopus", "-b:a", "32k", "-application", "voip", abs(ogg)]);
+    await run("ffmpeg", ["-y", "-hide_banner", "-loglevel", "error", "-i", abs(v.originalPath), "-vn", "-ac", "1", "-c:a", "aac", "-b:a", "64k", "-movflags", "+faststart", abs(m4a)]);
+    const dur = Number((await run("ffprobe", ["-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", abs(m4a)])).trim());
+    durationSec = Number.isFinite(dur) ? Math.max(1, Math.round(dur)) : null;
+    await prisma.voiceNote.update({ where: { id: v.id }, data: { oggPath: ogg, m4aPath: m4a, durationSec, status: "READY", error: null } });
+  }
 
   // Kimga va nima haqida
   let chatId: bigint | null = null;

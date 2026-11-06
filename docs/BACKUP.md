@@ -2,7 +2,10 @@
 
 ## Nima saqlanadi
 - **Baza** (o'quvchilar, to'lovlar, davomat, natijalar, darslar, testlar, esselar) — `pg_dump`
-- **Media** (cheklar, esse rasmlari, videolar) — `tar.gz`
+- **Media** (cheklar, esse rasmlari) — har kuni `tar.gz`
+- **Videolar** — bitta ko'zgu nusxa `/home/ubuntu/onatili-backups/videos/`: har kuni faqat yangi fayllar qo'shiladi
+  (14 ta to'liq nusxa diskni to'ldirib qo'ymasligi uchun). Server o'zi yo'qolishiga qarshi videolarning
+  asl fayllarini kompyuterda ham saqlab qo'ying
 
 ## Qachon va qayerda
 - Har kuni 03:00 (Toshkent) — `scripts/backup.sh` (cron, o'rnatilgan nusxa: `/home/ubuntu/.onatili/backup.sh`)

@@ -2,6 +2,7 @@ import { BadRequestException, ConflictException, Injectable, NotFoundException }
 import type { Prisma } from "@onatili/db";
 import {
   ERROR_CODES,
+  ESSAY_MAX_SCORE,
   ESSAY_SPECIAL,
   countWords,
   isMostlyCyrillic,
@@ -188,7 +189,9 @@ export class AttemptsService {
       return { q, given, ok, points: ok ? q.points : 0 };
     });
     const score = round1(graded.reduce((s, g) => s + (g.points ?? 0), 0));
-    const maxScore = round1(graded.reduce((s, g) => s + g.q.points, 0));
+    // Milliy sertifikatda esse har doim 24 ballik mezon bilan baholanadi (savol "points"idan qat'i nazar)
+    const milliy = a.test.gradingScale === "MILLIY_SERTIFIKAT";
+    const maxScore = round1(graded.reduce((s, g) => s + (milliy && g.q.type === "ESSAY" ? ESSAY_MAX_SCORE : g.q.points), 0));
 
     let finalized = false;
     await this.prisma.$transaction(async (tx) => {

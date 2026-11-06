@@ -17,6 +17,7 @@ const queue = new Queue<NotifyJob>(NOTIFY_QUEUE, { prefix: "onatili-e2e", connec
 async function cleanup() {
   await prisma.attendance.deleteMany({ where: { group: { name: GROUP } } });
   await prisma.user.deleteMany({ where: { telegramId: { in: ALL } } });
+  await prisma.pendingParent.deleteMany({ where: { telegramId: { in: ALL } } });
   await prisma.group.deleteMany({ where: { name: GROUP } });
   await queue.obliterate({ force: true });
 }
@@ -84,6 +85,14 @@ describe("Ota-ona va davomat (e2e)", () => {
       (await internal("parent-link", { code, from: tgUser(TG.student, "Aziz"), contact: { phone_number: "998901112233", user_id: TG.student } })).json().status,
     ).toBe("self");
     expect((await internal("parent-link", { ...mom, contact: { phone_number: "998935556677", user_id: TG.dad } })).json().status).toBe("not_own_contact");
+  });
+
+  it("kutilayotgan ota-ona kodi bazada saqlanadi (bot qayta ishga tushsa ham), bir marta olinadi", async () => {
+    expect((await internal("parent-pending", { telegramId: TG.third, code: "ABCDEF12" })).statusCode).toBe(200);
+    expect((await internal("parent-pending/take", { telegramId: TG.third })).json()).toEqual({ code: "ABCDEF12" });
+    expect((await internal("parent-pending/take", { telegramId: TG.third })).json()).toEqual({ code: null });
+    expect((await internal("parent-pending", { telegramId: TG.third, code: "ABCDEF12" }, "wrong")).statusCode).toBe(401);
+    expect((await internal("parent-pending", { telegramId: TG.third, code: "not-hex!" })).statusCode).toBe(400);
   });
 
   it("ona ulanadi: PENDING, ilova ochiladi; shubhali 'ota' belgilanadi; 3-ota-ona rad etiladi", async () => {

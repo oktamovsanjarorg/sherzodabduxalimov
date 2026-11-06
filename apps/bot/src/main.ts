@@ -18,10 +18,6 @@ const openAppKeyboard = () => new InlineKeyboard().webApp("📚 Ilovani ochish",
 
 // ---------------- Ota-onani ulash ----------------
 
-/** Ota-ona havolani ochgan, kontakt ulashishini kutyapmiz: telegramId -> kod (30 daqiqa) */
-const pendingParent = new Map<number, { code: string; at: number }>();
-const PENDING_TTL = 30 * 60 * 1000;
-
 const contactKeyboard = (text: string) => new Keyboard().requestContact(text).resized().oneTime();
 
 async function internal<T>(path: string, body: object): Promise<T> {
@@ -51,7 +47,14 @@ bot.command("start", async (ctx) => {
   // Ota-ona: o'quvchi yuborgan havola orqali keldi
   const m = /^p_([0-9A-Fa-f]{8})$/.exec(payload);
   if (m) {
-    pendingParent.set(ctx.from.id, { code: m[1], at: Date.now() });
+    // Kod bazada saqlanadi: bot qayta ishga tushsa (har deploy) ham ota-ona keyinroq raqam ulashishi mumkin
+    try {
+      await internal("parent-pending", { telegramId: ctx.from.id, code: m[1] });
+    } catch (e) {
+      console.error("parent-pending:", redact(e));
+      await ctx.reply("Hozir ulab bo'lmadi, birozdan keyin havolani qayta oching.");
+      return;
+    }
     await ctx.reply(
       "Assalomu alaykum! 👋\n\nFarzandingiz sizni ota-onasi sifatida ulamoqchi. Ulangandan keyin farzandingizning darsdagi davomati haqidagi xabarlar shu yerga keladi.\n\n" +
         "Tasdiqlash uchun pastdagi tugma orqali <b>o'z telefon raqamingizni</b> ulashing. Ustoz yoki yordamchi raqamingizni tekshirib tasdiqlaydi.",
@@ -147,9 +150,8 @@ bot.on("message:contact", async (ctx) => {
     return;
   }
   try {
-    const pending = pendingParent.get(from.id);
-    if (pending && Date.now() - pending.at < PENDING_TTL) {
-      pendingParent.delete(from.id);
+    const pending = await internal<{ code: string | null }>("parent-pending/take", { telegramId: from.id });
+    if (pending.code) {
       const r = await internal<{ status: string; studentName?: string; linkStatus?: string }>("parent-link", {
         code: pending.code,
         from: fromOf(from),

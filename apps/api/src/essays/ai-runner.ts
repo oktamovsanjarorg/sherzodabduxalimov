@@ -98,22 +98,27 @@ export async function gradeEssayJob(prisma: PrismaClient, essayId: string, grade
   const total = scored.total;
   // Xatolarni varoqda (yoki matnda) belgilash — topilmasa ham baho saqlanadi
   const annotations = await aiAnnotations(r.mistakes, { pages: handwritten ? e.imageUrls : [], text: handwritten ? null : text, locate }).catch(() => null);
-  const { count } = await prisma.essay.updateMany({ where: { id: essayId, status: "AI_CHECKING" }, data: { status: "AI_CHECKED", error: null } });
-  if (!count) return null;
-  await prisma.essayReview.create({
-    data: {
-      essayId,
-      source: "AI",
-      provider: "deepseek",
-      criteria,
-      special,
-      mistakes: r.mistakes,
-      tips: r.tips.length ? r.tips : (special ? SPECIAL_TIPS[special] : undefined) ?? undefined,
-      annotations: annotations ?? undefined,
-      totalScore: total,
-      feedback: r.feedback || null,
-    },
+  // Holat va baho bitta tranzaksiyada: biri saqlanib, ikkinchisi saqlanmay qolishi (bahosiz "tekshirildi") mumkin emas
+  const saved = await prisma.$transaction(async (tx) => {
+    const { count } = await tx.essay.updateMany({ where: { id: essayId, status: "AI_CHECKING" }, data: { status: "AI_CHECKED", error: null } });
+    if (!count) return false;
+    await tx.essayReview.create({
+      data: {
+        essayId,
+        source: "AI",
+        provider: "deepseek",
+        criteria,
+        special,
+        mistakes: r.mistakes,
+        tips: r.tips.length ? r.tips : (special ? SPECIAL_TIPS[special] : undefined) ?? undefined,
+        annotations: annotations ?? undefined,
+        totalScore: total,
+        feedback: r.feedback || null,
+      },
+    });
+    return true;
   });
+  if (!saved) return null;
   if (e.user.telegramId !== null) await send(
     e.user.telegramId,
     `🤖 <b>AI essengizni tekshirdi</b>\n«${esc(e.prompt.slice(0, 80))}»\nTaxminiy ball: <b>${total} / ${ESSAY_MAX_SCORE}</b>`,
