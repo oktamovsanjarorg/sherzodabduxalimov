@@ -10,6 +10,7 @@ import {
   type RosterRow,
   type StudentCreateInput,
   type StudentDetail,
+  type NewcomerRow,
 } from "@onatili/shared";
 import { randomBytes } from "node:crypto";
 import { ENV, type Env } from "../config/env";
@@ -144,7 +145,7 @@ export class StudentsService {
         phone,
         role: "STUDENT",
         student: {
-          create: { parentLinkCode: randomBytes(4).toString("hex").toUpperCase(), inviteCode: code(), groupId: d.groupId, mode: d.groupId ? "OFFLINE" : "ONLINE" },
+          create: { parentLinkCode: randomBytes(4).toString("hex").toUpperCase(), inviteCode: code(), groupId: d.groupId, mode: d.groupId ? "OFFLINE" : "ONLINE", acceptedAt: new Date() },
         },
       },
       include: { student: true },
@@ -192,7 +193,9 @@ export class StudentsService {
           ...(phone !== undefined ? { phone } : {}),
         },
       }),
-      ...(d.groupId !== undefined ? [this.prisma.studentProfile.update({ where: { id: studentId }, data: { groupId: d.groupId, mode: d.groupId ? "OFFLINE" : "ONLINE" } })] : []),
+      ...(d.groupId !== undefined
+        ? [this.prisma.studentProfile.update({ where: { id: studentId }, data: { groupId: d.groupId, mode: d.groupId ? "OFFLINE" : "ONLINE", acceptedAt: new Date() } })]
+        : []),
     ]);
     await this.prisma.auditLog.create({ data: { actorId, action: "student.update", entity: "StudentProfile", entityId: studentId, meta: d as object } });
     return this.detail(studentId, true);
@@ -205,17 +208,81 @@ export class StudentsService {
   async remove(actorId: string, studentId: string, opts: { force: boolean; isTeacher: boolean }) {
     const sp = await this.prisma.studentProfile.findUnique({ where: { id: studentId }, include: { user: { select: { id: true, telegramId: true, firstName: true, lastName: true } } } });
     if (!sp) throw new NotFoundException("O'quvchi topilmadi");
-    // Moliyaviy hisob saqlanishi shart: to'lov tarixi bor o'quvchi o'chirilmaydi (bloklash mumkin)
+    // To'lov tarixi bor yoki botdan foydalanayotgan o'quvchini faqat ega, ismini yozib tasdiqlagach (force) o'chiradi.
+    // To'lovlar yozuvi o'chadi, lekin jami summa audit jurnalida qoladi (kim, qachon, qancha)
     const [paid, offline] = await Promise.all([
-      this.prisma.payment.count({ where: { userId: sp.user.id, status: "APPROVED" } }),
-      this.prisma.offlinePayment.count({ where: { studentId } }),
+      this.prisma.payment.aggregate({ where: { userId: sp.user.id, status: "APPROVED" }, _count: true, _sum: { amountUzs: true } }),
+      this.prisma.offlinePayment.aggregate({ where: { studentId }, _count: true, _sum: { amountUzs: true } }),
     ]);
-    if (paid + offline > 0)
-      throw new ConflictException(`O'quvchining to'lov tarixi bor (${paid + offline} ta): moliyaviy hisob uchun o'chirib bo'lmaydi. O'rniga bloklang yoki guruhdan chiqaring.`);
-    if (sp.user.telegramId !== null && !(opts.force && opts.isTeacher))
-      throw new ConflictException(opts.isTeacher ? "Bu o'quvchi botdan foydalanadi: o'chirishni tasdiqlang" : "Botdan foydalanayotgan o'quvchini faqat ustoz o'chira oladi");
+    const hasMoney = paid._count + offline._count > 0;
+    if ((hasMoney || sp.user.telegramId !== null) && !(opts.force && opts.isTeacher))
+      throw new ConflictException(opts.isTeacher ? "O'chirishni tasdiqlang: o'quvchining ismini yozing" : "Bu o'quvchini faqat ustoz o'chira oladi");
     await this.prisma.user.delete({ where: { id: sp.user.id } });
-    await this.prisma.auditLog.create({ data: { actorId, action: "student.delete", entity: "StudentProfile", entityId: studentId, meta: { name: fullName(sp.user) } } });
+    await this.prisma.auditLog.create({
+      data: {
+        actorId,
+        action: "student.delete",
+        entity: "StudentProfile",
+        entityId: studentId,
+        meta: {
+          name: fullName(sp.user),
+          payments: { online: paid._count, onlineUzs: paid._sum.amountUzs ?? 0, offline: offline._count, offlineUzs: offline._sum.amountUzs ?? 0 },
+        },
+      },
+    });
+    return { ok: true };
+  }
+
+  async newcomers(): Promise<NewcomerRow[]> {
+    const rows = await this.prisma.studentProfile.findMany({
+      where: { acceptedAt: null, user: { role: "STUDENT", telegramId: { not: null } } },
+      orderBy: { createdAt: "desc" },
+      take: 100,
+      select: {
+        id: true,
+        createdAt: true,
+        parents: { select: { status: true } },
+        user: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            username: true,
+            phone: true,
+            photoUrl: true,
+            isBlocked: true,
+            _count: { select: { lessonProgress: { where: { completedAt: { not: null } } }, attempts: { where: { status: { not: "IN_PROGRESS" } } }, essays: true } },
+          },
+        },
+      },
+    });
+    return rows
+      .filter((r) => !r.user.isBlocked) // bloklangan: hal qilingan
+      .map((r) => ({
+        studentId: r.id,
+        userId: r.user.id,
+        name: fullName(r.user),
+        username: r.user.username,
+        phone: r.user.phone,
+        photoUrl: r.user.photoUrl,
+        createdAt: r.createdAt.toISOString(),
+        parentStatus: r.parents.some((p) => p.status === "APPROVED") ? "APPROVED" : r.parents.some((p) => p.status === "PENDING") ? "PENDING" : "NONE",
+        activity: { lessons: r.user._count.lessonProgress, tests: r.user._count.attempts, essays: r.user._count.essays },
+      }));
+  }
+
+  /** Ustoz ko'rib chiqdi: guruhga qo'shadi (groupId) yoki online o'quvchi sifatida qoldiradi (null) */
+  async accept(actorId: string, studentId: string, groupId: string | null) {
+    if (groupId) {
+      const g = await this.prisma.group.findUnique({ where: { id: groupId }, select: { isActive: true } });
+      if (!g?.isActive) throw new NotFoundException("Guruh topilmadi");
+    }
+    const { count } = await this.prisma.studentProfile.updateMany({
+      where: { id: studentId },
+      data: { acceptedAt: new Date(), ...(groupId ? { groupId, mode: "OFFLINE" as const } : {}) },
+    });
+    if (!count) throw new NotFoundException("O'quvchi topilmadi");
+    await this.prisma.auditLog.create({ data: { actorId, action: "student.accept", entity: "StudentProfile", entityId: studentId, meta: { groupId } } });
     return { ok: true };
   }
 
@@ -399,6 +466,7 @@ export class StudentsService {
         data: {
           groupId: ps.groupId ?? rs.groupId,
           mode: (ps.groupId ?? rs.groupId) ? "OFFLINE" : "ONLINE",
+          acceptedAt: rs.acceptedAt ?? ps.acceptedAt ?? new Date(), // ustoz o'zi kiritgan yozuv: ko'rib chiqilgan
           ...(ps.accessMode !== "AUTO" ? { accessMode: ps.accessMode } : {}),
         },
       });

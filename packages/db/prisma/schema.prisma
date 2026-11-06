@@ -71,6 +71,8 @@ model StudentProfile {
   inviteCode     String?    @unique
   /// Ilovaga kirish: AUTO — obuna yoki offline guruh bo'yicha; FREE — ustoz bepul ochib bergan; CLOSED — ustoz yopib qo'ygan
   accessMode     StudentAccess @default(AUTO)
+  /// Ustoz ko'rib chiqqan (guruhga qo'shgan yoki "o'quvchim" deb tasdiqlagan). Botdan o'zi kirgan yangi o'quvchida null
+  acceptedAt     DateTime?
   parents        ParentLink[]
   attendance     Attendance[]
   offlinePayments OfflinePayment[]

@@ -63,7 +63,7 @@ function Person({ label, name, username, phone }: { label: string; name: string;
   );
 }
 
-function LinkCard({ link }: { link: AdminParentLink }) {
+export function LinkCard({ link }: { link: AdminParentLink }) {
   const toast = useToast();
   const qc = useQueryClient();
   const [rejecting, setRejecting] = useState(false);

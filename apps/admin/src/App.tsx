@@ -6,7 +6,6 @@ import { ContentPage } from "./pages/ContentPage";
 import { DashboardPage } from "./pages/DashboardPage";
 import { StatsPage } from "./pages/StatsPage";
 import { EssaysPage } from "./pages/EssaysPage";
-import { MorePage } from "./pages/MorePage";
 import { ParentsPage } from "./pages/ParentsPage";
 import { LessonEditorPage } from "./pages/LessonEditorPage";
 import { LoginPage } from "./pages/LoginPage";
@@ -40,7 +39,7 @@ export function App() {
         <Route index element={<DashboardPage />} />
         <Route path="stats" element={<StatsPage />} />
         <Route path="content" element={<ContentPage />} />
-        <Route path="more" element={<MorePage />} />
+        <Route path="more" element={<Navigate to={loadSession()?.user.role === "TEACHER" ? "/payments" : "/"} replace />} />
         <Route path="essays" element={<EssaysPage />} />
         <Route path="lessons/:id" element={<LessonEditorPage />} />
         <Route path="questions" element={<QuestionsPage />} />

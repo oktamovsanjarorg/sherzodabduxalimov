@@ -106,7 +106,7 @@ export class AttendanceService {
   async deleteGroup(actorId: string, id: string) {
     const g = await this.prisma.group.findUnique({ where: { id }, include: { _count: { select: { attendance: true, students: true } } } });
     if (!g) throw new NotFoundException("Guruh topilmadi");
-    if (g._count.attendance > 0) throw new ConflictException("Guruhda davomat tarixi bor. O'chirish o'rniga «Faol emas» qiling.");
+    if (g._count.attendance > 0) throw new ConflictException("Guruhda davomat tarixi bor. O'chirish o'rniga «Faolsizlantirish»ni bosing.");
     if (g._count.students > 0) throw new ConflictException("Avval guruhdagi o'quvchilarni chiqaring");
     await this.prisma.group.delete({ where: { id } });
     await this.prisma.auditLog.create({ data: { actorId, action: "delete", entity: "Group", entityId: id, meta: { name: g.name } } });
@@ -181,7 +181,7 @@ export class AttendanceService {
     });
     const parentLinked = sp.parents.length > 0;
     if (sp.groupId === g.id) return { status: "already", groupName: g.name, parentLinked };
-    await this.prisma.studentProfile.update({ where: { id: sp.id }, data: { groupId: g.id, mode: "OFFLINE" } });
+    await this.prisma.studentProfile.update({ where: { id: sp.id }, data: { groupId: g.id, mode: "OFFLINE", acceptedAt: new Date() } });
     await this.prisma.auditLog.create({ data: { actorId: user.id, action: "group.join", entity: "Group", entityId: g.id, meta: { from: sp.groupId } } });
     const who = esc([user.firstName, user.lastName].filter(Boolean).join(" ")) + (user.username ? ` (@${esc(user.username)})` : "");
     await this.staff.alertOwners(`👥 ${created ? "<b>Yangi o'quvchi</b> " : ""}${who} havola orqali <b>${esc(g.name)}</b> guruhiga ${sp.groupId ? "o'tdi" : "qo'shildi"}`);

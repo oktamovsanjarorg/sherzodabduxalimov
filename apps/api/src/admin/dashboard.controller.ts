@@ -5,6 +5,8 @@ import { PrismaService } from "../prisma/prisma.service";
 
 export interface AdminDashboard {
   pendingParents: number;
+  /** Botdan o'zi kirgan, ustoz hali ko'rib chiqmagan o'quvchilar */
+  newStudents: number;
   pendingEssays: number;
   pendingPayments: number;
   /** 7 kun ichida tugaydigan online obunalar */
@@ -42,6 +44,7 @@ export class DashboardController {
       this.prisma.subscription.groupBy({ by: ["userId"], where: { status: "ACTIVE", endsAt: { gt: now } }, _max: { endsAt: true } }),
     ]);
     const expiringSubscriptions = subEnds.filter((g) => g._max.endsAt! <= new Date(now.getTime() + 7 * 86_400_000)).length;
+    const newStudents = await this.prisma.studentProfile.count({ where: { acceptedAt: null, user: { role: "STUDENT", isBlocked: false, telegramId: { not: null } } } });
     const [pendingParents, processing, failed, total, withApproved, groups, lp, ld, tests, questions] = await Promise.all([
       this.prisma.parentLink.count({ where: { status: "PENDING" } }),
       this.prisma.video.count({ where: { status: { in: ["PROCESSING", "UPLOADING"] }, lesson: { isNot: null } } }),
@@ -85,6 +88,7 @@ export class DashboardController {
     }
     attendanceMissed.sort((a, b) => b.date.localeCompare(a.date));
     return {
+      newStudents,
       pendingParents,
       pendingEssays: pendingEssays + pendingHwEssays,
       pendingPayments: isTeacher ? pendingPayments : 0,

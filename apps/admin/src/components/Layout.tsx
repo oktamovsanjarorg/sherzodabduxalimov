@@ -1,9 +1,9 @@
 import { ROLE_LABELS } from "@onatili/shared";
 import { useQuery } from "@tanstack/react-query";
-import { BookOpen, GraduationCap, Home, MoreHorizontal, ShieldCheck, type LucideIcon } from "lucide-react";
-import { NavLink, Outlet, useLocation } from "react-router-dom";
+import { BookOpen, GraduationCap, Home, LogOut, MoreHorizontal, type LucideIcon } from "lucide-react";
+import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { api } from "../lib/api";
-import { loadSession } from "../lib/session";
+import { clearSession, loadSession } from "../lib/session";
 
 interface NavGroup {
   to: string;
@@ -50,29 +50,31 @@ export function useNavGroups(): NavGroup[] {
       to: "/students",
       label: "O'quvchilar",
       Icon: GraduationCap,
-      match: /^\/(students|attendance)/,
+      match: /^\/(students|attendance|parents)/,
+      // Yangi kelganlar va ota-ona so'rovlari O'quvchilar sahifasining tepasida ko'rib chiqiladi
+      badge: (dash.data?.newStudents ?? 0) + (dash.data?.pendingParents ?? 0) || undefined,
       sub: [
-        { to: "/students", label: "O'quvchilar", match: /^\/students/ },
+        { to: "/students", label: "O'quvchilar", match: /^\/(students|parents)/, badge: (dash.data?.newStudents ?? 0) + (dash.data?.pendingParents ?? 0) || undefined },
         { to: "/attendance", label: "Davomat", match: /^\/attendance/ },
       ],
     },
-    { to: "/parents", label: "Ota-onalar", Icon: ShieldCheck, match: /^\/parents/, badge: dash.data?.pendingParents, sidebarIn: "/students" },
-    {
-      to: "/more",
-      label: "Ko'proq",
-      Icon: MoreHorizontal,
-      match: /^\/(more|staff|payments|billing)/,
-      // Yangi to'lov cheklari faqat egaga ko'rinadi (yordamchilar to'lovlarga kira olmaydi)
-      badge: isTeacher ? dash.data?.pendingPayments : undefined,
-      sub: isTeacher
-        ? [
-            { to: "/more", label: "Profil", match: /^\/more/ },
-            { to: "/payments", label: "To'lovlar", match: /^\/payments/, badge: dash.data?.pendingPayments },
-            { to: "/billing", label: "Tariflar", match: /^\/billing/ },
-            { to: "/staff", label: "Xodimlar", match: /^\/staff/ },
-          ]
-        : undefined,
-    },
+    // Pul va xodimlar: faqat ega (yordamchida bu bo'lim umuman yo'q)
+    ...(isTeacher
+      ? [
+          {
+            to: "/payments",
+            label: "Ko'proq",
+            Icon: MoreHorizontal,
+            match: /^\/(more|staff|payments|billing)/,
+            badge: dash.data?.pendingPayments,
+            sub: [
+              { to: "/payments", label: "To'lovlar", match: /^\/payments/, badge: dash.data?.pendingPayments },
+              { to: "/billing", label: "Tariflar", match: /^\/billing/ },
+              { to: "/staff", label: "Xodimlar", match: /^\/staff/ },
+            ],
+          },
+        ]
+      : []),
   ];
 }
 
@@ -87,6 +89,11 @@ function Badge({ n }: { n?: number }) {
 
 export function Layout() {
   const { pathname } = useLocation();
+  const navigate = useNavigate();
+  const logout = () => {
+    clearSession();
+    navigate("/login");
+  };
   const groups = useNavGroups();
   const s = loadSession()!;
   const current = groups.find((g) => g.match.test(pathname)) ?? groups[0];
@@ -137,17 +144,25 @@ export function Layout() {
             );
           })}
         </nav>
-        <NavLink to="/more" className="block border-t border-slate-200 px-5 py-3 text-xs leading-tight hover:bg-slate-50">
-          <p className="truncate font-bold">{[s.user.firstName, s.user.lastName].filter(Boolean).join(" ")}</p>
-          <p className="text-slate-500">{ROLE_LABELS[s.user.role]} · profil va chiqish</p>
-        </NavLink>
+        <div className="flex items-center gap-2 border-t border-slate-200 px-5 py-3 text-xs leading-tight">
+          <div className="min-w-0 flex-1">
+            <p className="truncate font-bold">{[s.user.firstName, s.user.lastName].filter(Boolean).join(" ")}</p>
+            <p className="text-slate-500">{ROLE_LABELS[s.user.role]}</p>
+          </div>
+          <button className="btn-ghost btn-sm text-red-600" onClick={logout} title="Chiqish (qayta kirish: botga /admin)">
+            <LogOut size={15} /> Chiqish
+          </button>
+        </div>
       </aside>
 
       {/* Telefon/planshet: yuqorida sarlavha va guruh ichidagi bo'limlar */}
       <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/95 backdrop-blur md:hidden" style={{ paddingTop: "env(safe-area-inset-top, 0px)" }}>
         <div className="flex h-14 items-center gap-3 px-4">
           <img src={`${import.meta.env.BASE_URL}favicon.svg`} alt="" className="h-8 w-8" />
-          <span className="font-extrabold">{current.label}</span>
+          <span className="flex-1 font-extrabold">{current.label}</span>
+          <button className="btn-ghost btn-sm text-slate-500" onClick={logout} aria-label="Chiqish" title="Chiqish">
+            <LogOut size={18} />
+          </button>
         </div>
         {current.sub && (
           <div className="flex gap-1 overflow-x-auto px-4 pb-2">
@@ -181,7 +196,7 @@ export function Layout() {
         className="fixed inset-x-0 bottom-0 z-30 border-t border-slate-200 bg-white/95 backdrop-blur md:hidden"
         style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
       >
-        <ul className="grid grid-cols-5">
+        <ul className={`grid ${groups.length >= 5 ? "grid-cols-5" : "grid-cols-4"}`}>
           {groups.map((g) => {
             const active = g.match.test(pathname);
             return (

@@ -309,7 +309,7 @@ function Manage({ s }: { s: StudentDetail }) {
     onError: (e) => toast(errMsg(e), "error"),
   });
   const del = useMutation({
-    mutationFn: () => api.deleteStudent(s.studentId, s.telegramLinked),
+    mutationFn: () => api.deleteStudent(s.studentId, true), // ism yozib tasdiqlangan
     onSuccess: () => {
       toast("O'quvchi o'chirildi");
       qc.invalidateQueries({ queryKey: ["roster"] });
@@ -384,7 +384,7 @@ function Manage({ s }: { s: StudentDetail }) {
                 {s.telegramLinked && " Botga qayta kirsa, bo'sh hisob ochiladi. Vaqtincha to'xtatish uchun bloklash yaxshiroq."}
               </p>
               <input className="input mt-2 h-9 text-sm" placeholder={`Tasdiqlash uchun "${s.name.split(" ")[0]}" deb yozing`} value={confirmDelete} onChange={(e) => setConfirmDelete(e.target.value)} />
-              <button className="btn-danger btn-sm mt-2" disabled={confirmDelete.trim() !== s.name.split(" ")[0] || del.isPending} onClick={() => del.mutate()}>
+              <button className="btn-danger btn-sm mt-2" disabled={confirmDelete.trim().toLowerCase() !== s.name.split(" ")[0].toLowerCase() || del.isPending} onClick={() => del.mutate()}>
                 <Trash2 size={13} /> Butunlay o'chirish
               </button>
             </>

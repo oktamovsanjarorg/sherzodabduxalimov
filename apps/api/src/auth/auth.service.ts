@@ -30,7 +30,7 @@ export class AuthService {
       throw new UnauthorizedException({ code: ERROR_CODES.BLOCKED, message: user.blockedReason ? `Hisob bloklangan: ${user.blockedReason}` : "Hisob bloklangan" });
     if (created && user.role === "STUDENT") {
       const who = esc([user.firstName, user.lastName].filter(Boolean).join(" ")) + (user.username ? ` (@${esc(user.username)})` : "");
-      await this.staff.alertOwners(`🆕 <b>Yangi o'quvchi</b> ilovaga kirdi: ${who}\n\nAdmin panel → O'quvchilar`);
+      await this.staff.alertOwners(`🆕 <b>Yangi o'quvchi</b> ilovaga kirdi: ${who}\n\nAdmin panel → O'quvchilar → «Ko'rib chiqish kerak»: guruhiga qo'shing yoki begona bo'lsa bloklang`);
     }
 
     const token = await this.jwt.signAsync({ sub: user.id, role: user.role });

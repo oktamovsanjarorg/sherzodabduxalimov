@@ -101,3 +101,18 @@ export function normUzPhone(p: string | null | undefined): string | null {
 
 export const studentAccessInput = z.object({ mode: z.enum(["AUTO", "FREE", "CLOSED"]) });
 export const studentBlockInput = z.object({ blocked: z.boolean(), reason: z.string().trim().max(300).nullish().transform((v) => v || null) });
+
+/** Botdan o'zi kirgan, ustoz hali ko'rib chiqmagan o'quvchi */
+export interface NewcomerRow {
+  studentId: string;
+  userId: string;
+  name: string;
+  username: string | null;
+  phone: string | null;
+  photoUrl: string | null;
+  createdAt: string;
+  /** Ota-ona ulash so'rovi bor-yo'qligi */
+  parentStatus: "NONE" | "PENDING" | "APPROVED";
+  /** Ilovada nimadir qilganmi (dars, test, esse) */
+  activity: { lessons: number; tests: number; essays: number };
+}

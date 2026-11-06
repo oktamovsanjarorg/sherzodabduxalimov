@@ -1,6 +1,6 @@
 import { dayLabel } from "@onatili/shared";
 import { useQuery } from "@tanstack/react-query";
-import { FileText, AlertTriangle, BookOpen, CalendarCheck, CheckCircle2, ChevronRight, ClipboardList, CreditCard, Film, LibraryBig, Plus, ShieldCheck, Users } from "lucide-react";
+import { FileText, AlertTriangle, BookOpen, CalendarCheck, CheckCircle2, ChevronRight, ClipboardList, CreditCard, Film, LibraryBig, Plus, ShieldCheck, UserPlus, Users } from "lucide-react";
 import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { Spinner } from "../components/ui";
@@ -18,7 +18,7 @@ export function DashboardPage() {
   const unmarked = x.attendanceToday.groups.filter((g) => g.total > 0 && g.marked < g.total);
   const payments = isTeacher ? x.pendingPayments : 0;
   const expiring = isTeacher ? x.expiringSubscriptions : 0;
-  const todo = (expiring ? 1 : 0) + (payments ? 1 : 0) + (x.pendingEssays ? 1 : 0) + (x.pendingParents ? 1 : 0) + (unmarked.length ? 1 : 0) + (x.attendanceMissed.length ? 1 : 0) + (x.videos.failed ? 1 : 0);
+  const todo = (expiring ? 1 : 0) + (payments ? 1 : 0) + (x.pendingEssays ? 1 : 0) + (x.pendingParents ? 1 : 0) + (x.newStudents ? 1 : 0) + (unmarked.length ? 1 : 0) + (x.attendanceMissed.length ? 1 : 0) + (x.videos.failed ? 1 : 0);
 
   return (
     <div className="space-y-6">
@@ -39,8 +39,11 @@ export function DashboardPage() {
         {x.pendingEssays > 0 && (
           <Todo to="/essays" tone="amber" Icon={FileText} title={`${x.pendingEssays} ta esse tekshirilmagan`} hint="O'quvchilar yakuniy natijani kutmoqda" />
         )}
+        {x.newStudents > 0 && (
+          <Todo to="/students" tone="amber" Icon={UserPlus} title={`Botga ${x.newStudents} ta yangi o'quvchi kirdi`} hint="O'quvchingizmi? Guruhiga qo'shing, begona bo'lsa — bloklang" />
+        )}
         {x.pendingParents > 0 && (
-          <Todo to="/parents" tone="amber" Icon={ShieldCheck} title={`${x.pendingParents} ta ota-ona so'rovi kutmoqda`} hint="Raqamga qo'ng'iroq qilib tasdiqlang" />
+          <Todo to="/students" tone="amber" Icon={ShieldCheck} title={`${x.pendingParents} ta ota-ona so'rovi kutmoqda`} hint="Raqamga qo'ng'iroq qilib tasdiqlang" />
         )}
         {unmarked.map((g) => (
           <Todo

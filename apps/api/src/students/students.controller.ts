@@ -16,6 +16,17 @@ export class StudentsController {
     return this.svc.roster({ groupId, q }, u.role === "TEACHER");
   }
 
+  /** Botdan o'zi kirgan, hali ko'rib chiqilmagan o'quvchilar */
+  @Get("students/new") newcomers() {
+    return this.svc.newcomers();
+  }
+
+  /** "Mening o'quvchim": guruhga qo'shish (yoki online qoldirish) */
+  @Post("students/:id/accept") @HttpCode(200) accept(@CurrentUser() u: JwtUser, @Param("id") id: string, @Body() b: unknown) {
+    const d = parse(z.object({ groupId: z.string().min(1).nullable().optional() }), b ?? {});
+    return this.svc.accept(u.sub, id, d.groupId ?? null);
+  }
+
   @Post("students") create(@CurrentUser() u: JwtUser, @Body() b: unknown) {
     return this.svc.create(u.sub, parse(studentCreateInput, b));
   }

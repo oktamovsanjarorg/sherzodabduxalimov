@@ -1,8 +1,10 @@
 import type { RosterRow } from "@onatili/shared";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ChevronRight, ListPlus, Search, UserPlus } from "lucide-react";
+import { ChevronRight, ListPlus, Search, Settings2, UserPlus } from "lucide-react";
 import { useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
+import { GroupManager } from "../components/GroupManager";
+import { Inbox } from "../components/Inbox";
 import { Badge, Empty, Field, Modal, PageHeader, Spinner } from "../components/ui";
 import { api, errMsg } from "../lib/api";
 import { fmtDate } from "../lib/format";
@@ -15,6 +17,7 @@ export function StudentsPage() {
   const groupId = params.get("group") ?? "";
   const [q, setQ] = useState("");
   const [adding, setAdding] = useState<"one" | "bulk" | null>(null);
+  const [managing, setManaging] = useState(params.get("groups") === "1");
   const groups = useQuery({ queryKey: ["groups"], queryFn: api.groups });
   const roster = useQuery({ queryKey: ["roster", groupId, q.trim()], queryFn: () => api.roster(groupId, q.trim()), placeholderData: (p) => p });
   const isTeacher = loadSession()?.user.role === "TEACHER";
@@ -25,9 +28,12 @@ export function StudentsPage() {
     <>
       <PageHeader
         title="O'quvchilar"
-        subtitle="O'quvchini o'zingiz kiriting: botga kirishi shart emas. Keyin u botda telefonini ulashsa, hisobi avtomatik bog'lanadi."
+        subtitle="O'quvchilar, guruhlar va ota-onalar shu yerda. O'quvchini o'zingiz kiritsangiz ham bo'ladi: keyin u botda telefonini ulashsa, hisobi avtomatik bog'lanadi."
         actions={
           <>
+            <button className="btn-secondary" onClick={() => setManaging(true)}>
+              <Settings2 size={16} /> Guruhlar
+            </button>
             <button className="btn-secondary" onClick={() => setAdding("bulk")}>
               <ListPlus size={16} /> Ro'yxat bilan
             </button>
@@ -37,6 +43,8 @@ export function StudentsPage() {
           </>
         }
       />
+
+      <Inbox groups={groups.data ?? []} />
 
       <div className="mb-3 flex gap-2 overflow-x-auto pb-1">
         <Chip on={!groupId} onClick={() => setGroup("")}>
@@ -75,6 +83,15 @@ export function StudentsPage() {
         </>
       )}
 
+      {managing && (
+        <GroupManager
+          groups={groups.data ?? []}
+          onClose={() => {
+            setManaging(false);
+            if (params.get("groups")) setParams(groupId ? { group: groupId } : {}, { replace: true });
+          }}
+        />
+      )}
       {adding === "one" && <AddOneModal groupId={groupId === "none" ? "" : groupId} onClose={() => setAdding(null)} />}
       {adding === "bulk" && <BulkModal groupId={groupId === "none" ? "" : groupId} onClose={() => setAdding(null)} />}
     </>

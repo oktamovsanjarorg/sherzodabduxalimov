@@ -6,7 +6,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { BOT_TOKEN, OWNER, createApp, login } from "./helpers";
 
 const prisma = new PrismaClient();
-const TG = { owner: 900001001, assistant: 900001002, phoneUser: 900001003, linkUser: 900001004, existing: 900001005, managed: 900001006 };
+const TG = { owner: 900001001, assistant: 900001002, phoneUser: 900001003, linkUser: 900001004, existing: 900001005, managed: 900001006, newbie: 900001007, stranger: 900001008 };
 const TAG = "E2E-roster";
 const PHONES = ["+998901110001", "+998901110002", "+998901110003", "+998901110004"];
 
@@ -84,10 +84,11 @@ describe("O'quvchilar: botsiz kiritish, ro'yxat, karta, hisobni bog'lash (e2e)",
     expect(d.billing.offlineMonths[0]).toMatchObject({ month: currentMonth(), paid: true, amountUzs: 300000 });
     expect(d.stats).toMatchObject({ testsTaken: 0, lessonsCompleted: 0 });
     expect((await req("GET", `/admin/students/${aziz.studentId}`, undefined, A)).json().billing).toBeNull();
-    // To'lov tarixi bor o'quvchini o'chirib bo'lmaydi (moliyaviy hisob)
-    const del = await req("DELETE", `/admin/students/${aziz.studentId}?force=1`);
+    // To'lov tarixi bor o'quvchi: faqat ega, tasdiq (force) bilan; yordamchi o'chira olmaydi
+    const del = await req("DELETE", `/admin/students/${aziz.studentId}`);
     expect(del.statusCode).toBe(409);
-    expect(del.json().message).toMatch(/to'lov tarixi/);
+    expect(del.json().message).toMatch(/tasdiqlang/);
+    expect((await req("DELETE", `/admin/students/${aziz.studentId}?force=1`, undefined, A)).statusCode).toBe(409);
   });
 
   it("o'quvchi botda telefonini ulashsa, qo'lda kiritilgan yozuv uning hisobiga o'tadi", async () => {
@@ -180,5 +181,33 @@ describe("O'quvchilar: botsiz kiritish, ro'yxat, karta, hisobni bog'lash (e2e)",
     } finally {
       await prisma.course.delete({ where: { id: course.id } });
     }
+  });
+  it("to'lov tarixi bor o'quvchini ega tasdiq bilan o'chiradi; summa audit jurnalida qoladi", async () => {
+    const st = (await req("POST", "/admin/students", { firstName: `${TAG}Pulli`, lastName: "O'quvchi", phone: "90 111 00 77", groupId })).json();
+    await req("PUT", "/admin/offline-payments", { studentId: st.studentId, month: currentMonth(), amountUzs: 250000 });
+    expect((await req("DELETE", `/admin/students/${st.studentId}?force=1`)).statusCode).toBe(200);
+    expect(await prisma.studentProfile.count({ where: { id: st.studentId } })).toBe(0);
+    const log = await prisma.auditLog.findFirstOrThrow({ where: { action: "student.delete", entityId: st.studentId } });
+    expect(log.meta).toMatchObject({ payments: { offline: 1, offlineUzs: 250000 } });
+  });
+  it("botdan yangi kirganlar: ro'yxatda chiqadi; guruhga qo'shilsa yoki bloklansa ro'yxatdan chiqadi", async () => {
+    const nb = await login(app, TG.newbie, "Yangi");
+    const st = await login(app, TG.stranger, "Begona");
+    const list = (await req("GET", "/admin/students/new")).json() as { userId: string; studentId: string }[];
+    const mine = list.find((x) => x.userId === nb.userId)!;
+    const other = list.find((x) => x.userId === st.userId)!;
+    expect(mine).toBeTruthy();
+    expect(other).toBeTruthy();
+    expect((await req("GET", "/admin/dashboard")).json().newStudents).toBeGreaterThanOrEqual(2);
+
+    // Yordamchi ham guruhga qo'sha oladi
+    expect((await req("POST", `/admin/students/${mine.studentId}/accept`, { groupId }, A)).statusCode).toBe(200);
+    expect((await prisma.studentProfile.findUniqueOrThrow({ where: { id: mine.studentId } })).groupId).toBe(groupId);
+    expect((await req("POST", `/admin/students/${other.studentId}/block`, { blocked: true, reason: "Begona" })).statusCode).toBe(200);
+    const after = (await req("GET", "/admin/students/new")).json() as { userId: string }[];
+    expect(after.some((x) => x.userId === nb.userId || x.userId === st.userId)).toBe(false);
+    // Qo'lda kiritilgan o'quvchi bu ro'yxatga tushmaydi
+    expect(after.some((x) => x.userId.startsWith(TAG))).toBe(false);
+    expect((await req("POST", `/admin/students/${mine.studentId}/accept`, { groupId: "yoq" })).statusCode).toBe(404);
   });
 });

@@ -1,4 +1,5 @@
 import type {
+  NewcomerRow,
   TeacherStats,
   AdminPayment,
   AdminPlan,
@@ -72,6 +73,7 @@ const json = (method: string, body?: unknown): RequestInit => ({ method, body: b
 
 export interface AdminDashboard {
   pendingParents: number;
+  newStudents: number;
   pendingEssays: number;
   pendingPayments: number;
   expiringSubscriptions: number;
@@ -189,6 +191,8 @@ export const api = {
   deleteVideo: (id: string) => request(`/admin/videos/${id}`, json("DELETE")),
 
   groups: () => request<AdminGroup[]>("/admin/groups"),
+  newcomers: () => request<NewcomerRow[]>("/admin/students/new"),
+  acceptStudent: (id: string, groupId: string | null) => request(`/admin/students/${id}/accept`, json("POST", { groupId })),
   createGroup: (d: GroupInput) => request<AdminGroup>("/admin/groups", json("POST", d)),
   updateGroup: (id: string, d: Partial<GroupInput>) => request<AdminGroup>(`/admin/groups/${id}`, json("PATCH", d)),
   deleteGroup: (id: string) => request(`/admin/groups/${id}`, json("DELETE")),
