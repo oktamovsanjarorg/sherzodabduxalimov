@@ -2,7 +2,7 @@ name: onatili
 
 # Dev:  pnpm db:up  (faqat postgres + redis)
 # Prod: docker compose up -d --build  (hammasi)
-# Tashqi trafik: mb-caddy (mb-platform) -> onatili-web:80 (mb-platform_default tarmog'i orqali)
+# Tashqi trafik: edge-caddy (~/edge) -> onatili-web:80 (mb-platform_default tarmog'i orqali)
 
 x-app-env: &app-env
   env_file: .env
