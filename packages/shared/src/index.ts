@@ -7,6 +7,7 @@ export * from "./attendance-types";
 export * from "./billing-types";
 export * from "./essay-types";
 export * from "./students-types";
+export * from "./name-match";
 export * from "./rasch";
 export * from "./annotation-types";
 export * from "./stats-types";

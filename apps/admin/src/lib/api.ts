@@ -208,6 +208,7 @@ export const api = {
   trash: () => request<TrashRow[]>("/admin/trash"),
   restoreTrash: (id: string) => request<{ ok: true; kind: string; entityId: string }>(`/admin/trash/${id}/restore`, json("POST")),
   purgeTrash: (id: string) => request(`/admin/trash/${id}`, json("DELETE")),
+  linkStudent: (id: string, placeholderStudentId: string) => request<{ ok: true; name: string }>(`/admin/students/${id}/link`, json("POST", { placeholderStudentId })),
   acceptStudent: (id: string, groupId: string | null) => request(`/admin/students/${id}/accept`, json("POST", { groupId })),
   createGroup: (d: GroupInput) => request<AdminGroup>("/admin/groups", json("POST", d)),
   updateGroup: (id: string, d: Partial<GroupInput>) => request<AdminGroup>(`/admin/groups/${id}`, json("PATCH", d)),

@@ -32,6 +32,12 @@ export class StudentsController {
     return this.svc.accept(u.sub, id, d.groupId ?? null);
   }
 
+  /** Qaytarib bo'lmaydi: faqat ega */
+  @Roles("TEACHER")
+  @Post("students/:id/link") @HttpCode(200) link(@CurrentUser() u: JwtUser, @Param("id") id: string, @Body() b: unknown) {
+    return this.svc.linkToPlaceholder(u.sub, id, parse(z.object({ placeholderStudentId: z.string().min(1) }), b).placeholderStudentId);
+  }
+
   @Post("students") create(@CurrentUser() u: JwtUser, @Body() b: unknown) {
     return this.svc.create(u.sub, parse(studentCreateInput, b));
   }

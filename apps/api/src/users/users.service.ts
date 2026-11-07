@@ -1,5 +1,5 @@
-import { Injectable, NotFoundException } from "@nestjs/common";
-import { STAFF_ROLES, type Me } from "@onatili/shared";
+import { ConflictException, Injectable, NotFoundException } from "@nestjs/common";
+import { STAFF_ROLES, type Me, type StudentNameInput } from "@onatili/shared";
 import { AccessService } from "../access/access.service";
 import { PrismaService } from "../prisma/prisma.service";
 
@@ -40,6 +40,7 @@ export class UsersService {
     const staff = STAFF_ROLES.includes(user.role);
     const trial = await this.access.trialState(user.id);
     const invite = staff || user.telegramId === null ? null : await this.prisma.pendingParent.findUnique({ where: { telegramId: user.telegramId } });
+    const pendingParentInvite = !!invite && Date.now() - invite.createdAt.getTime() < PARENT_INVITE_TTL_MS;
     return {
       id: user.id,
       firstName: user.firstName,
@@ -53,7 +54,15 @@ export class UsersService {
       offlineGroup: user.student?.group?.isActive ? { name: user.student.group.name } : null,
       accessMode: user.student?.accessMode ?? "AUTO",
       trial: { ...trial, used: user.trialUses.map((t) => t.kind) },
-      pendingParentInvite: !!invite && Date.now() - invite.createdAt.getTime() < PARENT_INVITE_TTL_MS,
+      pendingParentInvite,
+      needsName: user.role === "STUDENT" && user.telegramId !== null && !user.nameLocked && !pendingParentInvite,
     };
+  }
+
+  /** O'quvchi haqiqiy ismini bir marta yozadi. Keyin faqat ustoz o'zgartiradi */
+  async setOwnName(userId: string, name: StudentNameInput): Promise<Me> {
+    const { count } = await this.prisma.user.updateMany({ where: { id: userId, role: "STUDENT", nameLocked: false }, data: { ...name, nameLocked: true } });
+    if (!count) throw new ConflictException("Ismni faqat ustoz o'zgartira oladi");
+    return this.me(userId);
   }
 }

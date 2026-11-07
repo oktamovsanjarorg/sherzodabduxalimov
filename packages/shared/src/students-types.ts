@@ -74,6 +74,17 @@ export type StudentCreateInput = z.infer<typeof studentCreateInput>;
 
 export const studentUpdateInput = studentCreateInput.partial();
 
+const realName = (message: string) =>
+  z
+    .string()
+    .trim()
+    .transform((v) => v.replace(/\s+/g, " "))
+    .pipe(z.string().min(2, message).max(60).regex(/^[\p{L}\p{M}'’‘ʻʼ`\- ]+$/u, "Faqat harflar bilan yozing"));
+
+/** O'quvchi ilovada o'zi yozadigan ism-familiya */
+export const studentNameInput = z.object({ firstName: realName("Ismingizni yozing"), lastName: realName("Familiyangizni yozing") });
+export type StudentNameInput = z.infer<typeof studentNameInput>;
+
 /** Ro'yxatni bir yo'la kiritish: har qatorda "Ism Familiya, telefon" */
 export const studentBulkInput = z.object({
   groupId: z.string().nullish().transform((v) => v || null),
@@ -117,6 +128,10 @@ export interface NewcomerRow {
   parentStatus: "NONE" | "PENDING" | "APPROVED";
   /** Ilovada nimadir qilganmi (dars, test, esse) */
   activity: { lessons: number; tests: number; essays: number };
+  /** Ism-familiyasini o'zi yozganmi. Yo'q bo'lsa, name Telegram'dagi ism */
+  nameConfirmed: boolean;
+  /** Ustoz kiritgan, Telegram'ga ulanmagan o'quvchilardan ismi mos kelganlar */
+  matches: { studentId: string; name: string; groupName: string | null }[];
 }
 
 /** O'quvchilar → Hammasi: botga kirgan har bir kishi va qo'lda kiritilgan o'quvchilar (xodimlarsiz) */

@@ -108,6 +108,7 @@ const post = <T>(path: string, body?: unknown) =>
 export const api = {
   loginTelegram: (initData: string) => post<AuthResponse>("/auth/telegram", { initData }),
   me: () => request<Me>("/me"),
+  setMyName: (d: { firstName: string; lastName: string }) => post<Me>("/me/name", d),
   myParents: () => request<MyParents>("/me/parents"),
   myChildren: () => request<ChildView[]>("/me/children"),
   stats: () => request<StudentStats>("/me/stats"),

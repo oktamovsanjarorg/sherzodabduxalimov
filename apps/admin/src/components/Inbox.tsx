@@ -1,6 +1,6 @@
 import type { AdminGroup, NewcomerRow } from "@onatili/shared";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Ban, BookOpen, ChevronRight, ClipboardList, FileText, Inbox as InboxIcon, Trash2, UserCheck } from "lucide-react";
+import { Ban, BookOpen, ChevronRight, ClipboardList, FileText, Inbox as InboxIcon, Link2, Trash2, UserCheck } from "lucide-react";
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Badge, ConfirmButton } from "./ui";
@@ -81,7 +81,12 @@ function Newcomer({ s, groups }: { s: NewcomerRow; groups: AdminGroup[] }) {
     onSuccess: () => done(`${s.name} o'chirildi`),
     onError: (e) => toast(errMsg(e), "error"),
   });
-  const busy = accept.isPending || block.isPending || del.isPending;
+  const link = useMutation({
+    mutationFn: (placeholderId: string) => api.linkStudent(s.studentId, placeholderId),
+    onSuccess: (r) => done(`${r.name} Telegram hisobiga ulandi`),
+    onError: (e) => toast(errMsg(e), "error"),
+  });
+  const busy = accept.isPending || block.isPending || del.isPending || link.isPending;
   const act = s.activity;
   return (
     <div className="card flex flex-wrap items-center gap-3 p-3">
@@ -99,6 +104,7 @@ function Newcomer({ s, groups }: { s: NewcomerRow; groups: AdminGroup[] }) {
             {[s.username && `@${s.username}`, s.phone, `kirdi ${fmtShortDateTime(s.createdAt)}`].filter(Boolean).join(" · ")}
           </p>
           <p className="mt-0.5 flex flex-wrap items-center gap-2 text-[11px] text-slate-500">
+            {!s.nameConfirmed && <Badge tone="amber">ismini hali yozmagan</Badge>}
             {s.parentStatus === "APPROVED" ? <Badge tone="green">ota-ona ✓</Badge> : s.parentStatus === "PENDING" ? <Badge tone="blue">ota-ona kutilmoqda</Badge> : <Badge>ota-ona yo'q</Badge>}
             <span className="inline-flex items-center gap-0.5"><BookOpen size={11} /> {act.lessons}</span>
             <span className="inline-flex items-center gap-0.5"><ClipboardList size={11} /> {act.tests}</span>
@@ -106,6 +112,23 @@ function Newcomer({ s, groups }: { s: NewcomerRow; groups: AdminGroup[] }) {
           </p>
         </div>
       </Link>
+      {s.matches.length > 0 && (
+        <div className="basis-full rounded-xl bg-emerald-50 p-2">
+          <p className="mb-1 text-xs font-bold text-emerald-800">Ro'yxatingizdagi shu o'quvchi bo'lishi mumkin:</p>
+          <div className="flex flex-wrap gap-2">
+            {s.matches.map((m) => {
+              const who = `${m.name}${m.groupName ? ` · ${m.groupName}` : ""}`;
+              return isTeacher ? (
+                <ConfirmButton key={m.studentId} label={`${m.name} bilan birlashtirilsinmi?`} className="btn-secondary btn-sm h-9" onConfirm={() => link.mutate(m.studentId)}>
+                  <Link2 size={14} /> {who}
+                </ConfirmButton>
+              ) : (
+                <Badge key={m.studentId}>{who}</Badge>
+              );
+            })}
+          </div>
+        </div>
+      )}
       <div className="flex flex-wrap items-center gap-2">
         {groups.length > 0 && (
           <div className="flex">

@@ -35,6 +35,8 @@ export const meSchema = z.object({
     .default({ limited: false, accepted: true, paid: true, used: [] }),
   /** Ota-ona havolasi orqali kelgan, raqamini hali ulashmagan */
   pendingParentInvite: z.boolean().default(false),
+  /** O'quvchi haqiqiy ism-familiyasini hali yozmagan: hozir Telegram'dagi ism turibdi */
+  needsName: z.boolean().default(false),
 });
 export type Me = z.infer<typeof meSchema>;
 

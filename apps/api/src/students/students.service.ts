@@ -3,8 +3,10 @@ import { Prisma } from "@onatili/db";
 import {
   ATTENDANCE_STATUSES,
   ESSAY_MAX_SCORE,
+  NAME_MATCH_THRESHOLD,
   STAFF_ROLES,
   currentMonth,
+  nameMatchScore,
   normUzPhone,
   parseStudentLine,
   type AdminUserRow,
@@ -320,11 +322,23 @@ export class StudentsService {
             phone: true,
             photoUrl: true,
             isBlocked: true,
+            nameLocked: true,
             _count: { select: { lessonProgress: { where: { completedAt: { not: null } } }, attempts: { where: { status: { not: "IN_PROGRESS" } } }, essays: true } },
           },
         },
       },
     });
+    const placeholders = await this.prisma.studentProfile.findMany({
+      where: { user: { role: "STUDENT", telegramId: null, isBlocked: false } },
+      select: { id: true, group: { select: { name: true } }, user: { select: { firstName: true, lastName: true } } },
+    });
+    const matchesFor = (name: string) =>
+      placeholders
+        .map((p) => ({ p, score: nameMatchScore(name, fullName(p.user)) }))
+        .filter((m) => m.score >= NAME_MATCH_THRESHOLD)
+        .sort((a, b) => b.score - a.score)
+        .slice(0, 3)
+        .map(({ p }) => ({ studentId: p.id, name: fullName(p.user), groupName: p.group?.name ?? null }));
     return rows
       .filter((r) => !r.user.isBlocked) // bloklangan: hal qilingan
       .map((r) => ({
@@ -337,7 +351,21 @@ export class StudentsService {
         createdAt: r.createdAt.toISOString(),
         parentStatus: r.parents.some((p) => p.status === "APPROVED") ? "APPROVED" : r.parents.some((p) => p.status === "PENDING") ? "PENDING" : "NONE",
         activity: { lessons: r.user._count.lessonProgress, tests: r.user._count.attempts, essays: r.user._count.essays },
+        nameConfirmed: r.user.nameLocked,
+        matches: matchesFor(fullName(r.user)),
       }));
+  }
+
+  /** Ustoz: botdan kirgan o'quvchi o'zi kiritgan yozuvdagi odam ekanini tasdiqladi */
+  async linkToPlaceholder(actorId: string, studentId: string, placeholderStudentId: string) {
+    const [real, placeholder] = await Promise.all(
+      [studentId, placeholderStudentId].map((id) => this.prisma.studentProfile.findUnique({ where: { id }, select: { user: { select: { id: true, role: true, telegramId: true, firstName: true, lastName: true } } } })),
+    );
+    if (!real || !placeholder) throw new NotFoundException("O'quvchi topilmadi");
+    if (real.user.role !== "STUDENT" || real.user.telegramId === null) throw new BadRequestException("Bu o'quvchi botga kirmagan");
+    if (placeholder.user.role !== "STUDENT" || placeholder.user.telegramId !== null) throw new ConflictException("Bu yozuv allaqachon boshqa Telegram hisobiga ulangan");
+    await this.mergeInto(placeholder.user.id, real.user.id, actorId);
+    return { ok: true, name: fullName(placeholder.user) };
   }
 
   /** Ustoz ko'rib chiqdi: guruhga qo'shadi (groupId) yoki online o'quvchi sifatida qoldiradi (null) */
@@ -506,7 +534,7 @@ export class StudentsService {
    * Qo'lda kiritilgan yozuvni (placeholder) haqiqiy Telegram hisobiga ko'chiradi: guruh, davomat,
    * offline to'lovlar, ota-onalar, ism-familiya (ustoz yozgani) va telefon. So'ng placeholder o'chiriladi.
    */
-  private async mergeInto(placeholderUserId: string, realUserId: string) {
+  private async mergeInto(placeholderUserId: string, realUserId: string, actorId = realUserId) {
     await this.prisma.$transaction(async (tx) => {
       const ph = await tx.user.findUniqueOrThrow({ where: { id: placeholderUserId }, include: { student: true } });
       const real = await tx.user.findUniqueOrThrow({ where: { id: realUserId }, include: { student: true } });
@@ -552,7 +580,7 @@ export class StudentsService {
           ...(ph.isBlocked ? { isBlocked: true, blockedReason: ph.blockedReason } : {}),
         },
       });
-      await tx.auditLog.create({ data: { actorId: real.id, action: "student.claim", entity: "StudentProfile", entityId: rs.id, meta: { from: ps.id } } });
+      await tx.auditLog.create({ data: { actorId, action: "student.claim", entity: "StudentProfile", entityId: rs.id, meta: { from: ps.id } } });
     });
   }
 }

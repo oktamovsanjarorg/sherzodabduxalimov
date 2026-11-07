@@ -211,4 +211,52 @@ describe("O'quvchilar: botsiz kiritish, ro'yxat, karta, hisobni bog'lash (e2e)",
     expect(after.some((x) => x.userId.startsWith(TAG))).toBe(false);
     expect((await req("POST", `/admin/students/${mine.studentId}/accept`, { groupId: "yoq" })).statusCode).toBe(404);
   });
+
+  describe("o'quvchi ismini yozadi, ustoz ro'yxatdagi yozuvga bog'laydi", () => {
+    const TG2 = 900001020;
+    const FIRST = "Testshahzoda"; // haqiqiy ism kabi: TAG'dagi raqam /me/name'dan o'tmaydi
+    let S: Record<string, string>;
+    let placeholderId = "";
+    const myStudentId = async () => (await prisma.studentProfile.findFirstOrThrow({ where: { user: { telegramId: BigInt(TG2) } } })).id;
+
+    beforeAll(async () => {
+      await prisma.user.deleteMany({ where: { telegramId: BigInt(TG2) } });
+      placeholderId = (await req("POST", "/admin/students", { firstName: FIRST, lastName: "Yusupova", groupId })).json().studentId;
+      S = (await login(app, TG2, "💫 sh_z 💫", undefined, { withParent: false, accepted: false, paid: false })).headers;
+    });
+    afterAll(() => prisma.user.deleteMany({ where: { OR: [{ telegramId: BigInt(TG2) }, { firstName: FIRST }] } }));
+
+    it("Telegram ismi bilan kirgan o'quvchidan ism so'raladi; noto'g'ri ism o'tmaydi", async () => {
+      expect((await req("GET", "/me", undefined, S)).json().needsName).toBe(true);
+      expect((await req("POST", "/me/name", { firstName: "1", lastName: "😀😀" }, S)).statusCode).toBe(400);
+    });
+
+    it("yozilgan ism saqlanadi, Telegram ismi uni almashtirmaydi, ikkinchi marta yozib bo'lmaydi", async () => {
+      const me = (await req("POST", "/me/name", { firstName: `  ${FIRST}`, lastName: "Yusupova " }, S)).json();
+      expect(me).toMatchObject({ firstName: FIRST, lastName: "Yusupova", needsName: false });
+      await login(app, TG2, "💫 sh_z 💫", undefined, { withParent: false, accepted: false, paid: false });
+      expect((await prisma.user.findUniqueOrThrow({ where: { telegramId: BigInt(TG2) } })).firstName).toBe(FIRST);
+      expect((await req("POST", "/me/name", { firstName: "Boshqa", lastName: "Odam" }, S)).statusCode).toBe(409);
+    });
+
+    it("yangi kirganlar ro'yxatida mos yozuv taklif qilinadi", async () => {
+      const id = await myStudentId();
+      const row = (await req("GET", "/admin/students/new")).json().find((r: { studentId: string }) => r.studentId === id);
+      expect(row.nameConfirmed).toBe(true);
+      expect(row.matches[0]).toMatchObject({ studentId: placeholderId, groupName: `${TAG} 1-guruh` });
+    });
+
+    it("faqat ega bog'laydi; bog'langach guruh o'tadi va takror yozuv yo'qoladi", async () => {
+      const id = await myStudentId();
+      expect((await req("POST", `/admin/students/${id}/link`, { placeholderStudentId: placeholderId }, A)).statusCode).toBe(403);
+      expect((await req("POST", `/admin/students/${placeholderId}/link`, { placeholderStudentId: id })).statusCode).toBe(400);
+      expect((await req("POST", `/admin/students/${id}/link`, { placeholderStudentId: placeholderId })).statusCode).toBe(200);
+      const sp = await prisma.studentProfile.findUniqueOrThrow({ where: { id }, include: { user: true } });
+      expect(sp.groupId).toBe(groupId);
+      expect(sp.acceptedAt).not.toBeNull();
+      expect(sp.user.firstName).toBe(FIRST);
+      expect(await prisma.studentProfile.findUnique({ where: { id: placeholderId } })).toBeNull();
+      expect((await req("POST", `/admin/students/${id}/link`, { placeholderStudentId: placeholderId })).statusCode).toBe(404);
+    });
+  });
 });

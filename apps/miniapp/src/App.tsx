@@ -43,6 +43,7 @@ const ParentHomePage = page(() => import("./pages/ParentHomePage"), "ParentHomeP
 const ParentPhonePage = lazy(() => import("./pages/ParentPhonePage").then((m) => ({ default: m.ParentPhonePage })));
 const ParentsPage = page(() => import("./pages/ParentsPage"), "ParentsPage");
 const MyAttendancePage = page(() => import("./pages/MyAttendancePage"), "MyAttendancePage");
+const StudentNamePage = lazy(() => import("./pages/StudentNamePage").then((m) => ({ default: m.StudentNamePage })));
 const SettingsPage = page(() => import("./pages/SettingsPage"), "SettingsPage");
 const StatsPage = page(() => import("./pages/StatsPage"), "StatsPage");
 const SubscribePage = page(() => import("./pages/SubscribePage"), "SubscribePage");
@@ -87,6 +88,12 @@ export function App() {
     return (
       <Suspense fallback={<Splash />}>
         <ParentHomePage />
+      </Suspense>
+    );
+  if (user?.needsName)
+    return (
+      <Suspense fallback={<Splash />}>
+        <StudentNamePage />
       </Suspense>
     );
 
