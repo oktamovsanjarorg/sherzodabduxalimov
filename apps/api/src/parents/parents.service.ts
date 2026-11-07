@@ -3,7 +3,7 @@ import type { Prisma } from "@onatili/db";
 import type { AdminParentLink, ChildView } from "@onatili/shared";
 import { ENV, type Env } from "../config/env";
 import { esc } from "../notify/telegram";
-import { NotifyService } from "../notify/notify.service";
+import { NotifyService, type Keyboard } from "../notify/notify.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { StudentsService } from "../students/students.service";
 import { StaffService, type TelegramProfile } from "../staff/staff.service";
@@ -12,6 +12,12 @@ import { PARENT_INVITE_TTL_MS } from "../users/users.service";
 /** Bitta o'quvchiga ulanishi mumkin bo'lgan faol (kutilayotgan yoki tasdiqlangan) ota-onalar soni */
 export const MAX_PARENTS = 2;
 const MANY_CHILDREN = 3;
+/** Ustozga ko'rsatiladigan ogohlantirishlar. no_student_phone yo'q: raqamsiz o'quvchi ko'p, u shubha belgisi emas */
+const FLAG_WARNINGS: Record<string, string> = {
+  same_phone: "Raqami o'quvchi raqami bilan bir xil",
+  student_activity: "Bu hisob ilovada dars yoki test ishlagan: o'quvchining o'zi bo'lishi mumkin",
+  many_children: "Ko'p o'quvchiga ulanmoqda",
+};
 
 export const normPhone = (p: string) => {
   const d = p.replace(/\D/g, "");
@@ -115,7 +121,7 @@ export class ParentsService {
     if (activity > 0) flags.push("student_activity");
     if (children + 1 > MANY_CHILDREN) flags.push("many_children");
 
-    await this.prisma.$transaction([
+    const [link] = await this.prisma.$transaction([
       this.prisma.parentLink.create({
         data: { parentId: parent.id, studentId: student.id, phone, relation: relation?.slice(0, 30) ?? null, flags },
       }),
@@ -129,8 +135,19 @@ export class ParentsService {
       student.user.telegramId,
       `👨‍👩‍👦 <b>${esc(fullName(parent))}</b> sizning ota-onangiz sifatida ulanish so'rovini yubordi. Ustoz tasdiqlagach, davomat xabarlari unga boradi.`,
     );
+    const group = (await this.prisma.studentProfile.findUnique({ where: { id: student.id }, select: { group: { select: { name: true } } } }))?.group?.name;
+    const warnings = flags.flatMap((f) => (FLAG_WARNINGS[f] ? [`⚠️ ${FLAG_WARNINGS[f]}`] : []));
     await this.staff.alertOwners(
-      `👨‍👩‍👦 <b>Yangi ota-ona so'rovi</b>: ${esc(fullName(parent))} → ${esc(fullName(student.user))}${flags.length ? " ⚠️ shubhali" : ""}\n\nAdmin → Ota-onalar: raqamga qo'ng'iroq qilib tasdiqlang`,
+      [
+        `👨‍👩‍👦 <b>Ota-ona so'rovi</b>`,
+        `Ota-ona: <b>${esc(fullName(parent))}</b>${link.relation ? ` (${esc(link.relation)})` : ""}`,
+        `Telefon: ${esc(phone)}`,
+        `O'quvchi: <b>${esc(fullName(student.user))}</b>${student.user.nameLocked ? "" : " (ismini hali yozmagan)"}`,
+        `Guruh: ${group ? esc(group) : "yo'q"}`,
+        ...warnings,
+        "\nRaqamga qo'ng'iroq qilib tekshiring.",
+      ].join("\n"),
+      this.reviewKeyboard(link.id),
     );
     return { status: "created", studentName: fullName(student.user) };
   }
@@ -188,6 +205,19 @@ export class ParentsService {
       take: 300,
     });
     return rows.map((l) => this.toAdmin(l));
+  }
+
+  async isAwaitingReview(id: string) {
+    return (await this.prisma.parentLink.count({ where: { id, status: "PENDING" } })) > 0;
+  }
+
+  reviewKeyboard(id: string): Keyboard {
+    return [
+      [
+        { text: "✅ Tasdiqlash", data: `pl:a:${id}` },
+        { text: "❌ Rad etish", data: `c|pl:r:${id}` },
+      ],
+    ];
   }
 
   async approve(actorId: string, id: string) {

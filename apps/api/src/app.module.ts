@@ -17,6 +17,7 @@ import { PrismaModule } from "./prisma/prisma.module";
 import { TrashModule } from "./trash/trash.module";
 import { StaffModule } from "./staff/staff.module";
 import { TestsModule } from "./tests/tests.module";
+import { ReviewModule } from "./review/review.module";
 import { UsersModule } from "./users/users.module";
 
 @Global()
@@ -32,7 +33,7 @@ export class AppModule {
   static forRoot(env: Env): DynamicModule {
     return {
       module: AppModule,
-      imports: [EnvModule.forRoot(env), PrismaModule, TrashModule, AccessModule, UsersModule, AuthModule, StaffModule, ContentModule, TestsModule, AdminModule, MediaModule, NotifyModule, ParentsModule, AttendanceModule, BillingModule, EssaysModule, StudentsModule, VoiceModule],
+      imports: [EnvModule.forRoot(env), PrismaModule, TrashModule, AccessModule, UsersModule, AuthModule, StaffModule, ContentModule, TestsModule, AdminModule, MediaModule, NotifyModule, ParentsModule, AttendanceModule, BillingModule, EssaysModule, StudentsModule, ReviewModule, VoiceModule],
       controllers: [HealthController],
     };
   }

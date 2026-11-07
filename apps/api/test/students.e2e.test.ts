@@ -2,7 +2,10 @@ import type { NestFastifyApplication } from "@nestjs/platform-fastify";
 import { PrismaClient } from "@onatili/db";
 import { currentMonth, parseStudentLine } from "@onatili/shared";
 import { internalKey } from "@onatili/shared/server";
+import { Queue } from "bullmq";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { redisConnection } from "../src/media/queue";
+import { NOTIFY_QUEUE, type NotifyJob } from "../src/notify/notify.service";
 import { BOT_TOKEN, OWNER, createApp, login } from "./helpers";
 
 const prisma = new PrismaClient();
@@ -257,6 +260,76 @@ describe("O'quvchilar: botsiz kiritish, ro'yxat, karta, hisobni bog'lash (e2e)",
       expect(sp.user.firstName).toBe(FIRST);
       expect(await prisma.studentProfile.findUnique({ where: { id: placeholderId } })).toBeNull();
       expect((await req("POST", `/admin/students/${id}/link`, { placeholderStudentId: placeholderId })).statusCode).toBe(404);
+    });
+  });
+
+  describe("ustoz xabardagi tugmalar bilan hal qiladi", () => {
+    const TG3 = { student: 900001030, stranger: 900001031, parent: 900001032, foreign: 900001033 };
+    const ids = Object.values(TG3).map(BigInt);
+    const notifyQ = new Queue<NotifyJob>(NOTIFY_QUEUE, { prefix: "onatili-e2e", connection: redisConnection(process.env.REDIS_URL!) });
+    const jobs = async () => (await notifyQ.getJobs(["waiting", "delayed", "prioritized"])).map((j) => j.data);
+    const tap = async (data: string, telegramId = TG.owner) => (await internal("review", { telegramId, data })).json();
+    const studentId = async (tg: number) => (await prisma.studentProfile.findFirstOrThrow({ where: { user: { telegramId: BigInt(tg) } } })).id;
+    const opts = { withParent: false, accepted: false, paid: false };
+
+    beforeAll(async () => {
+      await prisma.user.deleteMany({ where: { telegramId: { in: ids } } });
+      await notifyQ.obliterate({ force: true });
+    });
+    afterAll(async () => {
+      await prisma.user.deleteMany({ where: { telegramId: { in: ids } } });
+      await notifyQ.close();
+    });
+
+    it("botga kirganda xabar kelmaydi; ism yozilgach kim ekani va tugmalar keladi", async () => {
+      const S = (await login(app, TG3.student, "xX_nick_Xx", "nick_o10", opts)).headers;
+      expect((await jobs()).some((j) => j.text.includes("Yangi o'quvchi"))).toBe(false);
+      await req("POST", "/me/name", { firstName: "Daler", lastName: "Dilmurodov" }, S);
+      const job = (await jobs()).find((j) => j.text.includes("Daler Dilmurodov"));
+      expect(job?.text).toContain("@nick_o10");
+      const data = job!.keyboard!.flat().map((b) => b.data);
+      expect(data).toContain(`st:g:${await studentId(TG3.student)}:${groupId}`);
+      expect(data.every((d) => Buffer.byteLength(d) <= 64)).toBe(true);
+    });
+
+    it("begona odam tugma bosa olmaydi", async () => {
+      await login(app, TG3.foreign, "Begona", undefined, opts);
+      const id = await studentId(TG3.student);
+      expect(await tap(`st:g:${id}:${groupId}`, TG3.foreign)).toMatchObject({ alert: true });
+      expect((await prisma.studentProfile.findUniqueOrThrow({ where: { id } })).acceptedAt).toBeNull();
+      expect((await tap(`st:g:${id}:${groupId}`, TG.assistant)).alert).toBe(true);
+    });
+
+    it("guruhga qo'shadi; ikkinchi ustoz bossa, takrorlanmaydi", async () => {
+      const id = await studentId(TG3.student);
+      expect((await tap(`st:g:${id}:${groupId}`)).result).toContain("guruhiga qo'shildi");
+      expect((await prisma.studentProfile.findUniqueOrThrow({ where: { id } })).groupId).toBe(groupId);
+      expect(await tap(`st:o:${id}`)).toMatchObject({ toast: "Allaqachon ko'rib chiqilgan", keyboard: null });
+    });
+
+    it("bloklash avval tasdiq so'raydi, Orqaga tugmalarni qaytaradi", async () => {
+      await login(app, TG3.stranger, "Kimdir", undefined, opts);
+      const id = await studentId(TG3.stranger);
+      const ask = await tap(`c|st:b:${id}`);
+      expect(ask.keyboard[0][0].data).toBe(`st:b:${id}`);
+      expect((await prisma.user.findUniqueOrThrow({ where: { telegramId: BigInt(TG3.stranger) } })).isBlocked).toBe(false);
+      expect((await tap(`st:v:${id}`)).keyboard.flat().some((b: { data: string }) => b.data === `c|st:b:${id}`)).toBe(true);
+      expect((await tap(`st:b:${id}`)).result).toBe("🚫 Bloklandi");
+      expect((await prisma.user.findUniqueOrThrow({ where: { telegramId: BigInt(TG3.stranger) } })).isBlocked).toBe(true);
+    });
+
+    it("ota-ona xabarida raqam, guruh bor; tugma bilan tasdiqlanadi", async () => {
+      const sp = await prisma.studentProfile.findFirstOrThrow({ where: { user: { telegramId: BigInt(TG3.student) } } });
+      const from = { id: TG3.parent, first_name: "Kamola", last_name: "Sodiqova" };
+      await internal("parent-link", { code: sp.parentLinkCode, from, contact: { phone_number: "998901110099", user_id: TG3.parent }, relation: "ona" });
+      const job = (await jobs()).find((j) => j.text.includes("Ota-ona so'rovi") && j.text.includes("Kamola"));
+      expect(job?.text).toContain("+998901110099");
+      expect(job?.text).toContain(`${TAG} 1-guruh`);
+      expect(job?.text).not.toContain("⚠️");
+      const approve = job!.keyboard![0]![0]!.data;
+      expect((await tap(approve)).result).toBe("✅ Tasdiqlandi");
+      expect((await prisma.parentLink.findFirstOrThrow({ where: { studentId: sp.id } })).status).toBe("APPROVED");
+      expect(await tap(approve)).toMatchObject({ keyboard: null });
     });
   });
 });

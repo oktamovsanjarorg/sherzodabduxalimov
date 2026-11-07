@@ -9,6 +9,7 @@ export function sendTelegramMessage(
   chatId: string,
   text: string,
   button?: { text: string; webAppUrl: string },
+  keyboard?: { text: string; data: string }[][],
 ): Promise<{ ok: boolean; status: number; description?: string; retryAfter?: number }> {
   const body = JSON.stringify({
     chat_id: chatId,
@@ -16,6 +17,7 @@ export function sendTelegramMessage(
     parse_mode: "HTML",
     disable_web_page_preview: true,
     ...(button ? { reply_markup: { inline_keyboard: [[{ text: button.text, web_app: { url: button.webAppUrl } }]] } } : {}),
+    ...(keyboard ? { reply_markup: { inline_keyboard: keyboard.map((row) => row.map((b) => ({ text: b.text, callback_data: b.data }))) } } : {}),
   });
   return new Promise((resolve, reject) => {
     const req = request(

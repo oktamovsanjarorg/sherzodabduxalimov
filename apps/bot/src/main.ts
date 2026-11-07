@@ -184,6 +184,31 @@ Ustoz yoki yordamchi tasdiqlagach, sizga xabar keladi.`,
   }
 });
 
+// Ustozga kelgan xabardagi tugmalar. Kim bosganini API tekshiradi
+interface ReviewReply {
+  toast: string;
+  alert?: boolean;
+  result?: string;
+  keyboard?: { text: string; data: string }[][] | null;
+}
+
+bot.on("callback_query:data", async (ctx) => {
+  try {
+    const r = await internal<ReviewReply>("review", { telegramId: ctx.from.id, data: ctx.callbackQuery.data });
+    await ctx.answerCallbackQuery({ text: r.toast || undefined, show_alert: r.alert });
+    const message = ctx.callbackQuery.message;
+    if (r.result && message?.text) {
+      await ctx.editMessageText(`${message.text}\n\n${r.result}`, { entities: message.entities });
+    } else if (r.keyboard !== undefined) {
+      const rows = r.keyboard?.map((row) => row.map((b) => InlineKeyboard.text(b.text, b.data)));
+      await ctx.editMessageReplyMarkup({ reply_markup: rows ? InlineKeyboard.from(rows) : undefined });
+    }
+  } catch (e) {
+    console.error("review:", redact(e));
+    await ctx.answerCallbackQuery({ text: "Hozir bajarib bo'lmadi, admin paneldan urinib ko'ring.", show_alert: true }).catch(() => {});
+  }
+});
+
 bot.command("help", (ctx) =>
   ctx.reply("Savollar bo'lsa, ustozning yordamchisiga yozing. Ilovani ochish uchun /start bosing."),
 );

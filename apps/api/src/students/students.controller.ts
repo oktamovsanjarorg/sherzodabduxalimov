@@ -1,9 +1,10 @@
 import { Body, Controller, Delete, Get, HttpCode, Param, Patch, Post, Query, UseGuards } from "@nestjs/common";
-import { studentAccessInput, studentBlockInput, studentBulkInput, studentCreateInput, studentUpdateInput } from "@onatili/shared";
+import { studentAccessInput, studentBlockInput, studentBulkInput, studentCreateInput, studentNameInput, studentUpdateInput } from "@onatili/shared";
 import { z } from "zod";
 import { parse } from "../admin/zod";
 import { CurrentUser, Public, Roles, type JwtUser } from "../auth/decorators";
 import { InternalGuard } from "../staff/internal.guard";
+import { UsersService } from "../users/users.service";
 import { StudentsService } from "./students.service";
 
 /** Ustoz va yordamchi: o'quvchilar ro'yxati va kartasi. To'lov ma'lumotlari faqat egaga */
@@ -73,6 +74,21 @@ export class StudentsController {
 
   @Post("students/:id/invite") @HttpCode(200) invite(@Param("id") id: string) {
     return this.svc.resetInvite(id);
+  }
+}
+
+/** O'quvchi haqiqiy ismini yozadi: ustozga shundan keyin xabar boradi, chunki endi uni tanib bo'ladi */
+@Controller("me")
+export class StudentNameController {
+  constructor(
+    private readonly users: UsersService,
+    private readonly svc: StudentsService,
+  ) {}
+
+  @Post("name") @HttpCode(200) async setName(@CurrentUser() u: JwtUser, @Body() b: unknown) {
+    const me = await this.users.setOwnName(u.sub, parse(studentNameInput, b));
+    await this.svc.alertNamed(u.sub);
+    return me;
   }
 }
 

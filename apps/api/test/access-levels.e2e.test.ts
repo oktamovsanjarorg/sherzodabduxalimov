@@ -162,10 +162,10 @@ describe("Kirish darajalari (e2e)", () => {
     await prisma.group.delete({ where: { id: g.id } });
   });
 
-  it("oddiy /start: odam bir marta yoziladi va ro'yxatda ko'rinadi, ustozga bitta xabar boradi", async () => {
+  it("oddiy /start: odam bir marta yoziladi va ro'yxatda ko'rinadi, ustozga ismini yozgunicha xabar bormaydi", async () => {
     expect((await internal("visit", tg(TG.visitor, "Mehmon"))).statusCode).toBe(200);
     await internal("visit", tg(TG.visitor, "Mehmon"));
-    expect((await jobs()).filter((j) => j.chatId === String(TG.owner) && j.text.includes("Mehmon")).length).toBe(1);
+    expect((await jobs()).filter((j) => j.chatId === String(TG.owner) && j.text.includes("Mehmon")).length).toBe(0);
     const rows = (await req("GET", "/admin/users?q=Mehmon")).json();
     expect(rows).toHaveLength(1);
     expect(rows[0]).toMatchObject({ role: "STUDENT", full: false, waiting: ["TEACHER", "PARENT", "PAYMENT"], telegramLinked: true });

@@ -78,7 +78,7 @@ worker.on("ready", () => console.log(`[worker] tayyor, navbat: ${env.QUEUE_PREFI
 const notifier = new Worker<NotifyJob>(
   NOTIFY_QUEUE,
   async (job) => {
-    const r = await sendTelegramMessage(env.BOT_TOKEN, job.data.chatId, job.data.text, job.data.button);
+    const r = await sendTelegramMessage(env.BOT_TOKEN, job.data.chatId, job.data.text, job.data.button, job.data.keyboard);
     if (r.ok) {
       if (job.data.attendanceId) {
         await prisma.attendance.update({ where: { id: job.data.attendanceId }, data: { notifiedAt: new Date() } }).catch(() => {});

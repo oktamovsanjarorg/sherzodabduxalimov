@@ -22,6 +22,7 @@ import { ENV, type Env } from "../config/env";
 import { PrismaService } from "../prisma/prisma.service";
 import { TrashService } from "../trash/trash.service";
 import { defaultMonthlyFee, effectiveFee } from "../billing/fee";
+import type { Keyboard } from "../notify/notify.service";
 import { esc } from "../notify/telegram";
 import { StaffService, type TelegramProfile } from "../staff/staff.service";
 
@@ -328,17 +329,7 @@ export class StudentsService {
         },
       },
     });
-    const placeholders = await this.prisma.studentProfile.findMany({
-      where: { user: { role: "STUDENT", telegramId: null, isBlocked: false } },
-      select: { id: true, group: { select: { name: true } }, user: { select: { firstName: true, lastName: true } } },
-    });
-    const matchesFor = (name: string) =>
-      placeholders
-        .map((p) => ({ p, score: nameMatchScore(name, fullName(p.user)) }))
-        .filter((m) => m.score >= NAME_MATCH_THRESHOLD)
-        .sort((a, b) => b.score - a.score)
-        .slice(0, 3)
-        .map(({ p }) => ({ studentId: p.id, name: fullName(p.user), groupName: p.group?.name ?? null }));
+    const matchesFor = await this.placeholderMatcher();
     return rows
       .filter((r) => !r.user.isBlocked) // bloklangan: hal qilingan
       .map((r) => ({
@@ -354,6 +345,69 @@ export class StudentsService {
         nameConfirmed: r.user.nameLocked,
         matches: matchesFor(fullName(r.user)),
       }));
+  }
+
+  /** Ustoz kiritgan, Telegram'ga ulanmagan yozuvlardan ismi mos kelganlarini topadigan funksiya */
+  private async placeholderMatcher() {
+    const placeholders = await this.prisma.studentProfile.findMany({
+      where: { user: { role: "STUDENT", telegramId: null, isBlocked: false } },
+      select: { id: true, group: { select: { name: true } }, user: { select: { firstName: true, lastName: true } } },
+    });
+    return (name: string): NewcomerRow["matches"] =>
+      placeholders
+        .map((p) => ({ p, score: nameMatchScore(name, fullName(p.user)) }))
+        .filter((m) => m.score >= NAME_MATCH_THRESHOLD)
+        .sort((a, b) => b.score - a.score)
+        .slice(0, 3)
+        .map(({ p }) => ({ studentId: p.id, name: fullName(p.user), groupName: p.group?.name ?? null }));
+  }
+
+  /** Ustoz hali ko'rib chiqmagan, bloklanmagan o'quvchi */
+  async isAwaitingReview(studentId: string) {
+    return (await this.prisma.studentProfile.count({ where: { id: studentId, acceptedAt: null, user: { isBlocked: false } } })) > 0;
+  }
+
+  /** Ustozga boradigan xabar: kimligi, ro'yxatdagi mos yozuvlar va bir bosishda hal qilish tugmalari */
+  async reviewCard(studentId: string): Promise<{ text: string; keyboard: Keyboard } | null> {
+    const sp = await this.prisma.studentProfile.findUnique({
+      where: { id: studentId },
+      select: {
+        user: { select: { firstName: true, lastName: true, username: true, phone: true } },
+        parents: { where: { status: { in: ["PENDING", "APPROVED"] } }, select: { status: true, parent: { select: { firstName: true, lastName: true } } } },
+      },
+    });
+    if (!sp) return null;
+    const name = fullName(sp.user);
+    const [matchesFor, groups] = await Promise.all([this.placeholderMatcher(), this.prisma.group.findMany({ where: { isActive: true }, orderBy: { name: "asc" }, take: 6, select: { id: true, name: true } })]);
+    const matches = matchesFor(name);
+    const parents = sp.parents.map((p) => `${fullName(p.parent)} (${p.status === "APPROVED" ? "tasdiqlangan" : "kutilmoqda"})`).join(", ");
+    const text = [
+      `🆕 <b>Yangi o'quvchi: ${esc(name)}</b>`,
+      sp.user.username && `Telegram: @${esc(sp.user.username)}`,
+      sp.user.phone && `Telefon: ${esc(sp.user.phone)}`,
+      `Ota-ona: ${parents ? esc(parents) : "ulanmagan"}`,
+      matches.length ? "\nRo'yxatingizda shunga o'xshash ism bor. O'sha odam bo'lsa, «Bog'lash»ni bosing." : "\nRo'yxatingizda bunday ism topilmadi.",
+    ]
+      .filter(Boolean)
+      .join("\n");
+    const groupButtons = groups.map((g) => ({ text: `➕ ${g.name}`, data: `st:g:${studentId}:${g.id}` }));
+    const keyboard: Keyboard = [
+      ...matches.map((m) => [{ text: `🔗 Bog'lash: ${m.name}${m.groupName ? ` · ${m.groupName}` : ""}`, data: `c|st:l:${studentId}:${m.studentId}` }]),
+      ...Array.from({ length: Math.ceil(groupButtons.length / 2) }, (_, i) => groupButtons.slice(i * 2, i * 2 + 2)),
+      [
+        { text: "🌐 Online o'quvchi", data: `st:o:${studentId}` },
+        { text: "🚫 Begona", data: `c|st:b:${studentId}` },
+      ],
+    ];
+    return { text, keyboard };
+  }
+
+  /** O'quvchi ismini yozdi: ustoz hali ko'rib chiqmagan bo'lsa, xabar beriladi */
+  async alertNamed(userId: string) {
+    const sp = await this.prisma.studentProfile.findUnique({ where: { userId }, select: { id: true } });
+    if (!sp || !(await this.isAwaitingReview(sp.id))) return;
+    const card = await this.reviewCard(sp.id);
+    if (card) await this.staff.alertOwners(card.text, card.keyboard);
   }
 
   /** Ustoz: botdan kirgan o'quvchi o'zi kiritgan yozuvdagi odam ekanini tasdiqladi */

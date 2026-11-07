@@ -4,6 +4,9 @@ import { ENV, type Env } from "../config/env";
 import { redisConnection } from "../media/queue";
 
 export const NOTIFY_QUEUE = "telegram-notify";
+/** Xabar ostidagi tugmalar: bosilganda bot data'ni API'ga yuboradi (Telegram chegarasi: 64 bayt) */
+export type Keyboard = { text: string; data: string }[][];
+
 export interface NotifyJob {
   chatId: string; // Telegram user id
   text: string; // HTML
@@ -11,6 +14,7 @@ export interface NotifyJob {
   attendanceId?: string;
   /** Xabar ostidagi Mini App tugmasi */
   button?: { text: string; webAppUrl: string };
+  keyboard?: Keyboard;
 }
 
 export function createNotifyQueue(redisUrl: string, prefix: string) {
@@ -41,6 +45,10 @@ export class NotifyService implements OnModuleDestroy {
   /** O'quvchiga xabar va ostida ilovaning kerakli sahifasini ochadigan tugma (MINIAPP_URL bo'lmasa tugmasiz) */
   async sendApp(chatId: bigint | string | null, text: string, path: string, label = "Ilovada ko'rish") {
     return this.sendWithButton(chatId, text, this.appUrl ? { text: label, webAppUrl: `${this.appUrl}${path}` } : undefined);
+  }
+  async sendKeyboard(chatId: bigint | string | null, text: string, keyboard?: Keyboard) {
+    if (chatId === null) return null;
+    return this.queue.add("send", { chatId: String(chatId), text, keyboard });
   }
   async sendWithButton(chatId: bigint | string | null, text: string, button?: NotifyJob["button"]) {
     if (chatId === null) return null;
