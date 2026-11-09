@@ -106,14 +106,12 @@ bot.command("start", async (ctx) => {
     console.error("visit:", redact(e));
     return { needsName: false };
   });
-  // Ism-familiyasi hali yo'q: darhol so'raymiz. Ota-onaga tugma emas, matn: o'quvchi bosib adashmasin
+  // Ism-familiyasi hali yo'q: darhol so'raymiz. Ota-onalar botga faqat farzandining havolasi orqali keladi, ularga bu yerda izoh kerak emas
   if (visit.needsName) {
     nameFlow.set(ctx.from.id, { at: Date.now() });
-    await ctx.reply(
-      "Assalomu alaykum! 👋\n\nUstoz sizni tanishi uchun <b>ism va familiyangizni</b> yozing, hujjatdagidek.\n\nMasalan: <i>Dilnura Allayarova</i>\n\n" +
-        "<i>Ota-ona bo'lsangiz, bu yerga yozmang: farzandingiz yuborgan havolani bosing.</i>",
-      { parse_mode: "HTML" },
-    );
+    await ctx.reply("Assalomu alaykum! 👋\n\nUstoz sizni tanishi uchun <b>ism va familiyangizni</b> yozing, hujjatdagidek.\n\nMasalan: <i>Dilnura Allayarova</i>", {
+      parse_mode: "HTML",
+    });
     return;
   }
 

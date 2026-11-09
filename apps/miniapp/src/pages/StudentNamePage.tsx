@@ -44,8 +44,6 @@ export function StudentNamePage() {
             Davom etish
           </button>
         </form>
-        {/* Ota-onalarga tugma emas, matn: o'quvchi bosib adashmasin */}
-        <p className="mt-5 text-sm text-hint">Ota-ona bo'lsangiz, bu yerga yozmang: farzandingiz yuborgan havolani bosing.</p>
       </main>
     </div>
   );

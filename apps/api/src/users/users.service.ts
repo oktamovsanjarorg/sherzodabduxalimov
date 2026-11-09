@@ -55,7 +55,8 @@ export class UsersService {
       accessMode: user.student?.accessMode ?? "AUTO",
       trial: { ...trial, used: user.trialUses.map((t) => t.kind) },
       pendingParentInvite,
-      needsName: user.role === "STUDENT" && user.telegramId !== null && !user.nameLocked && !pendingParentInvite,
+      // Ota-ona havolasi ochilgan bo'lsa ham: raqam sahifasini o'tkazib yuborgan o'quvchi ismsiz kirib ketmasin
+      needsName: user.role === "STUDENT" && user.telegramId !== null && !user.nameLocked,
     };
   }
 
