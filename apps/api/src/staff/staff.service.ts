@@ -54,8 +54,10 @@ export class StaffService {
 
   /** Bot: oddiy /start. Botga kirgan har bir kishi admin panelda ko'rinishi uchun yoziladi */
   async recordVisit(tg: TelegramProfile) {
-    await this.upsertTelegramUser(tg);
-    return { ok: true };
+    const user = await this.upsertTelegramUser(tg);
+    // Ota-ona havolasini ochgan odamdan o'quvchi ismi so'ralmaydi
+    const parentInvite = user.role === "STUDENT" && !user.nameLocked ? await this.prisma.pendingParent.count({ where: { telegramId: BigInt(tg.id) } }) : 0;
+    return { ok: true, needsName: user.role === "STUDENT" && !user.nameLocked && !user.isBlocked && parentInvite === 0 };
   }
 
   /** upsertTelegramUser + yangi yaratilganmi */

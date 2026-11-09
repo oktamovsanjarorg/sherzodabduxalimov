@@ -78,7 +78,8 @@ const realName = (message: string) =>
   z
     .string()
     .trim()
-    .transform((v) => v.replace(/\s+/g, " "))
+    // NFKC: «𝐘𝐚𝐬𝐦𝐢𝐧𝐚» kabi bezakli harflar oddiy «Yasmina» bo'ladi (qidiruv va moslashtirish ishlashi uchun)
+    .transform((v) => v.normalize("NFKC").replace(/\s+/g, " "))
     .pipe(z.string().min(2, message).max(60).regex(/^[\p{L}\p{M}'’‘ʻʼ`\- ]+$/u, "Faqat harflar bilan yozing"));
 
 /** O'quvchi ilovada o'zi yozadigan ism-familiya */

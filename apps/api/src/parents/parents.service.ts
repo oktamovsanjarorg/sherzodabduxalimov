@@ -139,10 +139,11 @@ export class ParentsService {
     const warnings = flags.flatMap((f) => (FLAG_WARNINGS[f] ? [`⚠️ ${FLAG_WARNINGS[f]}`] : []));
     await this.staff.alertOwners(
       [
-        `👨‍👩‍👦 <b>Ota-ona so'rovi</b>`,
-        `Ota-ona: <b>${esc(fullName(parent))}</b>${link.relation ? ` (${esc(link.relation)})` : ""}`,
+        // Birinchi qator yolg'iz qolsa ham tushunarli: hal qilingach xabar shu qator + natijaga qisqaradi
+        `👨‍👩‍👦 Ota-ona so'rovi: <b>${esc(fullName(parent))}</b> → <b>${esc(fullName(student.user))}</b>`,
+        ...(link.relation ? [`Kim: ${esc(link.relation)}`] : []),
         `Telefon: ${esc(phone)}`,
-        `O'quvchi: <b>${esc(fullName(student.user))}</b>${student.user.nameLocked ? "" : " (ismini hali yozmagan)"}`,
+        ...(student.user.nameLocked ? [] : ["O'quvchi ismini hali yozmagan (Telegram'dagi nomi)"]),
         `Guruh: ${group ? esc(group) : "yo'q"}`,
         ...warnings,
         "\nRaqamga qo'ng'iroq qilib tekshiring.",

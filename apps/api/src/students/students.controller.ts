@@ -92,10 +92,32 @@ export class StudentNameController {
   }
 }
 
-/** Bot (ichki): o'quvchi shaxsiy havolani bosdi */
+const botFrom = z.object({ id: z.number().int().positive(), username: z.string().nullish(), first_name: z.string().min(1), last_name: z.string().nullish() });
+
+/** Bot (ichki): o'quvchi shaxsiy havolani bosdi yoki ism-familiyasini botda yozdi */
 @Controller("internal")
 export class StudentsInternalController {
-  constructor(private readonly svc: StudentsService) {}
+  constructor(
+    private readonly svc: StudentsService,
+    private readonly users: UsersService,
+  ) {}
+
+  /** Mini App'dagi kabi: ism bir marta yoziladi, keyin ustozga xabar boradi */
+  @Public()
+  @UseGuards(InternalGuard)
+  @Post("student-name")
+  @HttpCode(200)
+  async name(@Body() b: unknown): Promise<{ status: "saved" | "locked" | "not_student" | "invalid"; name?: string; message?: string }> {
+    const d = parse(z.object({ from: botFrom, firstName: z.string().max(200), lastName: z.string().max(200) }), b);
+    const user = await this.users.byTelegramId(d.from.id);
+    if (!user || user.role !== "STUDENT" || user.isBlocked) return { status: "not_student" };
+    if (user.nameLocked) return { status: "locked", name: [user.firstName, user.lastName].filter(Boolean).join(" ") };
+    const name = studentNameInput.safeParse({ firstName: d.firstName, lastName: d.lastName });
+    if (!name.success) return { status: "invalid", message: name.error.issues[0]?.message };
+    const me = await this.users.setOwnName(user.id, name.data);
+    await this.svc.alertNamed(user.id);
+    return { status: "saved", name: `${me.firstName} ${me.lastName ?? ""}`.trim() };
+  }
 
   @Public()
   @UseGuards(InternalGuard)
@@ -105,7 +127,7 @@ export class StudentsInternalController {
     const d = parse(
       z.object({
         code: z.string().regex(/^[A-Za-z0-9_-]{6,16}$/),
-        from: z.object({ id: z.number().int().positive(), username: z.string().nullish(), first_name: z.string().min(1), last_name: z.string().nullish() }),
+        from: botFrom,
       }),
       b,
     );

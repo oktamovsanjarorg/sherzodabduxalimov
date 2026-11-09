@@ -292,6 +292,16 @@ describe("O'quvchilar: botsiz kiritish, ro'yxat, karta, hisobni bog'lash (e2e)",
       expect(data.every((d) => Buffer.byteLength(d) <= 64)).toBe(true);
     });
 
+    it("botning o'zida ism yoziladi: bezakli harflar oddiyga aylanadi, ikkinchi marta o'zgarmaydi", async () => {
+      const from = { id: TG3.stranger, first_name: "✈️🛫" };
+      expect((await internal("visit", from)).json()).toMatchObject({ needsName: true });
+      expect((await internal("student-name", { from, firstName: ".", lastName: "て" })).json().status).toBe("invalid");
+      expect((await internal("student-name", { from, firstName: "𝐘𝐚𝐬𝐦𝐢𝐧𝐚", lastName: "𝐗𝐨𝐥𝐢𝐪𝐨𝐯𝐚" })).json()).toMatchObject({ status: "saved", name: "Yasmina Xoliqova" });
+      expect((await jobs()).some((j) => j.text.includes("Yangi o'quvchi: Yasmina Xoliqova"))).toBe(true);
+      expect((await internal("visit", from)).json()).toMatchObject({ needsName: false });
+      expect((await internal("student-name", { from, firstName: "Boshqa", lastName: "Odam" })).json().status).toBe("locked");
+    });
+
     it("begona odam tugma bosa olmaydi", async () => {
       await login(app, TG3.foreign, "Begona", undefined, opts);
       const id = await studentId(TG3.student);
@@ -304,7 +314,7 @@ describe("O'quvchilar: botsiz kiritish, ro'yxat, karta, hisobni bog'lash (e2e)",
       const id = await studentId(TG3.student);
       expect((await tap(`st:g:${id}:${groupId}`)).result).toContain("guruhiga qo'shildi");
       expect((await prisma.studentProfile.findUniqueOrThrow({ where: { id } })).groupId).toBe(groupId);
-      expect(await tap(`st:o:${id}`)).toMatchObject({ toast: "Allaqachon ko'rib chiqilgan", keyboard: null });
+      expect(await tap(`st:o:${id}`)).toMatchObject({ toast: "Allaqachon ko'rib chiqilgan", result: "☑️ Allaqachon ko'rib chiqilgan" });
     });
 
     it("bloklash avval tasdiq so'raydi, Orqaga tugmalarni qaytaradi", async () => {
@@ -329,7 +339,7 @@ describe("O'quvchilar: botsiz kiritish, ro'yxat, karta, hisobni bog'lash (e2e)",
       const approve = job!.keyboard![0]![0]!.data;
       expect((await tap(approve)).result).toBe("✅ Tasdiqlandi");
       expect((await prisma.parentLink.findFirstOrThrow({ where: { studentId: sp.id } })).status).toBe("APPROVED");
-      expect(await tap(approve)).toMatchObject({ keyboard: null });
+      expect(await tap(approve)).toMatchObject({ toast: "Allaqachon ko'rib chiqilgan" });
     });
   });
 });

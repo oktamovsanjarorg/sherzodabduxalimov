@@ -362,9 +362,9 @@ export class StudentsService {
         .map(({ p }) => ({ studentId: p.id, name: fullName(p.user), groupName: p.group?.name ?? null }));
   }
 
-  /** Ustoz hali ko'rib chiqmagan, bloklanmagan o'quvchi */
+  /** Ustoz hali ko'rib chiqmagan, bloklanmagan o'quvchi. Keyin ota-ona bo'lib chiqqan hisob guruhga qo'shilmasligi uchun rol ham tekshiriladi */
   async isAwaitingReview(studentId: string) {
-    return (await this.prisma.studentProfile.count({ where: { id: studentId, acceptedAt: null, user: { isBlocked: false } } })) > 0;
+    return (await this.prisma.studentProfile.count({ where: { id: studentId, acceptedAt: null, user: { isBlocked: false, role: "STUDENT" } } })) > 0;
   }
 
   /** Ustozga boradigan xabar: kimligi, ro'yxatdagi mos yozuvlar va bir bosishda hal qilish tugmalari */

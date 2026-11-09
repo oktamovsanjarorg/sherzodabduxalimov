@@ -59,6 +59,13 @@ export class UsersService {
     };
   }
 
+  byTelegramId(telegramId: number) {
+    return this.prisma.user.findUnique({
+      where: { telegramId: BigInt(telegramId) },
+      select: { id: true, role: true, isBlocked: true, nameLocked: true, firstName: true, lastName: true },
+    });
+  }
+
   /** O'quvchi haqiqiy ismini bir marta yozadi. Keyin faqat ustoz o'zgartiradi */
   async setOwnName(userId: string, name: StudentNameInput): Promise<Me> {
     const { count } = await this.prisma.user.updateMany({ where: { id: userId, role: "STUDENT", nameLocked: false }, data: { ...name, nameLocked: true } });

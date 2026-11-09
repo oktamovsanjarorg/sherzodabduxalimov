@@ -7,13 +7,13 @@ import { StudentsService } from "../students/students.service";
 export interface ReviewReply {
   toast: string;
   alert?: boolean;
-  /** Xabar oxiriga yoziladi, tugmalar olib tashlanadi */
+  /** Xabar sarlavha + shu natijaga qisqaradi, tugmalar olib tashlanadi */
   result?: string;
   /** Tugmalarni almashtiradi; null: olib tashlaydi */
   keyboard?: Keyboard | null;
 }
 
-const DONE: ReviewReply = { toast: "Allaqachon ko'rib chiqilgan", keyboard: null };
+const DONE: ReviewReply = { toast: "Allaqachon ko'rib chiqilgan", result: "☑️ Allaqachon ko'rib chiqilgan" };
 const CONFIRM_PROMPT: Record<string, string> = { "st:l": "✅ Ha, birlashtirish", "st:b": "✅ Ha, bloklash", "pl:r": "✅ Ha, rad etish" };
 
 /** Ustozga kelgan xabardagi tugmalar. data: "st:g:<student>:<group>"; "c|" bilan boshlansa, avval tasdiq so'raladi */

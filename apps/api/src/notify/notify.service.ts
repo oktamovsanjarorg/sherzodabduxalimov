@@ -21,7 +21,8 @@ export function createNotifyQueue(redisUrl: string, prefix: string) {
   return new Queue<NotifyJob>(NOTIFY_QUEUE, {
     prefix,
     connection: redisConnection(redisUrl),
-    defaultJobOptions: { attempts: 5, backoff: { type: "exponential", delay: 5000 }, removeOnComplete: 1000, removeOnFail: 1000 },
+    // Telegram ba'zan bir necha daqiqa 502/timeout beradi: ~30 daqiqa davomida qayta urinamiz (15s, 30s, ... 16 daqiqa)
+    defaultJobOptions: { attempts: 8, backoff: { type: "exponential", delay: 15_000 }, removeOnComplete: 1000, removeOnFail: 1000 },
   });
 }
 

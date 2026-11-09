@@ -1,6 +1,7 @@
 import { Agent } from "node:https";
+import { studentNameInput } from "@onatili/shared";
 import { internalKey } from "@onatili/shared/server";
-import { Bot, InlineKeyboard, Keyboard } from "grammy";
+import { Bot, type Context, InlineKeyboard, Keyboard } from "grammy";
 
 // Serverda IPv6 ishlamaydi (ENETUNREACH), standart ulanish esa ETIMEDOUT bilan osilib qoladi.
 // Shuning uchun Telegram API'ga faqat IPv4 orqali ulanamiz.
@@ -101,7 +102,18 @@ bot.command("start", async (ctx) => {
   }
 
   // Botga kirgan har bir kishi admin panelda ko'rinadi. Xato bo'lsa ham salomlashuv chiqadi
-  await internal("visit", fromOf(ctx.from)).catch((e) => console.error("visit:", redact(e)));
+  const visit = await internal<{ needsName?: boolean }>("visit", fromOf(ctx.from)).catch((e) => {
+    console.error("visit:", redact(e));
+    return { needsName: false };
+  });
+  // Ism-familiyasi hali yo'q: avval kimligini so'raymiz. Ota-onalar ham shu yerga tushib, farzandi ismini yozib yuborardi
+  if (visit.needsName) {
+    nameFlow.delete(ctx.from.id);
+    await ctx.reply("Assalomu alaykum! 👋\n\nUstoz sizni tanishi uchun bitta savol: siz kimsiz?", {
+      reply_markup: new InlineKeyboard().text("🧑‍🎓 Men o'quvchiman", "me:st").row().text("👨‍👩‍👦 Men ota-onaman", "me:pa"),
+    });
+    return;
+  }
 
   const name = ctx.from?.first_name ?? "";
   await ctx.reply(
@@ -184,6 +196,80 @@ Ustoz yoki yordamchi tasdiqlagach, sizga xabar keladi.`,
   }
 });
 
+// ---------------- O'quvchi ism-familiyasi (botning o'zida) ----------------
+
+/** Ism so'ralayotganlar: telegramId -> yozilgan ism. Bot qayta ishga tushsa yo'qoladi: /start qaytadan so'raydi */
+const nameFlow = new Map<number, { firstName?: string; at: number }>();
+const NAME_FLOW_TTL_MS = 60 * 60 * 1000;
+const issue = (e: { issues: { message: string }[] }) => e.issues[0]?.message ?? "Tekshirib qayta yozing";
+
+async function saveName(ctx: Context, firstName: string, lastName: string) {
+  const from = ctx.from!;
+  const r = await internal<{ status: string; name?: string; message?: string }>("student-name", { from: fromOf(from), firstName, lastName });
+  console.log(`[name] ${from.id}: ${r.status}`);
+  if (r.status === "invalid") {
+    nameFlow.set(from.id, { at: Date.now() });
+    await ctx.reply(`${r.message ?? "Ism-familiyani tekshiring"}.\n\nIsmingizni qaytadan yozing:`);
+    return;
+  }
+  nameFlow.delete(from.id);
+  const text: Record<string, string> = {
+    saved: `✅ Rahmat, <b>${esc(r.name ?? "")}</b>! Ustoz sizni ro'yxatga qo'shadi.\n\nIlovani ochishingiz mumkin: darslar, testlar va natijalaringiz shu yerda.`,
+    locked: `Ismingiz allaqachon saqlangan: <b>${esc(r.name ?? "")}</b>. Xato bo'lsa, ustozga ayting.`,
+  };
+  await ctx.reply(text[r.status] ?? "Ilovani ochishingiz mumkin 👇", { parse_mode: "HTML", reply_markup: openAppKeyboard() });
+}
+
+bot.on("message:text", async (ctx, next) => {
+  const flow = nameFlow.get(ctx.from.id);
+  if (ctx.chat.type !== "private" || ctx.message.text.startsWith("/") || !flow) return next();
+  if (Date.now() - flow.at > NAME_FLOW_TTL_MS) {
+    nameFlow.delete(ctx.from.id);
+    return next();
+  }
+  try {
+    const text = ctx.message.text;
+    if (!flow.firstName) {
+      // Bir xabarda ikkalasini yozgan bo'lsa ("Dilnura Allayarova"): ikkinchi savol berilmaydi
+      const words = text.trim().split(/\s+/);
+      if (words.length >= 2 && words.length <= 4) return await saveName(ctx, words[0]!, words.slice(1).join(" "));
+      const first = studentNameInput.shape.firstName.safeParse(text);
+      if (!first.success) {
+        await ctx.reply(`${issue(first.error)}. Ismingizni qaytadan yozing:`);
+        return;
+      }
+      nameFlow.set(ctx.from.id, { firstName: first.data, at: Date.now() });
+      await ctx.reply("Endi <b>familiyangizni</b> yozing.\n\nMasalan: <i>Allayarova</i>", { parse_mode: "HTML" });
+      return;
+    }
+    const last = studentNameInput.shape.lastName.safeParse(text);
+    if (!last.success) {
+      await ctx.reply(`${issue(last.error)}. Familiyangizni qaytadan yozing:`);
+      return;
+    }
+    await saveName(ctx, flow.firstName, last.data);
+  } catch (e) {
+    console.error("name:", redact(e));
+    await ctx.reply("Hozir saqlab bo'lmadi, birozdan keyin qayta yozib ko'ring.");
+  }
+});
+
+bot.callbackQuery(/^me:(st|pa)$/, async (ctx) => {
+  await ctx.answerCallbackQuery();
+  if (ctx.match[1] === "st") {
+    nameFlow.set(ctx.from.id, { at: Date.now() });
+    await ctx.editMessageText("✍️ <b>Ism va familiyangizni</b> yozing, hujjatdagidek.\n\nMasalan: <i>Dilnura Allayarova</i>", { parse_mode: "HTML" });
+    return;
+  }
+  nameFlow.delete(ctx.from.id);
+  await ctx.editMessageText(
+    "👨‍👩‍👦 Ota-onalar farzandining shaxsiy havolasi orqali ulanadi.\n\n" +
+      "Farzandingiz ilovada <b>Profil → Ota-onam</b> bo'limidagi havolani sizga yuborsin. Siz o'sha havolani bosib, telefon raqamingizni ulashasiz. " +
+      "Ustoz tasdiqlagach, farzandingiz davomati haqidagi xabarlar shu yerga keladi.\n\nAdashib bosgan bo'lsangiz: /start",
+    { parse_mode: "HTML" },
+  );
+});
+
 // Ustozga kelgan xabardagi tugmalar. Kim bosganini API tekshiradi
 interface ReviewReply {
   toast: string;
@@ -195,10 +281,17 @@ interface ReviewReply {
 bot.on("callback_query:data", async (ctx) => {
   try {
     const r = await internal<ReviewReply>("review", { telegramId: ctx.from.id, data: ctx.callbackQuery.data });
+    console.log(`[review] ${ctx.from.id} ${ctx.callbackQuery.data}: ${r.result ?? r.toast}`);
     await ctx.answerCallbackQuery({ text: r.toast || undefined, show_alert: r.alert });
     const message = ctx.callbackQuery.message;
     if (r.result && message?.text) {
-      await ctx.editMessageText(`${message.text}\n\n${r.result}`, { entities: message.entities });
+      // Hal qilingan xabar bir qatorga qisqaradi: sarlavha (kim) + natija, tugmalarsiz. Chat tozalanadi
+      const head = message.text.split("\n")[0]!;
+      const entities = message.entities?.filter((e) => e.offset + e.length <= head.length);
+      await ctx.editMessageText(`${head}\n${r.result}`, { entities });
+    } else if (r.result) {
+      await ctx.editMessageReplyMarkup({ reply_markup: undefined }).catch(() => {});
+      await ctx.reply(r.result);
     } else if (r.keyboard !== undefined) {
       const rows = r.keyboard?.map((row) => row.map((b) => InlineKeyboard.text(b.text, b.data)));
       await ctx.editMessageReplyMarkup({ reply_markup: rows ? InlineKeyboard.from(rows) : undefined });
