@@ -11,6 +11,8 @@ export function nameTokens(name: string): string[] {
     .toLowerCase()
     .replace(/['’‘ʻʼ`]/g, "")
     .replace(/[Ѐ-ӿ]/g, (c) => CYRILLIC[c] ?? c)
+    .normalize("NFKD") // «Shahróza», «Şahzoda»: harf ustidagi belgilar olib tashlanadi (kirill harflari yuqorida almashgan)
+    .replace(/\p{M}/gu, "")
     .replace(/dj/g, "j")
     .replace(/x/g, "h")
     .replace(/q/g, "k");

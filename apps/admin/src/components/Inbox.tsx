@@ -1,6 +1,6 @@
-import type { AdminGroup, NewcomerRow } from "@onatili/shared";
+import type { AdminGroup, DuplicateRow, NewcomerRow } from "@onatili/shared";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Ban, BookOpen, ChevronRight, ClipboardList, FileText, Inbox as InboxIcon, Link2, Trash2, UserCheck } from "lucide-react";
+import { ArrowLeftRight, Ban, BookOpen, ChevronRight, ClipboardList, FileText, Inbox as InboxIcon, Link2, Trash2, UserCheck } from "lucide-react";
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Badge, ConfirmButton } from "./ui";
@@ -17,15 +17,31 @@ import { LinkCard } from "../pages/ParentsPage";
 export function Inbox({ groups }: { groups: AdminGroup[] }) {
   const news = useQuery({ queryKey: ["newcomers"], queryFn: api.newcomers, refetchInterval: 30_000 });
   const parents = useQuery({ queryKey: ["parent-links", "PENDING"], queryFn: () => api.parentLinks("PENDING"), refetchInterval: 30_000 });
+  const isTeacher = loadSession()?.user.role === "TEACHER";
+  const dups = useQuery({ queryKey: ["duplicates"], queryFn: api.duplicates, enabled: isTeacher, refetchInterval: 60_000 });
   const n = news.data?.length ?? 0;
   const p = parents.data?.length ?? 0;
-  if (!n && !p) return null;
+  const d = dups.data?.length ?? 0;
+  if (!n && !p && !d) return null;
   return (
     <section className="mb-6 rounded-2xl border border-amber-200 bg-amber-50/60 p-4 sm:p-5">
       <h2 className="flex items-center gap-2 font-extrabold">
         <InboxIcon size={18} className="text-amber-700" /> Ko'rib chiqish kerak
-        <span className="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-red-600 px-1.5 text-[11px] font-extrabold text-white">{n + p}</span>
+        <span className="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-red-600 px-1.5 text-[11px] font-extrabold text-white">{n + p + d}</span>
       </h2>
+      {d > 0 && (
+        <>
+          <p className="mb-2 mt-3 text-sm font-bold text-slate-700">Bitta o'quvchi ikki marta ({d})</p>
+          <p className="mb-3 text-xs text-slate-600">
+            Chapda — botga kirgan hisob, o'ngda — siz qo'lda kiritgan yozuv. Bitta odam bo'lsa, birlashtiring: ism, guruh, davomat va to'lovlar botdagi hisobga o'tadi, ortiqcha yozuv yo'qoladi.
+          </p>
+          <div className="space-y-2">
+            {dups.data!.map((r) => (
+              <Duplicate key={r.placeholder.id} r={r} />
+            ))}
+          </div>
+        </>
+      )}
       {n > 0 && (
         <>
           <p className="mb-2 mt-3 text-sm font-bold text-slate-700">Botdan yangi kirganlar ({n})</p>
@@ -158,6 +174,43 @@ function Newcomer({ s, groups }: { s: NewcomerRow; groups: AdminGroup[] }) {
           </>
         )}
       </div>
+    </div>
+  );
+}
+
+function Duplicate({ r }: { r: DuplicateRow }) {
+  const toast = useToast();
+  const qc = useQueryClient();
+  const link = useMutation({
+    mutationFn: () => api.linkStudent(r.student.id, r.placeholder.id),
+    onSuccess: (res) => {
+      toast(`${res.name}: yozuvlar birlashtirildi`);
+      for (const k of ["duplicates", "newcomers", "roster", "groups", "dashboard"]) qc.invalidateQueries({ queryKey: [k] });
+    },
+    onError: (e) => toast(errMsg(e), "error"),
+  });
+  const s = r.student;
+  const ph = r.placeholder;
+  // Birlashtirilganda qo'lda kiritilgan yozuvning guruhi ustun (ustoz o'zi yozgan)
+  const moves = ph.groupName && s.groupName && ph.groupName !== s.groupName;
+  return (
+    <div className="card flex flex-wrap items-center gap-3 p-3">
+      <Link to={`/students/${s.id}`} className="min-w-0 flex-1 basis-56">
+        <p className="truncate font-bold">{s.name}</p>
+        <p className="truncate text-xs text-slate-500">{[s.username && `@${s.username}`, s.phone, s.groupName ?? "guruhsiz"].filter(Boolean).join(" · ")}</p>
+        <p className="mt-0.5 text-[11px]">{s.parentStatus === "APPROVED" ? <Badge tone="green">ota-ona ✓</Badge> : s.parentStatus === "PENDING" ? <Badge tone="blue">ota-ona kutilmoqda</Badge> : <Badge>ota-ona yo'q</Badge>}</p>
+      </Link>
+      <ArrowLeftRight size={16} className="shrink-0 text-slate-400" />
+      <Link to={`/students/${ph.id}`} className="min-w-0 flex-1 basis-56">
+        <p className="truncate font-bold">{ph.name}</p>
+        <p className="truncate text-xs text-slate-500">
+          {[ph.groupName ?? "guruhsiz", "botga kirmagan", `davomat: ${ph.attendance}`].join(" · ")}
+        </p>
+        {moves && <p className="mt-0.5 text-[11px] font-semibold text-amber-700">Guruhi boshqa: birlashtirilsa {ph.groupName} guruhiga o'tadi</p>}
+      </Link>
+      <ConfirmButton label="Bitta odammi? Birlashtirilsinmi?" className="btn-primary btn-sm h-9" onConfirm={() => !link.isPending && link.mutate()}>
+        <Link2 size={14} /> Birlashtirish
+      </ConfirmButton>
     </div>
   );
 }

@@ -15,6 +15,7 @@ import {
   type StudentCreateInput,
   type StudentDetail,
   type NewcomerRow,
+  type DuplicateRow,
 } from "@onatili/shared";
 import { randomBytes } from "node:crypto";
 import { AccessService, isFullAccess } from "../access/access.service";
@@ -345,6 +346,48 @@ export class StudentsService {
         nameConfirmed: r.user.nameLocked,
         matches: matchesFor(fullName(r.user)),
       }));
+  }
+
+  /**
+   * Tasdiqlangan botdagi o'quvchi va ustoz keyin qo'lda kiritgan yozuv bir xil ismli bo'lsa: takroriy.
+   * Tasdiqlanmaganlar Inbox'da (newcomers) o'z takliflari bilan chiqadi, bu yerga tushmaydi.
+   */
+  async duplicates(): Promise<DuplicateRow[]> {
+    const sel = {
+      id: true,
+      group: { select: { name: true } },
+      user: { select: { firstName: true, lastName: true, username: true, phone: true } },
+      parents: { where: { status: { in: ["PENDING", "APPROVED"] } }, select: { status: true } },
+      _count: { select: { attendance: true } },
+    } satisfies Prisma.StudentProfileSelect;
+    const [bots, placeholders] = await Promise.all([
+      this.prisma.studentProfile.findMany({ where: { acceptedAt: { not: null }, user: { role: "STUDENT", telegramId: { not: null }, isBlocked: false } }, select: sel }),
+      this.prisma.studentProfile.findMany({ where: { user: { role: "STUDENT", telegramId: null, isBlocked: false } }, select: sel }),
+    ]);
+    const rows: (DuplicateRow & { score: number })[] = [];
+    for (const b of bots) {
+      const best = placeholders
+        .map((p) => ({ p, score: nameMatchScore(fullName(b.user), fullName(p.user)) }))
+        .filter((m) => m.score >= NAME_MATCH_THRESHOLD)
+        .sort((x, y) => y.score - x.score)[0];
+      if (!best) continue;
+      rows.push({
+        score: best.score,
+        student: {
+          id: b.id,
+          name: fullName(b.user),
+          username: b.user.username,
+          phone: b.user.phone,
+          groupName: b.group?.name ?? null,
+          parentStatus: b.parents.some((p) => p.status === "APPROVED") ? "APPROVED" : b.parents.length ? "PENDING" : "NONE",
+        },
+        placeholder: { id: best.p.id, name: fullName(best.p.user), groupName: best.p.group?.name ?? null, attendance: best.p._count.attendance },
+      });
+    }
+    // Bitta yozuvga eng mos keladigan hisob qoladi: «Farzona» va «Farzona Hazratqulova» ikkalasi bitta yozuvga taklif qilinmasin
+    const byPlaceholder = new Map<string, (typeof rows)[number]>();
+    for (const r of rows) if ((byPlaceholder.get(r.placeholder.id)?.score ?? -1) < r.score) byPlaceholder.set(r.placeholder.id, r);
+    return [...byPlaceholder.values()].sort((a, b) => a.student.name.localeCompare(b.student.name)).map(({ score: _s, ...r }) => r);
   }
 
   /** Ustoz kiritgan, Telegram'ga ulanmagan yozuvlardan ismi mos kelganlarini topadigan funksiya */

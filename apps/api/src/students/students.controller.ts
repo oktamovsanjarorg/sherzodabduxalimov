@@ -22,6 +22,12 @@ export class StudentsController {
     return this.svc.allUsers(q, u.role === "TEACHER");
   }
 
+  /** Bitta o'quvchi ikki marta (botdagi + qo'lda kiritilgan). Birlashtirish faqat egada */
+  @Roles("TEACHER")
+  @Get("students/duplicates") duplicates() {
+    return this.svc.duplicates();
+  }
+
   /** Botdan o'zi kirgan, hali ko'rib chiqilmagan o'quvchilar */
   @Get("students/new") newcomers() {
     return this.svc.newcomers();

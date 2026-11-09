@@ -32,4 +32,8 @@ describe("ism solishtirish", () => {
   it("bezakli harflar oddiy harf sifatida solishtiriladi", () => {
     expect(nameMatchScore("𝐘𝐚𝐬𝐦𝐞𝐧𝐚 𝐗𝐨𝐥𝐢𝐪𝐨𝐯𝐚", "Yasmena Xoliqova")).toBe(1);
   });
+  it("harf ustidagi belgilar e'tiborga olinmaydi", () => {
+    expect(nameMatchScore("Berdiyeva Shahróza", "Berdiyeva Shahro’za")).toBe(1);
+    expect(nameTokens("Йўлдош")).toEqual(["yoldosh"]);
+  });
 });

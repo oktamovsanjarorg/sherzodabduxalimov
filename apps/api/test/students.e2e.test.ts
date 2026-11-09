@@ -249,6 +249,14 @@ describe("O'quvchilar: botsiz kiritish, ro'yxat, karta, hisobni bog'lash (e2e)",
       expect(row.matches[0]).toMatchObject({ studentId: placeholderId, groupName: `${TAG} 1-guruh` });
     });
 
+    it("tasdiqlangan hisob va keyin qo'lda kiritilgan yozuv takroriy deb ko'rsatiladi", async () => {
+      const id = await myStudentId();
+      await req("POST", `/admin/students/${id}/accept`, { groupId: null });
+      const rows = (await req("GET", "/admin/students/duplicates")).json();
+      expect(rows.find((r: { student: { id: string } }) => r.student.id === id)?.placeholder.id).toBe(placeholderId);
+      expect((await req("GET", "/admin/students/duplicates", undefined, A)).statusCode).toBe(403);
+    });
+
     it("faqat ega bog'laydi; bog'langach guruh o'tadi va takror yozuv yo'qoladi", async () => {
       const id = await myStudentId();
       expect((await req("POST", `/admin/students/${id}/link`, { placeholderStudentId: placeholderId }, A)).statusCode).toBe(403);

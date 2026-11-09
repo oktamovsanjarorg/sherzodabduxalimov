@@ -1,6 +1,7 @@
 import type {
   PaymentInsights,
   NewcomerRow,
+  DuplicateRow,
   TeacherStats,
   AdminPayment,
   AdminPlan,
@@ -205,6 +206,7 @@ export const api = {
 
   groups: () => request<AdminGroup[]>("/admin/groups"),
   newcomers: () => request<NewcomerRow[]>("/admin/students/new"),
+  duplicates: () => request<DuplicateRow[]>("/admin/students/duplicates"),
   trash: () => request<TrashRow[]>("/admin/trash"),
   restoreTrash: (id: string) => request<{ ok: true; kind: string; entityId: string }>(`/admin/trash/${id}/restore`, json("POST")),
   purgeTrash: (id: string) => request(`/admin/trash/${id}`, json("DELETE")),

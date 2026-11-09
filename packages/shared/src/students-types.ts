@@ -135,6 +135,15 @@ export interface NewcomerRow {
   matches: { studentId: string; name: string; groupName: string | null }[];
 }
 
+/**
+ * Bitta o'quvchi ikki marta: botdagi (tasdiqlangan) hisob va ustoz qo'lda kiritgan, botga ulanmagan yozuv.
+ * Birlashtirilganda qo'lda kiritilgan yozuvdagi ism, guruh, davomat va to'lovlar botdagi hisobga o'tadi.
+ */
+export interface DuplicateRow {
+  student: { id: string; name: string; username: string | null; phone: string | null; groupName: string | null; parentStatus: "NONE" | "PENDING" | "APPROVED" };
+  placeholder: { id: string; name: string; groupName: string | null; attendance: number };
+}
+
 /** O'quvchilar → Hammasi: botga kirgan har bir kishi va qo'lda kiritilgan o'quvchilar (xodimlarsiz) */
 export interface AdminUserRow {
   userId: string;
