@@ -1,6 +1,6 @@
 import type { RosterRow } from "@onatili/shared";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ChevronRight, ListPlus, Search, Settings2, UserPlus } from "lucide-react";
+import { ChevronRight, Download, ListPlus, Search, Settings2, UserPlus } from "lucide-react";
 import { useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { AllUsers } from "../components/AllUsers";
@@ -24,6 +24,12 @@ export function StudentsPage() {
   const isTeacher = loadSession()?.user.role === "TEACHER";
   const active = groups.data?.filter((g) => g.isActive) ?? [];
   const setGroup = (g: string) => setParams(g ? { group: g } : {}, { replace: true });
+  const toast = useToast();
+  const exporting = useMutation({
+    mutationFn: api.exportXlsx,
+    onSuccess: (name) => toast(`${name} yuklab olindi`),
+    onError: (e) => toast(errMsg(e), "error"),
+  });
 
   return (
     <>
@@ -32,6 +38,11 @@ export function StudentsPage() {
         subtitle="O'quvchilar, guruhlar va ota-onalar shu yerda. O'quvchini o'zingiz kiritsangiz ham bo'ladi: keyin u botda telefonini ulashsa, hisobi avtomatik bog'lanadi."
         actions={
           <>
+            {isTeacher && (
+              <button className="btn-secondary" disabled={exporting.isPending} onClick={() => exporting.mutate()} title="O'quvchilar, davomat, to'lovlar, ota-onalar va guruhlar: bitta Excel faylda">
+                <Download size={16} /> {exporting.isPending ? "Tayyorlanmoqda…" : "Excel'ga yuklash"}
+              </button>
+            )}
             <button className="btn-secondary" onClick={() => setManaging(true)}>
               <Settings2 size={16} /> Guruhlar
             </button>

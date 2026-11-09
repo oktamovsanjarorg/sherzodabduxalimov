@@ -118,6 +118,21 @@ export const api = {
   approvePayment: (id: string) => request<{ ok: true; endsAt: string | null }>(`/admin/payments/${id}/approve`, json("POST")),
   rejectPayment: (id: string, reason: string) => request(`/admin/payments/${id}/reject`, json("POST", { reason })),
   revokePayment: (id: string, reason: string) => request(`/admin/payments/${id}/revoke`, json("POST", { reason })),
+  /** Hamma ma'lumot bitta Excel faylda: avtorizatsiya sarlavhasi kerak, shuning uchun oddiy havola emas, blob */
+  exportXlsx: async () => {
+    const res = await fetch("/api/admin/export/xlsx", { headers: { Authorization: `Bearer ${loadSession()?.token}` } });
+    if (!res.ok) throw new ApiError(res.status, "Faylni tayyorlab bo'lmadi");
+    const name = /filename="([^"]+)"/.exec(res.headers.get("content-disposition") ?? "")?.[1] ?? "onatili.xlsx";
+    const url = URL.createObjectURL(await res.blob());
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = name;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 10_000);
+    return name;
+  },
   /** Chek rasmi: avtorizatsiya sarlavhasi kerak, shuning uchun <img src> emas, blob */
   receipt: async (id: string) => {
     const res = await fetch(`/api/admin/payments/${id}/receipt`, { headers: { Authorization: `Bearer ${loadSession()?.token}` } });

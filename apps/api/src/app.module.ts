@@ -1,3 +1,4 @@
+import { ExportModule } from "./export/export.module";
 import { DynamicModule, Global, Module } from "@nestjs/common";
 import { AccessModule } from "./access/access.module";
 import { AdminModule } from "./admin/admin.module";
@@ -33,7 +34,7 @@ export class AppModule {
   static forRoot(env: Env): DynamicModule {
     return {
       module: AppModule,
-      imports: [EnvModule.forRoot(env), PrismaModule, TrashModule, AccessModule, UsersModule, AuthModule, StaffModule, ContentModule, TestsModule, AdminModule, MediaModule, NotifyModule, ParentsModule, AttendanceModule, BillingModule, EssaysModule, StudentsModule, ReviewModule, VoiceModule],
+      imports: [EnvModule.forRoot(env), PrismaModule, TrashModule, AccessModule, UsersModule, AuthModule, StaffModule, ContentModule, TestsModule, AdminModule, MediaModule, NotifyModule, ParentsModule, AttendanceModule, BillingModule, EssaysModule, StudentsModule, ReviewModule, VoiceModule, ExportModule],
       controllers: [HealthController],
     };
   }
