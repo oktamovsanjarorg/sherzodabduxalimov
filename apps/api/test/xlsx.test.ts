@@ -32,10 +32,13 @@ describe("xlsx", () => {
     expect(Object.keys(parts)).toEqual(expect.arrayContaining(["[Content_Types].xml", "xl/workbook.xml", "xl/styles.xml", "xl/worksheets/sheet1.xml", "xl/worksheets/sheet2.xml"]));
   });
 
-  it("matn qochiriladi, boshqaruv belgilari olib tashlanadi, son son bo'lib qoladi", () => {
+  it("matn umumiy jadvalda (har qanday ko'ruvchi o'qiydi), qochiriladi; son son bo'lib qoladi", () => {
     const s = parts["xl/worksheets/sheet1.xml"]!;
-    expect(s).toContain("Ali &lt;Valiyev&gt; &amp; 𝐘𝐚𝐬");
-    expect(s).not.toContain("\u0007");
+    const sst = parts["xl/sharedStrings.xml"]!;
+    expect(s).not.toContain("inlineStr");
+    expect(s).toContain('<c r="A2" t="s"><v>2</v></c>');
+    expect(sst).toContain("Ali &lt;Valiyev&gt; &amp; 𝐘𝐚𝐬");
+    expect(sst).not.toContain("\u0007");
     expect(s).toContain('<c r="B2"><v>250000</v></c>');
     expect(s).toContain('<row r="3"></row>');
   });

@@ -2,7 +2,7 @@ import { crc32, deflateRawSync } from "node:zlib";
 
 /**
  * Kutubxonasiz, eng kichik .xlsx yozuvchi: bir nechta varaq, qalin sarlavha qatori (qotirilgan, filtrli),
- * ustun kengliklari. Matn hujayra ichida saqlanadi (inlineStr), son esa son bo'lib qoladi (Excel'da yig'ish mumkin).
+ * ustun kengliklari. Matn umumiy jadvalda (sharedStrings), son esa son bo'lib qoladi (Excel'da yig'ish mumkin).
  */
 export type Cell = string | number | null | undefined;
 export interface Sheet {
@@ -22,22 +22,47 @@ function colName(i: number) {
   return s;
 }
 
-function cell(ref: string, v: Cell, style = 0) {
+/**
+ * Matnlar umumiy jadvalda (sharedStrings) saqlanadi. Hujayra ichidagi matn (inlineStr) ham standart, lekin
+ * telefon va Telegram ko'ruvchilari, Numbers, WPS uni ko'rsatmaydi: fayl bo'sh ko'rinadi.
+ */
+class Strings {
+  private readonly index = new Map<string, number>();
+  readonly list: string[] = [];
+  count = 0;
+  id(v: string) {
+    this.count++;
+    let i = this.index.get(v);
+    if (i === undefined) {
+      i = this.list.length;
+      this.list.push(v);
+      this.index.set(v, i);
+    }
+    return i;
+  }
+  xml() {
+    const items = this.list.map((t) => `<si><t xml:space="preserve">${xml(t)}</t></si>`).join("");
+    return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><sst xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" count="${this.count}" uniqueCount="${this.list.length}">${items}</sst>`;
+  }
+}
+
+function cell(strings: Strings, ref: string, v: Cell, style = 0) {
   const s = style ? ` s="${style}"` : "";
   if (v === null || v === undefined || v === "") return "";
   if (typeof v === "number" && Number.isFinite(v)) return `<c r="${ref}"${s}><v>${v}</v></c>`;
   // Excel hujayrasi chegarasi 32767 belgi
-  return `<c r="${ref}"${s} t="inlineStr"><is><t xml:space="preserve">${xml(String(v).slice(0, 32_000))}</t></is></c>`;
+  return `<c r="${ref}"${s} t="s"><v>${strings.id(String(v).replace(BAD_XML, "").slice(0, 32_000))}</v></c>`;
 }
 
-function sheetXml(sh: Sheet) {
+function sheetXml(sh: Sheet, strings: Strings) {
   const last = colName(Math.max(sh.columns.length - 1, 0));
   const cols = sh.columns.map((c, i) => `<col min="${i + 1}" max="${i + 1}" width="${c.width ?? 16}" customWidth="1"/>`).join("");
-  const head = `<row r="1">${sh.columns.map((c, i) => cell(`${colName(i)}1`, c.header, 1)).join("")}</row>`;
-  const body = sh.rows.map((r, ri) => `<row r="${ri + 2}">${r.map((v, ci) => cell(`${colName(ci)}${ri + 2}`, v)).join("")}</row>`).join("");
+  const head = `<row r="1">${sh.columns.map((c, i) => cell(strings, `${colName(i)}1`, c.header, 1)).join("")}</row>`;
+  const body = sh.rows.map((r, ri) => `<row r="${ri + 2}">${r.map((v, ci) => cell(strings, `${colName(ci)}${ri + 2}`, v)).join("")}</row>`).join("");
   return (
     `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>` +
     `<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">` +
+    `<dimension ref="A1:${last}${sh.rows.length + 1}"/>` +
     `<sheetViews><sheetView workbookViewId="0"><pane ySplit="1" topLeftCell="A2" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews>` +
     `<cols>${cols}</cols><sheetData>${head}${body}</sheetData>` +
     `<autoFilter ref="A1:${last}${sh.rows.length + 1}"/></worksheet>`
@@ -57,6 +82,8 @@ function sheetNames(sheets: Sheet[]) {
 
 export function buildXlsx(sheets: Sheet[]): Buffer {
   const names = sheetNames(sheets);
+  const strings = new Strings();
+  const rendered = sheets.map((s) => sheetXml(s, strings));
   const files: [string, string][] = [
     [
       "[Content_Types].xml",
@@ -64,6 +91,7 @@ export function buildXlsx(sheets: Sheet[]): Buffer {
         `<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/>` +
         `<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>` +
         `<Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>` +
+        `<Override PartName="/xl/sharedStrings.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sharedStrings+xml"/>` +
         sheets.map((_, i) => `<Override PartName="/xl/worksheets/sheet${i + 1}.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>`).join("") +
         `</Types>`,
     ],
@@ -85,7 +113,8 @@ export function buildXlsx(sheets: Sheet[]): Buffer {
       "xl/_rels/workbook.xml.rels",
       `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">` +
         sheets.map((_, i) => `<Relationship Id="rId${i + 1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet${i + 1}.xml"/>`).join("") +
-        `<Relationship Id="rId${sheets.length + 1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>`,
+        `<Relationship Id="rId${sheets.length + 1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>` +
+        `<Relationship Id="rId${sheets.length + 2}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/sharedStrings" Target="sharedStrings.xml"/></Relationships>`,
     ],
     [
       "xl/styles.xml",
@@ -98,7 +127,8 @@ export function buildXlsx(sheets: Sheet[]): Buffer {
         `<cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles>` +
         `</styleSheet>`,
     ],
-    ...sheets.map((s, i): [string, string] => [`xl/worksheets/sheet${i + 1}.xml`, sheetXml(s)]),
+    ["xl/sharedStrings.xml", strings.xml()],
+    ...rendered.map((x, i): [string, string] => [`xl/worksheets/sheet${i + 1}.xml`, x]),
   ];
   return zip(files.map(([name, text]) => ({ name, data: Buffer.from(text, "utf8") })));
 }
