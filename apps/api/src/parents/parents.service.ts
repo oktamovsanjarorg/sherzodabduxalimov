@@ -121,26 +121,32 @@ export class ParentsService {
     if (activity > 0) flags.push("student_activity");
     if (children + 1 > MANY_CHILDREN) flags.push("many_children");
 
-    const [link] = await this.prisma.$transaction([
+    const [link, parentNow] = await this.prisma.$transaction([
       this.prisma.parentLink.create({
         data: { parentId: parent.id, studentId: student.id, phone, relation: relation?.slice(0, 30) ?? null, flags },
       }),
       this.prisma.user.update({
         where: { id: parent.id },
         // Ilovada o'quvchi sifatida ishlamagan oddiy akkaunt ota-ona roliga o'tadi (xodimlarga tegilmaydi)
-        data: { phone, ...(parent.role === "STUDENT" && activity === 0 ? { role: "PARENT" } : {}) },
+        // O'quvchi deb o'ylab farzandining ismini yozgan bo'lishi mumkin: ism Telegram'dagisiga qaytadi
+        data: {
+          phone,
+          ...(parent.role === "STUDENT" && activity === 0
+            ? { role: "PARENT", ...(parent.nameLocked ? { firstName: from.first_name, lastName: from.last_name ?? null, nameLocked: false } : {}) }
+            : {}),
+        },
       }),
     ]);
     await this.notify.send(
       student.user.telegramId,
-      `👨‍👩‍👦 <b>${esc(fullName(parent))}</b> sizning ota-onangiz sifatida ulanish so'rovini yubordi. Ustoz tasdiqlagach, davomat xabarlari unga boradi.`,
+      `👨‍👩‍👦 <b>${esc(fullName(parentNow))}</b> sizning ota-onangiz sifatida ulanish so'rovini yubordi. Ustoz tasdiqlagach, davomat xabarlari unga boradi.`,
     );
     const group = (await this.prisma.studentProfile.findUnique({ where: { id: student.id }, select: { group: { select: { name: true } } } }))?.group?.name;
     const warnings = flags.flatMap((f) => (FLAG_WARNINGS[f] ? [`⚠️ ${FLAG_WARNINGS[f]}`] : []));
     await this.staff.alertOwners(
       [
         // Birinchi qator yolg'iz qolsa ham tushunarli: hal qilingach xabar shu qator + natijaga qisqaradi
-        `👨‍👩‍👦 Ota-ona so'rovi: <b>${esc(fullName(parent))}</b> → <b>${esc(fullName(student.user))}</b>`,
+        `👨‍👩‍👦 Ota-ona so'rovi: <b>${esc(fullName(parentNow))}</b> → <b>${esc(fullName(student.user))}</b>`,
         ...(link.relation ? [`Kim: ${esc(link.relation)}`] : []),
         `Telefon: ${esc(phone)}`,
         ...(student.user.nameLocked ? [] : ["O'quvchi ismini hali yozmagan (Telegram'dagi nomi)"]),
