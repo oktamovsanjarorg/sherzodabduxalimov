@@ -27,7 +27,7 @@ const fullName = (u: { firstName: string; lastName: string | null }) => [u.first
 
 export type ParentLinkResult =
   | { status: "created" | "exists"; studentName: string; linkStatus?: string }
-  | { status: "invalid_code" | "not_own_contact" | "self" | "limit" | "rejected_before" };
+  | { status: "invalid_code" | "not_own_contact" | "self" | "limit" | "rejected_before" | "is_student" };
 
 const linkInclude = {
   parent: { select: { id: true, firstName: true, lastName: true, username: true, telegramId: true } },
@@ -104,6 +104,11 @@ export class ParentsService {
     if (student.user.telegramId === BigInt(from.id)) return { status: "self" };
 
     const parent = await this.staff.upsertTelegramUser(from);
+    // Ustoz tasdiqlagan yoki guruhdagi o'quvchi boshqa o'quvchining ota-onasi bo'la olmaydi: aks holda hisobi ota-onaga aylanib, guruhdan chiqib qoladi
+    if (parent.role === "STUDENT") {
+      const own = await this.prisma.studentProfile.findUnique({ where: { userId: parent.id }, select: { acceptedAt: true, groupId: true } });
+      if (own && (own.acceptedAt || own.groupId)) return { status: "is_student" };
+    }
     const phone = normPhone(contact.phone_number);
     const existing = await this.prisma.parentLink.findUnique({ where: { parentId_studentId: { parentId: parent.id, studentId: student.id } } });
     if (existing?.status === "REJECTED") return { status: "rejected_before" };

@@ -179,6 +179,7 @@ Ustoz yoki yordamchi tasdiqlagach, sizga xabar keladi.`,
         limit: "Bu o'quvchiga allaqachon 2 ta ota-ona ulangan.",
         rejected_before: "Avvalgi so'rovingiz rad etilgan. Savollar bo'lsa, ustozga murojaat qiling.",
         not_own_contact: "Iltimos, o'z raqamingizni ulashing.",
+        is_student: "Siz o'quvchi sifatida ro'yxatdasiz, shuning uchun ota-ona bo'la olmaysiz. Bu havolani ota-onangizga yuboring.",
       };
       await ctx.reply(msg[r.status] ?? "Xatolik yuz berdi", { parse_mode: "HTML", ...done });
       return;

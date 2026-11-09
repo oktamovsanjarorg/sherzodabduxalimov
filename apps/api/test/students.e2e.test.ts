@@ -341,5 +341,15 @@ describe("O'quvchilar: botsiz kiritish, ro'yxat, karta, hisobni bog'lash (e2e)",
       expect((await prisma.parentLink.findFirstOrThrow({ where: { studentId: sp.id } })).status).toBe("APPROVED");
       expect(await tap(approve)).toMatchObject({ toast: "Allaqachon ko'rib chiqilgan" });
     });
+
+    it("guruhdagi o'quvchi boshqa o'quvchining ota-onasi bo'la olmaydi", async () => {
+      const sp = await prisma.studentProfile.findFirstOrThrow({ where: { user: { telegramId: BigInt(TG3.student) } } });
+      const other = await prisma.studentProfile.findFirstOrThrow({ where: { user: { telegramId: BigInt(TG3.foreign) } } });
+      const from = { id: TG3.student, first_name: "Daler" };
+      const r = (await internal("parent-link", { code: other.parentLinkCode, from, contact: { phone_number: "998901110098", user_id: TG3.student } })).json();
+      expect(r.status).toBe("is_student");
+      expect((await prisma.user.findUniqueOrThrow({ where: { telegramId: BigInt(TG3.student) } })).role).toBe("STUDENT");
+      expect(await prisma.studentProfile.findUniqueOrThrow({ where: { id: sp.id } })).toMatchObject({ groupId });
+    });
   });
 });
