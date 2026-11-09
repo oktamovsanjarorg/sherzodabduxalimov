@@ -1,6 +1,6 @@
 import type { AdminGroup, DuplicateRow, NewcomerRow } from "@onatili/shared";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeftRight, Ban, BookOpen, ChevronRight, ClipboardList, FileText, Inbox as InboxIcon, Link2, Trash2, UserCheck } from "lucide-react";
+import { ArrowLeftRight, Ban, BookOpen, ChevronDown, ChevronRight, ClipboardList, FileText, Inbox as InboxIcon, Link2, Trash2, UserCheck } from "lucide-react";
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Badge, ConfirmButton } from "./ui";
@@ -22,13 +22,25 @@ export function Inbox({ groups }: { groups: AdminGroup[] }) {
   const n = news.data?.length ?? 0;
   const p = parents.data?.length ?? 0;
   const d = dups.data?.length ?? 0;
+  const [open, setOpen] = useState(() => readOpen());
+  const toggle = () => {
+    setOpen(!open);
+    writeOpen(!open);
+  };
   if (!n && !p && !d) return null;
+  const parts = [d && `ikki marta: ${d}`, n && `yangi kirganlar: ${n}`, p && `ota-ona so'rovlari: ${p}`].filter(Boolean).join(" · ");
   return (
-    <section className="mb-6 rounded-2xl border border-amber-200 bg-amber-50/60 p-4 sm:p-5">
-      <h2 className="flex items-center gap-2 font-extrabold">
-        <InboxIcon size={18} className="text-amber-700" /> Ko'rib chiqish kerak
+    <section className="mb-4 rounded-2xl border border-amber-200 bg-amber-50/60">
+      {/* O'quvchilar ko'payganda blok ro'yxat va guruh tablarini pastga surib yubormasligi uchun: yig'iladi, ochilganda balandligi cheklangan */}
+      <button type="button" onClick={toggle} aria-expanded={open} className="flex w-full flex-wrap items-center gap-x-2 gap-y-1 px-4 py-3 text-left sm:px-5">
+        <InboxIcon size={18} className="text-amber-700" />
+        <span className="font-extrabold">Ko'rib chiqish kerak</span>
         <span className="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-red-600 px-1.5 text-[11px] font-extrabold text-white">{n + p + d}</span>
-      </h2>
+        <span className="min-w-0 flex-1 truncate text-xs text-slate-600">{parts}</span>
+        <ChevronDown size={18} className={`shrink-0 text-slate-500 transition-transform ${open ? "rotate-180" : ""}`} />
+      </button>
+      {open && (
+      <div className="max-h-[60vh] overflow-y-auto border-t border-amber-200 px-4 pb-4 sm:px-5">
       {d > 0 && (
         <>
           <p className="mb-2 mt-3 text-sm font-bold text-slate-700">Bitta o'quvchi ikki marta ({d})</p>
@@ -69,8 +81,26 @@ export function Inbox({ groups }: { groups: AdminGroup[] }) {
           </div>
         </>
       )}
+      </div>
+      )}
     </section>
   );
+}
+
+const OPEN_KEY = "inbox-open";
+function readOpen() {
+  try {
+    return localStorage.getItem(OPEN_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+function writeOpen(v: boolean) {
+  try {
+    localStorage.setItem(OPEN_KEY, v ? "1" : "0");
+  } catch {
+    /* saqlab bo'lmasa ham ishlayveradi */
+  }
 }
 
 function Newcomer({ s, groups }: { s: NewcomerRow; groups: AdminGroup[] }) {
