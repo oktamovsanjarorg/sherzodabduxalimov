@@ -1,6 +1,6 @@
 import { BadRequestException, ConflictException, Inject, Injectable, NotFoundException } from "@nestjs/common";
 import type { Prisma } from "@onatili/db";
-import type { AdminParentLink, ChildView } from "@onatili/shared";
+import { NAME_MATCH_THRESHOLD, nameMatchScore, type AdminParentLink, type ChildView } from "@onatili/shared";
 import { ENV, type Env } from "../config/env";
 import { esc } from "../notify/telegram";
 import { NotifyService, type Keyboard } from "../notify/notify.service";
@@ -128,11 +128,16 @@ export class ParentsService {
       this.prisma.user.update({
         where: { id: parent.id },
         // Ilovada o'quvchi sifatida ishlamagan oddiy akkaunt ota-ona roliga o'tadi (xodimlarga tegilmaydi)
-        // O'quvchi deb o'ylab farzandining ismini yozgan bo'lishi mumkin: ism Telegram'dagisiga qaytadi
+        // O'quvchi deb o'ylab farzandining ismini yozgan bo'lsa, ism Telegram'dagisiga qaytadi. O'z ismini yozgan bo'lsa, qoladi
         data: {
           phone,
           ...(parent.role === "STUDENT" && activity === 0
-            ? { role: "PARENT", ...(parent.nameLocked ? { firstName: from.first_name, lastName: from.last_name ?? null, nameLocked: false } : {}) }
+            ? {
+                role: "PARENT",
+                ...(parent.nameLocked && nameMatchScore(fullName(parent), fullName(student.user)) >= NAME_MATCH_THRESHOLD
+                  ? { firstName: from.first_name, lastName: from.last_name ?? null, nameLocked: false }
+                  : {}),
+              }
             : {}),
         },
       }),

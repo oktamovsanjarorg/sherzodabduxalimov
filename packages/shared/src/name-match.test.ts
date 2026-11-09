@@ -29,4 +29,7 @@ describe("ism solishtirish", () => {
     expect(nameMatchScore("Madina Aliyeva", "Madina")).toBeCloseTo(0.85);
     expect(nameMatchScore("😀", "Madina")).toBe(0);
   });
+  it("bezakli harflar oddiy harf sifatida solishtiriladi", () => {
+    expect(nameMatchScore("𝐘𝐚𝐬𝐦𝐞𝐧𝐚 𝐗𝐨𝐥𝐢𝐪𝐨𝐯𝐚", "Yasmena Xoliqova")).toBe(1);
+  });
 });

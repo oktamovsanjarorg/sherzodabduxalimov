@@ -7,6 +7,7 @@ const CYRILLIC: Record<string, string> = {
 /** Bir xil eshitiladigan yozuvlarni bir ko'rinishga keltiradi: "Ғулом Xасанов" va "G'ulom Hasanov" bir xil bo'ladi */
 export function nameTokens(name: string): string[] {
   const latin = name
+    .normalize("NFKC") // «𝐘𝐚𝐬𝐦𝐢𝐧𝐚» -> «Yasmina»
     .toLowerCase()
     .replace(/['’‘ʻʼ`]/g, "")
     .replace(/[Ѐ-ӿ]/g, (c) => CYRILLIC[c] ?? c)
