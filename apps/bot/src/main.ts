@@ -106,12 +106,14 @@ bot.command("start", async (ctx) => {
     console.error("visit:", redact(e));
     return { needsName: false };
   });
-  // Ism-familiyasi hali yo'q: avval kimligini so'raymiz. Ota-onalar ham shu yerga tushib, farzandi ismini yozib yuborardi
+  // Ism-familiyasi hali yo'q: darhol so'raymiz. Ota-onaga tugma emas, matn: o'quvchi bosib adashmasin
   if (visit.needsName) {
-    nameFlow.delete(ctx.from.id);
-    await ctx.reply("Assalomu alaykum! 👋\n\nUstoz sizni tanishi uchun bitta savol: siz kimsiz?", {
-      reply_markup: new InlineKeyboard().text("🧑‍🎓 Men o'quvchiman", "me:st").row().text("👨‍👩‍👦 Men ota-onaman", "me:pa"),
-    });
+    nameFlow.set(ctx.from.id, { at: Date.now() });
+    await ctx.reply(
+      "Assalomu alaykum! 👋\n\nUstoz sizni tanishi uchun <b>ism va familiyangizni</b> yozing, hujjatdagidek.\n\nMasalan: <i>Dilnura Allayarova</i>\n\n" +
+        "<i>Ota-ona bo'lsangiz, bu yerga yozmang: farzandingiz yuborgan havolani bosing.</i>",
+      { parse_mode: "HTML" },
+    );
     return;
   }
 
@@ -254,6 +256,7 @@ bot.on("message:text", async (ctx, next) => {
   }
 });
 
+// Avval yuborilgan xabarlardagi tugmalar uchun qoldirilgan
 bot.callbackQuery(/^me:(st|pa)$/, async (ctx) => {
   await ctx.answerCallbackQuery();
   if (ctx.match[1] === "st") {

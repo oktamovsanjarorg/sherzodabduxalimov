@@ -14,7 +14,6 @@ export function StudentNamePage() {
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const [isParent, setIsParent] = useState(false);
   const save = useMutation({
     mutationFn: api.setMyName,
     onSuccess: (me) => token && setSession(token, me),
@@ -45,17 +44,8 @@ export function StudentNamePage() {
             Davom etish
           </button>
         </form>
-        {/* Ota-onalar ham shu sahifaga tushib, farzandining ismini yozib yuborardi: ular uchun alohida yo'l */}
-        {isParent ? (
-          <p className="mt-5 rounded-xl bg-section p-4 text-left text-sm">
-            Ota-onalar farzandining shaxsiy havolasi orqali ulanadi. Farzandingiz ilovada <b>Profil → Ota-onam</b> bo'limidagi havolani sizga yuborsin: siz uni bosib,
-            telefon raqamingizni ulashasiz. Bu yerga ism yozmang.
-          </p>
-        ) : (
-          <button type="button" className="mt-5 text-sm font-semibold text-brand" onClick={() => setIsParent(true)}>
-            Men ota-onaman
-          </button>
-        )}
+        {/* Ota-onalarga tugma emas, matn: o'quvchi bosib adashmasin */}
+        <p className="mt-5 text-sm text-hint">Ota-ona bo'lsangiz, bu yerga yozmang: farzandingiz yuborgan havolani bosing.</p>
       </main>
     </div>
   );
