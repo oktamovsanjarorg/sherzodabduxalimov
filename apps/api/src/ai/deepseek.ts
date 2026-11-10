@@ -86,17 +86,57 @@ BAHOLASH QOIDALARI (rasmiy talablar):
 - So'z qo'llash xatosi (10-band): so'zni noto'g'ri, ortiqcha, noo'rin takror qo'llash, tushirib qoldirish, paronimlarni almashtirish, bog'lovchi vositalar xatosi. Neologizmlar xato emas.
 - Husnixat baholanmaydi. Talabgor o'zi o'chirib/qavsga olib tuzatgan joylar xato hisoblanmaydi.
 
+USLUB VA IBORALAR (ustozning talabi: "Qanday gapirsangiz, shunday yozmang"):
+- So'zlashuv uslubidagi jumlalarni ALOHIDA qidir va "style" bandida hisobga ol. Belgilari: kundalik nutq qoliplari ("hozirgi kunda", "ko'p odamlar o'ylaydiki", "buning yomon tomoni ham bor", "menimcha", "xullas", "bilasizmi"), kuchaytiruvchi so'zlashuv so'zlari ("juda-juda", "zo'r", "rosa"), "-da", "-ku", "-yu" kabi jonli nutq yuklamalari, o'quvchiga gapirgandek murojaat, aniq bo'lmagan umumiy gaplar.
+- Publitsistik uslub: fikr jamoatchilikka qaratilgan, masalaning dolzarbligi va ijtimoiy ahamiyati ta'kidlanadi, umumlashtiriladi, ta'sirchan va aniq ifodalanadi. Namunalar:
+  ❌ "Hozirgi kunda bu muammo juda muhim bo'lib qoldi." → ✅ "Bugun ushbu masala kun tartibidagi eng dolzarb muammoga aylandi."
+  ❌ "Ko'p odamlar o'ylaydiki, telefon bolalarga zarar qiladi." → ✅ "Keng jamoatchilik orasida smartfonlarning yosh avlod tarbiyasiga salbiy ta'sir ko'rsatishi haqida haqli xavotirlar bor."
+  ❌ "Buning yomon tomoni ham bor…" → ✅ "Biroq ushbu qulaylik ortida jiddiy xavf-xatarlar yashiringanini ham unutmaslik zarur."
+- Publitsistik uslubdan chekinishning uch ko'rinishi bor, uchalasi ham "style" bandida hisobga olinadi. Bitta fikr misolida:
+  ❌ So'zlashuv: "Do'xtirlarning ishini kamaytirish kerak, bo'lmasa, charchab xato qilib qo'yadi." (jo'n, kundalik muloqot tili)
+  ❌ Ilmiy: "Tibbiyot xodimlarining kasbiy zo'riqish koeffitsiyentini pasaytirish maqsadida mehnat resurslarini ratsional taqsimlash talab etiladi." (o'ta murakkab, quruq atamalar)
+  ❌ Rasmiy-idoraviy (kanselyarizm — ENG KO'P uchraydigan xato): "Shifokorlarning ish soatlarini qisqartirish bo'yicha tegishli chora-tadbirlar ishlab chiqilishi hamda amaliyotga joriy etilishi maqsadga muvofiqdir." (hisobot yoki majlis bayonnomasi tili: "tegishli chora-tadbirlar", "maqsadga muvofiq", "joriy etilishi", "ta'minlash yuzasidan", "mazkur")
+  ✅ Publitsistik: "… shifokor manfaati va bemor ehtiyoji o'rtasidagi oltin muvozanatni ta'minlashni talab etadi." (ta'sirchan, o'yga toldiruvchi, keng ommaga tushunarli)
+  "Jiddiy yozaman" deb kanselyarizmga o'tib ketgan jumlalarni ham so'zlashuv jumlalari kabi topib, "style" tavsiyasida publitsistik variantini ko'rsat.
+- Publitsistik iboralar va bog'lovchi jumlalar ("hal qiluvchi ahamiyat kasb etadi", "muammoning ildiziga e'tibor qaratsak", "ijtimoiy tarmoqlar qamrovi kengaygan bir paytda", "bu fikr munozaralarga sabab bo'lishi tabiiy") o'rinli ishlatilsa — "lexicon" bandida ijobiy baholanadi.
+KIRISH QISMI (ustozning talabi: "kirish — essening yuzi"). To'la yoritilgan kirish 3 qadamdan iborat bo'ladi:
+  1) Mavzuni ochish: muammoning jamiyatdagi dolzarbligi o'z so'zlari bilan tushuntiriladi. "Mening fikrimcha…" deb boshlash yoki vaziyat matnidagi savolni shundayicha ko'chirish — kamchilik.
+  2) Ikki xil qarashga qisqacha ishora ("Bir guruh … deb hisoblasa, boshqalar … xavotirda").
+  3) Oxirida tezis — tayanch fikr, u asosiy qismga mantiqiy o'tish zamini bo'ladi.
+  Namuna: "Bugun … masalasi jamoatchilik va mutaxassislar o'rtasida qizg'in muhokamalarga sabab bo'lmoqda. Bir guruh tahlilchilar … deb hisoblasa, boshqalar … xavotirda. Aslida, bu ziddiyatli vaziyat … o'rtasidagi muvozanatni ta'minlashni talab etadi."
+  Kirishda shu qadamlardan ikkitasi yoki uchtasi yo'q bo'lsa, u "yuza yoritilgan" hisoblanadi ("parts" bandi) va "focus": "parts" tavsiyasida o'quvchining o'z mavzusi uchun 3 qadamli kirish namunasini "example" da yoz.
+ASOSIY QISM (ustozning talabi: "essening yuragi"). Asosiy qismda avval har ikki qarash dalillanadi, so'ng shaxsiy fikr asoslanadi. Faqat his-tuyg'uga tayanib yozilgan asosiy qism — katta kamchilik. Kuchli xatboshi 3 qadamdan iborat:
+  1) Da'vo — xatboshining bosh g'oyasi;
+  2) Dalil — qonuniyat, fakt, statistika, manba yoki sabab-oqibat ("JSST ma'lumotlariga ko'ra…", "OAVda bot-bot yoritiladigan holat…");
+  3) Tahlil — dalil muammoni qanday hal qilishini tushuntirish ("Tetik shifokor qisqa vaqt ichida bemorga aniq va sifatli tashxis qo'ya oladi").
+  Qarash xatboshisida dalil yo'q yoki tahlil yo'q bo'lsa, buni "evidence" va "views" bandlarida hisobga ol va "focus": "evidence" tavsiyasida o'quvchining o'z da'vosi uchun Dalil + Tahlil qadamlari yozilgan namunani "example" da ber.
+  QARSHI TOMON ham xuddi shu qolipda, xuddi shunday ishonchli dalillanishi shart. Faqat bir tomon dalillangan, ikkinchisi bir jumla bilan o'tilgan bo'lsa — "views" bandida "qarashlarning bittasi to'la yoritilgan" (1 ball)dan yuqori berma.
+  HAYOTIY MANTIQ DALIL O'RNIDA O'TADI: statistika yoki manba bo'lmasa ham, izchil sabab-oqibat zanjiri ("charchoq → diqqat susayishi → xato tashxis → jamiyat zarari") to'laqonli dalil hisoblanadi. Statistika yo'qligi uchun ball kamaytirma; zanjir uzilgan yoki faqat his-tuyg'u bo'lsa kamaytir. Tavsiyada fakt va iqtibos dalilni yanada kuchaytirishini eslatib o'tish mumkin.
+SHAXSIY FIKR (asosiy qism oxirida). Faqat "Menimcha…", "O'ylaymanki…" bilan berilgan, dalilsiz fikr — oddiy bayon darajasi; haddan ortiq "men"lashtirish matn salmog'ini tushiradi. Kuchli shaxsiy fikr: 1) silliq o'tish ("Masalaning har ikki tomonini qiyoslagan holda aytishim mumkinki…"); 2) qat'iy pozitsiya ("to'liq qo'llab-quvvatlayman"); 3) dalillangan yechim — qarshi tomon ko'rsatgan asosli muammoni hal qilish sharti ham aytiladi ("…qo'shimcha shtat birliklarini ochish bilan hamohang kechishi kerak"). Shu uch qadam bo'lmasa, "views" bandida shaxsiy fikr "to'la yoritilgan" deb hisoblama.
+XULOSA (yo'riqnomaning maxsus talabi). Xulosada talabgor yoqlayotgan qarashning JAMIYAT HAYOTIGA ta'siri yoritilishi shart. Faqat yuqoridagi fikrlarning takrori ("Xulosa qilib, men … qo'llab-quvvatlayman, bu orqali … asraladi") — "parts" bandida xulosa "yuza yoritilgan". Kuchli xulosa: 1) keng qamrov — bitta soha muammosidan jamiyat/millat darajasiga chiqish ("Mohiyatan olib qaraganda, … butun millat salomatligiga daxldor"); 2) muvozanat — ikki tomon manfaati bir jumlada ("… qanchalik ahamiyatli bo'lsa, … ham shunchalik qadrlidir"); 3) yakuniy hukm — kirishdagi tezis tasdig'ini topadi ("Shunday ekan, … orqaligina ko'zlangan natijani beradi"). Xulosa yuza bo'lsa, "focus": "parts" tavsiyasida o'quvchining mavzusi uchun shu 3 qadamli xulosa namunasini "example" da yoz.
+- ME'YOR: ibora ziravorga o'xshaydi. Bitta xatboshida 3 va undan ortiq tayyor ibora qalashtirilgan bo'lsa yoki iboralar fikrsiz, shunchaki bezak uchun tiqilgan bo'lsa — matn sun'iylashadi: "lexicon" bandini "ayrim o'rinlarda noo'rin" (1 ball) yoki undan past baholab, izohda qaysi xatboshida ortiqcha ekanini ayt. Xatboshiga 1–2 ta o'rinli ibora — me'yor.
+
 ESSE TEKSHIRILMAYDIGAN HOLATLAR ("special"):
 - "OFF_TOPIC": esse mavzuga umuman mos emas (asosiy qism yoki xulosada mavzuga mos kamida bitta jumla bo'lsa — mos deb qaraladi);
 - "COPIED": esse boshqa manbadan ko'chirilgan yoki vaziyat matni aynan ko'chirilgan;
 - "ONLY_INTRO": faqat kirish qismi yozilgan.
 Bunday holatda "special" ga shu qiymatni yoz, aks holda null.
 
+YAKUNIY TEKSHIRUV (ustozning ro'yxati — baholashda va tavsiyalarda shu savollarga javob ber):
+1) Hajm 100 so'zdan oshganmi? Xatboshilar to'g'ri ajratilganmi? (100 so'zdan kam bo'lsa, "parts" va "structure" izohida ayt.)
+2) Kirish: mavzu shartdan ko'chirilmay o'z so'zi bilan ochilganmi? Ikki qarashga ishora bormi? Tezis bormi?
+3) Asosiy qism: yoqlovchi fikr alohida xatboshida da'vo → dalil → tahlil bilan yozilganmi? Qarshi fikr ham xuddi shunday ishonchli dalillanganmi? Shaxsiy fikrda aniq yechim yoki taklif bormi? Xatboshilar orasida mantiqiy ko'prik bormi?
+4) Xulosa: kirish takrorlanmay, yangicha xulosa yozilganmi? Pozitsiyaning jamiyatga ta'siri yoritilganmi?
+5) Savodxonlik: imlo; kiritma, bog'lovchi va uyushiq bo'laklarda vergul.
+6) Uslub va til sofligi: matn to'liq publitsistikmi? Bitta fikr turli so'zlar bilan takrorlanmaganmi (izchillik, 6-band)? Sheva, qo'pol yoki yot so'zlar yo'qmi?
+
 JAVOB (faqat JSON):
-{"special": null, "criteria": [{"key": "style", "score": 1.5, "comment": "..."}, ... 12 ta band ...], "feedback": "...", "mistakes": [{"wrong": "...", "right": "...", "type": "spelling|punctuation|affix|word|style|logic|other", "note": "qisqa qoida"}], "tips": [{"focus": "evidence", "text": "...", "example": "..."}]}
+{"special": null, "criteria": [{"key": "style", "score": 1.5, "comment": "..."}, ... 12 ta band ...], "feedback": "...", "tips": [{"focus": "evidence", "text": "...", "example": "..."}, ... 3–5 ta ...], "mistakes": [{"wrong": "...", "right": "...", "type": "spelling|punctuation|affix|word|style|logic|other", "note": "qisqa qoida"}]}
+"tips" MAJBURIY: "special" null bo'lsa, kamida 3 ta tavsiya bo'lishi shart, bo'sh qoldirma.
 - "comment": har bir bandga 1–2 jumla, xatolar sonini ko'rsat (masalan, "imlo xatosi 3 o'rinda").
 - "feedback": ekspert taqrizi — 3–5 jumlali xulosa va yaxshilash bo'yicha aniq maslahat.
 - "tips": 3–5 ta ANIQ tavsiya — eng past ball olgan bandlardan boshlab. "focus" — band kaliti (style, views, evidence, parts, structure, coherence, spelling, punctuation, affixes, wordUsage, lexicon, purity). "text" — nima qilish kerakligi (1–2 jumla, umumiy gap emas: aynan shu essega tegishli). "example" — o'quvchi essesidagi bitta jumlaning yaxshilangan namunasi yoki shu esse uchun yozilishi mumkin bo'lgan namunaviy jumla (masalan, kirish, dalil yoki xulosa jumlasi); kerak bo'lmasa null.
+  Esseda so'zlashuv uslubidagi jumla bo'lsa, tavsiyalardan BITTASI albatta "focus": "style" bo'lsin: "text" da o'quvchining o'sha jumlasini aynan keltir ("So'zlashuv uslubi: «...»"), "example" da uning publitsistik uslubdagi varianti. Iboralar qalashtirilgan bo'lsa, "focus": "lexicon" tavsiyasida qaysilarini olib tashlash kerakligini ayt.
 - "mistakes": eng muhim xatolar (ko'pi bilan 15 ta). "wrong" — matndan AYNAN ko'chirilgan qism (1–4 so'z, keyin varoqdan topiladi), "right" — to'g'risi. "type": spelling (imlo), punctuation (tinish belgisi), affix (qo'shimcha), word (so'z qo'llash), style (uslub), logic (mantiq/izchillik), other. "wrong" va "right" bir xil bo'lmasin; ishonching komil bo'lmasa kiritma.
 Barcha izohlar o'zbek tilida (lotin).`;
   const note = handwritten
@@ -115,7 +155,7 @@ export async function gradeEssayDeepSeek(opts: { apiKey: string; model: string; 
     {
       model: opts.model,
       temperature: 0.2,
-      max_tokens: 4000,
+      max_tokens: 6000,
       response_format: { type: "json_object" },
       messages: [
         { role: "system", content: system },
@@ -134,7 +174,41 @@ export async function gradeEssayDeepSeek(opts: { apiKey: string; model: string; 
   if (!result.special && !result.mistakes.length && result.criteria.some((c) => errorBands.includes(c.key) && c.score < 2)) {
     result.mistakes = await listMistakesDeepSeek(opts).catch(() => []);
   }
+  // Tavsiyalar tushib qolsa: band izohlari asosida alohida so'raymiz (o'quvchi uchun eng kerakli qism)
+  if (!result.special && !result.tips.length) {
+    result.tips = await listTipsDeepSeek(opts, result.criteria).catch(() => []);
+  }
   return result;
+}
+
+/** Faqat tavsiyalar (asosiy javobda tushib qolganda): eng past ball olgan bandlardan boshlab */
+async function listTipsDeepSeek(opts: { apiKey: string; model: string; topic: string; text: string }, criteria: AiEssayResult["criteria"]): Promise<AiEssayResult["tips"]> {
+  const weak = [...criteria].sort((a, b) => a.score - b.score).slice(0, 6).map((c) => `- ${c.key} (${c.score} ball): ${c.comment ?? ""}`).join("\n");
+  const system = `Sen ona tili fan ekspertisan. Esse allaqachon mezon bo'yicha baholangan; endi o'quvchiga 3–5 ta ANIQ tavsiya yoz — eng past ball olgan bandlardan boshlab.
+Har tavsiya shu essega tegishli bo'lsin, umumiy gap emas. "focus" — band kaliti (style, views, evidence, parts, structure, coherence, spelling, punctuation, affixes, wordUsage, lexicon, purity).
+"text" — nima qilish kerakligi (1–2 jumla). "example" — o'quvchi essesidagi bitta jumlaning yaxshilangan namunasi yoki shu esse uchun namunaviy jumla (kirish, dalil, xulosa); kerak bo'lmasa null.
+So'zlashuv yoki rasmiy-idoraviy (kanselyarizm) jumla bo'lsa, bittasi "style": "text" da o'sha jumlani aynan keltir, "example" da publitsistik varianti. Kirish yoki xulosa yuza bo'lsa, "parts": 3 qadamli namuna. Dalil yo'q bo'lsa, "evidence": da'vo → dalil → tahlil namunasi.
+Javob faqat JSON: {"tips": [{"focus": "...", "text": "...", "example": "..."}]}. O'zbek tilida (lotin).`;
+  const r = await postJson(
+    "api.deepseek.com",
+    "/chat/completions",
+    opts.apiKey,
+    {
+      model: opts.model,
+      temperature: 0.2,
+      max_tokens: 2500,
+      response_format: { type: "json_object" },
+      messages: [
+        { role: "system", content: system },
+        { role: "user", content: `Esse mavzusi: ${opts.topic}\n\nBaholash natijasi (eng zaif bandlar):\n${weak}\n\nEsse matni:\n"""\n${opts.text}\n"""` },
+      ],
+    },
+    90_000,
+  );
+  const j = r.json as { choices?: { message?: { content?: string } }[] } | null;
+  const content = j?.choices?.[0]?.message?.content;
+  if (r.status !== 200 || !content) return [];
+  return normalize(resultSchema.parse({ criteria: [], ...(parseFirstJson(content) as object) })).tips;
 }
 
 /** Faqat xatolar ro'yxati (asosiy javobda tushib qolganda) */
