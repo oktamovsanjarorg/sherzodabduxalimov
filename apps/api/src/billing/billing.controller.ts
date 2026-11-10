@@ -115,6 +115,11 @@ export class AdminOfflineBillingController {
     return this.svc.ledger(groupId, month || currentMonth());
   }
 
+  /** To'lov oynasi: o'quvchining oxirgi davri va keyingi davr boshlanishi */
+  @Get("student/:studentId") nextPeriod(@Param("studentId") studentId: string) {
+    return this.svc.nextPeriod(studentId);
+  }
+
   @Put() mark(@CurrentUser() u: JwtUser, @Body() b: unknown) {
     return this.svc.mark(u.sub, parse(offlinePaymentInput, b));
   }

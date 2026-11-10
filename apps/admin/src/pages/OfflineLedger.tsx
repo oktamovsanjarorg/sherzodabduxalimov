@@ -1,8 +1,9 @@
-import { currentMonth, formatSum, monthLabel, type OfflineLedgerRow } from "@onatili/shared";
+import { currentMonth, formatSum, monthLabel, periodLabel, shortDate, type OfflineLedgerRow } from "@onatili/shared";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Bell, Check, ChevronLeft, ChevronRight, Phone, Undo2 } from "lucide-react";
 import { useEffect, useState } from "react";
-import { Badge, Empty, Field, Modal, Spinner } from "../components/ui";
+import { PayDialog } from "../components/PayDialog";
+import { Badge, Empty, Spinner } from "../components/ui";
 import { api, errMsg } from "../lib/api";
 import { fmtShortDateTime } from "../lib/format";
 import { useToast } from "../lib/toast";
@@ -28,7 +29,7 @@ export function OfflineLedgerView() {
 
   const ledger = useQuery({ queryKey: ["offline-ledger", groupId, month], queryFn: () => api.offlineLedger(groupId, month), enabled: !!groupId });
   const refresh = () => qc.invalidateQueries({ queryKey: ["offline-ledger"] });
-  const unmark = useMutation({ mutationFn: (r: OfflineLedgerRow) => api.unmarkOffline(r.studentId, month), onSuccess: refresh, onError: (e) => toast(errMsg(e), "error") });
+  const unmark = useMutation({ mutationFn: (r: OfflineLedgerRow) => api.unmarkOffline(r.studentId, r.paid?.month ?? month), onSuccess: refresh, onError: (e) => toast(errMsg(e), "error") });
   const remind = useMutation({
     mutationFn: () => api.remindDebtors(groupId, month),
     onSuccess: (r) => {
@@ -105,16 +106,25 @@ export function OfflineLedgerView() {
                   </div>
                   {r.paid ? (
                     <>
-                      <Badge tone="green">
-                        <Check size={11} /> {formatSum(r.paid.amountUzs)} so'm{r.paid.note ? ` · ${r.paid.note}` : ""}
-                      </Badge>
+                      <div className="flex flex-col items-end gap-1 text-right">
+                        <Badge tone="green">
+                          <Check size={11} /> {formatSum(r.paid.amountUzs)} so'm{r.paid.note ? ` · ${r.paid.note}` : ""}
+                        </Badge>
+                        <span className="text-[11px] text-slate-500">
+                          {periodLabel(r.paid.periodStart, r.paid.periodEnd)} davri · to'ladi {shortDate(r.paid.paidOn)}
+                        </span>
+                        {r.paid.lateDays > 0 && <Badge tone="amber">{r.paid.lateDays} kun kechikib to'ladi</Badge>}
+                      </div>
                       <button className="btn-ghost btn-sm" title="Belgini olib tashlash" disabled={unmark.isPending} onClick={() => unmark.mutate(r)}>
                         <Undo2 size={14} />
                       </button>
                     </>
                   ) : (
                     <>
-                      <Badge tone="red">Qarzdor</Badge>
+                      <div className="flex flex-col items-end gap-1 text-right">
+                        <Badge tone="red">{r.overdueDays ? `Qarzdor · ${r.overdueDays} kun o'tdi` : "Qarzdor"}</Badge>
+                        <span className="text-[11px] text-slate-500">{r.coveredUntil ? `To'lov muddati ${shortDate(r.coveredUntil)} da tugagan` : "Hali to'lamagan"}</span>
+                      </div>
                       <button className="btn-primary btn-sm" onClick={() => setPaying(r)}>
                         To'ladi
                       </button>
@@ -126,7 +136,7 @@ export function OfflineLedgerView() {
           )}
         </>
       )}
-      {paying && l && <PayModal row={paying} month={month} fee={l.group.monthlyFeeUzs} onClose={() => setPaying(null)} onDone={refresh} />}
+      {paying && <PayDialog studentId={paying.studentId} onClose={() => setPaying(null)} onDone={refresh} />}
     </>
   );
 }
@@ -177,55 +187,5 @@ function FeeEditor({ groupId, fee, defaultFee, onSaved }: { groupId: string; fee
         </button>
       )}
     </form>
-  );
-}
-
-function PayModal({ row, month, fee, onClose, onDone }: { row: OfflineLedgerRow; month: string; fee: number | null; onClose: () => void; onDone: () => void }) {
-  const toast = useToast();
-  const [amount, setAmount] = useState(fee ? String(fee) : "");
-  const [note, setNote] = useState("Naqd");
-  const save = useMutation({
-    mutationFn: () => api.markOffline({ studentId: row.studentId, month, amountUzs: Number(amount || 0), note: note.trim() || null }),
-    onSuccess: () => {
-      toast(row.approvedParents ? "Belgilandi. Ota-onaga xabar yuborildi" : "Belgilandi");
-      onDone();
-      onClose();
-    },
-    onError: (e) => toast(errMsg(e), "error"),
-  });
-  return (
-    <Modal
-      title="To'lovni belgilash"
-      onClose={onClose}
-      footer={
-        <>
-          <button className="btn-secondary" onClick={onClose}>
-            Bekor qilish
-          </button>
-          <button className="btn-primary" disabled={save.isPending} onClick={() => save.mutate()}>
-            <Check size={16} /> To'ladi
-          </button>
-        </>
-      }
-    >
-      <p className="mb-4 text-sm text-slate-600">
-        <b>{row.name}</b> · <span className="capitalize">{monthLabel(month)}</span>
-      </p>
-      <div className="grid grid-cols-2 gap-3">
-        <Field label="Summa (so'm)">
-          <input className="input" inputMode="numeric" autoFocus value={amount} onChange={(e) => setAmount(e.target.value.replace(/\D/g, ""))} />
-        </Field>
-        <Field label="Izoh">
-          <input className="input" value={note} maxLength={300} onChange={(e) => setNote(e.target.value)} />
-        </Field>
-      </div>
-      <div className="mt-3 flex flex-wrap gap-2">
-        {["Naqd", "Kartaga", "Chegirma"].map((n) => (
-          <button key={n} className={`rounded-full border px-3 py-1 text-xs font-semibold ${note === n ? "border-brand bg-brand-soft text-brand-dark" : "border-slate-200"}`} onClick={() => setNote(n)}>
-            {n}
-          </button>
-        ))}
-      </div>
-    </Modal>
   );
 }

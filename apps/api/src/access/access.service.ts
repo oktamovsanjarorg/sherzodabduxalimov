@@ -2,6 +2,7 @@ import { ForbiddenException, Injectable } from "@nestjs/common";
 import { Prisma } from "@onatili/db";
 import { ERROR_CODES, STAFF_ROLES, currentMonth, type RoleName } from "@onatili/shared";
 import type { JwtUser } from "../auth/decorators";
+import { paidNowWhere } from "../billing/offline-period";
 import { PrismaService } from "../prisma/prisma.service";
 
 export type TrialKind = "LESSON" | "TOPIC_TEST" | "MOCK" | "ESSAY";
@@ -63,7 +64,8 @@ export class AccessService {
           select: {
             accessMode: true,
             acceptedAt: true,
-            offlinePayments: { where: { month: currentMonth() }, select: { id: true } },
+            // Bugungi sana to'lov davriga tushsa, to'langan (davr o'quvchining o'z sanasidan, oy bilan mos tushmaydi)
+            offlinePayments: { where: paidNowWhere(), select: { id: true } },
             _count: { select: { parents: { where: { status: "APPROVED" } } } },
           },
         },

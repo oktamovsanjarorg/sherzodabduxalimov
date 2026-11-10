@@ -1,9 +1,10 @@
 import type { NestFastifyApplication } from "@nestjs/platform-fastify";
 import { PrismaClient } from "@onatili/db";
-import { currentMonth } from "@onatili/shared";
+import { addDays, currentMonth, defaultPeriodEnd, tashkentToday } from "@onatili/shared";
 import { internalKey } from "@onatili/shared/server";
 import { Queue } from "bullmq";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { dateCol } from "../src/billing/offline-period";
 import { reminderStageFor, runSubscriptionReminders } from "../src/billing/reminders";
 import { redisConnection } from "../src/media/queue";
 import { NOTIFY_QUEUE, type NotifyJob } from "../src/notify/notify.service";
@@ -95,6 +96,38 @@ describe("Offline guruh: kirish va oylik to'lov; online obuna eslatmalari (e2e)"
     expect(join.statusCode).toBe(404);
     expect((await req("POST", `/admin/groups/${groupId}/invite`)).statusCode).toBe(404);
     expect((await req("GET", "/admin/groups")).json().find((g: { id: string }) => g.id === groupId).inviteUrl).toBeUndefined();
+  });
+
+  it("to'lov davri o'quvchining o'z sanasidan: kechikish, kesishish va kelajak sanasi", async () => {
+    const today = tashkentToday();
+    const start = addDays(today, -20); // davr 20 kun oldin boshlangan, bugun to'lamoqda
+    const end = defaultPeriodEnd(start);
+    const ledger = async () => (await req("GET", `/admin/offline-payments?groupId=${groupId}&month=${month}`)).json();
+
+    const ok = await req("PUT", "/admin/offline-payments", { studentId: offlineStudentId, periodStart: start, amountUzs: 300000, note: "Naqd" });
+    expect(ok.statusCode).toBe(200);
+    expect(ok.json().lateDays).toBe(20);
+    const row = (await ledger()).rows.find((r: { studentId: string }) => r.studentId === offlineStudentId);
+    expect(row.paid).toMatchObject({ periodStart: start, periodEnd: end, paidOn: today, lateDays: 20, month: start.slice(0, 7) });
+    expect(row.coveredUntil).toBe(end);
+    expect(row.nextPeriodStart).toBe(addDays(end, 1));
+
+    // Davr kesishsa bir kun ikki marta to'langan bo'lib qoladi: rad etiladi
+    const clash = await req("PUT", "/admin/offline-payments", { studentId: offlineStudentId, periodStart: addDays(start, 5), amountUzs: 300000 });
+    expect(clash.statusCode).toBe(409);
+    // To'lov sanasi kelajakda bo'lmaydi; davr oxiri boshidan oldin bo'lmaydi
+    expect((await req("PUT", "/admin/offline-payments", { studentId: offlineStudentId, periodStart: addDays(end, 1), paidOn: addDays(today, 3), amountUzs: 1 })).statusCode).toBe(400);
+    expect((await req("PUT", "/admin/offline-payments", { studentId: offlineStudentId, periodStart: addDays(end, 1), periodEnd: end, amountUzs: 1 })).statusCode).toBe(400);
+
+    // Davr tugagach qarzdor, necha kun o'tgani ko'rinadi (davr oxirini o'tgan sanaga surib sinaymiz)
+    await prisma.offlinePayment.updateMany({ where: { studentId: offlineStudentId }, data: { periodStart: dateCol(addDays(today, -40)), periodEnd: dateCol(addDays(today, -10)) } });
+    const late = (await ledger()).rows.find((r: { studentId: string }) => r.studentId === offlineStudentId);
+    expect(late.paid).toBeNull();
+    expect(late.overdueDays).toBe(10);
+    expect(late.nextPeriodStart).toBe(addDays(today, -9));
+
+    // Davrni bekor qilish to'lovning o'z oyi bilan
+    expect((await req("DELETE", `/admin/offline-payments/${offlineStudentId}/${start.slice(0, 7)}`)).statusCode).toBe(200);
   });
 
   it("ega: oylik summa, to'lovni belgilash (ota-onaga xabar), qarzdorlarga eslatma", async () => {

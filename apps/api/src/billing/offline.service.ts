@@ -1,9 +1,24 @@
 import { BadRequestException, ConflictException, Injectable, NotFoundException } from "@nestjs/common";
 import { defaultMonthlyFee, effectiveFee } from "./fee";
-import { currentMonth, formatSum, monthLabel, MONTH_RE, type MyOfflineBilling, type OfflineLedger } from "@onatili/shared";
+import {
+  currentMonth,
+  daysBetween,
+  defaultPeriodEnd,
+  formatSum,
+  monthBounds,
+  monthLabel,
+  monthOfYmd,
+  MONTH_RE,
+  periodLabel,
+  shortDate,
+  tashkentToday,
+  type MyOfflineBilling,
+  type OfflineLedger,
+} from "@onatili/shared";
 import { NotifyService } from "../notify/notify.service";
 import { esc } from "../notify/telegram";
 import { PrismaService } from "../prisma/prisma.service";
+import { coverage, dateCol, effective, pickPayment, referenceDate } from "./offline-period";
 
 const fullName = (u: { firstName: string; lastName: string | null }) => [u.firstName, u.lastName].filter(Boolean).join(" ");
 /** Bir guruh-oy uchun eslatmalar orasidagi eng kam vaqt: ota-onalarni bezovta qilmaslik uchun */
@@ -37,24 +52,47 @@ export class OfflineBillingService {
     // Hozirgi a'zolar + shu oyda shu guruhda to'lagan, keyin chiqib ketganlar
     const students = await this.prisma.studentProfile.findMany({
       where: { OR: [{ groupId }, { offlinePayments: { some: { groupId, month } } }] },
-      select: { ...studentSelect, offlinePayments: { where: { month }, include: { markedBy: { select: { firstName: true, lastName: true } } } } },
+      // Davr o'quvchining o'z sanasidan: oy chegarasidan o'tadi, shuning uchun hamma to'lovlari olinadi (so'nggi 2 yil)
+      select: { ...studentSelect, offlinePayments: { orderBy: { month: "desc" }, take: 24, include: { markedBy: { select: { firstName: true, lastName: true } } } } },
     });
+    const today = tashkentToday();
+    const ref = referenceDate(month, today);
+    let sumHere = 0;
     const rows = students
       .map((s) => {
-        const p = s.offlinePayments[0];
+        const p = pickPayment(s.offlinePayments, month, today);
+        const cov = coverage(s.offlinePayments, ref);
+        // Yig'ilgan summa: faqat shu guruhda olingan to'lovlar (boshqa guruhdan o'tgan o'quvchi to'lagan bo'lsa ham "to'lagan" ko'rinadi, lekin ikki marta qo'shilmaydi)
+        if (p && p.groupId === groupId) sumHere += p.amountUzs;
+        const e = p && effective(p);
         return {
           studentId: s.id,
           name: fullName(s.user),
           username: s.user.username,
           phone: s.user.phone,
           approvedParents: s.parents.length,
-          paid: p ? { amountUzs: p.amountUzs, note: p.note, paidAt: p.createdAt.toISOString(), markedBy: p.markedBy ? fullName(p.markedBy) : null } : null,
+          paid:
+            p && e
+              ? {
+                  amountUzs: p.amountUzs,
+                  note: p.note,
+                  paidAt: p.createdAt.toISOString(),
+                  markedBy: p.markedBy ? fullName(p.markedBy) : null,
+                  month: p.month,
+                  periodStart: e.start,
+                  periodEnd: e.end,
+                  paidOn: e.paidOn,
+                  lateDays: Math.max(0, daysBetween(e.start, e.paidOn)),
+                }
+              : null,
+          coveredUntil: cov.coveredUntil,
+          overdueDays: p ? null : cov.overdueDays,
+          nextPeriodStart: cov.nextPeriodStart,
         };
       })
-      .sort((a, b) => Number(!!a.paid) - Number(!!b.paid) || a.name.localeCompare(b.name));
+      // Qarzdorlar tepada, ichida eng uzoq muddati o'tgani birinchi
+      .sort((a, b) => Number(!!a.paid) - Number(!!b.paid) || (b.overdueDays ?? -1) - (a.overdueDays ?? -1) || a.name.localeCompare(b.name));
     const paid = rows.filter((r) => r.paid);
-    // Yig'ilgan summa: faqat shu guruhda olingan to'lovlar (boshqa guruhdan o'tgan o'quvchi to'lagan bo'lsa ham "to'lagan" ko'rinadi, lekin ikki marta qo'shilmaydi)
-    const sumHere = students.reduce((sum, st) => sum + (st.offlinePayments[0]?.groupId === groupId ? st.offlinePayments[0].amountUzs : 0), 0);
     const last = await this.prisma.auditLog.findFirst({ where: { action: "offline.remind", entityId: `${groupId}:${month}` }, orderBy: { createdAt: "desc" } });
     return {
       group,
@@ -72,27 +110,64 @@ export class OfflineBillingService {
     return { ok: true };
   }
 
-  async mark(actorId: string, d: { studentId: string; month: string; amountUzs?: number; note: string | null }) {
+  async mark(actorId: string, d: { studentId: string; month?: string; periodStart?: string; periodEnd?: string; paidOn?: string; amountUzs?: number; note: string | null }) {
     const s = await this.prisma.studentProfile.findUnique({ where: { id: d.studentId }, select: { ...studentSelect, group: { select: { id: true, monthlyFeeUzs: true } } } });
     if (!s) throw new NotFoundException("O'quvchi topilmadi");
-    const existing = await this.prisma.offlinePayment.findUnique({ where: { studentId_month: { studentId: d.studentId, month: d.month } } });
+    const today = tashkentToday();
+
+    // Davr: berilgan sanalar; berilmasa shu oyning o'zi (eski usul). Tahrirlashda davr o'zgarmaydi, agar yangisi berilmasa
+    const monthKey = d.periodStart ? monthOfYmd(d.periodStart) : d.month!;
+    this.checkMonth(monthKey);
+    const existing = await this.prisma.offlinePayment.findUnique({ where: { studentId_month: { studentId: d.studentId, month: monthKey } } });
     if (!existing && !s.group) throw new ConflictException("O'quvchi hech qaysi guruhda emas");
+    const old = existing && effective(existing);
+    const bounds = monthBounds(monthKey);
+    const start = d.periodStart ?? old?.start ?? bounds.start;
+    const end = d.periodEnd ?? (d.periodStart ? defaultPeriodEnd(start) : (old?.end ?? bounds.end));
+    const paidOn = d.paidOn ?? old?.paidOn ?? today;
+    if (end < start) throw new BadRequestException("Davr oxiri boshidan oldin bo'lishi mumkin emas");
+    if (daysBetween(start, end) > 400) throw new BadRequestException("Davr bir yildan uzun bo'lishi mumkin emas");
+    if (paidOn > today) throw new BadRequestException("To'lov sanasi kelajakda bo'lishi mumkin emas");
+
+    // Bir o'quvchining ikki davri kesishmasin: aks holda bir kun ikki marta to'langan hisoblanadi
+    const others = await this.prisma.offlinePayment.findMany({ where: { studentId: d.studentId, month: { not: monthKey } } });
+    const clash = others.map(effective).find((e) => e.start <= end && e.end >= start);
+    if (clash) throw new ConflictException(`Bu davr boshqa to'lov bilan kesishadi (${periodLabel(clash.start, clash.end)}). Avval uni tekshiring`);
+
     const amountUzs = d.amountUzs ?? existing?.amountUzs ?? effectiveFee(s.group?.monthlyFeeUzs, await defaultMonthlyFee(this.prisma));
     // Summa noma'lum (guruhga oylik summa kiritilmagan): 0 so'm deb saqlanmaydi, aks holda hisobotlar buziladi
     if (amountUzs === null) throw new BadRequestException("Oylik narx noma'lum: Tariflarda oylik tarif yo'q. To'lov summasini yozing");
+    const period = { periodStart: dateCol(start), periodEnd: dateCol(end), paidOn: dateCol(paidOn) };
     const p = await this.prisma.offlinePayment.upsert({
-      where: { studentId_month: { studentId: d.studentId, month: d.month } },
+      where: { studentId_month: { studentId: d.studentId, month: monthKey } },
       // Guruhdan chiqqan o'quvchining eski to'lovini tahrirlash ham mumkin: unda create ishlamaydi (existing bor)
-      create: { studentId: d.studentId, groupId: s.group?.id ?? null, month: d.month, amountUzs, note: d.note, markedById: actorId },
-      update: { amountUzs, note: d.note, markedById: actorId },
+      create: { studentId: d.studentId, groupId: s.group?.id ?? null, month: monthKey, amountUzs, note: d.note, markedById: actorId, ...period },
+      update: { amountUzs, note: d.note, markedById: actorId, ...period },
     });
-    await this.prisma.auditLog.create({ data: { actorId, action: "offline.paid", entity: "OfflinePayment", entityId: p.id, meta: { month: d.month, amountUzs } } });
+    const late = Math.max(0, daysBetween(start, paidOn));
+    await this.prisma.auditLog.create({
+      data: { actorId, action: "offline.paid", entity: "OfflinePayment", entityId: p.id, meta: { month: monthKey, periodStart: start, periodEnd: end, paidOn, lateDays: late, amountUzs } },
+    });
     // Faqat birinchi belgilashda: ota-onaga "to'lov qabul qilindi"
     if (!existing) {
-      const text = `✅ <b>${esc(fullName(s.user))}</b>ning ${monthLabel(d.month)} oyi uchun to'lovi qabul qilindi${amountUzs ? ` (${formatSum(amountUzs)} so'm)` : ""}. Rahmat!`;
+      const whole = start === bounds.start && end === bounds.end;
+      const what = whole ? `${monthLabel(monthKey)} oyi` : `${periodLabel(start, end)} davri`;
+      const text = `✅ <b>${esc(fullName(s.user))}</b>ning ${what} uchun to'lovi qabul qilindi${amountUzs ? ` (${formatSum(amountUzs)} so'm)` : ""}. Rahmat!`;
       await Promise.all(s.parents.map((l) => this.notify.send(l.parent.telegramId, text)));
     }
-    return { ok: true };
+    return { ok: true, lateDays: late };
+  }
+
+  /** To'lov oynasi uchun: o'quvchining oxirgi to'langan davri va keyingi davr boshlanishi */
+  async nextPeriod(studentId: string) {
+    const s = await this.prisma.studentProfile.findUnique({
+      where: { id: studentId },
+      select: { ...studentSelect, group: { select: { monthlyFeeUzs: true } }, offlinePayments: { orderBy: { month: "desc" }, take: 24 } },
+    });
+    if (!s) throw new NotFoundException("O'quvchi topilmadi");
+    const cov = coverage(s.offlinePayments, tashkentToday());
+    const fee = s.group ? effectiveFee(s.group.monthlyFeeUzs, await defaultMonthlyFee(this.prisma)) : null;
+    return { name: fullName(s.user), approvedParents: s.parents.length, coveredUntil: cov.coveredUntil, nextPeriodStart: cov.nextPeriodStart, feeUzs: fee, hasGroup: !!s.group };
   }
 
   async unmark(actorId: string, studentId: string, month: string) {
@@ -111,18 +186,28 @@ export class OfflineBillingService {
     const debtorIds = l.rows.filter((r) => !r.paid).map((r) => r.studentId);
     if (!debtorIds.length) throw new ConflictException("Qarzdor yo'q");
     const debtors = await this.prisma.studentProfile.findMany({ where: { id: { in: debtorIds }, groupId }, select: studentSelect });
+    const rowOf = new Map(l.rows.map((r) => [r.studentId, r]));
     const fee = l.group.monthlyFeeUzs ? ` (${formatSum(l.group.monthlyFeeUzs)} so'm)` : "";
     let messages = 0;
     for (const s of debtors) {
       const name = esc(fullName(s.user));
+      // Oxirgi to'langan davr tugagan bo'lsa, aynan shuni yozamiz ("05.12 da tugagan"); hech to'lamagan bo'lsa, oy nomi
+      const cov = rowOf.get(s.id)?.coveredUntil;
       for (const p of s.parents) {
         await this.notify.send(
           p.parent.telegramId,
-          `🔔 Assalomu alaykum! Farzandingiz <b>${name}</b>ning ${monthLabel(month)} oyi uchun to'lovi${fee} hali qabul qilinmagan. Iltimos, to'lovni amalga oshiring.`,
+          cov
+            ? `🔔 Assalomu alaykum! Farzandingiz <b>${name}</b>ning to'lov muddati ${shortDate(cov)} da tugagan${fee}. Iltimos, to'lovni amalga oshiring.`
+            : `🔔 Assalomu alaykum! Farzandingiz <b>${name}</b>ning ${monthLabel(month)} oyi uchun to'lovi${fee} hali qabul qilinmagan. Iltimos, to'lovni amalga oshiring.`,
         );
         messages++;
       }
-      await this.notify.send(s.user.telegramId, `🔔 ${monthLabel(month)} oyi uchun to'lov${fee} hali qabul qilinmagan. Iltimos, keyingi darsda to'lovni amalga oshiring.`);
+      await this.notify.send(
+        s.user.telegramId,
+        cov
+          ? `🔔 To'lov muddatingiz ${shortDate(cov)} da tugagan${fee}. Iltimos, keyingi darsda to'lovni amalga oshiring.`
+          : `🔔 ${monthLabel(month)} oyi uchun to'lov${fee} hali qabul qilinmagan. Iltimos, keyingi darsda to'lovni amalga oshiring.`,
+      );
       messages++;
       // Qarzdor bilan ishlash tarixiga: kimga yuborildi
       await this.prisma.paymentFollowUp.create({
@@ -152,12 +237,12 @@ export class OfflineBillingService {
       d.setUTCMonth(d.getUTCMonth() - i);
       return d.toISOString().slice(0, 7);
     });
-    const paid = await this.prisma.offlinePayment.findMany({ where: { studentId: s.id, month: { in: months } } });
+    const paid = await this.prisma.offlinePayment.findMany({ where: { studentId: s.id }, orderBy: { month: "desc" }, take: 24 });
     return {
       groupName: s.group.name,
       monthlyFeeUzs: effectiveFee(s.group.monthlyFeeUzs, await defaultMonthlyFee(this.prisma)),
       months: months.map((m) => {
-        const p = paid.find((x) => x.month === m);
+        const p = pickPayment(paid, m);
         return { month: m, paid: !!p, amountUzs: p?.amountUzs ?? null };
       }),
     };

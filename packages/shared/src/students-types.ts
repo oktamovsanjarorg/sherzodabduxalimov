@@ -42,7 +42,8 @@ export interface StudentDetail extends RosterRow {
   };
   /** Faqat egaga (yordamchiga null) */
   billing: {
-    offlineMonths: { month: string; paid: boolean; amountUzs: number | null; note: string | null }[];
+    /** paymentMonth: to'lovning o'z oyi (bekor qilish shu bilan); period: "05.11 – 04.12" */
+    offlineMonths: { month: string; paid: boolean; amountUzs: number | null; note: string | null; paymentMonth: string | null; period: string | null }[];
     /** Guruhning oylik summasi (kiritilmagan bo'lsa null: to'lovda summani yozish kerak) */
     groupFeeUzs: number | null;
     subscription: { planName: string; endsAt: string } | null;

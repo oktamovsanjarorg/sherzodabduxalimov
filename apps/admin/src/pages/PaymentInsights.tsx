@@ -4,6 +4,7 @@ import { AlertTriangle, BellRing, Bot, Check, ChevronRight, MessageSquare, Phone
 import { Fragment, useState, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { Badge, Spinner } from "../components/ui";
+import { PayDialog } from "../components/PayDialog";
 import { api, errMsg } from "../lib/api";
 import { fmtDate, fmtShortDateTime } from "../lib/format";
 import { useToast } from "../lib/toast";
@@ -257,16 +258,7 @@ function Debtor({ x, month }: { x: DebtorRow; month: string }) {
     },
     onError: (e) => toast(errMsg(e), "error"),
   });
-  const [amount, setAmount] = useState("");
-  const [asking, setAsking] = useState(false);
-  const paid = useMutation({
-    mutationFn: () => api.markOffline({ studentId: x.studentId, month, note: "Naqd", ...(x.amountUzs ? {} : { amountUzs: Number(amount.replace(/\D/g, "")) }) }),
-    onSuccess: () => {
-      toast(`${x.name}: to'lov belgilandi`);
-      refresh();
-    },
-    onError: (e) => toast(errMsg(e), "error"),
-  });
+  const [paying, setPaying] = useState(false);
   const del = useMutation({ mutationFn: (id: string) => api.removeFollowUp(id), onSuccess: refresh, onError: (e) => toast(errMsg(e), "error") });
   const promise = x.followUps.find((f) => f.kind === "PROMISE");
   const promiseLate = promise?.promisedAt && promise.promisedAt < new Date(Date.now() + 5 * 3600_000).toISOString().slice(0, 10);
@@ -363,22 +355,11 @@ function Debtor({ x, month }: { x: DebtorRow; month: string }) {
           <button className="btn-secondary btn-sm h-8" onClick={() => setForm("REASON")}>
             Sababi
           </button>
-          {x.kind === "OFFLINE" &&
-            (asking ? (
-              <span className="flex items-center gap-1">
-                <input className="input h-8 w-32 text-sm" inputMode="numeric" placeholder="Summa, so'm" value={amount} onChange={(e) => setAmount(e.target.value)} autoFocus />
-                <button className="btn-primary btn-sm h-8" disabled={paid.isPending || !Number(amount.replace(/\D/g, ""))} onClick={() => paid.mutate()}>
-                  <Check size={13} /> Saqlash
-                </button>
-                <button className="btn-ghost btn-sm h-8" onClick={() => setAsking(false)}>
-                  <X size={13} />
-                </button>
-              </span>
-            ) : (
-              <button className="btn-primary btn-sm h-8" disabled={paid.isPending} onClick={() => (x.amountUzs ? paid.mutate() : setAsking(true))}>
-                <Check size={13} /> To'ladi
-              </button>
-            ))}
+          {x.kind === "OFFLINE" && (
+            <button className="btn-primary btn-sm h-8" onClick={() => setPaying(true)}>
+              <Check size={13} /> To'ladi
+            </button>
+          )}
           {x.kind === "ONLINE" && (
             <Link to="/payments?tab=SUBS" className="btn-secondary btn-sm h-8">
               Obuna berish
@@ -386,6 +367,7 @@ function Debtor({ x, month }: { x: DebtorRow; month: string }) {
           )}
         </div>
       )}
+      {paying && <PayDialog studentId={x.studentId} onClose={() => setPaying(false)} onDone={refresh} />}
     </li>
   );
 }

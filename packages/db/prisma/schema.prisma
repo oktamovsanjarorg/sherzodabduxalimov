@@ -559,10 +559,16 @@ model OfflinePayment {
   note       String?
   markedById String?
   markedBy   User?          @relation("OfflinePaymentMarker", fields: [markedById], references: [id], onDelete: SetNull)
+  /// To'lov davri: o'quvchining o'z sanasidan (05.11 – 04.12). null: eski yozuv, butun `month` oyi
+  periodStart DateTime?     @db.Date
+  periodEnd   DateTime?     @db.Date
+  /// To'lov qabul qilingan kun (kechikkanini bilish uchun). null: eski yozuv, createdAt kuni
+  paidOn      DateTime?     @db.Date
   createdAt  DateTime       @default(now())
 
   @@unique([studentId, month])
   @@index([groupId, month])
+  @@index([studentId, periodEnd])
 }
 
 enum VoiceStatus {

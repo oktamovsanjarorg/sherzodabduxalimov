@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { YMD_RE } from "./period";
 
 // ===================== To'lov va obuna =====================
 
@@ -149,7 +150,26 @@ export interface OfflineLedgerRow {
   phone: string | null;
   /** Xabar yuboriladigan (tasdiqlangan) ota-onalar soni */
   approvedParents: number;
-  paid: { amountUzs: number; note: string | null; paidAt: string; markedBy: string | null } | null;
+  paid: {
+    amountUzs: number;
+    note: string | null;
+    paidAt: string;
+    markedBy: string | null;
+    /** To'lovning o'z oyi (bekor qilish shu bilan). Davr boshqa oydan boshlangan bo'lishi mumkin */
+    month: string;
+    periodStart: string;
+    periodEnd: string;
+    /** To'lov qabul qilingan kun */
+    paidOn: string;
+    /** To'lov davr boshidan necha kun keyin qilingan (0: o'z vaqtida) */
+    lateDays: number;
+  } | null;
+  /** Oxirgi to'langan davr qaysi sanagacha (YYYY-MM-DD); hech to'lamagan bo'lsa null */
+  coveredUntil: string | null;
+  /** Davr tugaganiga necha kun bo'ldi (qarzdor bo'lsa); to'lagan yoki hech to'lamagan bo'lsa null */
+  overdueDays: number | null;
+  /** Keyingi to'lov davri boshlanishi: oxirgi davrdan keyingi kun, bo'lmasa bugun */
+  nextPeriodStart: string;
 }
 
 export interface OfflineLedger {
@@ -162,12 +182,21 @@ export interface OfflineLedger {
   lastReminderAt: string | null;
 }
 
-export const offlinePaymentInput = z.object({
-  studentId: z.string().min(1),
-  month: z.string().regex(MONTH_RE, "Oy YYYY-MM ko'rinishida bo'lishi kerak"),
-  amountUzs: z.coerce.number().int().min(0).max(100_000_000).optional(),
-  note: z.string().trim().max(300).nullable().default(null),
-});
+/**
+ * To'lov kiritish. Davr boshi berilsa: davr boshi–oxiri va to'lov sanasi (ular bo'lmasa, defoltlar qo'yiladi).
+ * Berilmasa, `month` oyining o'zi davr bo'ladi (eski usul).
+ */
+export const offlinePaymentInput = z
+  .object({
+    studentId: z.string().min(1),
+    month: z.string().regex(MONTH_RE, "Oy YYYY-MM ko'rinishida bo'lishi kerak").optional(),
+    periodStart: z.string().regex(YMD_RE, "Sana YYYY-MM-DD ko'rinishida bo'lishi kerak").optional(),
+    periodEnd: z.string().regex(YMD_RE, "Sana YYYY-MM-DD ko'rinishida bo'lishi kerak").optional(),
+    paidOn: z.string().regex(YMD_RE, "Sana YYYY-MM-DD ko'rinishida bo'lishi kerak").optional(),
+    amountUzs: z.coerce.number().int().min(0).max(100_000_000).optional(),
+    note: z.string().trim().max(300).nullable().default(null),
+  })
+  .refine((d) => d.month || d.periodStart, { message: "Oy yoki davr boshini yozing" });
 
 export const groupFeeInput = z.object({ monthlyFeeUzs: z.coerce.number().int().min(0).max(100_000_000).nullable() });
 

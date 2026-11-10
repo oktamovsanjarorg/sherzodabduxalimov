@@ -7,6 +7,7 @@ import {
   STAFF_ROLES,
   currentMonth,
   nameMatchScore,
+  periodLabel,
   normUzPhone,
   parseStudentLine,
   type AdminUserRow,
@@ -23,6 +24,7 @@ import { ENV, type Env } from "../config/env";
 import { PrismaService } from "../prisma/prisma.service";
 import { TrashService } from "../trash/trash.service";
 import { defaultMonthlyFee, effectiveFee } from "../billing/fee";
+import { effective, paidNowWhere, pickPayment, referenceDate } from "../billing/offline-period";
 import type { Keyboard } from "../notify/notify.service";
 import { esc } from "../notify/telegram";
 import { StaffService, type TelegramProfile } from "../staff/staff.service";
@@ -52,7 +54,8 @@ const rosterInclude = (month: string, since: Date) =>
     },
     group: { select: { id: true, name: true, isActive: true, monthlyFeeUzs: true } },
     parents: { where: { status: { in: ["PENDING", "APPROVED"] } }, select: { status: true } },
-    offlinePayments: { where: { month }, select: { id: true } },
+    // "To'langan" = bugungi sana to'lov davriga tushadi (davr o'quvchining o'z sanasidan, oy bilan mos tushmaydi)
+    offlinePayments: { where: paidNowWhere(referenceDate(month)), select: { id: true } },
     attendance: { where: { date: { gte: since } }, select: { status: true } },
   }) satisfies Prisma.StudentProfileInclude;
 
@@ -133,7 +136,7 @@ export class StudentsService {
             acceptedAt: true,
             group: { select: { id: true, name: true } },
             parents: { where: { status: "APPROVED" }, select: { id: true } },
-            offlinePayments: { where: { month: currentMonth() }, select: { id: true } },
+            offlinePayments: { where: paidNowWhere(), select: { id: true } },
           },
         },
         subscriptions: { where: { status: "ACTIVE", startsAt: { lte: new Date() }, endsAt: { gt: new Date(Date.now() - AccessService.GRACE_MS) } }, take: 1, select: { id: true } },
@@ -527,7 +530,7 @@ export class StudentsService {
     const [attendance, counts, offline, payments, lessons, attempts, essays] = await Promise.all([
       this.prisma.attendance.findMany({ where: { studentId }, orderBy: { date: "desc" }, take: 30, include: { group: { select: { name: true } } } }),
       this.prisma.attendance.groupBy({ by: ["status"], where: { studentId }, _count: true }),
-      isTeacher ? this.prisma.offlinePayment.findMany({ where: { studentId, month: { in: months } } }) : Promise.resolve([]),
+      isTeacher ? this.prisma.offlinePayment.findMany({ where: { studentId }, orderBy: { month: "desc" }, take: 24 }) : Promise.resolve([]),
       isTeacher
         ? this.prisma.payment.findMany({ where: { userId }, orderBy: { createdAt: "desc" }, take: 10, include: { plan: { select: { name: true } } } })
         : Promise.resolve([]),
@@ -565,8 +568,9 @@ export class StudentsService {
               ? months
                   .filter((m) => m >= currentMonth(sp.createdAt) || offline.some((x) => x.month === m))
                   .map((m) => {
-                  const p = offline.find((x) => x.month === m);
-                  return { month: m, paid: !!p, amountUzs: p?.amountUzs ?? null, note: p?.note ?? null };
+                  const p = pickPayment(offline, m);
+                  const e = p && effective(p);
+                  return { month: m, paid: !!p, amountUzs: p?.amountUzs ?? null, note: p?.note ?? null, paymentMonth: p?.month ?? null, period: e ? periodLabel(e.start, e.end) : null };
                 })
               : [],
             groupFeeUzs: sp.group ? effectiveFee(sp.group.monthlyFeeUzs, await defaultMonthlyFee(this.prisma)) : null,

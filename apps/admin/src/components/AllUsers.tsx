@@ -1,8 +1,9 @@
-import { ROLE_LABELS, currentMonth, type AdminGroup, type AdminUserRow } from "@onatili/shared";
+import { ROLE_LABELS, type AdminGroup, type AdminUserRow } from "@onatili/shared";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Check, Trash2, Wallet } from "lucide-react";
 import { useState } from "react";
 import { Link } from "react-router-dom";
+import { PayDialog } from "./PayDialog";
 import { api, errMsg } from "../lib/api";
 import { fmtDate } from "../lib/format";
 import { useToast } from "../lib/toast";
@@ -40,14 +41,7 @@ function Row({ u, groups, isTeacher }: { u: AdminUserRow; groups: AdminGroup[]; 
     onSuccess: refresh,
     onError,
   });
-  const markPaid = useMutation({
-    mutationFn: () => api.markOffline({ studentId: u.studentId!, month: currentMonth() }),
-    onSuccess: () => {
-      toast("To'lov belgilandi");
-      refresh();
-    },
-    onError,
-  });
+  const [payOffline, setPayOffline] = useState(false);
   const del = useMutation({
     mutationFn: () => api.deleteStudent(u.studentId!, true),
     onSuccess: () => {
@@ -57,7 +51,7 @@ function Row({ u, groups, isTeacher }: { u: AdminUserRow; groups: AdminGroup[]; 
     onError,
   });
   const student = u.role === "STUDENT" && !!u.studentId;
-  const busy = accept.isPending || markPaid.isPending;
+  const busy = accept.isPending;
   const contact = [u.phone, u.username && `@${u.username}`, `kirgan: ${fmtDate(u.firstSeenAt)}`].filter(Boolean).join(" · ");
 
   return (
@@ -109,7 +103,7 @@ function Row({ u, groups, isTeacher }: { u: AdminUserRow; groups: AdminGroup[]; 
             </button>
           )}
           {isTeacher && !u.paid && (
-            <button className="btn-secondary btn-sm h-9" disabled={busy} onClick={() => (u.group ? markPaid.mutate() : setPaying(true))}>
+            <button className="btn-secondary btn-sm h-9" disabled={busy} onClick={() => (u.group ? setPayOffline(true) : setPaying(true))}>
               <Wallet size={14} /> Pul to'ladi
             </button>
           )}
@@ -122,6 +116,7 @@ function Row({ u, groups, isTeacher }: { u: AdminUserRow; groups: AdminGroup[]; 
         </ConfirmButton>
       )}
       {paying && <PlanModal u={u} onClose={() => setPaying(false)} onDone={refresh} />}
+      {payOffline && u.studentId && <PayDialog studentId={u.studentId} onClose={() => setPayOffline(false)} onDone={refresh} />}
     </div>
   );
 }

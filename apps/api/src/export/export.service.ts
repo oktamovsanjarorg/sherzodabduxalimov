@@ -1,5 +1,6 @@
 import { Injectable } from "@nestjs/common";
-import { ATTENDANCE_LABELS } from "@onatili/shared";
+import { ATTENDANCE_LABELS, daysBetween, periodLabel } from "@onatili/shared";
+import { effective } from "../billing/offline-period";
 import { PrismaService } from "../prisma/prisma.service";
 import { buildXlsx, type Sheet } from "./xlsx";
 
@@ -51,6 +52,9 @@ export class ExportService {
         orderBy: [{ month: "desc" }, { createdAt: "desc" }],
         select: {
           month: true,
+          periodStart: true,
+          periodEnd: true,
+          paidOn: true,
           amountUzs: true,
           note: true,
           createdAt: true,
@@ -144,7 +148,9 @@ export class ExportService {
       {
         name: "Naqd to'lovlar",
         columns: [
-          { header: "Oy", width: 9 },
+          { header: "Davr", width: 16 },
+          { header: "To'lov sanasi", width: 13 },
+          { header: "Kechikish (kun)", width: 11 },
           { header: "O'quvchi", width: 30 },
           { header: "Guruh", width: 14 },
           { header: "Summa (so'm)", width: 13 },
@@ -152,7 +158,10 @@ export class ExportService {
           { header: "Belgilagan", width: 22 },
           { header: "Belgilangan vaqt", width: 17 },
         ],
-        rows: offline.map((o) => [o.month, fullName(o.student.user), o.group?.name, o.amountUzs, o.note, fullName(o.markedBy), dt(o.createdAt)]),
+        rows: offline.map((o) => {
+          const e = effective(o);
+          return [periodLabel(e.start, e.end), e.paidOn, Math.max(0, daysBetween(e.start, e.paidOn)), fullName(o.student.user), o.group?.name, o.amountUzs, o.note, fullName(o.markedBy), dt(o.createdAt)];
+        }),
       },
       {
         name: "Ilovadagi to'lovlar",

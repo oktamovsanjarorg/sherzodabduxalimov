@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, Bot, Check, ClipboardCheck, Copy, GraduationCap, Pencil, Phone, RotateCcw, Trash2, X } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
+import { PayDialog } from "../components/PayDialog";
 import { Badge, ConfirmButton, Field, Modal, Spinner } from "../components/ui";
 import { api, errMsg } from "../lib/api";
 import { fmtDate } from "../lib/format";
@@ -425,22 +426,13 @@ function Billing({ s }: { s: StudentDetail }) {
   const toast = useToast();
   const qc = useQueryClient();
   const b = s.billing!;
-  const [askMonth, setAskMonth] = useState<string | null>(null);
-  const [amount, setAmount] = useState("");
-  const mark = useMutation({
-    mutationFn: (month: string) =>
-      api.markOffline({ studentId: s.studentId, month, note: "Naqd", ...(b.groupFeeUzs ? {} : { amountUzs: Number(amount.replace(/\D/g, "")) }) }),
-    onSuccess: () => {
-      setAskMonth(null);
-      setAmount("");
-      toast("To'lov belgilandi");
-      qc.invalidateQueries({ queryKey: ["student", s.studentId] });
-      qc.invalidateQueries({ queryKey: ["roster"] });
-    },
-    onError: (e) => toast(errMsg(e), "error"),
-  });
+  const [paying, setPaying] = useState(false);
+  const refreshAll = () => {
+    qc.invalidateQueries({ queryKey: ["student", s.studentId] });
+    qc.invalidateQueries({ queryKey: ["roster"] });
+  };
   const unmark = useMutation({
-    mutationFn: (month: string) => api.unmarkOffline(s.studentId, month),
+    mutationFn: (month: string) => api.unmarkOffline(s.studentId, month), // to'lovning o'z oyi: davr boshqa oydan boshlangan bo'lishi mumkin
     onSuccess: () => {
       toast("To'lov belgisi olib tashlandi");
       qc.invalidateQueries({ queryKey: ["student", s.studentId] });
@@ -463,33 +455,26 @@ function Billing({ s }: { s: StudentDetail }) {
                       {m.amountUzs ? `${formatSum(m.amountUzs)} so'm` : "to'langan"}
                       {m.note ? ` · ${m.note}` : ""}
                     </Badge>
-                    <ConfirmButton label="Qaytarilsinmi?" className="btn-ghost btn-sm text-slate-500" onConfirm={() => unmark.mutate(m.month)}>
+                    {m.period && <span className="text-[11px] text-slate-500">{m.period}</span>}
+                    <ConfirmButton label="Qaytarilsinmi?" className="btn-ghost btn-sm text-slate-500" onConfirm={() => unmark.mutate(m.paymentMonth ?? m.month)}>
                       <RotateCcw size={14} /> Qaytarish
                     </ConfirmButton>
                   </>
                 ) : (
                   <>
                     <Badge tone="red">to'lanmagan</Badge>
-                    {askMonth === m.month ? (
-                      <span className="flex items-center gap-1">
-                        <input className="input h-8 w-28 text-sm" inputMode="numeric" placeholder="Summa" value={amount} onChange={(e) => setAmount(e.target.value)} autoFocus />
-                        <button className="btn-primary btn-sm" disabled={mark.isPending || !Number(amount.replace(/\D/g, ""))} onClick={() => mark.mutate(m.month)}>
-                          Saqlash
-                        </button>
-                      </span>
-                    ) : (
-                      <button className="btn-primary btn-sm" disabled={mark.isPending} onClick={() => (b.groupFeeUzs ? mark.mutate(m.month) : setAskMonth(m.month))}>
-                        To'ladi
-                      </button>
-                    )}
+                    <button className="btn-primary btn-sm" onClick={() => setPaying(true)}>
+                      To'ladi
+                    </button>
                   </>
                 )}
               </div>
             ))}
           </div>
           <p className="mt-1 text-xs text-slate-500">
-            {b.groupFeeUzs ? `Summa guruhning oylik summasidan olinadi (${formatSum(b.groupFeeUzs)} so'm).` : "Guruhga oylik summa kiritilmagan: to'lovda summani yozasiz."} Boshqa summa uchun: To'lovlar → Offline guruhlar.
+            {b.groupFeeUzs ? `Oylik summa ${formatSum(b.groupFeeUzs)} so'm.` : "Guruhga oylik summa kiritilmagan: to'lovda summani yozasiz."} «To'ladi»da davr (o'quvchining o'z sanasidan) va to'lov sanasi tanlanadi.
           </p>
+          {paying && <PayDialog studentId={s.studentId} onClose={() => setPaying(false)} onDone={refreshAll} />}
         </div>
       )}
       <div>
