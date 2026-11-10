@@ -222,11 +222,18 @@ async function saveName(ctx: Context, firstName: string, lastName: string) {
 }
 
 bot.on("message:text", async (ctx, next) => {
-  const flow = nameFlow.get(ctx.from.id);
-  if (ctx.chat.type !== "private" || ctx.message.text.startsWith("/") || !flow) return next();
-  if (Date.now() - flow.at > NAME_FLOW_TTL_MS) {
+  if (ctx.chat.type !== "private" || ctx.message.text.startsWith("/")) return next();
+  let flow = nameFlow.get(ctx.from.id);
+  if (flow && Date.now() - flow.at > NAME_FLOW_TTL_MS) {
     nameFlow.delete(ctx.from.id);
-    return next();
+    flow = undefined;
+  }
+  // Bot qayta ishga tushgan (deploy) yoki o'quvchi /start bosmay to'g'ridan-to'g'ri yozgan: ismi yo'q bo'lsa, yozganini ism deb qabul qilamiz
+  if (!flow) {
+    const visit = await internal<{ needsName?: boolean }>("visit", fromOf(ctx.from)).catch(() => ({ needsName: false }));
+    if (!visit.needsName) return next();
+    flow = { at: Date.now() };
+    nameFlow.set(ctx.from.id, flow);
   }
   try {
     const text = ctx.message.text;
