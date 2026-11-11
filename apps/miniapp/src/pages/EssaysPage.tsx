@@ -1,4 +1,4 @@
-import { ESSAY_REQUIREMENTS, ESSAY_STATUS_LABELS, MAX_ESSAY_PAGES, formatSum, type EssayModeName, type MyEssaySummary, formatScore } from "@onatili/shared";
+import { ESSAY_PROMPT_MAX, ESSAY_REQUIREMENTS, ESSAY_STATUS_LABELS, MAX_ESSAY_PAGES, formatSum, type EssayModeName, type MyEssaySummary, formatScore } from "@onatili/shared";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Bot, ChevronRight, GraduationCap, Info, Loader2, Plus } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
@@ -204,13 +204,19 @@ export function NewEssayPage() {
           {mode && (
             <>
               <Step n={2} title="Esse mavzusi" />
-              <input
+              <textarea
                 value={prompt}
                 onChange={(e) => setPrompt(e.target.value)}
-                maxLength={300}
-                placeholder="Masalan: Kitob — bilim manbai"
-                className="h-12 w-full rounded-xl border-2 border-transparent bg-section px-4 text-[16px] outline-none focus:border-brand"
+                maxLength={ESSAY_PROMPT_MAX}
+                rows={2}
+                placeholder="Masalan: Kitob — bilim manbai. Topshiriq iqtibos bilan bo'lsa, to'liq ko'chiring"
+                className="w-full resize-y rounded-xl border-2 border-transparent bg-section px-4 py-3 text-[16px] leading-snug outline-none focus:border-brand"
               />
+              {prompt.length > ESSAY_PROMPT_MAX - 150 && (
+                <p className="mt-1 px-1 text-xs text-hint">
+                  {prompt.length} / {ESSAY_PROMPT_MAX} belgi
+                </p>
+              )}
             </>
           )}
 

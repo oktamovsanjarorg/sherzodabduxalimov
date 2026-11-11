@@ -183,10 +183,14 @@ export interface EssayConfig {
   staffPreview: boolean;
 }
 
+/** Esse mavzusi (topshiriq matni) uzunligi chegarasi, belgida (~150 so'z) */
+export const ESSAY_PROMPT_MAX = 1000;
+
 export const createEssayInput = z
   .object({
     mode: z.enum(["AI", "TEACHER"]),
-    prompt: z.string().trim().min(3, "Esse mavzusini yozing").max(300),
+    // Milliy sertifikat topshirig'i iqtibos + vazifadan iborat bo'ladi: 300 belgiga sig'masdi
+    prompt: z.string().trim().min(3, "Esse mavzusini yozing").max(ESSAY_PROMPT_MAX, `Mavzu ${ESSAY_PROMPT_MAX} belgidan oshmasin`),
     text: z.string().trim().max(20_000).nullable().default(null),
   })
   // AI: matn yozilsa kamida 30 so'z; matnsiz bo'lsa varoq rasmlari yuklanadi

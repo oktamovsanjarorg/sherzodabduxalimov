@@ -49,7 +49,7 @@ export function EssayPage() {
             {e.mode === "AI" ? <Bot size={14} /> : <GraduationCap size={14} />}
             {e.mode === "AI" ? "AI tekshiruvi" : "Ustoz tekshiruvi"} · {formatDate(e.createdAt)}
           </div>
-          <h1 className="mt-1 px-1 text-xl font-extrabold">{e.prompt}</h1>
+          <h1 className={`mt-1 whitespace-pre-line break-words px-1 font-extrabold ${e.prompt.length > 120 ? "text-base leading-snug" : "text-xl"}`}>{e.prompt}</h1>
 
           {e.status === "DRAFT" && <DraftPages e={e} onChange={set} />}
           {e.status === "AWAITING_PAYMENT" && <EssayPay e={e} onChange={() => q.refetch()} />}
