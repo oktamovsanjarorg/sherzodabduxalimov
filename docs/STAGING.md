@@ -42,7 +42,8 @@ Skript production bot tokenini taniydi va bunday holatda ishga tushmaydi.
 - Worker 0.5 CPU bilan cheklangan.
 - Volumlar alohida: `onatili-staging_staging_pg`, `onatili-staging_staging_media`.
 
-## Server tomoni (bir marta qilingan)
+## Server tomoni (bir marta)
+Yangi serverda bir buyruq bilan: `ssh onatili-yangi 'bash -s' < scripts/server-setup.sh` (auto-deploy, sshd, Caddy). DNS yozuvini eskiz.uz panelida qo'lda qo'shing.
 - `/etc/ssh/sshd_config.d/70-onatili-staging-tunnel.conf`: `ubuntu` uchun `GatewayPorts clientspecified`. Tunnel `172.18.0.1` ga bog'lanadi. Bu IP tashqaridan ko'rinmaydi.
 - `~/edge/Caddyfile`: `staging.sherzodabduxalimov.uzbek-talim.uz` bloki, u `172.18.0.1:18098` ga proxy qiladi.
 - DNS (eskiz.uz): `staging.sherzodabduxalimov` A → `63.186.202.165`.

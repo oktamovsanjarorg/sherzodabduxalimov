@@ -56,7 +56,8 @@ tunnel_up() {
       ssh -N -o BatchMode=yes -o ExitOnForwardFailure=yes \
           -o ServerAliveInterval=15 -o ServerAliveCountMax=3 -o ConnectTimeout=15 \
           -R "$1:127.0.0.1:$2" "$3"
-      echo "$(date -Is) uzildi (kod $?), 5 s dan keyin qayta"
+      rc=$?
+      echo "$(date -Is) uzildi (kod $rc), 5 s dan keyin qayta"
       sleep 5
     done' _ "$REMOTE_BIND" "$LOCAL_PORT" "$SSH_HOST" >>"$TUNNEL_LOG" 2>&1 < /dev/null &
   echo $! > "$TUNNEL_PID"
