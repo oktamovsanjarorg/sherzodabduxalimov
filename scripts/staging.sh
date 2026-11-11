@@ -49,11 +49,12 @@ tunnel_running() { [[ -f "$TUNNEL_PID" ]] && kill -0 "$(cat "$TUNNEL_PID")" 2>/d
 tunnel_up() {
   if tunnel_running; then echo "✓ tunnel allaqachon ishlayapti"; return; fi
   : > "$TUNNEL_LOG"
+  # ControlMaster=no: aks holda ssh umumiy (mux) ulanishga qo'shilib darhol chiqadi, forward eski sessiyada nazoratsiz qoladi
   # Qayta ulanuvchi tsikl. Alohida jarayon guruhida: down butun guruhni o'ldiradi
   setsid nohup bash -c '
     while true; do
       echo "$(date -Is) ulanmoqda"
-      ssh -N -o BatchMode=yes -o ExitOnForwardFailure=yes \
+      ssh -N -o BatchMode=yes -o ExitOnForwardFailure=yes -o ControlMaster=no -o ControlPath=none \
           -o ServerAliveInterval=15 -o ServerAliveCountMax=3 -o ConnectTimeout=15 \
           -R "$1:127.0.0.1:$2" "$3"
       rc=$?
