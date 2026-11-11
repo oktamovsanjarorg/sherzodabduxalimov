@@ -9,7 +9,7 @@ import { NOTIFY_QUEUE, type NotifyJob } from "../src/notify/notify.service";
 import { BOT_TOKEN, OWNER, createApp, login, parentTgId } from "./helpers";
 
 const prisma = new PrismaClient();
-const TG = { owner: 900000501, student: 900000502, mom: 900000503, dad: 900000504, sneaky: 900000505, third: 900000506 };
+const TG = { owner: 900000501, student: 900000502, mom: 900000503, dad: 900000504, sneaky: 900000505, third: 900000506, classmate: 900000507 };
 const ALL = [...Object.values(TG).map(BigInt), ...Object.values(TG).map(parentTgId)];
 const GROUP = "E2E guruh";
 const queue = new Queue<NotifyJob>(NOTIFY_QUEUE, { prefix: "onatili-e2e", connection: redisConnection(process.env.REDIS_URL ?? "redis://localhost:6381") });
@@ -107,13 +107,19 @@ describe("Ota-ona va davomat (e2e)", () => {
     expect((await internal("parent-link", { code, from: tgUser(TG.mom, "Malika"), contact: { phone_number: "998935556677", user_id: TG.mom } })).json().status).toBe("exists");
 
     // "Ota": aslida o'quvchining ikkinchi akkaunti, ilovada test yechgan va raqami o'quvchiniki bilan bir xil
-    const sneaky = await login(app, TG.sneaky, "Dadam", undefined, { withParent: true });
+    // Tasdiqlanmagan ikkinchi akkaunt (tasdiqlangan o'quvchi umuman ota-ona bo'la olmaydi: "is_student")
+    const sneaky = await login(app, TG.sneaky, "Dadam", undefined, { withParent: true, accepted: false });
     await prisma.lessonProgress.create({ data: { userId: sneaky.userId, lessonId: (await prisma.lesson.findFirstOrThrow()).id } });
     await internal("parent-link", { code, from: tgUser(TG.sneaky, "Dadam"), contact: { phone_number: "+998901112233", user_id: TG.sneaky } });
     const link = await prisma.parentLink.findFirstOrThrow({ where: { parent: { telegramId: BigInt(TG.sneaky) } } });
     expect(link.flags).toEqual(expect.arrayContaining(["same_phone", "student_activity"]));
     // O'quvchi sifatida ishlagan akkaunt PARENT roliga o'tmaydi
     expect((await prisma.user.findUniqueOrThrow({ where: { id: sneaky.userId } })).role).toBe("STUDENT");
+
+    // Tasdiqlangan sinfdosh havolani ochsa: hisobi ota-onaga aylanmaydi, guruhdan chiqmaydi
+    const mate = await login(app, TG.classmate, "Sinfdosh");
+    expect((await internal("parent-link", { code, from: tgUser(TG.classmate, "Sinfdosh"), contact: { phone_number: "998935550000", user_id: TG.classmate } })).json().status).toBe("is_student");
+    expect((await prisma.user.findUniqueOrThrow({ where: { id: mate.userId } })).role).toBe("STUDENT");
 
     // 2 ta faol so'rov bor: uchinchisi qabul qilinmaydi
     expect((await internal("parent-link", { code, from: tgUser(TG.third, "Boshqa"), contact: { phone_number: "998977777777", user_id: TG.third } })).json().status).toBe("limit");

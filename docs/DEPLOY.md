@@ -6,7 +6,7 @@ Production serveri: AWS `t4g.medium` (ARM, 2 vCPU, 4 GB), `eu-central-1`, `63.18
 
 ## Qanday ishlaydi
 1. `main` ga push bo'ladi. GitHub Actions faqat tekshiradi (build, typecheck, testlar, docker image), serverga ulanmaydi.
-2. Serverdagi cron har 2 daqiqada `~/.onatili/auto-deploy.sh` ni ishga tushiradi. U `origin/main` ni tekshiradi va yangi commit bo'lsa `scripts/deploy.sh` ni chaqiradi.
+2. Serverdagi cron har 2 daqiqada `~/.onatili/auto-deploy.sh` ni ishga tushiradi. U `origin/main` ni tekshiradi. Yangi commit bo'lsa, GitHub API orqali CI natijasini so'raydi: "Build, typecheck, test" va "Docker images" ikkalasi yashil bo'lsagina `scripts/deploy.sh` ni chaqiradi. CI hali ishlayotgan bo'lsa, kutadi. CI qizil bo'lsa, commit o'tkazib yuboriladi (`.deploy/auto.log` da yoziladi).
 3. `scripts/deploy.sh` ish tartibi (`/home/ubuntu/onatili-prod`):
    - `git checkout <sha>`;
    - `docker compose build`, keyin `up -d`;

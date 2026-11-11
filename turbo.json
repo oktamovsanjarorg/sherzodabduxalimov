@@ -20,6 +20,7 @@
       ],
       "passThroughEnv": [
         "DATABASE_URL",
+        "REDIS_URL",
         "BOT_TOKEN",
         "JWT_SECRET"
       ]

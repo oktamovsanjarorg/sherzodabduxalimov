@@ -131,7 +131,10 @@ export class OfflineBillingService {
 
     // Bir o'quvchining ikki davri kesishmasin: aks holda bir kun ikki marta to'langan hisoblanadi
     const others = await this.prisma.offlinePayment.findMany({ where: { studentId: d.studentId, month: { not: monthKey } } });
-    const clash = others.map(effective).find((e) => e.start <= end && e.end >= start);
+    // Shu oyda boshqa sanadan boshlangan to'lov bor: bu tahrir emas, yangi to'lov. Uni ustidan yozib yubormaymiz
+    // (bir oyda bitta yozuv), aks holda avvalgi to'lov izsiz yo'qoladi
+    const sameMonth = d.periodStart && old && old.start !== start ? [old] : [];
+    const clash = [...sameMonth, ...others.map(effective)].find((e) => e.start <= end && e.end >= start) ?? sameMonth[0];
     if (clash) throw new ConflictException(`Bu davr boshqa to'lov bilan kesishadi (${periodLabel(clash.start, clash.end)}). Avval uni tekshiring`);
 
     const amountUzs = d.amountUzs ?? existing?.amountUzs ?? effectiveFee(s.group?.monthlyFeeUzs, await defaultMonthlyFee(this.prisma));
