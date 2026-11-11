@@ -437,9 +437,13 @@ model Attendance {
   date       DateTime         @db.Date
   status     AttendanceStatus
   note       String?
+  /// Dars bahosi 1–5 (faqat kelgan o'quvchiga, ixtiyoriy)
+  grade      Int?
+  /// Ota-onaga yuborilgandan keyin o'zgartirilgan: keyingi xabar "Tuzatish" bo'ladi
+  corrected  Boolean          @default(false)
   markedById String?
   markedBy   User?            @relation("AttendanceMarker", fields: [markedById], references: [id], onDelete: SetNull)
-  notifiedAt DateTime? // ota-onaga yuborilgan vaqt
+  notifiedAt DateTime? // ota-onaga yuborilgan vaqt; o'zgartirilsa null bo'ladi
   createdAt  DateTime         @default(now())
 
   @@unique([studentId, date])

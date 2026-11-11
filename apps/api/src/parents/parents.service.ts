@@ -198,7 +198,7 @@ export class ParentsService {
           include: {
             user: { select: { firstName: true, lastName: true } },
             group: { select: { name: true } },
-            attendance: { orderBy: { date: "desc" }, take: 14, select: { date: true, status: true } },
+            attendance: { orderBy: { date: "desc" }, take: 14, select: { date: true, status: true, grade: true, note: true } },
           },
         },
       },
@@ -208,7 +208,7 @@ export class ParentsService {
       status: l.status,
       groupName: l.student.group?.name ?? null,
       // Tasdiqlanmagan ota-onaga davomat ko'rsatilmaydi
-      recent: l.status === "APPROVED" ? l.student.attendance.map((a) => ({ date: a.date.toISOString().slice(0, 10), status: a.status })) : [],
+      recent: l.status === "APPROVED" ? l.student.attendance.map((a) => ({ date: a.date.toISOString().slice(0, 10), status: a.status, grade: a.grade, note: a.note })) : [],
     }));
   }
 

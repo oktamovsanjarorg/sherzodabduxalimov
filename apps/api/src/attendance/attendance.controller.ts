@@ -1,5 +1,5 @@
 import { Body, Controller, Delete, Get, HttpCode, Param, Patch, Post, Put, Query } from "@nestjs/common";
-import { attendanceSaveInput, groupInput } from "@onatili/shared";
+import { attendanceNotifyInput, attendanceSaveInput, groupInput } from "@onatili/shared";
 import { z } from "zod";
 import { parse } from "../admin/zod";
 import { CurrentUser, Roles, type JwtUser } from "../auth/decorators";
@@ -42,6 +42,9 @@ export class AttendanceController {
   }
   @Put("groups/:id/attendance") save(@CurrentUser() u: JwtUser, @Param("id") id: string, @Body() b: unknown) {
     return this.svc.save(u.sub, id, parse(attendanceSaveInput, b));
+  }
+  @Post("groups/:id/attendance/notify") @HttpCode(200) notify(@CurrentUser() u: JwtUser, @Param("id") id: string, @Body() b: unknown) {
+    return this.svc.notifyParents(u.sub, id, parse(attendanceNotifyInput, b).date);
   }
   @Get("groups/:id/attendance/month") month(@Param("id") id: string, @Query("month") month: string) {
     return this.svc.month(id, month);

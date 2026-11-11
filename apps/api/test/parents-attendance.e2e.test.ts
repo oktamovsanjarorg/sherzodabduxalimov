@@ -163,21 +163,40 @@ describe("Ota-ona va davomat (e2e)", () => {
     // Kelajak sanasi
     expect((await req("PUT", `/admin/groups/${group.id}/attendance`, { date: "2099-01-01", items: [{ studentId, status: "PRESENT" }] })).statusCode).toBe(400);
 
-    const first = (await req("PUT", `/admin/groups/${group.id}/attendance`, { date: today, items: [{ studentId, status: "PRESENT" }] })).json();
-    expect(first).toEqual({ saved: 1, notified: 1 }); // faqat tasdiqlangan ona (rad etilgan "ota"ga emas)
+    // Baho 1–5 oralig'ida bo'lishi shart
+    expect((await req("PUT", `/admin/groups/${group.id}/attendance`, { date: today, items: [{ studentId, status: "PRESENT", grade: 6 }] })).statusCode).toBe(400);
+    // Eski holatlar (Kechikdi/Sababli) endi belgilanmaydi
+    expect((await req("PUT", `/admin/groups/${group.id}/attendance`, { date: today, items: [{ studentId, status: "LATE" }] })).statusCode).toBe(400);
+
+    const first = (await req("PUT", `/admin/groups/${group.id}/attendance`, { date: today, items: [{ studentId, status: "PRESENT", grade: 4, note: "Faol edi" }] })).json();
+    expect(first).toEqual({ saved: 1, changed: 1 });
+    // Saqlash xabar yubormaydi
     let j = await jobs();
+    expect(j).toHaveLength(0);
+
+    // Yuborish: faqat tasdiqlangan ona (rad etilgan "ota"ga emas)
+    const sent = (await req("POST", `/admin/groups/${group.id}/attendance/notify`, { date: today })).json();
+    expect(sent).toEqual({ notified: 1, students: 1, withoutParent: 0 });
+    j = await jobs();
     expect(j).toHaveLength(1);
     expect(j[0]).toMatchObject({ chatId: String(TG.mom) });
     expect(j[0].text).toContain("darsga keldi");
+    expect(j[0].text).toContain("4/5");
+    expect(j[0].text).toContain("Faol edi");
 
-    const again = (await req("PUT", `/admin/groups/${group.id}/attendance`, { date: today, items: [{ studentId, status: "PRESENT" }] })).json();
+    // Ikkinchi marta bosilsa, qayta yuborilmaydi
+    const again = (await req("POST", `/admin/groups/${group.id}/attendance/notify`, { date: today })).json();
     expect(again.notified).toBe(0);
+    const same = (await req("PUT", `/admin/groups/${group.id}/attendance`, { date: today, items: [{ studentId, status: "PRESENT", grade: 4, note: "Faol edi" }] })).json();
+    expect(same.changed).toBe(0);
 
     // Worker xabarni yuborgan deb belgilaymiz, keyin holatni o'zgartiramiz
-    await prisma.attendance.updateMany({ where: { studentId }, data: { notifiedAt: new Date() } });
     await queue.obliterate({ force: true });
-    const changed = (await req("PUT", `/admin/groups/${group.id}/attendance`, { date: today, items: [{ studentId, status: "ABSENT", note: "Kasal" }] })).json();
-    expect(changed.notified).toBe(1);
+    const changed = (await req("PUT", `/admin/groups/${group.id}/attendance`, { date: today, items: [{ studentId, status: "ABSENT", grade: 5, note: "Kasal" }] })).json();
+    expect(changed.changed).toBe(1);
+    expect(await jobs()).toHaveLength(0);
+    expect((await prisma.attendance.findFirstOrThrow({ where: { studentId } })).grade).toBeNull(); // kelmaganga baho yo'q
+    expect((await req("POST", `/admin/groups/${group.id}/attendance/notify`, { date: today })).json().notified).toBe(1);
     j = await jobs();
     expect(j[0].text).toContain("Tuzatish");
     expect(j[0].text).toContain("kelmadi");
@@ -201,9 +220,9 @@ describe("Ota-ona va davomat (e2e)", () => {
   });
 
   it("xabar matni: HTML ekranlanadi", () => {
-    const t = attendanceMessage("<b>Ali</b>", "1-guruh", "2026-11-03", "LATE");
+    const t = attendanceMessage("<b>Ali</b>", "1-guruh", "2026-11-03", "PRESENT", null, false, 5);
     expect(t).toContain("&lt;b&gt;Ali&lt;/b&gt;");
     expect(t).toContain("03.11.2026");
-    expect(t).toContain("kechikib");
+    expect(t).toContain("5/5");
   });
 });

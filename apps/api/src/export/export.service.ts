@@ -41,6 +41,7 @@ export class ExportService {
         select: {
           date: true,
           status: true,
+          grade: true,
           note: true,
           notifiedAt: true,
           group: { select: { name: true } },
@@ -131,6 +132,7 @@ export class ExportService {
           { header: "Guruh", width: 14 },
           { header: "O'quvchi", width: 30 },
           { header: "Holat", width: 11 },
+          { header: "Baho", width: 8 },
           { header: "Izoh", width: 30 },
           { header: "Belgilagan", width: 22 },
           { header: "Ota-onaga yuborilgan", width: 17 },
@@ -140,6 +142,7 @@ export class ExportService {
           a.group.name,
           fullName(a.student.user),
           ATTENDANCE_LABELS[a.status as keyof typeof ATTENDANCE_LABELS] ?? a.status,
+          a.grade,
           a.note,
           fullName(a.markedBy),
           dt(a.notifiedAt),

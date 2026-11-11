@@ -229,10 +229,10 @@ export class ContentService {
       where: { userId: user.sub },
       include: {
         group: { select: { name: true, schedule: true } },
-        attendance: { orderBy: { date: "desc" }, take: 90, select: { date: true, status: true, note: true } },
+        attendance: { orderBy: { date: "desc" }, take: 90, select: { date: true, status: true, grade: true, note: true } },
       },
     });
-    const records = (sp?.attendance ?? []).map((a) => ({ date: a.date.toISOString().slice(0, 10), status: a.status, note: a.note }));
+    const records = (sp?.attendance ?? []).map((a) => ({ date: a.date.toISOString().slice(0, 10), status: a.status, grade: a.grade, note: a.note }));
     const counts = { PRESENT: 0, LATE: 0, ABSENT: 0, EXCUSED: 0 } as Record<string, number>;
     for (const r of records) counts[r.status]++;
     return {

@@ -559,7 +559,7 @@ export class StudentsService {
       parentList: sp.parents.map((p) => ({ id: p.id, name: fullName(p.parent), phone: p.phone, relation: p.relation, status: p.status })),
       attendance: {
         counts: Object.fromEntries(ATTENDANCE_STATUSES.map((s) => [s, counts.find((c) => c.status === s)?._count ?? 0])) as Record<AttendanceStatusName, number>,
-        recent: attendance.map((a) => ({ date: a.date.toISOString().slice(0, 10), status: a.status, note: a.note, groupName: a.group?.name ?? null })),
+        recent: attendance.map((a) => ({ date: a.date.toISOString().slice(0, 10), status: a.status, grade: a.grade, note: a.note, groupName: a.group?.name ?? null })),
       },
       billing: isTeacher
         ? {

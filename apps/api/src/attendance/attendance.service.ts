@@ -5,9 +5,11 @@ import {
   type AdminStudent,
   type AttendanceDay,
   type AttendanceMonth,
+  type AttendanceNotifyResult,
   type AttendanceSaveInput,
   type AttendanceStatusName,
   type GroupInput,
+  GRADE_MAX,
 } from "@onatili/shared";
 import { NotifyService } from "../notify/notify.service";
 import { esc } from "../notify/telegram";
@@ -31,7 +33,7 @@ const fmtDate = (d: string) => d.split("-").reverse().join(".");
 const EMOJI: Record<AttendanceStatusName, string> = { PRESENT: "✅", LATE: "⏰", ABSENT: "❌", EXCUSED: "📝" };
 
 /** Ota-onaga boradigan matn */
-export function attendanceMessage(child: string, group: string, date: string, status: AttendanceStatusName, note?: string | null, correction = false) {
+export function attendanceMessage(child: string, group: string, date: string, status: AttendanceStatusName, note?: string | null, correction = false, grade?: number | null) {
   const phrase: Record<AttendanceStatusName, string> = {
     PRESENT: "darsga keldi",
     LATE: "darsga kechikib keldi",
@@ -42,6 +44,7 @@ export function attendanceMessage(child: string, group: string, date: string, st
     correction ? "✏️ <b>Tuzatish</b>" : null,
     `${EMOJI[status]} <b>${esc(child)}</b> ${fmtDate(date)} kuni ${phrase[status]}.`,
     `Guruh: ${esc(group)}`,
+    grade ? `Baho: <b>${grade}/${GRADE_MAX}</b>` : null,
     note ? `Izoh: ${esc(note)}` : null,
   ]
     .filter(Boolean)
@@ -173,57 +176,79 @@ export class AttendanceService {
       group: { id: g.id, name: g.name, schedule: g.schedule, isActive: g.isActive, studentCount: students.length },
       rows: students.map((s) => {
         const m = byStudent.get(s.studentId);
-        return { student: s, status: m?.status ?? null, note: m?.note ?? null, notifiedAt: m?.notifiedAt?.toISOString() ?? null };
+        return { student: s, status: m?.status ?? null, grade: m?.grade ?? null, note: m?.note ?? null, notifiedAt: m?.notifiedAt?.toISOString() ?? null };
       }),
     };
   }
 
   /**
-   * Davomatni saqlaydi va tasdiqlangan ota-onalarga xabar yuboradi.
-   * Faqat yangi yoki o'zgargan yozuvlar uchun xabar ketadi; o'zgargan bo'lsa, "Tuzatish" bilan.
+   * Davomat va baholarni saqlaydi. Ota-onaga xabar BU YERDA yuborilmaydi: ustoz hammasini tekshirib,
+   * keyin `notifyParents` bilan yuboradi. O'zgargan yozuvning "yuborilgan" belgisi olinadi (qayta yuborish mumkin).
    */
   async save(actorId: string, groupId: string, d: AttendanceSaveInput) {
-    const g = await this.mustGroup(groupId);
+    await this.mustGroup(groupId);
     const date = toDate(d.date);
     const today = new Date(Date.now() + 5 * 3600_000).toISOString().slice(0, 10); // Toshkent vaqti
     if (d.date > today) throw new BadRequestException("Kelajakdagi sana uchun davomat olib bo'lmaydi");
 
-    const students = await this.prisma.studentProfile.findMany({
-      where: { id: { in: d.items.map((i) => i.studentId) } },
-      include: studentInclude,
-    });
+    const students = await this.prisma.studentProfile.findMany({ where: { id: { in: d.items.map((i) => i.studentId) } }, select: { id: true, groupId: true } });
     const byId = new Map(students.map((s) => [s.id, s]));
-    const foreign = d.items.filter((i) => byId.get(i.studentId)?.groupId !== groupId);
-    if (foreign.length) throw new BadRequestException("Ba'zi o'quvchilar bu guruhda emas");
+    if (d.items.some((i) => byId.get(i.studentId)?.groupId !== groupId)) throw new BadRequestException("Ba'zi o'quvchilar bu guruhda emas");
 
     const prev = new Map(
       (await this.prisma.attendance.findMany({ where: { date, studentId: { in: d.items.map((i) => i.studentId) } } })).map((a) => [a.studentId, a]),
     );
 
-    let notified = 0;
+    let changedCount = 0;
     for (const item of d.items) {
       const before = prev.get(item.studentId);
       const note = item.note?.trim() || null;
-      const changed = !before || before.status !== item.status || (before.note ?? null) !== note;
-      const rec = await this.prisma.attendance.upsert({
-        where: { studentId_date: { studentId: item.studentId, date } },
-        update: { status: item.status, note, groupId, markedById: actorId },
-        create: { studentId: item.studentId, groupId, date, status: item.status, note, markedById: actorId },
-      });
+      const grade = item.status === "PRESENT" ? (item.grade ?? null) : null; // kelmaganga baho qo'yilmaydi
+      const changed = !before || before.status !== item.status || (before.note ?? null) !== note || (before.grade ?? null) !== grade;
       if (!changed) continue;
-
-      const s = byId.get(item.studentId)!;
-      const parents = s.parents.filter((p) => p.status === "APPROVED");
-      const correction = Boolean(before?.notifiedAt) && before?.status !== item.status;
-      for (const p of parents) {
-        await this.notify.send(p.parent.telegramId, attendanceMessage(fullName(s.user), g.name, d.date, item.status, note, correction), rec.id);
-        notified++;
-      }
+      changedCount++;
+      const wasSent = Boolean(before?.notifiedAt);
+      await this.prisma.attendance.upsert({
+        where: { studentId_date: { studentId: item.studentId, date } },
+        update: { status: item.status, grade, note, groupId, markedById: actorId, notifiedAt: null, ...(wasSent ? { corrected: true } : {}) },
+        create: { studentId: item.studentId, groupId, date, status: item.status, grade, note, markedById: actorId },
+      });
     }
     await this.prisma.auditLog.create({
-      data: { actorId, action: "attendance.save", entity: "Group", entityId: groupId, meta: { date: d.date, count: d.items.length } },
+      data: { actorId, action: "attendance.save", entity: "Group", entityId: groupId, meta: { date: d.date, count: d.items.length, changed: changedCount } },
     });
-    return { saved: d.items.length, notified };
+    return { saved: d.items.length, changed: changedCount };
+  }
+
+  /** Shu kun, shu guruhning hali yuborilmagan yozuvlarini tasdiqlangan ota-onalarga yuboradi */
+  async notifyParents(actorId: string, groupId: string, dateStr: string): Promise<AttendanceNotifyResult> {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) throw new BadRequestException("Sana noto'g'ri");
+    const g = await this.mustGroup(groupId);
+    const pending = await this.prisma.attendance.findMany({
+      where: { groupId, date: toDate(dateStr), notifiedAt: null },
+      include: { student: { include: studentInclude } },
+    });
+    let notified = 0;
+    let students = 0;
+    let withoutParent = 0;
+    for (const rec of pending) {
+      const parents = rec.student.parents.filter((p) => p.status === "APPROVED");
+      if (!parents.length) {
+        withoutParent++;
+        continue;
+      }
+      // Avval belgilaymiz: ikki marta bosilsa, ikkinchi so'rov bu yozuvni qayta yubormaydi
+      const claimed = await this.prisma.attendance.updateMany({ where: { id: rec.id, notifiedAt: null }, data: { notifiedAt: new Date() } });
+      if (!claimed.count) continue;
+      const text = attendanceMessage(fullName(rec.student.user), g.name, dateStr, rec.status, rec.note, rec.corrected, rec.grade);
+      for (const p of parents) {
+        await this.notify.send(p.parent.telegramId, text, rec.id);
+        notified++;
+      }
+      students++;
+    }
+    await this.prisma.auditLog.create({ data: { actorId, action: "attendance.notify", entity: "Group", entityId: groupId, meta: { date: dateStr, notified, students } } });
+    return { notified, students, withoutParent };
   }
 
   async month(groupId: string, month: string): Promise<AttendanceMonth> {
@@ -242,6 +267,9 @@ export class AttendanceService {
       rows: students.map((s) => ({
         student: s,
         marks: Object.fromEntries(marks.filter((a) => a.studentId === s.studentId).map((a) => [a.date.toISOString().slice(0, 10), a.status])),
+        grades: Object.fromEntries(
+          marks.filter((a) => a.studentId === s.studentId && a.grade !== null).map((a) => [a.date.toISOString().slice(0, 10), a.grade as number]),
+        ),
       })),
     };
   }

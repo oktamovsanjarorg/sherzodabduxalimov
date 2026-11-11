@@ -1,6 +1,11 @@
 import { z } from "zod";
 
+/** Eski yozuvlar uchun (LATE/EXCUSED endi belgilanmaydi, migratsiyada PRESENT/ABSENT + izohga o'tgan) */
 export const ATTENDANCE_STATUSES = ["PRESENT", "LATE", "ABSENT", "EXCUSED"] as const;
+/** Ustoz belgilaydigan holatlar */
+export const ATTENDANCE_MARKS = ["PRESENT", "ABSENT"] as const;
+export const GRADE_MIN = 1;
+export const GRADE_MAX = 5;
 export type AttendanceStatusName = (typeof ATTENDANCE_STATUSES)[number];
 
 export const ATTENDANCE_LABELS: Record<AttendanceStatusName, string> = {
@@ -27,10 +32,20 @@ export type GroupInput = z.infer<typeof groupInput>;
 export const attendanceSaveInput = z.object({
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Sana YYYY-MM-DD bo'lishi kerak"),
   items: z
-    .array(z.object({ studentId: z.string(), status: z.enum(ATTENDANCE_STATUSES), note: z.string().max(300).nullable().optional() }))
+    .array(
+      z.object({
+        studentId: z.string(),
+        status: z.enum(ATTENDANCE_MARKS),
+        grade: z.number().int().min(GRADE_MIN).max(GRADE_MAX).nullable().optional(),
+        note: z.string().max(300).nullable().optional(),
+      }),
+    )
     .max(500),
 });
 export type AttendanceSaveInput = z.infer<typeof attendanceSaveInput>;
+
+export const attendanceNotifyInput = z.object({ date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Sana YYYY-MM-DD bo'lishi kerak") });
+export type AttendanceNotifyResult = { notified: number; students: number; withoutParent: number };
 
 export interface AdminParentInfo {
   linkId: string;
@@ -80,6 +95,7 @@ export interface AttendanceDay {
   rows: {
     student: AdminStudent;
     status: AttendanceStatusName | null;
+    grade: number | null;
     note: string | null;
     notifiedAt: string | null;
   }[];
@@ -88,7 +104,7 @@ export interface AttendanceDay {
 export interface AttendanceMonth {
   month: string; // YYYY-MM
   days: string[]; // davomat olingan kunlar
-  rows: { student: AdminStudent; marks: Record<string, AttendanceStatusName> }[];
+  rows: { student: AdminStudent; marks: Record<string, AttendanceStatusName>; grades: Record<string, number> }[];
 }
 
 /** Ota-ona ko'rinishi (Mini App) */
@@ -96,5 +112,5 @@ export interface ChildView {
   name: string;
   status: "PENDING" | "APPROVED" | "REJECTED";
   groupName: string | null;
-  recent: { date: string; status: AttendanceStatusName }[];
+  recent: { date: string; status: AttendanceStatusName; grade: number | null; note: string | null }[];
 }

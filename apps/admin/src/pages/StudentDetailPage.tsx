@@ -414,6 +414,7 @@ function Attendance({ s }: { s: StudentDetail }) {
           <div key={a.date} className="flex items-center gap-2 py-1.5 text-sm">
             <span className="w-24 shrink-0 text-slate-500">{fmtDate(a.date)}</span>
             <Badge tone={ATT_TONE[a.status]}>{ATTENDANCE_LABELS[a.status]}</Badge>
+            {a.grade && <span className="text-xs font-extrabold text-slate-700">{a.grade}/5</span>}
             {a.note && <span className="truncate text-xs text-slate-500">{a.note}</span>}
           </div>
         ))}

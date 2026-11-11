@@ -41,7 +41,7 @@ export interface MyAttempt {
 export interface MyAttendance {
   group: { name: string; schedule: string | null } | null;
   counts: Record<"PRESENT" | "LATE" | "ABSENT" | "EXCUSED", number>;
-  records: { date: string; status: "PRESENT" | "LATE" | "ABSENT" | "EXCUSED"; note: string | null }[];
+  records: { date: string; status: "PRESENT" | "LATE" | "ABSENT" | "EXCUSED"; grade: number | null; note: string | null }[];
 }
 
 export class ApiError extends Error {

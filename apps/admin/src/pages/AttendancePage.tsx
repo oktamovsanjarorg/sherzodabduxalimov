@@ -1,6 +1,6 @@
-import { ATTENDANCE_LABELS, ATTENDANCE_STATUSES, type AttendanceStatusName } from "@onatili/shared";
+import { ATTENDANCE_LABELS, ATTENDANCE_MARKS, GRADE_MAX, GRADE_MIN, type AttendanceStatusName } from "@onatili/shared";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { CheckCheck, Plus } from "lucide-react";
+import { CheckCheck, MessageSquare, Plus, Send } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { Empty, PageHeader, Spinner, Segmented } from "../components/ui";
@@ -14,7 +14,7 @@ const GROUP_KEY = "onatili-attendance-group";
 
 const STATUS_STYLE: Record<AttendanceStatusName, { on: string; short: string }> = {
   PRESENT: { on: "bg-emerald-600 text-white border-emerald-600", short: "Keldi" },
-  LATE: { on: "bg-amber-500 text-white border-amber-500", short: "Kechikdi" },
+  LATE: { on: "bg-amber-500 text-white border-amber-500", short: "Kechikdi" }, // eski yozuvlar
   ABSENT: { on: "bg-red-600 text-white border-red-600", short: "Kelmadi" },
   EXCUSED: { on: "bg-slate-500 text-white border-slate-500", short: "Sababli" },
 };
@@ -49,7 +49,7 @@ export function AttendancePage() {
     <>
       <PageHeader
         title="Davomat"
-        subtitle="Saqlanganda tasdiqlangan ota-onalarga Telegram orqali xabar boradi."
+        subtitle="Davomat va baholarni saqlang, so'ng «Ota-onalarga yuborish» tugmasi bilan Telegram orqali xabar yuboring."
       />
 
       {groups.isPending && <Spinner className="text-slate-400" />}
@@ -94,33 +94,54 @@ export function AttendancePage() {
   );
 }
 
+type Mark = { status: AttendanceStatusName | null; grade: number | null; note: string };
+const EMPTY: Mark = { status: null, grade: null, note: "" };
+const sameMark = (a: Mark, b: Mark) => a.status === b.status && a.grade === b.grade && a.note.trim() === b.note.trim();
+
 function DayView({ groupId, date }: { groupId: string; date: string }) {
   const toast = useToast();
   const qc = useQueryClient();
   const day = useQuery({ queryKey: ["attendance", groupId, date], queryFn: () => api.attendanceDay(groupId, date) });
-  const [marks, setMarks] = useState<Record<string, AttendanceStatusName | null>>({});
-  const [initial, setInitial] = useState<Record<string, AttendanceStatusName | null>>({});
+  const [marks, setMarks] = useState<Record<string, Mark>>({});
+  const [initial, setInitial] = useState<Record<string, Mark>>({});
+  const [openNote, setOpenNote] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     if (!day.data) return;
-    const m = Object.fromEntries(day.data.rows.map((r) => [r.student.studentId, r.status]));
+    const m = Object.fromEntries(day.data.rows.map((r) => [r.student.studentId, { status: r.status, grade: r.grade, note: r.note ?? "" }]));
     setMarks(m);
     setInitial(m);
   }, [day.data]);
 
-  const changed = useMemo(() => Object.keys(marks).filter((k) => marks[k] && marks[k] !== initial[k]), [marks, initial]);
-  const unmarked = day.data?.rows.filter((r) => !marks[r.student.studentId]).length ?? 0;
+  const get = (id: string) => marks[id] ?? EMPTY;
+  const patch = (id: string, p: Partial<Mark>) => setMarks((m) => ({ ...m, [id]: { ...(m[id] ?? EMPTY), ...p } }));
+
+  const changed = useMemo(() => Object.keys(marks).filter((k) => marks[k].status && !sameMark(marks[k], initial[k] ?? EMPTY)), [marks, initial]);
+  const unmarked = day.data?.rows.filter((r) => !marks[r.student.studentId]?.status).length ?? 0;
+  // Saqlangan, lekin ota-onaga hali yuborilmagan yozuvlar
+  const unsent = day.data?.rows.filter((r) => r.status && !r.notifiedAt).length ?? 0;
 
   const save = useMutation({
     mutationFn: () =>
       api.saveAttendance(groupId, {
         date,
         items: Object.entries(marks)
-          .filter(([, v]) => v)
-          .map(([studentId, status]) => ({ studentId, status: status! })),
+          .filter(([, v]) => v.status === "PRESENT" || v.status === "ABSENT")
+          .map(([studentId, v]) => ({ studentId, status: v.status as "PRESENT" | "ABSENT", grade: v.status === "PRESENT" ? v.grade : null, note: v.note.trim() || null })),
       }),
+    onSuccess: () => {
+      toast("Saqlandi");
+      qc.invalidateQueries({ queryKey: ["attendance", groupId] });
+    },
+    onError: (e) => toast(errMsg(e), "error"),
+  });
+
+  const send = useMutation({
+    mutationFn: () => api.notifyAttendance(groupId, date),
     onSuccess: (r) => {
-      toast(r.notified ? `Saqlandi · ${r.notified} ta ota-onaga xabar yuborildi` : "Saqlandi");
+      const parts = [r.notified ? `${r.students} ta o'quvchi bo'yicha ${r.notified} ta xabar yuborildi` : "Yuboriladigan xabar yo'q"];
+      if (r.withoutParent) parts.push(`${r.withoutParent} tasida tasdiqlangan ota-ona yo'q`);
+      toast(parts.join(" · "));
       qc.invalidateQueries({ queryKey: ["attendance", groupId] });
     },
     onError: (e) => toast(errMsg(e), "error"),
@@ -131,7 +152,7 @@ function DayView({ groupId, date }: { groupId: string; date: string }) {
   if (day.data.rows.length === 0) return <Empty title="Guruhda o'quvchi yo'q" hint="«Guruhlar» tugmasi orqali o'quvchilarni qo'shing." />;
 
   return (
-    <div className="pb-24">
+    <div className="pb-28">
       <div className="mb-2 flex flex-wrap items-center gap-2">
         <span className="text-sm font-semibold text-slate-500">
           {day.data.rows.length} o'quvchi{unmarked ? ` · ${unmarked} ta belgilanmagan` : ""}
@@ -139,7 +160,7 @@ function DayView({ groupId, date }: { groupId: string; date: string }) {
         <span className="flex-1" />
         <button
           className="btn-secondary btn-sm"
-          onClick={() => setMarks((m) => Object.fromEntries(Object.entries(m).map(([k, v]) => [k, v ?? "PRESENT"])))}
+          onClick={() => setMarks((m) => Object.fromEntries(day.data.rows.map((r) => [r.student.studentId, m[r.student.studentId]?.status ? m[r.student.studentId] : { ...(m[r.student.studentId] ?? EMPTY), status: "PRESENT" as const }])))}
           disabled={!unmarked}
         >
           <CheckCheck size={14} /> Qolganlar keldi
@@ -147,45 +168,92 @@ function DayView({ groupId, date }: { groupId: string; date: string }) {
       </div>
       <ul className="card divide-y divide-slate-100 overflow-hidden">
         {day.data.rows.map(({ student: s, notifiedAt }) => {
-          const cur = marks[s.studentId];
+          const cur = get(s.studentId);
+          const dirty = !sameMark(cur, initial[s.studentId] ?? EMPTY);
+          const showNote = openNote[s.studentId] || cur.note.length > 0;
           return (
-            <li key={s.studentId} className="flex flex-wrap items-center gap-x-3 gap-y-2 px-4 py-3">
-              <div className="min-w-0 flex-1 basis-40">
-                <p className="truncate font-bold">{s.name}</p>
-                <div className="flex flex-wrap items-center gap-2">
-                  <ParentState s={s} />
-                  {notifiedAt && initial[s.studentId] === cur && <span className="text-[11px] text-slate-400">· xabar yuborilgan</span>}
+            <li key={s.studentId} className="px-4 py-3">
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+                <div className="min-w-0 flex-1 basis-40">
+                  <p className="truncate font-bold">{s.name}</p>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <ParentState s={s} />
+                    {cur.status && !dirty && (notifiedAt ? <span className="text-[11px] text-emerald-600">· ota-onaga yuborilgan</span> : <span className="text-[11px] text-amber-600">· yuborilmagan</span>)}
+                  </div>
+                </div>
+                <div className="grid w-full grid-cols-2 gap-1 sm:w-48">
+                  {ATTENDANCE_MARKS.map((st) => (
+                    <button
+                      key={st}
+                      onClick={() => patch(s.studentId, { status: st, ...(st === "ABSENT" ? { grade: null } : {}) })}
+                      className={`h-10 rounded-lg border px-2 text-xs font-bold transition ${
+                        cur.status === st ? STATUS_STYLE[st].on : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
+                      }`}
+                      aria-pressed={cur.status === st}
+                    >
+                      {STATUS_STYLE[st].short}
+                    </button>
+                  ))}
                 </div>
               </div>
-              <div className="grid w-full grid-cols-4 gap-1 sm:w-auto">
-                {ATTENDANCE_STATUSES.map((st) => (
-                  <button
-                    key={st}
-                    onClick={() => setMarks((m) => ({ ...m, [s.studentId]: st }))}
-                    className={`h-10 rounded-lg border px-2 text-xs font-bold transition sm:px-3 ${
-                      cur === st ? STATUS_STYLE[st].on : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
-                    }`}
-                    aria-pressed={cur === st}
-                  >
-                    {STATUS_STYLE[st].short}
-                  </button>
-                ))}
-              </div>
+              {cur.status && (
+                <div className="mt-2 flex flex-wrap items-center gap-2">
+                  {cur.status === "PRESENT" && (
+                    <div className="flex items-center gap-1" role="group" aria-label="Dars bahosi">
+                      <span className="mr-1 text-xs font-semibold text-slate-500">Baho</span>
+                      {Array.from({ length: GRADE_MAX - GRADE_MIN + 1 }, (_, i) => GRADE_MIN + i).map((g) => (
+                        <button
+                          key={g}
+                          onClick={() => patch(s.studentId, { grade: cur.grade === g ? null : g })}
+                          className={`h-9 w-9 rounded-lg border text-sm font-extrabold transition ${
+                            cur.grade === g ? "border-brand bg-brand text-white" : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
+                          }`}
+                          aria-pressed={cur.grade === g}
+                        >
+                          {g}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  {!showNote && (
+                    <button className="btn-secondary btn-sm" onClick={() => setOpenNote((o) => ({ ...o, [s.studentId]: true }))}>
+                      <MessageSquare size={14} /> Izoh
+                    </button>
+                  )}
+                  {showNote && (
+                    <input
+                      className="input h-9 min-w-0 flex-1 basis-48 text-sm"
+                      placeholder={cur.status === "PRESENT" ? "Izoh (masalan: faol edi, uy vazifasi yo'q)" : "Sabab (masalan: kasal)"}
+                      maxLength={300}
+                      value={cur.note}
+                      onChange={(e) => patch(s.studentId, { note: e.target.value })}
+                    />
+                  )}
+                </div>
+              )}
             </li>
           );
         })}
       </ul>
 
-      {/* Telefonda ham doim ko'rinadigan saqlash paneli */}
+      {/* Telefonda ham doim ko'rinadigan panel */}
       <div
         // Telefonda pastki navigatsiya (64px) ustida turadi
         className="fixed inset-x-0 bottom-[calc(64px+env(safe-area-inset-bottom,0px))] z-20 border-t border-slate-200 bg-white/95 px-4 py-3 backdrop-blur md:bottom-0"
       >
-        <div className="mx-auto flex max-w-6xl items-center gap-3">
-          <span className="text-sm text-slate-500">{changed.length ? `${changed.length} ta o'zgarish` : "O'zgarish yo'q"}</span>
+        <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-2">
+          <span className="text-sm text-slate-500">{changed.length ? `${changed.length} ta o'zgarish saqlanmagan` : unsent ? `${unsent} ta yozuv ota-onaga yuborilmagan` : "O'zgarish yo'q"}</span>
           <span className="flex-1" />
-          <button className="btn-primary" disabled={!changed.length || save.isPending} onClick={() => save.mutate()}>
-            {save.isPending && <Spinner />} Saqlash va yuborish
+          <button className="btn-secondary" disabled={!changed.length || save.isPending} onClick={() => save.mutate()}>
+            {save.isPending && <Spinner />} Saqlash
+          </button>
+          <button
+            className="btn-primary"
+            disabled={changed.length > 0 || unsent === 0 || send.isPending}
+            title={changed.length ? "Avval o'zgarishlarni saqlang" : undefined}
+            onClick={() => send.mutate()}
+          >
+            {send.isPending ? <Spinner /> : <Send size={14} />} Ota-onalarga yuborish{unsent ? ` (${unsent})` : ""}
           </button>
         </div>
       </div>
@@ -214,11 +282,14 @@ function MonthView({ groupId }: { groupId: string }) {
                   <th key={d} className="px-1 py-2 font-bold">{d.slice(8)}</th>
                 ))}
                 <th className="px-3 py-2">Kelgan</th>
+                <th className="px-3 py-2">O'rtacha baho</th>
               </tr>
             </thead>
             <tbody>
               {m.data.rows.map((r) => {
                 const present = Object.values(r.marks).filter((x) => x === "PRESENT" || x === "LATE").length;
+                const gs = Object.values(r.grades);
+                const avg = gs.length ? (gs.reduce((a, b) => a + b, 0) / gs.length).toFixed(1) : "–";
                 return (
                   <tr key={r.student.studentId} className="border-b border-slate-100 last:border-0">
                     <td className="sticky left-0 max-w-[160px] truncate bg-white px-4 py-2 font-semibold">{r.student.name}</td>
@@ -227,8 +298,8 @@ function MonthView({ groupId }: { groupId: string }) {
                       return (
                         <td key={d} className="px-1 py-1 text-center">
                           {x ? (
-                            <span title={ATTENDANCE_LABELS[x]} className={`inline-flex h-7 w-7 items-center justify-center rounded-md text-[11px] font-extrabold ${CELL[x]}`}>
-                              {SYMBOL[x]}
+                            <span title={`${ATTENDANCE_LABELS[x]}${r.grades[d] ? ` · baho ${r.grades[d]}` : ""}`} className={`inline-flex h-7 w-7 items-center justify-center rounded-md text-[11px] font-extrabold ${CELL[x]}`}>
+                              {r.grades[d] ?? SYMBOL[x]}
                             </span>
                           ) : (
                             <span className="text-slate-300">·</span>
@@ -239,6 +310,7 @@ function MonthView({ groupId }: { groupId: string }) {
                     <td className="px-3 py-2 text-center font-bold">
                       {present}/{m.data!.days.length}
                     </td>
+                    <td className="px-3 py-2 text-center font-bold">{avg}</td>
                   </tr>
                 );
               })}
@@ -246,7 +318,7 @@ function MonthView({ groupId }: { groupId: string }) {
           </table>
         </div>
       )}
-      <p className="mt-2 text-xs text-slate-500">✓ keldi · ⏰ kechikdi · ✕ kelmadi · S sababli. «Kelgan» ustuniga kechikkanlar ham kiradi.</p>
+      <p className="mt-2 text-xs text-slate-500">Yashil raqam — dars bahosi, ✓ — keldi (bahosiz), ✕ — kelmadi. Eski yozuvlarda: ⏰ kechikkan, S sababli.</p>
     </>
   );
 }

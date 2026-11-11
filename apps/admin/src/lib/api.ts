@@ -28,6 +28,7 @@ import type {
   AdminStudent,
   AttendanceDay,
   AttendanceMonth,
+  AttendanceNotifyResult,
   AttendanceSaveInput,
   GroupInput,
   AdminCourse,
@@ -239,7 +240,9 @@ export const api = {
   searchStudents: (q: string) => request<AdminStudent[]>(`/admin/students?search=${encodeURIComponent(q)}`),
   attendanceDay: (groupId: string, date: string) => request<AttendanceDay>(`/admin/groups/${groupId}/attendance?date=${date}`),
   saveAttendance: (groupId: string, d: AttendanceSaveInput) =>
-    request<{ saved: number; notified: number }>(`/admin/groups/${groupId}/attendance`, json("PUT", d)),
+    request<{ saved: number; changed: number }>(`/admin/groups/${groupId}/attendance`, json("PUT", d)),
+  notifyAttendance: (groupId: string, date: string) =>
+    request<AttendanceNotifyResult>(`/admin/groups/${groupId}/attendance/notify`, json("POST", { date })),
   attendanceMonth: (groupId: string, month: string) => request<AttendanceMonth>(`/admin/groups/${groupId}/attendance/month?month=${month}`),
 
   parentLinks: (status: "PENDING" | "APPROVED" | "REJECTED") => request<AdminParentLink[]>(`/admin/parent-links?status=${status}`),

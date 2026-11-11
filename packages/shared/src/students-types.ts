@@ -38,7 +38,7 @@ export interface StudentDetail extends RosterRow {
   parentList: { id: string; name: string; phone: string | null; relation: string | null; status: "PENDING" | "APPROVED" | "REJECTED" }[];
   attendance: {
     counts: Record<AttendanceStatusName, number>;
-    recent: { date: string; status: AttendanceStatusName; note: string | null; groupName: string | null }[];
+    recent: { date: string; status: AttendanceStatusName; grade: number | null; note: string | null; groupName: string | null }[];
   };
   /** Faqat egaga (yordamchiga null) */
   billing: {

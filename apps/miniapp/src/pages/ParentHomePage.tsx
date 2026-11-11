@@ -49,7 +49,10 @@ export function ParentHomePage() {
                   {c.recent.map((r) => (
                     <li key={r.date} className="flex items-center justify-between py-2 text-sm">
                       <span className="font-semibold">{r.date.split("-").reverse().join(".")}</span>
-                      <span className={`rounded-full px-2.5 py-1 text-xs font-bold ${TONE[r.status]}`}>{ATTENDANCE_LABELS[r.status]}</span>
+                      <span className="flex items-center gap-2">
+                        {r.grade && <span className="font-extrabold tabular-nums">{r.grade}/5</span>}
+                        <span className={`rounded-full px-2.5 py-1 text-xs font-bold ${TONE[r.status]}`}>{ATTENDANCE_LABELS[r.status]}</span>
+                      </span>
                     </li>
                   ))}
                 </ul>

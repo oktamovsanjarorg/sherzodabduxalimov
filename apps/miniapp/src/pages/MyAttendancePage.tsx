@@ -64,6 +64,7 @@ export function MyAttendancePage() {
                     {r.date.split("-").reverse().join(".")}
                     {r.note && <span className="block text-xs font-normal text-hint">{r.note}</span>}
                   </span>
+                  {r.grade && <span className="text-sm font-extrabold tabular-nums">{r.grade}/5</span>}
                   <span className={`rounded-full px-2.5 py-1 text-xs font-bold ${TONE[r.status]}`}>{ATTENDANCE_LABELS[r.status]}</span>
                 </li>
               ))}
