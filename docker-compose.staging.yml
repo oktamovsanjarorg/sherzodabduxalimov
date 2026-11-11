@@ -1,0 +1,108 @@
+# Staging: NOUTBUKDA ishlaydi, production'ga umuman tegmaydi.
+#
+#   scripts/staging.sh up      # quradi, ko'taradi, tunnelni ochadi
+#   scripts/staging.sh down    # to'xtatadi
+#
+# Tashqi manzil: https://staging.sherzodabduxalimov.uzbek-talim.uz
+#   Telegram -> edge-caddy (prod server) -> teskari SSH tunnel -> shu yerdagi web (127.0.0.1:8098)
+# Prod'dan farqlari: alohida test bot (.env.staging), alohida volumlar, seed ma'lumot,
+# tashqi edge tarmog'i yo'q, worker CPU cheklangan.
+
+name: onatili-staging
+
+x-app-env: &app-env
+  env_file: .env.staging
+  environment: &app-environment
+    NODE_ENV: production
+    DATABASE_URL: postgresql://onatili:onatili@postgres:5432/onatili
+    REDIS_URL: redis://redis:6379
+    MEDIA_DIR: /data/media
+    MEDIA_SEGMENT_BASE: /media-files/v
+    QUEUE_PREFIX: onatili-staging
+    API_INTERNAL_URL: http://api:4100/api
+
+x-logging: &logging
+  driver: json-file
+  options: { max-size: "10m", max-file: "3" }
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    logging: *logging
+    environment:
+      POSTGRES_USER: onatili
+      POSTGRES_PASSWORD: onatili
+      POSTGRES_DB: onatili
+    volumes:
+      - staging_pg:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U onatili"]
+      interval: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    logging: *logging
+
+  api:
+    build: { context: ., target: app }
+    image: onatili-app:staging
+    restart: unless-stopped
+    logging: *logging
+    <<: *app-env
+    environment:
+      <<: *app-environment
+      API_HOST: 0.0.0.0
+    volumes:
+      - staging_media:/data/media
+    command: sh -c "cd packages/db && npx prisma migrate deploy && cd /app && node apps/api/dist/main.js"
+    depends_on:
+      postgres: { condition: service_healthy }
+    networks:
+      default:
+        # deploy/nginx.conf api'ni shu nom bilan chaqiradi
+        aliases: [onatili-api]
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:4100/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 15s
+      start_period: 30s
+      retries: 5
+
+  worker:
+    image: onatili-app:staging
+    restart: unless-stopped
+    logging: *logging
+    <<: *app-env
+    command: node apps/api/dist/worker.js
+    volumes:
+      - staging_media:/data/media
+    depends_on:
+      api: { condition: service_healthy }
+    cpus: 0.5
+
+  bot:
+    image: onatili-app:staging
+    restart: unless-stopped
+    logging: *logging
+    <<: *app-env
+    command: node apps/bot/dist/main.js
+    depends_on:
+      api: { condition: service_healthy }
+
+  web:
+    build: { context: ., target: web }
+    image: onatili-web:staging
+    restart: unless-stopped
+    logging: *logging
+    ports:
+      - "127.0.0.1:8098:80"
+    volumes:
+      - staging_media:/data/media:ro
+    depends_on:
+      api: { condition: service_healthy }
+
+volumes:
+  staging_pg:
+  staging_media:

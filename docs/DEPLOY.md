@@ -1,5 +1,7 @@
 # Deploy
 
+Avval o'zgarishni staging'da sinang: [STAGING.md](STAGING.md).
+
 Production serveri: AWS `t4g.medium` (ARM, 2 vCPU, 4 GB), `eu-central-1`, `63.186.202.165`.
 
 ## Qanday ishlaydi

@@ -37,6 +37,9 @@ pnpm --filter @onatili/miniapp dev   # http://127.0.0.1:5180
 - API dev rejimda swc orqali ishlaydi. tsx ishlatilmaydi, chunki u NestJS uchun kerakli decorator metadata'ni chiqarmaydi.
 - Server portlari boshqa loyihalar bilan to'qnashmaydi: 5432, 5433, 6380, 80 va 443 band.
 
+## Staging (noutbukda)
+`scripts/staging.sh up`: test bot va `https://staging.sherzodabduxalimov.uzbek-talim.uz`. Batafsil: [docs/STAGING.md](docs/STAGING.md). Production'ga faqat staging'da sinalgan o'zgarish tushadi.
+
 ## Production (shu server)
 ```bash
 docker compose up -d --build     # postgres, redis, api, bot, web
