@@ -25,10 +25,10 @@ export function Modal({ title, onClose, children, footer, wide }: { title: strin
         role="dialog"
         aria-modal="true"
         aria-label={title}
-        className={`flex h-full w-full flex-col bg-white shadow-xl sm:h-auto sm:rounded-2xl sm:border sm:border-slate-200 ${wide ? "sm:max-w-4xl" : "sm:max-w-xl"}`}
+        className={`flex h-full w-full flex-col bg-white shadow-xl dark:bg-slate-900 sm:h-auto sm:rounded-2xl sm:border sm:border-slate-200 dark:sm:border-slate-800 ${wide ? "sm:max-w-4xl" : "sm:max-w-xl"}`}
         onMouseDown={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3 sm:px-5 sm:py-4" style={{ paddingTop: "max(12px, env(safe-area-inset-top, 0px))" }}>
+        <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3 sm:px-5 sm:py-4 dark:border-slate-800" style={{ paddingTop: "max(12px, env(safe-area-inset-top, 0px))" }}>
           <h2 className="text-lg font-extrabold">{title}</h2>
           <button className="btn-ghost h-10 w-10 p-0" onClick={onClose} aria-label="Yopish">
             <X size={20} />
@@ -36,7 +36,7 @@ export function Modal({ title, onClose, children, footer, wide }: { title: strin
         </div>
         <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4 sm:max-h-[70vh] sm:flex-none sm:px-5">{children}</div>
         {footer && (
-          <div className="flex flex-wrap justify-end gap-2 border-t border-slate-200 px-4 py-3 sm:px-5" style={{ paddingBottom: "max(12px, env(safe-area-inset-bottom, 0px))" }}>
+          <div className="flex flex-wrap justify-end gap-2 border-t border-slate-200 px-4 py-3 sm:px-5 dark:border-slate-800" style={{ paddingBottom: "max(12px, env(safe-area-inset-bottom, 0px))" }}>
             {footer}
           </div>
         )}
@@ -53,25 +53,25 @@ export function Toggle({ checked, onChange, label, hint }: { checked: boolean; o
         role="switch"
         aria-checked={checked}
         onClick={() => onChange(!checked)}
-        className={`mt-0.5 inline-flex h-6 w-11 shrink-0 items-center rounded-full transition ${checked ? "bg-brand" : "bg-slate-300"}`}
+        className={`mt-0.5 inline-flex h-6 w-11 shrink-0 items-center rounded-full transition ${checked ? "bg-brand" : "bg-slate-300 dark:bg-slate-700"}`}
       >
         <span className={`h-5 w-5 rounded-full bg-white shadow transition ${checked ? "translate-x-5" : "translate-x-0.5"}`} />
       </button>
       <span>
         <span className="block text-sm font-bold">{label}</span>
-        {hint && <span className="block text-xs text-slate-500">{hint}</span>}
+        {hint && <span className="block text-xs text-slate-500 dark:text-slate-400">{hint}</span>}
       </span>
     </label>
   );
 }
 
 const tones = {
-  green: "bg-emerald-100 text-emerald-800",
-  gray: "bg-slate-100 text-slate-600",
-  amber: "bg-amber-100 text-amber-800",
-  red: "bg-red-100 text-red-700",
-  blue: "bg-sky-100 text-sky-800",
-  brand: "bg-brand-soft text-brand-dark",
+  green: "bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300",
+  gray: "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300",
+  amber: "bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300",
+  red: "bg-red-100 text-red-700 dark:bg-red-950/60 dark:text-red-300",
+  blue: "bg-sky-100 text-sky-800 dark:bg-sky-950/60 dark:text-sky-300",
+  brand: "bg-brand-soft text-brand-dark dark:bg-teal-950/60 dark:text-teal-300",
 };
 export function Badge({ tone = "gray", children }: { tone?: keyof typeof tones; children: ReactNode }) {
   // Telefonda uzun yorliq ekrandan chiqib ketmasin: kerak bo'lsa keyingi qatorga o'tadi
@@ -138,14 +138,14 @@ export function Field({ label, children, hint }: { label: string; children: Reac
 export function Segmented<T extends string>({ value, onChange, options, className = "" }: { value: T; onChange: (v: T) => void; options: readonly (readonly [T, ReactNode])[]; className?: string }) {
   return (
     <div className={`max-w-full overflow-x-auto ${className}`}>
-      <div className="inline-flex rounded-lg border border-slate-200 bg-white p-1 text-sm font-bold">
+      <div className="inline-flex rounded-lg border border-slate-200 bg-white p-1 text-sm font-bold dark:border-slate-800 dark:bg-slate-900">
         {options.map(([k, l]) => (
           <button
             key={k}
             type="button"
             ref={value === k ? (el) => el?.scrollIntoView({ block: "nearest", inline: "nearest" }) : undefined}
             onClick={() => onChange(k)}
-            className={`h-9 whitespace-nowrap rounded-md px-3 ${value === k ? "bg-brand text-white" : "text-slate-600 hover:bg-slate-50"}`}
+            className={`h-9 whitespace-nowrap rounded-md px-3 transition ${value === k ? "bg-brand text-white dark:bg-teal-700" : "text-slate-600 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-800"}`}
           >
             {l}
           </button>
@@ -164,7 +164,7 @@ export function Chips<T extends string>({ value, onChange, options, className = 
           key={k}
           type="button"
           onClick={() => onChange(k)}
-          className={`h-9 shrink-0 whitespace-nowrap rounded-full px-4 text-sm font-bold ${value === k ? "bg-slate-900 text-white" : "bg-slate-100 text-slate-600 hover:bg-slate-200"}`}
+          className={`h-9 shrink-0 whitespace-nowrap rounded-full px-4 text-sm font-bold transition ${value === k ? "bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900" : "bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"}`}
         >
           {l}
         </button>

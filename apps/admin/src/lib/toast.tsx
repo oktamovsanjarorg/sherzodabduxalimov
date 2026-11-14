@@ -20,7 +20,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
             key={t.id}
             role="status"
             className={`flex max-w-sm items-start gap-2 rounded-xl px-4 py-3 text-sm font-semibold shadow-lg ${
-              t.tone === "ok" ? "bg-slate-900 text-white" : "bg-red-600 text-white"
+              t.tone === "ok" ? "bg-slate-900 text-white dark:bg-slate-800 dark:border dark:border-slate-700" : "bg-red-600 text-white"
             }`}
           >
             {t.tone === "ok" ? <CheckCircle2 size={18} className="shrink-0" /> : <XCircle size={18} className="shrink-0" />}

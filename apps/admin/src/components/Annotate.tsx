@@ -255,7 +255,7 @@ export function TextAnnotator({ text, value, onChange }: { text: string; value: 
   };
   return (
     <div>
-      <div className={`sticky top-0 z-10 mb-2 flex flex-wrap items-center gap-1.5 rounded-lg border p-2 ${sel ? "border-red-300 bg-red-50" : "border-slate-200 bg-white"}`}>
+      <div className={`sticky top-0 z-10 mb-2 flex flex-wrap items-center gap-1.5 rounded-lg border p-2 ${sel ? "border-red-300 bg-red-50 dark:border-red-900/60 dark:bg-red-950/40" : "border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900"}`}>
         {sel ? (
           <>
             <span className="text-xs font-bold text-red-700">«{text.slice(sel.start, sel.end).slice(0, 40)}» —</span>
@@ -270,7 +270,7 @@ export function TextAnnotator({ text, value, onChange }: { text: string; value: 
           <span className="text-xs text-slate-500">Xato so'z yoki qismni belgilang, so'ng turini tanlang. Belgini o'chirish uchun ustiga bosing.</span>
         )}
       </div>
-      <div ref={ref} onMouseUp={pick} onTouchEnd={() => setTimeout(pick, 50)} className="whitespace-pre-wrap rounded-xl border border-slate-200 bg-white p-4 text-[15px] leading-[2.1]">
+      <div ref={ref} onMouseUp={pick} onTouchEnd={() => setTimeout(pick, 50)} className="whitespace-pre-wrap rounded-xl border border-slate-200 bg-white p-4 text-[15px] leading-[2.1] dark:border-slate-800 dark:bg-slate-900">
         {segments(text, value).map((s, i) =>
           s.mark ? (
             <span

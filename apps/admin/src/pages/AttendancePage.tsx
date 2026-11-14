@@ -187,7 +187,7 @@ function DayView({ groupId, date }: { groupId: string; date: string }) {
                       key={st}
                       onClick={() => patch(s.studentId, { status: st, ...(st === "ABSENT" ? { grade: null } : {}) })}
                       className={`h-10 rounded-lg border px-2 text-xs font-bold transition ${
-                        cur.status === st ? STATUS_STYLE[st].on : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
+                        cur.status === st ? STATUS_STYLE[st].on : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
                       }`}
                       aria-pressed={cur.status === st}
                     >
@@ -206,7 +206,7 @@ function DayView({ groupId, date }: { groupId: string; date: string }) {
                           key={g}
                           onClick={() => patch(s.studentId, { grade: cur.grade === g ? null : g })}
                           className={`h-9 w-9 rounded-lg border text-sm font-extrabold transition ${
-                            cur.grade === g ? "border-brand bg-brand text-white" : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
+                            cur.grade === g ? "border-brand bg-brand text-white" : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
                           }`}
                           aria-pressed={cur.grade === g}
                         >
@@ -239,7 +239,7 @@ function DayView({ groupId, date }: { groupId: string; date: string }) {
       {/* Telefonda ham doim ko'rinadigan panel */}
       <div
         // Telefonda pastki navigatsiya (64px) ustida turadi
-        className="fixed inset-x-0 bottom-[calc(64px+env(safe-area-inset-bottom,0px))] z-20 border-t border-slate-200 bg-white/95 px-4 py-3 backdrop-blur md:bottom-0"
+        className="fixed inset-x-0 bottom-[calc(64px+env(safe-area-inset-bottom,0px))] z-20 border-t border-slate-200 bg-white/95 px-4 py-3 backdrop-blur dark:border-slate-800 dark:bg-slate-900/95 md:bottom-0"
       >
         <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-2">
           <span className="text-sm text-slate-500">{changed.length ? `${changed.length} ta o'zgarish saqlanmagan` : unsent ? `${unsent} ta yozuv ota-onaga yuborilmagan` : "O'zgarish yo'q"}</span>
@@ -277,7 +277,7 @@ function MonthView({ groupId }: { groupId: string }) {
           <table className="w-full min-w-max text-sm">
             <thead>
               <tr className="border-b border-slate-200 text-xs text-slate-500">
-                <th className="sticky left-0 bg-white px-4 py-2 text-left">O'quvchi</th>
+                <th className="sticky left-0 bg-white px-4 py-2 text-left dark:bg-slate-900">O'quvchi</th>
                 {m.data.days.map((d) => (
                   <th key={d} className="px-1 py-2 font-bold">{d.slice(8)}</th>
                 ))}
@@ -291,8 +291,8 @@ function MonthView({ groupId }: { groupId: string }) {
                 const gs = Object.values(r.grades);
                 const avg = gs.length ? (gs.reduce((a, b) => a + b, 0) / gs.length).toFixed(1) : "–";
                 return (
-                  <tr key={r.student.studentId} className="border-b border-slate-100 last:border-0">
-                    <td className="sticky left-0 max-w-[160px] truncate bg-white px-4 py-2 font-semibold">{r.student.name}</td>
+                  <tr key={r.student.studentId} className="border-b border-slate-100 last:border-0 dark:border-slate-800">
+                    <td className="sticky left-0 max-w-[160px] truncate bg-white px-4 py-2 font-semibold dark:bg-slate-900">{r.student.name}</td>
                     {m.data!.days.map((d) => {
                       const x = r.marks[d];
                       return (

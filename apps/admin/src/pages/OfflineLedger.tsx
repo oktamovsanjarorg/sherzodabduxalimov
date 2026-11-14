@@ -54,7 +54,7 @@ export function OfflineLedgerView() {
             </option>
           ))}
         </select>
-        <div className="flex items-center rounded-lg border border-slate-200 bg-white">
+        <div className="flex items-center rounded-lg border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
           <button className="btn-ghost h-10 w-10 p-0" onClick={() => setMonth(shiftMonth(month, -1))} aria-label="Oldingi oy">
             <ChevronLeft size={18} />
           </button>

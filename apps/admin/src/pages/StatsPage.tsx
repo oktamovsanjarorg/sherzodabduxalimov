@@ -35,7 +35,7 @@ export function StatsPage() {
         title="Statistika"
         subtitle="Oy bo'yicha: o'quvchilar qanday o'qiyapti, kimga e'tibor kerak va qaysi mavzu qiyin."
         actions={
-          <div className="flex items-center gap-1 rounded-xl border border-slate-200 bg-white p-1">
+          <div className="flex items-center gap-1 rounded-xl border border-slate-200 bg-white p-1 dark:border-slate-800 dark:bg-slate-900">
             <button className="btn-ghost btn-sm" aria-label="Oldingi oy" onClick={() => setMonth(shift(month, -1))}>
               <ChevronLeft size={16} />
             </button>

@@ -1,9 +1,10 @@
 import { ROLE_LABELS } from "@onatili/shared";
 import { useQuery } from "@tanstack/react-query";
-import { BookOpen, GraduationCap, Home, LogOut, MoreHorizontal, type LucideIcon } from "lucide-react";
+import { BookOpen, GraduationCap, Home, LogOut, Moon, MoreHorizontal, Sun, type LucideIcon } from "lucide-react";
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { api } from "../lib/api";
 import { clearSession, loadSession } from "../lib/session";
+import { useTheme } from "../lib/theme";
 
 interface NavGroup {
   to: string;
@@ -91,6 +92,7 @@ function Badge({ n }: { n?: number }) {
 export function Layout() {
   const { pathname } = useLocation();
   const navigate = useNavigate();
+  const { isDark, toggle } = useTheme();
   const logout = () => {
     clearSession();
     navigate("/login");
@@ -102,7 +104,7 @@ export function Layout() {
   return (
     <div className="min-h-screen">
       {/* Kompyuter: chap tomonda sidebar, barcha bo'limlar ochiq */}
-      <aside className="fixed inset-y-0 left-0 z-30 hidden w-60 flex-col border-r border-slate-200 bg-white md:flex">
+      <aside className="fixed inset-y-0 left-0 z-30 hidden w-60 flex-col border-r border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900 md:flex">
         <div className="flex h-16 items-center gap-3 px-5">
           <img src={`${import.meta.env.BASE_URL}favicon.svg`} alt="" className="h-8 w-8" />
           <span className="text-sm font-extrabold">Ona tili · Admin</span>
@@ -114,7 +116,7 @@ export function Layout() {
             return (
               <div key={g.to}>
                 {g.sub && (
-                  <p className="mb-1 flex items-center gap-2 px-3 text-[11px] font-bold uppercase tracking-wide text-slate-400">
+                  <p className="mb-1 flex items-center gap-2 px-3 text-[11px] font-bold uppercase tracking-wide text-slate-400 dark:text-slate-500">
                     <g.Icon size={13} /> {g.label}
                   </p>
                 )}
@@ -126,7 +128,9 @@ export function Layout() {
                         <NavLink
                           to={t.to}
                           className={`relative flex h-9 items-center gap-2.5 rounded-lg px-3 text-sm font-semibold transition ${
-                            active ? "bg-brand-soft text-brand-dark" : "text-slate-600 hover:bg-slate-100"
+                            active
+                              ? "bg-brand-soft text-brand-dark dark:bg-teal-950/60 dark:text-teal-300"
+                              : "text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800/80"
                           }`}
                         >
                           {!g.sub && <g.Icon size={16} />}
@@ -145,23 +149,41 @@ export function Layout() {
             );
           })}
         </nav>
-        <div className="flex items-center gap-2 border-t border-slate-200 px-5 py-3 text-xs leading-tight">
+        <div className="flex items-center gap-2 border-t border-slate-200 px-4 py-3 text-xs leading-tight dark:border-slate-800">
           <div className="min-w-0 flex-1">
             <p className="truncate font-bold">{[s.user.firstName, s.user.lastName].filter(Boolean).join(" ")}</p>
-            <p className="text-slate-500">{ROLE_LABELS[s.user.role]}</p>
+            <p className="text-slate-500 dark:text-slate-400">{ROLE_LABELS[s.user.role]}</p>
           </div>
-          <button className="btn-ghost btn-sm text-red-600" onClick={logout} title="Chiqish (qayta kirish: botga /admin)">
+          <button
+            type="button"
+            className="btn-ghost btn-sm px-2 text-slate-600 dark:text-slate-300"
+            onClick={toggle}
+            title={isDark ? "Yorug' rejim" : "Qorong'i rejim"}
+            aria-label="Mavzuni almashtirish"
+          >
+            {isDark ? <Sun size={16} className="text-amber-400" /> : <Moon size={16} />}
+          </button>
+          <button className="btn-ghost btn-sm text-red-600 dark:text-red-400" onClick={logout} title="Chiqish (qayta kirish: botga /admin)">
             <LogOut size={15} /> Chiqish
           </button>
         </div>
       </aside>
 
       {/* Telefon/planshet: yuqorida sarlavha va guruh ichidagi bo'limlar */}
-      <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/95 backdrop-blur md:hidden" style={{ paddingTop: "env(safe-area-inset-top, 0px)" }}>
-        <div className="flex h-14 items-center gap-3 px-4">
+      <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/95 backdrop-blur dark:border-slate-800 dark:bg-slate-900/95 md:hidden" style={{ paddingTop: "env(safe-area-inset-top, 0px)" }}>
+        <div className="flex h-14 items-center gap-2 px-4">
           <img src={`${import.meta.env.BASE_URL}favicon.svg`} alt="" className="h-8 w-8" />
           <span className="flex-1 font-extrabold">{current.label}</span>
-          <button className="btn-ghost btn-sm text-slate-500" onClick={logout} aria-label="Chiqish" title="Chiqish">
+          <button
+            type="button"
+            className="btn-ghost btn-sm px-2 text-slate-600 dark:text-slate-300"
+            onClick={toggle}
+            title={isDark ? "Yorug' rejim" : "Qorong'i rejim"}
+            aria-label="Mavzuni almashtirish"
+          >
+            {isDark ? <Sun size={18} className="text-amber-400" /> : <Moon size={18} />}
+          </button>
+          <button className="btn-ghost btn-sm text-slate-500 dark:text-slate-400" onClick={logout} aria-label="Chiqish" title="Chiqish">
             <LogOut size={18} />
           </button>
         </div>
@@ -174,11 +196,13 @@ export function Layout() {
                   key={t.to}
                   to={t.to}
                   className={`h-9 shrink-0 rounded-full px-4 text-sm font-bold leading-9 transition ${
-                    active ? "bg-slate-900 text-white" : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                    active
+                      ? "bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900"
+                      : "bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
                   }`}
                 >
                   {t.label}
-                  {t.badge ? <span className={`ml-1.5 ${active ? "text-red-300" : "text-red-600"}`}>{t.badge}</span> : null}
+                  {t.badge ? <span className={`ml-1.5 ${active ? "text-red-300 dark:text-red-600" : "text-red-600 dark:text-red-400"}`}>{t.badge}</span> : null}
                 </NavLink>
               );
             })}
@@ -194,7 +218,7 @@ export function Layout() {
 
       {/* Telefon/planshet: pastki navigatsiya */}
       <nav
-        className="fixed inset-x-0 bottom-0 z-30 border-t border-slate-200 bg-white/95 backdrop-blur md:hidden"
+        className="fixed inset-x-0 bottom-0 z-30 border-t border-slate-200 bg-white/95 backdrop-blur dark:border-slate-800 dark:bg-slate-900/95 md:hidden"
         style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
       >
         <ul className={`grid ${groups.length >= 5 ? "grid-cols-5" : "grid-cols-4"}`}>
@@ -202,8 +226,13 @@ export function Layout() {
             const active = g.match.test(pathname);
             return (
               <li key={g.to}>
-                <NavLink to={g.to} className={`flex h-16 flex-col items-center justify-center gap-1 text-[11px] font-bold ${active ? "text-brand" : "text-slate-500"}`}>
-                  <span className={`relative flex h-8 w-12 items-center justify-center rounded-full ${active ? "bg-brand-soft" : ""}`}>
+                <NavLink
+                  to={g.to}
+                  className={`flex h-16 flex-col items-center justify-center gap-1 text-[11px] font-bold ${
+                    active ? "text-brand dark:text-teal-400" : "text-slate-500 dark:text-slate-400"
+                  }`}
+                >
+                  <span className={`relative flex h-8 w-12 items-center justify-center rounded-full ${active ? "bg-brand-soft dark:bg-teal-950/60" : ""}`}>
                     <g.Icon size={21} strokeWidth={active ? 2.4 : 2} />
                     <Badge n={g.badge} />
                   </span>

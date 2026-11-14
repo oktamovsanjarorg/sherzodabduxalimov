@@ -126,7 +126,7 @@ function ReviewModal({ essay, onClose }: { essay: AdminEssay; onClose: () => voi
               <TextAnnotator text={essay.text} value={marks} onChange={setMarks} />
             </div>
           ) : (
-            <div className="max-h-[45vh] overflow-y-auto whitespace-pre-line rounded-xl border border-slate-200 bg-white p-4 text-[15px] leading-relaxed">
+            <div className="max-h-[45vh] overflow-y-auto whitespace-pre-line rounded-xl border border-slate-200 bg-white p-4 text-[15px] leading-relaxed dark:border-slate-800 dark:bg-slate-900">
               {essay.text}
             </div>
           )}

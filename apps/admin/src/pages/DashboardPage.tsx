@@ -109,10 +109,10 @@ export function DashboardPage() {
 }
 
 const TONES = {
-  amber: "border-amber-300 bg-amber-50 text-amber-900",
-  brand: "border-brand/30 bg-brand-soft/40 text-brand-dark",
-  red: "border-red-300 bg-red-50 text-red-800",
-  gray: "border-slate-200 bg-white text-slate-700",
+  amber: "border-amber-300 bg-amber-50 text-amber-900 dark:border-amber-900/60 dark:bg-amber-950/40 dark:text-amber-200",
+  brand: "border-brand/30 bg-brand-soft/40 text-brand-dark dark:border-teal-800 dark:bg-teal-950/40 dark:text-teal-200",
+  red: "border-red-300 bg-red-50 text-red-800 dark:border-red-900/60 dark:bg-red-950/40 dark:text-red-200",
+  gray: "border-slate-200 bg-white text-slate-700 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300",
 };
 
 function Todo({ to, tone, Icon, title, hint }: { to: string; tone: keyof typeof TONES; Icon: typeof Users; title: string; hint: string }) {
