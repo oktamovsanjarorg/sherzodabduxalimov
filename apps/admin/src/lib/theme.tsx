@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 
 export type Theme = "light" | "dark" | "system";
 
@@ -30,7 +30,25 @@ export function applyTheme(theme: Theme): boolean {
   return isDark;
 }
 
-export function useTheme() {
+if (typeof window !== "undefined") {
+  applyTheme(getStoredTheme());
+}
+
+interface ThemeContextType {
+  theme: Theme;
+  isDark: boolean;
+  setTheme: (t: Theme) => void;
+  toggle: () => void;
+}
+
+const ThemeContext = createContext<ThemeContextType>({
+  theme: "system",
+  isDark: false,
+  setTheme: () => {},
+  toggle: () => {},
+});
+
+export function ThemeProvider({ children }: { children: ReactNode }) {
   const [theme, setThemeState] = useState<Theme>(getStoredTheme);
   const [isDark, setIsDark] = useState<boolean>(() => {
     const t = getStoredTheme();
@@ -60,5 +78,11 @@ export function useTheme() {
     return () => mq.removeEventListener("change", handler);
   }, [theme]);
 
-  return { theme, isDark, setTheme, toggle };
+  return (
+    <ThemeContext.Provider value={{ theme, isDark, setTheme, toggle }}>
+      {children}
+    </ThemeContext.Provider>
+  );
 }
+
+export const useTheme = () => useContext(ThemeContext);

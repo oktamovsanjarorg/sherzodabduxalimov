@@ -1,10 +1,13 @@
+import { Moon, Sun } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { api, errMsg } from "../lib/api";
 import { parseTtl, saveSession } from "../lib/session";
+import { useTheme } from "../lib/theme";
 
 export function LoginPage() {
   const navigate = useNavigate();
+  const { isDark, toggle } = useTheme();
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const once = useRef(false);
@@ -30,29 +33,38 @@ export function LoginPage() {
   }, [navigate]);
 
   return (
-    <div className="flex min-h-screen items-center justify-center p-6">
+    <div className="relative flex min-h-screen items-center justify-center p-6">
+      <button
+        type="button"
+        className="btn-ghost btn-sm absolute right-4 top-4 text-slate-600 dark:text-slate-300"
+        onClick={toggle}
+        title={isDark ? "Yorug' rejim" : "Qorong'i rejim"}
+        aria-label="Mavzuni almashtirish"
+      >
+        {isDark ? <Sun size={20} className="text-amber-400" /> : <Moon size={20} />}
+      </button>
       <div className="card w-full max-w-md p-8 text-center">
         <img src={`${import.meta.env.BASE_URL}favicon.svg`} alt="" className="mx-auto h-14 w-14" />
-        <h1 className="mt-4 text-xl font-extrabold">Admin panel</h1>
+        <h1 className="mt-4 text-xl font-extrabold text-slate-900 dark:text-slate-100">Admin panel</h1>
         {busy ? (
-          <p className="mt-3 text-sm text-slate-500">Kirilmoqda…</p>
+          <p className="mt-3 text-sm text-slate-500 dark:text-slate-400">Kirilmoqda…</p>
         ) : (
           <>
             {(error || expired) && (
-              <p className="mt-4 rounded-lg bg-red-50 px-3 py-2 text-sm font-semibold text-red-700">
+              <p className="mt-4 rounded-lg bg-red-50 px-3 py-2 text-sm font-semibold text-red-700 dark:bg-red-950/60 dark:text-red-300">
                 {error ?? "Sessiya tugadi. Qayta kiring."}
               </p>
             )}
-            <div className="mt-5 space-y-2 text-left text-sm text-slate-600">
-              <p className="font-bold text-slate-900">Qanday kiriladi:</p>
+            <div className="mt-5 space-y-2 text-left text-sm text-slate-600 dark:text-slate-400">
+              <p className="font-bold text-slate-900 dark:text-slate-100">Qanday kiriladi:</p>
               <ol className="list-decimal space-y-1 pl-5">
                 <li>Telegramda botni oching</li>
                 <li>
-                  <code className="rounded bg-slate-100 px-1.5 py-0.5 font-bold">/admin</code> deb yozing
+                  <code className="rounded bg-slate-100 px-1.5 py-0.5 font-bold text-slate-800 dark:bg-slate-800 dark:text-slate-200">/admin</code> deb yozing
                 </li>
                 <li>«Admin panelni ochish» tugmasini bosing</li>
               </ol>
-              <p className="pt-2 text-xs text-slate-500">Havola 5 daqiqa amal qiladi va faqat bir marta ishlaydi.</p>
+              <p className="pt-2 text-xs text-slate-500 dark:text-slate-400">Havola 5 daqiqa amal qiladi va faqat bir marta ishlaydi.</p>
             </div>
           </>
         )}
