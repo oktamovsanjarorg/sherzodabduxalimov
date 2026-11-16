@@ -1,0 +1,71 @@
+# Mini App (Telegram). Eski domen sherzodabduxalimov.uzbek-talim.uz shu yerga yo'naltiriladi
+app.sherzodabduxalimov.uz {
+	encode zstd gzip
+
+	# X-Frame-Options qo'yilmaydi: Telegram Mini App'ni iframe ichida ochadi
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		-Server
+	}
+
+	# Admin panel admin.sherzodabduxalimov.uz da
+	redir /admin* https://admin.sherzodabduxalimov.uz{uri} permanent
+
+	reverse_proxy onatili-web:80
+
+	log {
+		output file /data/onatili-access.log {
+			roll_size 10mb
+			roll_keep 5
+		}
+	}
+}
+
+# Eski domen: hamma narsa yangisiga (eski xabarlardagi tugmalar ham ishlaydi)
+sherzodabduxalimov.uzbek-talim.uz {
+	header -Server
+	redir /admin* https://admin.sherzodabduxalimov.uz{uri} permanent
+	redir https://app.sherzodabduxalimov.uz{uri} permanent
+}
+
+# Staging: noutbukdan teskari SSH tunnel (scripts/staging.sh). Noutbuk o'chiq bo'lsa 502 o'rniga yozuv
+staging.sherzodabduxalimov.uzbek-talim.uz {
+	encode zstd gzip
+	header -Server
+	reverse_proxy 172.18.0.1:18098
+	handle_errors {
+		respond "Staging o'chiq (noutbukda scripts/staging.sh up)" 503
+	}
+}
+
+# Ustozning profil sayti: /home/ubuntu/ustoz-site, konteyner ustoz-web
+sherzodabduxalimov.uz {
+	encode zstd gzip
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "SAMEORIGIN"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		-Server
+	}
+	reverse_proxy ustoz-web:80
+}
+www.sherzodabduxalimov.uz {
+	redir https://sherzodabduxalimov.uz{uri} permanent
+}
+
+# Admin panel (onatili-web ichidagi /admin/ SPA). Faqat admin, uning API'si va video ko'rish yo'llari
+admin.sherzodabduxalimov.uz {
+	encode zstd gzip
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		-Server
+	}
+	@notadmin not path /admin /admin/* /api/* /media-files/*
+	redir @notadmin /admin/ 302
+	reverse_proxy onatili-web:80
+}

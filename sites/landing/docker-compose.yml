@@ -1,0 +1,17 @@
+# Ustoz profil sayti: statik fayllar (public/). Tashqi trafik edge-caddy orqali keladi (ustoz.uzbek-talim.uz).
+# Fayl o'zgarsa qayta ishga tushirish shart emas: public/ to'g'ridan-to'g'ri ulangan.
+name: ustoz-site
+services:
+  web:
+    image: caddy:2-alpine
+    container_name: ustoz-web
+    restart: unless-stopped
+    volumes:
+      - ./public:/srv:ro
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+    logging: { driver: json-file, options: { max-size: "10m", max-file: "3" } }
+    networks: [edge]
+networks:
+  edge:
+    external: true
+    name: mb-platform_default
