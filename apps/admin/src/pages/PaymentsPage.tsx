@@ -256,7 +256,7 @@ function Subscribers() {
             ["lapsed", `Uzaytirmagan (${subs.data?.lapsed.length ?? 0})`],
           ] as const
         ).map(([k, l]) => (
-          <button key={k} onClick={() => setView(k)} className={`h-9 shrink-0 rounded-full px-4 text-sm font-bold ${view === k ? "bg-slate-900 text-white" : "bg-slate-100 text-slate-600 hover:bg-slate-200"}`}>
+          <button key={k} onClick={() => setView(k)} className={`h-9 shrink-0 rounded-full px-4 text-sm font-bold ${view === k ? "bg-brand text-white" : "bg-slate-100 text-slate-600 hover:bg-slate-200"}`}>
             {l}
           </button>
         ))}

@@ -30,8 +30,8 @@ export function LoginPage() {
   }, [navigate]);
 
   return (
-    <div className="flex min-h-screen items-center justify-center p-6">
-      <div className="card w-full max-w-md p-8 text-center">
+    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-navy via-navy-light to-brand p-6">
+      <div className="card w-full max-w-md p-8 text-center shadow-xl">
         <img src={`${import.meta.env.BASE_URL}favicon.svg`} alt="" className="mx-auto h-14 w-14" />
         <h1 className="mt-4 text-xl font-extrabold">Admin panel</h1>
         {busy ? (
@@ -48,7 +48,7 @@ export function LoginPage() {
               <ol className="list-decimal space-y-1 pl-5">
                 <li>Telegramda botni oching</li>
                 <li>
-                  <code className="rounded bg-slate-100 px-1.5 py-0.5 font-bold">/admin</code> deb yozing
+                  <code className="rounded bg-brand-soft px-1.5 py-0.5 font-bold text-brand-dark">/admin</code> deb yozing
                 </li>
                 <li>«Admin panelni ochish» tugmasini bosing</li>
               </ol>

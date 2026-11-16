@@ -234,7 +234,7 @@ function Picker({ defaultTopicId, exclude, onClose, onPick }: { defaultTopicId: 
             <label key={q.id} className={`flex cursor-pointer items-start gap-3 rounded-lg border p-3 ${on ? "border-brand bg-brand-soft/30" : "border-slate-200 hover:bg-slate-50"}`}>
               <input
                 type="checkbox"
-                className="mt-1 h-4 w-4 accent-[#0f766e]"
+                className="mt-1 h-4 w-4 accent-brand"
                 checked={on}
                 onChange={() => setSel((m) => { const n = new Map(m); if (on) n.delete(q.id); else n.set(q.id, q); return n; })}
               />
