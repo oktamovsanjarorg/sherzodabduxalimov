@@ -149,7 +149,7 @@ export function PageAnnotator({ src, value, onChange }: { src: string; value: Pa
             key={k}
             type="button"
             onClick={() => setTool(k)}
-            className={`flex h-9 items-center gap-1.5 rounded-lg px-3 text-xs font-bold ${tool === k ? "bg-brand text-white" : "bg-surface-3 text-ink-2 hover:bg-surface-4"}`}
+            className={`flex h-9 items-center gap-1.5 rounded-lg px-3 text-xs font-bold ${tool === k ? "bg-ink text-page" : "bg-surface-3 text-ink-2 hover:bg-surface-4"}`}
           >
             <Icon size={15} /> {label}
           </button>

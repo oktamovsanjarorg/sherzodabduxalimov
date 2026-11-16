@@ -164,7 +164,7 @@ export function Chips<T extends string>({ value, onChange, options, className = 
           key={k}
           type="button"
           onClick={() => onChange(k)}
-          className={`h-9 shrink-0 whitespace-nowrap rounded-full px-4 text-sm font-bold ${value === k ? "bg-brand text-white" : "bg-surface-3 text-ink-2 hover:bg-surface-4"}`}
+          className={`h-9 shrink-0 whitespace-nowrap rounded-full px-4 text-sm font-bold ${value === k ? "bg-ink text-page" : "bg-surface-3 text-ink-2 hover:bg-surface-4"}`}
         >
           {l}
         </button>

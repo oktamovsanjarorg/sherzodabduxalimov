@@ -113,7 +113,7 @@ export function StudentsPage() {
 
 function Chip({ on, onClick, children }: { on: boolean; onClick: () => void; children: React.ReactNode }) {
   return (
-    <button onClick={onClick} className={`h-9 shrink-0 whitespace-nowrap rounded-full px-4 text-sm font-bold ${on ? "bg-brand text-white" : "bg-surface-3 text-ink-2 hover:bg-surface-4"}`}>
+    <button onClick={onClick} className={`h-9 shrink-0 whitespace-nowrap rounded-full px-4 text-sm font-bold ${on ? "bg-ink text-page" : "bg-surface-3 text-ink-2 hover:bg-surface-4"}`}>
       {children}
     </button>
   );
