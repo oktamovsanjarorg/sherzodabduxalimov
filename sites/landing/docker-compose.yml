@@ -7,7 +7,7 @@ services:
     container_name: ustoz-web
     restart: unless-stopped
     volumes:
-      - ./public:/srv:ro
+      - /home/ubuntu/onatili-prod/sites/landing/public:/srv:ro  # repo: sites/landing, main orqali yangilanadi
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
     logging: { driver: json-file, options: { max-size: "10m", max-file: "3" } }
     networks: [edge]
