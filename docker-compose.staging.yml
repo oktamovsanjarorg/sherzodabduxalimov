@@ -56,8 +56,11 @@ services:
     environment:
       <<: *app-environment
       API_HOST: 0.0.0.0
+      BACKUP_DIR: /backups
     volumes:
       - staging_media:/data/media
+      # "Zaxira" bo'limini sinash uchun: prod zaxiralari emas, staging'ning o'z papkasi
+      - ./.deploy/staging/backups:/backups:ro
     command: sh -c "cd packages/db && npx prisma migrate deploy && cd /app && node apps/api/dist/main.js"
     depends_on:
       postgres: { condition: service_healthy }

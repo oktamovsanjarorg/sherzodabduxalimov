@@ -65,13 +65,14 @@ export function useNavGroups(): NavGroup[] {
             to: "/payments",
             label: "Ko'proq",
             Icon: MoreHorizontal,
-            match: /^\/(more|staff|payments|billing|trash)/,
+            match: /^\/(more|staff|payments|billing|trash|backups)/,
             badge: dash.data?.pendingPayments,
             sub: [
               { to: "/payments", label: "To'lovlar", match: /^\/payments/, badge: dash.data?.pendingPayments },
               { to: "/billing", label: "Tariflar", match: /^\/billing/ },
               { to: "/staff", label: "Xodimlar", match: /^\/staff/ },
               { to: "/trash", label: "Korzinka", match: /^\/trash/ },
+              { to: "/backups", label: "Zaxira", match: /^\/backups/ },
             ],
           },
         ]

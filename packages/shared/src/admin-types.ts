@@ -216,3 +216,22 @@ export const essayReviewInput = z.object({
   criteria: z.array(z.object({ key: z.string(), score: z.coerce.number().min(0).max(2) })).optional(),
   comment: z.string().trim().max(5000).nullable().optional(),
 });
+
+// ===================== Zaxira nusxalari =====================
+
+/** scripts/backup.sh yozadigan fayl nomlari: db-YYYYMMDD-HHMMSS.dump, media-YYYYMMDD-HHMMSS.tgz */
+export const BACKUP_NAME_RE = /^(db-\d{8}-\d{6}\.dump|media-\d{8}-\d{6}\.tgz)$/;
+
+export interface BackupFile {
+  name: string;
+  /** db: baza (pg_dump), media: video, rasm, ovoz arxivi */
+  kind: "db" | "media";
+  sizeBytes: number;
+  createdAt: string;
+}
+
+export interface BackupList {
+  /** Serverda zaxira papkasi ulanganmi */
+  enabled: boolean;
+  files: BackupFile[];
+}

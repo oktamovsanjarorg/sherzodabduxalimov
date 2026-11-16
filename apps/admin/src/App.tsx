@@ -14,6 +14,7 @@ import { QuestionsPage } from "./pages/QuestionsPage";
 import { BillingSettingsPage } from "./pages/BillingSettingsPage";
 import { PaymentsPage } from "./pages/PaymentsPage";
 import { StaffPage } from "./pages/StaffPage";
+import { BackupsPage } from "./pages/BackupsPage";
 import { StudentDetailPage } from "./pages/StudentDetailPage";
 import { StudentsPage } from "./pages/StudentsPage";
 import { TestEditorPage } from "./pages/TestEditorPage";
@@ -72,6 +73,14 @@ export function App() {
           element={
             <RequireAuth teacher>
               <StaffPage />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="backups"
+          element={
+            <RequireAuth teacher>
+              <BackupsPage />
             </RequireAuth>
           }
         />
