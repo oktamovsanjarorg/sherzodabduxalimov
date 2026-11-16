@@ -5,7 +5,10 @@ export default {
     extend: {
       fontFamily: { sans: ['"Manrope Variable"', "system-ui", "sans-serif"] },
       colors: {
-        brand: { DEFAULT: "#0f766e", dark: "#115e59", soft: "#ccfbf1" },
+        // Yagona dizayn: ko'k. brand = asosiy amal rangi, navy = sidebar, page = sahifa foni
+        brand: { DEFAULT: "#1d4ed8", dark: "#1e3a8a", soft: "#dbeafe" },
+        navy: { DEFAULT: "#0b1f4d", light: "#13306e", line: "#1c3a7a" },
+        page: "#f3f6fc",
       },
     },
   },

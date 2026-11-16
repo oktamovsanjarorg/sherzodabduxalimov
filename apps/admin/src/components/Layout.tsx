@@ -102,10 +102,10 @@ export function Layout() {
   return (
     <div className="min-h-screen">
       {/* Kompyuter: chap tomonda sidebar, barcha bo'limlar ochiq */}
-      <aside className="fixed inset-y-0 left-0 z-30 hidden w-60 flex-col border-r border-slate-200 bg-white md:flex">
+      <aside className="fixed inset-y-0 left-0 z-30 hidden w-60 flex-col bg-navy text-blue-100 md:flex">
         <div className="flex h-16 items-center gap-3 px-5">
-          <img src={`${import.meta.env.BASE_URL}favicon.svg`} alt="" className="h-8 w-8" />
-          <span className="text-sm font-extrabold">Ona tili · Admin</span>
+          <img src={`${import.meta.env.BASE_URL}favicon.svg`} alt="" className="h-8 w-8 rounded-lg ring-1 ring-white/20" />
+          <span className="text-sm font-extrabold text-white">Ona tili · Admin</span>
         </div>
         <nav className="flex-1 space-y-4 overflow-y-auto px-3 pb-4">
           {groups.filter((g) => !g.sidebarIn).map((g) => {
@@ -114,7 +114,7 @@ export function Layout() {
             return (
               <div key={g.to}>
                 {g.sub && (
-                  <p className="mb-1 flex items-center gap-2 px-3 text-[11px] font-bold uppercase tracking-wide text-slate-400">
+                  <p className="mb-1 flex items-center gap-2 px-3 text-[11px] font-bold uppercase tracking-wide text-blue-300/70">
                     <g.Icon size={13} /> {g.label}
                   </p>
                 )}
@@ -126,7 +126,7 @@ export function Layout() {
                         <NavLink
                           to={t.to}
                           className={`relative flex h-9 items-center gap-2.5 rounded-lg px-3 text-sm font-semibold transition ${
-                            active ? "bg-brand-soft text-brand-dark" : "text-slate-600 hover:bg-slate-100"
+                            active ? "bg-brand text-white shadow-sm" : "text-blue-100/85 hover:bg-navy-light hover:text-white"
                           }`}
                         >
                           {!g.sub && <g.Icon size={16} />}
@@ -145,23 +145,23 @@ export function Layout() {
             );
           })}
         </nav>
-        <div className="flex items-center gap-2 border-t border-slate-200 px-5 py-3 text-xs leading-tight">
+        <div className="flex items-center gap-2 border-t border-navy-line px-5 py-3 text-xs leading-tight">
           <div className="min-w-0 flex-1">
-            <p className="truncate font-bold">{[s.user.firstName, s.user.lastName].filter(Boolean).join(" ")}</p>
-            <p className="text-slate-500">{ROLE_LABELS[s.user.role]}</p>
+            <p className="truncate font-bold text-white">{[s.user.firstName, s.user.lastName].filter(Boolean).join(" ")}</p>
+            <p className="text-blue-300/80">{ROLE_LABELS[s.user.role]}</p>
           </div>
-          <button className="btn-ghost btn-sm text-red-600" onClick={logout} title="Chiqish (qayta kirish: botga /admin)">
+          <button className="btn btn-sm px-2 text-blue-200 hover:bg-navy-light hover:text-white" onClick={logout} title="Chiqish (qayta kirish: botga /admin)">
             <LogOut size={15} /> Chiqish
           </button>
         </div>
       </aside>
 
       {/* Telefon/planshet: yuqorida sarlavha va guruh ichidagi bo'limlar */}
-      <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/95 backdrop-blur md:hidden" style={{ paddingTop: "env(safe-area-inset-top, 0px)" }}>
+      <header className="sticky top-0 z-30 bg-navy text-white shadow-sm md:hidden" style={{ paddingTop: "env(safe-area-inset-top, 0px)" }}>
         <div className="flex h-14 items-center gap-3 px-4">
-          <img src={`${import.meta.env.BASE_URL}favicon.svg`} alt="" className="h-8 w-8" />
+          <img src={`${import.meta.env.BASE_URL}favicon.svg`} alt="" className="h-8 w-8 rounded-lg ring-1 ring-white/20" />
           <span className="flex-1 font-extrabold">{current.label}</span>
-          <button className="btn-ghost btn-sm text-slate-500" onClick={logout} aria-label="Chiqish" title="Chiqish">
+          <button className="btn btn-sm px-2 text-blue-200 hover:bg-navy-light hover:text-white" onClick={logout} aria-label="Chiqish" title="Chiqish">
             <LogOut size={18} />
           </button>
         </div>
@@ -174,11 +174,11 @@ export function Layout() {
                   key={t.to}
                   to={t.to}
                   className={`h-9 shrink-0 rounded-full px-4 text-sm font-bold leading-9 transition ${
-                    active ? "bg-slate-900 text-white" : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                    active ? "bg-white text-navy" : "bg-navy-light text-blue-100 hover:bg-navy-line"
                   }`}
                 >
                   {t.label}
-                  {t.badge ? <span className={`ml-1.5 ${active ? "text-red-300" : "text-red-600"}`}>{t.badge}</span> : null}
+                  {t.badge ? <span className={`ml-1.5 ${active ? "text-red-600" : "text-red-300"}`}>{t.badge}</span> : null}
                 </NavLink>
               );
             })}
