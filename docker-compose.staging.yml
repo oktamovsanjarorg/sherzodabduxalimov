@@ -1,10 +1,11 @@
-# Staging: NOUTBUKDA ishlaydi, production'ga umuman tegmaydi.
+# Staging: serverda (/home/ubuntu/onatili-staging) ishlaydi, production'ga tegmaydi.
 #
-#   scripts/staging.sh up      # quradi, ko'taradi, tunnelni ochadi
-#   scripts/staging.sh down    # to'xtatadi
+#   scripts/staging.sh deploy [branch]   # noutbukdan: branch'ni serverdagi staging'ga chiqaradi
+#   scripts/staging.sh up                # shu mashinada ko'taradi (serverda yoki noutbukda)
 #
 # Tashqi manzil: https://staging.sherzodabduxalimov.uzbek-talim.uz
-#   Telegram -> edge-caddy (prod server) -> teskari SSH tunnel -> shu yerdagi web (127.0.0.1:8098)
+#   Telegram -> edge-caddy -> 172.18.0.1:18098 (STAGING_WEB_BIND) -> staging web
+# Noutbukda ishlatilsa: STAGING_WEB_BIND=127.0.0.1:8098 va teskari SSH tunnel (STAGING_TUNNEL=1)
 # Prod'dan farqlari: alohida test bot (.env.staging), alohida volumlar, seed ma'lumot,
 # tashqi edge tarmog'i yo'q, worker CPU cheklangan.
 
@@ -97,7 +98,8 @@ services:
     restart: unless-stopped
     logging: *logging
     ports:
-      - "127.0.0.1:8098:80"
+      # staging.sh .env.staging dagi STAGING_WEB_BIND ni beradi
+      - "${STAGING_WEB_BIND:-127.0.0.1:8098}:80"
     volumes:
       - staging_media:/data/media:ro
     depends_on:
