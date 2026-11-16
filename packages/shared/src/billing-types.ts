@@ -168,8 +168,10 @@ export interface OfflineLedgerRow {
   coveredUntil: string | null;
   /** Davr tugaganiga necha kun bo'ldi (qarzdor bo'lsa); to'lagan yoki hech to'lamagan bo'lsa null */
   overdueDays: number | null;
-  /** Keyingi to'lov davri boshlanishi: oxirgi davrdan keyingi kun, bo'lmasa bugun */
+  /** Keyingi to'lov davri boshlanishi: oxirgi davrdan keyingi kun, bo'lmasa o'qishni boshlagan sana, u ham bo'lmasa bugun */
   nextPeriodStart: string;
+  /** O'qishni boshlagan sana (YYYY-MM-DD) */
+  startedOn: string | null;
 }
 
 export interface OfflineLedger {

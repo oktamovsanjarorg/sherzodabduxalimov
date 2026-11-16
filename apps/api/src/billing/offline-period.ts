@@ -46,12 +46,13 @@ export function pickPayment<T extends PayRecord>(pays: T[], month: string, today
 }
 
 /** Davr qaysi sanagacha to'langan (hisobotdagi sanagacha boshlangan davrlar ichida) va necha kun o'tgan */
-export function coverage(pays: PayRecord[], ref: string) {
+/** startedOn: o'qishni boshlagan sana — hali to'lov bo'lmasa birinchi davr shundan boshlanadi (bo'lmasa bugundan) */
+export function coverage(pays: PayRecord[], ref: string, startedOn: string | null = null) {
   const ends = pays.map(effective).filter((e) => e.start <= ref).map((e) => e.end);
   const coveredUntil = ends.length ? ends.reduce((a, b) => (a >= b ? a : b)) : null;
   return {
     coveredUntil,
     overdueDays: coveredUntil && ref > coveredUntil ? daysBetween(coveredUntil, ref) : null,
-    nextPeriodStart: coveredUntil ? addDays(coveredUntil, 1) : tashkentToday(),
+    nextPeriodStart: coveredUntil ? addDays(coveredUntil, 1) : (startedOn ?? tashkentToday()),
   };
 }

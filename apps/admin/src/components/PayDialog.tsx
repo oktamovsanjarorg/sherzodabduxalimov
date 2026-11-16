@@ -4,6 +4,7 @@ import { Check } from "lucide-react";
 import { useState } from "react";
 import { Field, Modal, Spinner } from "./ui";
 import { api, errMsg } from "../lib/api";
+import { fmtYmd } from "../lib/format";
 import { useToast } from "../lib/toast";
 
 /**
@@ -52,8 +53,15 @@ function Form({ studentId, info, onClose, onDone }: { studentId: string; info: A
         <b>{info.name}</b>
         {info.feeUzs ? ` · oylik ${formatSum(info.feeUzs)} so'm` : ""}
       </p>
+      <p className="mb-1 text-sm text-ink-2">
+        O'qishni boshlagan: <b className="text-ink">{info.startedOn ? fmtYmd(info.startedOn) : "kiritilmagan"}</b>
+      </p>
       <p className="mb-4 text-xs text-ink-3">
-        {info.coveredUntil ? `Oxirgi to'langan davr ${shortDate(info.coveredUntil)} gacha edi: yangi davr shundan keyingi kundan boshlandi.` : "Hali to'lamagan: davr boshini o'zi boshlagan kundan qo'ying."}
+        {info.coveredUntil
+          ? `Oxirgi to'langan davr ${shortDate(info.coveredUntil)} gacha edi: yangi davr shundan keyingi kundan boshlandi.`
+          : info.startedOn
+            ? "Hali to'lamagan: birinchi davr o'qishni boshlagan kundan qo'yildi."
+            : "Hali to'lamagan va o'qishni boshlagan sana kiritilmagan: davr boshini o'zi boshlagan kundan qo'ying (o'quvchi sahifasida sanani kiritib qo'ysangiz, keyingi safar o'zi qo'yiladi)."}
       </p>
       <div className="grid grid-cols-2 gap-3">
         <Field label="Davr boshi">

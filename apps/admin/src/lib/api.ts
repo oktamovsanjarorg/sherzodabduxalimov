@@ -174,7 +174,7 @@ export const api = {
   markOffline: (d: { studentId: string; month?: string; periodStart?: string; periodEnd?: string; paidOn?: string; amountUzs?: number; note?: string | null }) =>
     request<{ ok: true; lateDays: number }>("/admin/offline-payments", json("PUT", d)),
   offlineNextPeriod: (studentId: string) =>
-    request<{ name: string; approvedParents: number; coveredUntil: string | null; nextPeriodStart: string; feeUzs: number | null; hasGroup: boolean }>(`/admin/offline-payments/student/${studentId}`),
+    request<{ name: string; approvedParents: number; coveredUntil: string | null; nextPeriodStart: string; startedOn: string | null; feeUzs: number | null; hasGroup: boolean }>(`/admin/offline-payments/student/${studentId}`),
   unmarkOffline: (studentId: string, month: string) => request(`/admin/offline-payments/${studentId}/${month}`, json("DELETE")),
   setGroupFee: (groupId: string, monthlyFeeUzs: number | null) => request(`/admin/offline-payments/groups/${groupId}/fee`, json("PATCH", { monthlyFeeUzs })),
   remindDebtors: (groupId: string, month: string) => request<{ students: number; messages: number }>("/admin/offline-payments/remind", json("POST", { groupId, month })),
