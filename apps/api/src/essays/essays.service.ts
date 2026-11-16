@@ -58,6 +58,24 @@ export function toReviewView(r: EssayWithReviews["reviews"][number]): EssayRevie
   };
 }
 
+const adminInclude = { ...reviewInclude, voice: true, user: { select: { id: true, firstName: true, lastName: true, username: true, phone: true } } } satisfies Prisma.EssayInclude;
+
+function toAdminEssay(e: Prisma.EssayGetPayload<{ include: typeof adminInclude }>): AdminHwEssay {
+  return {
+    id: e.id,
+    student: { id: e.user.id, name: fullName(e.user), username: e.user.username, phone: e.user.phone },
+    mode: e.mode,
+    prompt: e.prompt,
+    text: e.text,
+    pages: e.imageUrls.length,
+    status: e.status,
+    createdAt: e.createdAt.toISOString(),
+    reviews: e.reviews.map(toReviewView),
+    voice: toVoiceView(e.voice),
+    annotations: (e.annotations as EssayAnnotations | null) ?? null,
+  };
+}
+
 /**
  * Erkin esse: AI (bepul, matn, kuniga 2 ta) yoki ustoz (pullik, qo'lyozma rasmlari).
  * Ustoz tekshiruvi to'lovi mavjud chek oqimi orqali o'tadi (Payment.essayId).
@@ -301,21 +319,16 @@ export class EssaysService implements OnModuleDestroy {
       where: status === "pending" ? { mode: "TEACHER", status: "SUBMITTED" } : { mode: "TEACHER", status: "REVIEWED" },
       orderBy: status === "pending" ? { updatedAt: "asc" } : { updatedAt: "desc" },
       take: status === "pending" ? 200 : 100,
-      include: { ...reviewInclude, voice: true, user: { select: { id: true, firstName: true, lastName: true, username: true, phone: true } } },
+      include: adminInclude,
     });
-    return rows.map((e) => ({
-      id: e.id,
-      student: { id: e.user.id, name: fullName(e.user), username: e.user.username, phone: e.user.phone },
-      mode: e.mode,
-      prompt: e.prompt,
-      text: e.text,
-      pages: e.imageUrls.length,
-      status: e.status,
-      createdAt: e.createdAt.toISOString(),
-      reviews: e.reviews.map(toReviewView),
-      voice: toVoiceView(e.voice),
-      annotations: (e.annotations as EssayAnnotations | null) ?? null,
-    }));
+    return rows.map(toAdminEssay);
+  }
+
+  /** Istalgan esse (AI yoki ustoz) to'liq: matn, varoqlar, AI va ustoz baholari */
+  async adminDetail(id: string): Promise<AdminHwEssay> {
+    const e = await this.prisma.essay.findUnique({ where: { id }, include: adminInclude });
+    if (!e || e.status === "DRAFT") throw new NotFoundException("Esse topilmadi");
+    return toAdminEssay(e);
   }
 
   async review(actorId: string, id: string, d: TeacherEssayReviewInput) {

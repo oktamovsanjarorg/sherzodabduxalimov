@@ -13,6 +13,9 @@ import type {
   StudentCreateInput,
   StudentDetail,
   AdminHwEssay,
+  AdminEssayStats,
+  AdminEssayLogRow,
+  EssayStatsPeriod,
   TeacherEssayReviewInput,
   OfflineLedger,
   BillingCard,
@@ -171,6 +174,10 @@ export const api = {
     if (!res.ok) throw new ApiError(res.status, "Rasmni yuklab bo'lmadi");
     return URL.createObjectURL(await res.blob());
   },
+  essayStats: (days: EssayStatsPeriod) => request<AdminEssayStats>(`/admin/essay-log/stats?days=${days}`),
+  essayLog: (days: EssayStatsPeriod, mode: "AI" | "TEACHER" | "", q: string, studentId = "") =>
+    request<AdminEssayLogRow[]>(`/admin/essay-log?days=${days}&mode=${mode}&q=${encodeURIComponent(q)}&student=${encodeURIComponent(studentId)}`),
+  essayDetail: (id: string) => request<AdminHwEssay>(`/admin/essay-log/${id}`),
   essaySettings: () => request<{ priceUzs: number | null }>("/admin/essay-settings"),
   saveEssaySettings: (priceUzs: number | null) => request("/admin/essay-settings", json("PUT", { priceUzs })),
   plans: () => request<AdminPlan[]>("/admin/plans"),

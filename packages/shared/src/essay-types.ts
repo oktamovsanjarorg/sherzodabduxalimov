@@ -229,3 +229,62 @@ export function rubricScore(special: EssaySpecialKey | null, criteria: { key: st
   });
   return { total: items.reduce((s, c) => s + c.score, 0), criteria: items };
 }
+
+// ===================== Admin: esse statistikasi va jurnali =====================
+
+/** Statistika davri (kun). 0 = butun vaqt */
+export const ESSAY_STATS_PERIODS = [7, 30, 90, 0] as const;
+export type EssayStatsPeriod = (typeof ESSAY_STATS_PERIODS)[number];
+
+export interface EssayScoreStats {
+  /** Baholangan esselar soni */
+  count: number;
+  /** O'rtacha ball (24 dan); baholangan bo'lmasa null */
+  avg: number | null;
+  /** Ball oralig'i bo'yicha taqsimot: 0–6, 6,5–12, 12,5–18, 18,5–24 */
+  buckets: { label: string; count: number }[];
+  /** 12 band bo'yicha o'rtacha (maxsus holatlar hisobga olinmaydi): qaysi bandda zaif */
+  criteria: { key: string; label: string; avg: number; max: number }[];
+}
+
+export interface AdminEssayStats {
+  days: EssayStatsPeriod;
+  totals: {
+    /** Yuborilgan esselar (qoralamalarsiz) */
+    essays: number;
+    /** Kamida bitta esse yuborgan o'quvchilar */
+    students: number;
+    ai: number;
+    aiChecked: number;
+    aiFailed: number;
+    teacher: number;
+    teacherReviewed: number;
+    /** Ustoz navbatida yoki to'lov kutilmoqda */
+    teacherWaiting: number;
+  };
+  ai: EssayScoreStats;
+  teacher: EssayScoreStats;
+  /** AI qo'ygan maxsus holatlar (mavzuga mos emas, 100 so'zdan kam, ...) */
+  specials: { key: string; label: string; count: number }[];
+  /** Qaysi AI tekshirgan (deepseek, gemini, ...) */
+  providers: { provider: string; count: number }[];
+  /** Eng ko'p esse yuborgan o'quvchilar */
+  topStudents: { id: string; name: string; username: string | null; essays: number; aiAvg: number | null; teacherAvg: number | null; lastAt: string }[];
+  /** Kunlar bo'yicha (Toshkent sanasi, YYYY-MM-DD) */
+  daily: { date: string; ai: number; teacher: number }[];
+}
+
+/** Esse jurnali: har bir yuborilgan esse bitta qator */
+export interface AdminEssayLogRow {
+  id: string;
+  student: { id: string; name: string; username: string | null };
+  mode: EssayModeName;
+  prompt: string;
+  status: EssayStatusName;
+  words: number | null;
+  pages: number;
+  ai: { score: number; special: string | null; provider: string | null } | null;
+  teacher: { score: number; special: string | null; reviewer: string | null } | null;
+  error: string | null;
+  createdAt: string;
+}
