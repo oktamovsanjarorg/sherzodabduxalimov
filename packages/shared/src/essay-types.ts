@@ -213,6 +213,8 @@ export interface AdminHwEssay {
   text: string | null;
   pages: number;
   status: EssayStatusName;
+  /** AI tekshira olmagan bo'lsa sababi */
+  error: string | null;
   createdAt: string;
   reviews: EssayReviewView[];
   voice: VoiceView | null;
