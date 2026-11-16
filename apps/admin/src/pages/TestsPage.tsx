@@ -24,14 +24,14 @@ export function TestsPage() {
         }
       />
       <Chips className="mb-4" value={tab} onChange={setTab} options={[["ALL", "Hammasi"], ["TOPIC", "Mavzu testlari"], ["MOCK", "Mock testlar"]] as const} />
-      {tests.isPending && <Spinner className="text-slate-400" />}
+      {tests.isPending && <Spinner className="text-ink-4" />}
       {tests.data && list.length === 0 && <Empty title="Test yo'q" />}
-      <div className="card divide-y divide-slate-100 overflow-hidden">
+      <div className="card divide-y divide-line overflow-hidden">
         {list.map((t) => (
-          <Link key={t.id} to={`/tests/${t.id}`} className="flex flex-wrap items-center gap-3 px-5 py-4 hover:bg-slate-50">
+          <Link key={t.id} to={`/tests/${t.id}`} className="flex flex-wrap items-center gap-3 px-5 py-4 hover:bg-surface-2">
             <div className="min-w-0 flex-1">
               <p className="font-bold">{t.title}</p>
-              <p className="text-xs text-slate-500">
+              <p className="text-xs text-ink-3">
                 {t.type === "MOCK" ? "Mock test" : `Mavzu: ${t.topicTitle ?? "—"}`} · {t.questionCount} savol
                 {t.timeLimitSec ? ` · ${formatDuration(t.timeLimitSec)}` : ""} · {t.attemptCount} marta topshirilgan
               </p>

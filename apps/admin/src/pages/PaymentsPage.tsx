@@ -55,7 +55,7 @@ export function PaymentsPage() {
 
 function PaymentList({ status }: { status: PaymentStatusName }) {
   const list = useQuery({ queryKey: ["payments", status], queryFn: () => api.payments(status) });
-  if (list.isPending) return <Spinner className="text-slate-400" />;
+  if (list.isPending) return <Spinner className="text-ink-4" />;
   if (!list.data?.length)
     return <Empty title={status === "PENDING" ? "Tekshiriladigan chek yo'q" : "Ro'yxat bo'sh"} hint={status === "PENDING" ? "Yangi cheklar shu yerda paydo bo'ladi, botga ham xabar keladi." : undefined} />;
   return (
@@ -71,11 +71,11 @@ function ReceiptImage({ id }: { id: string }) {
   const [open, setOpen] = useState(false);
   // blob: URL keshda qoladi (qayta ochilganda qayta yuklanmaydi). Rasm kichik, xotira muammo emas.
   const img = useQuery({ queryKey: ["receipt", id], queryFn: () => api.receipt(id), staleTime: Infinity, gcTime: 10 * 60_000 });
-  if (img.isPending) return <div className="flex h-48 items-center justify-center rounded-xl bg-slate-100"><Spinner className="text-slate-400" /></div>;
-  if (!img.data) return <div className="flex h-24 items-center justify-center gap-2 rounded-xl bg-slate-100 text-sm text-slate-500"><ImageOff size={16} /> Chek yuklanmadi</div>;
+  if (img.isPending) return <div className="flex h-48 items-center justify-center rounded-xl bg-surface-3"><Spinner className="text-ink-4" /></div>;
+  if (!img.data) return <div className="flex h-24 items-center justify-center gap-2 rounded-xl bg-surface-3 text-sm text-ink-3"><ImageOff size={16} /> Chek yuklanmadi</div>;
   return (
     <>
-      <button onClick={() => setOpen(true)} className="block w-full overflow-hidden rounded-xl bg-slate-100" title="Kattalashtirish">
+      <button onClick={() => setOpen(true)} className="block w-full overflow-hidden rounded-xl bg-surface-3" title="Kattalashtirish">
         <img src={img.data} alt="To'lov cheki" className="mx-auto max-h-72 object-contain" />
       </button>
       {open && (
@@ -111,7 +111,7 @@ function PaymentCard({ p }: { p: AdminPayment }) {
       <div className="flex items-start gap-3">
         <div className="min-w-0 flex-1">
           <p className="truncate font-bold">{p.student.name}</p>
-          <p className="truncate text-xs text-slate-500">
+          <p className="truncate text-xs text-ink-3">
             {p.student.username ? `@${p.student.username}` : "username yo'q"}
             {p.student.phone && (
               <a href={`tel:${p.student.phone}`} className="ml-2 inline-flex items-center gap-1 font-semibold text-brand">
@@ -122,7 +122,7 @@ function PaymentCard({ p }: { p: AdminPayment }) {
         </div>
         <div className="min-w-0 max-w-[55%] shrink-0 text-right">
           <p className="whitespace-nowrap text-lg font-extrabold">{formatSum(p.amountUzs)} so'm</p>
-          <p className="truncate text-xs text-slate-500">
+          <p className="truncate text-xs text-ink-3">
             {p.plan ? `${p.plan.name} · ${p.plan.durationDays} kun` : `Esse tekshiruvi: ${p.essay?.prompt ?? ""}`}
           </p>
         </div>
@@ -133,15 +133,15 @@ function PaymentCard({ p }: { p: AdminPayment }) {
           <ReceiptImage id={p.id} />
         </div>
       )}
-      {p.payerNote && <p className="mt-2 flex items-start gap-2 rounded-lg bg-slate-50 px-3 py-2 text-sm">
-          <MessageSquare size={15} className="mt-0.5 shrink-0 text-slate-400" /> {p.payerNote}
+      {p.payerNote && <p className="mt-2 flex items-start gap-2 rounded-lg bg-surface-2 px-3 py-2 text-sm">
+          <MessageSquare size={15} className="mt-0.5 shrink-0 text-ink-4" /> {p.payerNote}
         </p>}
       {p.status === "PENDING" && p.activeUntil && (
-        <p className="mt-2 text-xs text-slate-500">Hozir obunasi bor: {date(p.activeUntil)} gacha. Tasdiqlansa shu sanadan uzaytiriladi.</p>
+        <p className="mt-2 text-xs text-ink-3">Hozir obunasi bor: {date(p.activeUntil)} gacha. Tasdiqlansa shu sanadan uzaytiriladi.</p>
       )}
 
-      <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-slate-100 pt-3">
-        <span className="text-xs text-slate-400">{dateTime(p.createdAt)}</span>
+      <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-line pt-3">
+        <span className="text-xs text-ink-4">{dateTime(p.createdAt)}</span>
         <span className="flex-1" />
         {p.status === "PENDING" ? (
           <div className="flex w-full gap-2 sm:w-auto">
@@ -159,7 +159,7 @@ function PaymentCard({ p }: { p: AdminPayment }) {
               {p.subscription ? ` · ${date(p.subscription.endsAt)} gacha` : ""}
               {p.reviewedBy ? ` · ${p.reviewedBy}` : ""}
             </Badge>
-            <button className="btn-ghost btn-sm text-red-600" onClick={() => setRevoking(true)}>
+            <button className="btn-ghost btn-sm text-red-400" onClick={() => setRevoking(true)}>
               <RotateCcw size={14} /> Bekor qilish
             </button>
           </>
@@ -200,7 +200,7 @@ function RejectModal({ p, revoke = false, onClose, onDone }: { p: AdminPayment; 
         </>
       }
     >
-      <p className="mb-3 text-sm text-slate-600">
+      <p className="mb-3 text-sm text-ink-2">
         <b>{p.student.name}</b> · {formatSum(p.amountUzs)} so'm.{" "}
         {revoke
           ? p.plan
@@ -210,7 +210,7 @@ function RejectModal({ p, revoke = false, onClose, onDone }: { p: AdminPayment; 
       </p>
       <div className="mb-3 flex flex-wrap gap-2">
         {(revoke ? REVOKE_REASONS : REASONS).map((r) => (
-          <button key={r} className={`rounded-full border px-3 py-1 text-xs font-semibold ${reason === r ? "border-brand bg-brand-soft text-brand-dark" : "border-slate-200"}`} onClick={() => setReason(r)}>
+          <button key={r} className={`rounded-full border px-3 py-1 text-xs font-semibold ${reason === r ? "border-brand bg-brand-soft text-brand-light" : "border-line"}`} onClick={() => setReason(r)}>
             {r}
           </button>
         ))}
@@ -234,7 +234,7 @@ function Subscribers() {
     },
     onError: (e) => toast(errMsg(e), "error"),
   });
-  if (subs.isPending) return <Spinner className="text-slate-400" />;
+  if (subs.isPending) return <Spinner className="text-ink-4" />;
   const soon = Date.now() + 7 * 86_400_000;
   // Bir o'quvchining ketma-ket obunalaridan oxirgisi "tugash sanasi" hisoblanadi
   const lastEnd = new Map<string, number>();
@@ -256,16 +256,16 @@ function Subscribers() {
             ["lapsed", `Uzaytirmagan (${subs.data?.lapsed.length ?? 0})`],
           ] as const
         ).map(([k, l]) => (
-          <button key={k} onClick={() => setView(k)} className={`h-9 shrink-0 rounded-full px-4 text-sm font-bold ${view === k ? "bg-brand text-white" : "bg-slate-100 text-slate-600 hover:bg-slate-200"}`}>
+          <button key={k} onClick={() => setView(k)} className={`h-9 shrink-0 rounded-full px-4 text-sm font-bold ${view === k ? "bg-brand text-white" : "bg-surface-3 text-ink-2 hover:bg-surface-4"}`}>
             {l}
           </button>
         ))}
         <div className="relative ml-auto w-full max-w-xs sm:w-auto">
-          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-4" />
           <input className="input pl-9" placeholder="Ism, username yoki telefon" value={q} onChange={(e) => setQ(e.target.value)} />
         </div>
       </div>
-      <p className="mb-2 text-xs text-slate-500">
+      <p className="mb-2 text-xs text-ink-3">
         {view === "lapsed"
           ? "So'nggi 30 kunda obunasi tugagan va uzaytirmagan o'quvchilar. Ularga qo'ng'iroq qilib eslatish mumkin."
           : "Bot o'quvchiga obuna tugashiga 3 kun va 1 kun qolganda hamda tugagan kuni avtomatik eslatadi."}
@@ -273,12 +273,12 @@ function Subscribers() {
       {!rows.length ? (
         <Empty title={view === "lapsed" ? "Uzaytirmagan o'quvchi yo'q" : "Ro'yxat bo'sh"} />
       ) : (
-        <div className="card divide-y divide-slate-100">
+        <div className="card divide-y divide-line">
           {rows.map((s: AdminSubscription) => (
             <div key={s.id} className="flex flex-wrap items-center gap-3 px-4 py-3">
               <div className="min-w-0 flex-1">
                 <p className="truncate font-semibold">{s.student.name}</p>
-                <p className="truncate text-xs text-slate-500">
+                <p className="truncate text-xs text-ink-3">
                   {s.student.username ? `@${s.student.username} · ` : ""}
                   {s.planName}
                   {s.student.phone && (
@@ -348,13 +348,13 @@ function GrantModal({ onClose }: { onClose: () => void }) {
         </>
       }
     >
-      <p className="mb-4 text-sm text-slate-600">Naqd to'lagan yoki imtiyozli o'quvchilar uchun. Faol obunasi bo'lsa, uning oxiridan uzaytiriladi.</p>
+      <p className="mb-4 text-sm text-ink-2">Naqd to'lagan yoki imtiyozli o'quvchilar uchun. Faol obunasi bo'lsa, uning oxiridan uzaytiriladi.</p>
       <div className="space-y-4">
         <Field label="O'quvchi">
           {student ? (
             <div className="flex items-center gap-2 rounded-lg border border-brand bg-brand-soft px-3 py-2">
               <span className="min-w-0 flex-1 truncate text-sm font-bold">
-                {student.name} {student.username ? <span className="font-normal text-slate-500">@{student.username}</span> : null}
+                {student.name} {student.username ? <span className="font-normal text-ink-3">@{student.username}</span> : null}
               </span>
               <button className="btn-ghost btn-sm" onClick={() => setStudent(null)}>
                 O'zgartirish
@@ -364,11 +364,11 @@ function GrantModal({ onClose }: { onClose: () => void }) {
             <>
               <input className="input" autoFocus placeholder="Ism, username yoki telefon (kamida 2 belgi)" value={search} onChange={(e) => setSearch(e.target.value)} />
               {found.data && (
-                <div className="mt-2 max-h-56 divide-y divide-slate-100 overflow-y-auto rounded-lg border border-slate-200">
-                  {found.data.length === 0 && <p className="px-3 py-2 text-sm text-slate-500">Topilmadi</p>}
+                <div className="mt-2 max-h-56 divide-y divide-line overflow-y-auto rounded-lg border border-line">
+                  {found.data.length === 0 && <p className="px-3 py-2 text-sm text-ink-3">Topilmadi</p>}
                   {found.data.map((s) => (
-                    <button key={s.userId} className="block w-full px-3 py-2 text-left text-sm hover:bg-slate-50" onClick={() => setStudent(s)}>
-                      <b>{s.name}</b> <span className="text-slate-500">{[s.username && `@${s.username}`, s.phone, s.groupName].filter(Boolean).join(" · ")}</span>
+                    <button key={s.userId} className="block w-full px-3 py-2 text-left text-sm hover:bg-surface-2" onClick={() => setStudent(s)}>
+                      <b>{s.name}</b> <span className="text-ink-3">{[s.username && `@${s.username}`, s.phone, s.groupName].filter(Boolean).join(" · ")}</span>
                     </button>
                   ))}
                 </div>

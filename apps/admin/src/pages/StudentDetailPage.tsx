@@ -16,12 +16,12 @@ const ATT_TONE: Record<AttendanceStatusName, "green" | "amber" | "red" | "blue">
 export function StudentDetailPage() {
   const { id = "" } = useParams();
   const q = useQuery({ queryKey: ["student", id], queryFn: () => api.student(id) });
-  if (q.isPending) return <Spinner className="text-slate-400" />;
-  if (q.isError) return <p className="text-sm text-red-600">{errMsg(q.error)}</p>;
+  if (q.isPending) return <Spinner className="text-ink-4" />;
+  if (q.isError) return <p className="text-sm text-red-400">{errMsg(q.error)}</p>;
   const s = q.data;
   return (
     <div className="mx-auto max-w-5xl space-y-4">
-      <Link to={s.group ? `/students?group=${s.group.id}` : "/students"} className="tap inline-flex items-center gap-1 text-sm font-semibold text-slate-500 hover:text-slate-800">
+      <Link to={s.group ? `/students?group=${s.group.id}` : "/students"} className="tap inline-flex items-center gap-1 text-sm font-semibold text-ink-3 hover:text-ink">
         <ArrowLeft size={16} /> O'quvchilar
       </Link>
       <Header s={s} />
@@ -60,7 +60,7 @@ function CopyField({ value }: { value: string }) {
   const [done, setDone] = useState(false);
   return (
     <div className="flex items-center gap-2">
-      <input readOnly className="input h-9 min-w-0 flex-1 bg-white text-xs" value={value} onFocus={(e) => e.target.select()} />
+      <input readOnly className="input h-9 min-w-0 flex-1 bg-surface text-xs" value={value} onFocus={(e) => e.target.select()} />
       <button
         className="btn-primary btn-sm shrink-0"
         onClick={async () => {
@@ -98,7 +98,7 @@ function Header({ s }: { s: StudentDetail }) {
       <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-brand text-xl font-bold text-white">{s.name[0]}</span>
       <div className="min-w-0 flex-1">
         <h1 className="break-words text-xl font-extrabold">{s.name}</h1>
-        <p className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-slate-500">
+        <p className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-ink-3">
           {s.phone ? (
             <a href={`tel:${s.phone}`} className="inline-flex items-center gap-1 font-semibold text-brand">
               <Phone size={14} /> {s.phone}
@@ -138,9 +138,9 @@ function ConnectCard({ s }: { s: StudentDetail }) {
   const qc = useQueryClient();
   const reset = useMutation({ mutationFn: () => api.resetStudentInvite(s.studentId), onSuccess: () => qc.invalidateQueries({ queryKey: ["student", s.studentId] }) });
   return (
-    <div className="card border-amber-300 bg-amber-50/60 p-4 sm:p-5">
+    <div className="card border-amber-400/40 bg-amber-400/10 p-4 sm:p-5">
       <p className="font-bold">O'quvchi hali botga kirmagan</p>
-      <p className="mt-1 text-sm text-slate-600">
+      <p className="mt-1 text-sm text-ink-2">
         Davomat va to'lovlarni hozirdan belgilayverishingiz mumkin. Ilovadan foydalanishi uchun u botga kirib <b>telefon raqamini ulashsa</b> ({s.phone ?? "raqam kiritilmagan"}) yoki quyidagi{" "}
         <b>shaxsiy havolani</b> bossa, hisobi shu yozuvga avtomatik bog'lanadi.
       </p>
@@ -226,9 +226,9 @@ function Parents({ s }: { s: StudentDetail }) {
   });
   return (
     <div className="space-y-3">
-      {s.parentList.length === 0 && <p className="text-sm text-slate-500">Ota-ona ulanmagan.</p>}
+      {s.parentList.length === 0 && <p className="text-sm text-ink-3">Ota-ona ulanmagan.</p>}
       {s.parentList.map((p) => (
-        <div key={p.id} className="rounded-lg border border-slate-100 p-2.5 text-sm">
+        <div key={p.id} className="rounded-lg border border-line p-2.5 text-sm">
           <div className="flex items-center gap-2">
             <div className="min-w-0 flex-1">
               <p className="truncate font-semibold">
@@ -272,7 +272,7 @@ function Parents({ s }: { s: StudentDetail }) {
         </div>
       ))}
       <div>
-        <p className="mb-1 text-xs text-slate-500">Ota-onaga yuboring: bosib, botda raqamini ulashadi (keyin shu yerda yoki O'quvchilar sahifasidagi «Ko'rib chiqish kerak» blokida tasdiqlaysiz)</p>
+        <p className="mb-1 text-xs text-ink-3">Ota-onaga yuboring: bosib, botda raqamini ulashadi (keyin shu yerda yoki O'quvchilar sahifasidagi «Ko'rib chiqish kerak» blokida tasdiqlaysiz)</p>
         <CopyField value={s.parentInviteUrl} />
       </div>
     </div>
@@ -337,17 +337,17 @@ function Manage({ s }: { s: StudentDetail }) {
                   key={m}
                   disabled={access.isPending}
                   onClick={() => m !== s.accessMode && access.mutate(m)}
-                  className={`flex w-full items-start gap-2 rounded-lg border px-3 py-2 text-left text-sm ${s.accessMode === m ? "border-brand bg-brand-soft" : "border-slate-200 hover:bg-slate-50"}`}
+                  className={`flex w-full items-start gap-2 rounded-lg border px-3 py-2 text-left text-sm ${s.accessMode === m ? "border-brand bg-brand-soft" : "border-line hover:bg-surface-2"}`}
                 >
-                  <span className={`mt-1 h-3 w-3 shrink-0 rounded-full border-2 ${s.accessMode === m ? "border-brand bg-brand" : "border-slate-300"}`} />
+                  <span className={`mt-1 h-3 w-3 shrink-0 rounded-full border-2 ${s.accessMode === m ? "border-brand bg-brand" : "border-line-strong"}`} />
                   <span>
                     <span className="block font-semibold">{label}</span>
-                    <span className="block text-xs text-slate-500">{hint}</span>
+                    <span className="block text-xs text-ink-3">{hint}</span>
                   </span>
                 </button>
               ))}
             </div>
-            <p className="mt-2 text-xs text-slate-500">Hozir: {s.hasAccess ? <b className="text-emerald-700">darslar ochiq</b> : <b className="text-red-600">darslar yopiq</b>}</p>
+            <p className="mt-2 text-xs text-ink-3">Hozir: {s.hasAccess ? <b className="text-emerald-300">darslar ochiq</b> : <b className="text-red-400">darslar yopiq</b>}</p>
           </div>
         )}
         {isTeacher && (
@@ -355,7 +355,7 @@ function Manage({ s }: { s: StudentDetail }) {
             <p className="label">Bloklash</p>
             {s.blocked ? (
               <>
-                <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">
+                <p className="rounded-lg bg-red-500/10 px-3 py-2 text-sm text-red-300">
                   Bloklangan{s.blockedReason ? `: ${s.blockedReason}` : ""}. Ilovani ocha olmaydi.
                 </p>
                 <button className="btn-secondary btn-sm mt-2" disabled={block.isPending} onClick={() => block.mutate(false)}>
@@ -368,7 +368,7 @@ function Manage({ s }: { s: StudentDetail }) {
                 <button className="btn-danger btn-sm mt-2" disabled={block.isPending} onClick={() => block.mutate(true)}>
                   Bloklash
                 </button>
-                <p className="mt-1 text-xs text-slate-500">Bloklangan o'quvchi ilovani umuman ocha olmaydi. Ma'lumotlari saqlanadi.</p>
+                <p className="mt-1 text-xs text-ink-3">Bloklangan o'quvchi ilovani umuman ocha olmaydi. Ma'lumotlari saqlanadi.</p>
               </>
             )}
           </div>
@@ -376,10 +376,10 @@ function Manage({ s }: { s: StudentDetail }) {
         <div>
           <p className="label">O'chirish</p>
           {!canDelete ? (
-            <p className="text-sm text-slate-500">Botdan foydalanayotgan o'quvchini faqat ustoz o'chira oladi. Guruhdan chiqarish uchun yuqoridagi guruh tanlovidan foydalaning.</p>
+            <p className="text-sm text-ink-3">Botdan foydalanayotgan o'quvchini faqat ustoz o'chira oladi. Guruhdan chiqarish uchun yuqoridagi guruh tanlovidan foydalaning.</p>
           ) : (
             <>
-              <p className="text-xs text-slate-500">
+              <p className="text-xs text-ink-3">
                 Barcha natijalari, davomati va to'lovlari bilan korzinkaga o'tadi: 30 kun ichida Ko'proq → Korzinka'dan to'liq tiklash mumkin.
                 {s.telegramLinked && " Vaqtincha to'xtatish uchun bloklash yaxshiroq."}
               </p>
@@ -398,24 +398,24 @@ function Manage({ s }: { s: StudentDetail }) {
 function Attendance({ s }: { s: StudentDetail }) {
   const c = s.attendance.counts;
   const total = c.PRESENT + c.LATE + c.ABSENT + c.EXCUSED;
-  if (!total) return <p className="text-sm text-slate-500">Hali davomat belgilanmagan.</p>;
+  if (!total) return <p className="text-sm text-ink-3">Hali davomat belgilanmagan.</p>;
   return (
     <>
       <div className="mb-3 grid grid-cols-4 gap-2 text-center">
         {(["PRESENT", "LATE", "ABSENT", "EXCUSED"] as const).map((k) => (
-          <div key={k} className="rounded-lg bg-slate-50 py-2">
+          <div key={k} className="rounded-lg bg-surface-2 py-2">
             <p className="text-lg font-extrabold">{c[k]}</p>
-            <p className="text-[11px] text-slate-500">{ATTENDANCE_LABELS[k]}</p>
+            <p className="text-[11px] text-ink-3">{ATTENDANCE_LABELS[k]}</p>
           </div>
         ))}
       </div>
-      <div className="max-h-56 divide-y divide-slate-100 overflow-y-auto">
+      <div className="max-h-56 divide-y divide-line overflow-y-auto">
         {s.attendance.recent.map((a) => (
           <div key={a.date} className="flex items-center gap-2 py-1.5 text-sm">
-            <span className="w-24 shrink-0 text-slate-500">{fmtDate(a.date)}</span>
+            <span className="w-24 shrink-0 text-ink-3">{fmtDate(a.date)}</span>
             <Badge tone={ATT_TONE[a.status]}>{ATTENDANCE_LABELS[a.status]}</Badge>
-            {a.grade && <span className="text-xs font-extrabold text-slate-700">{a.grade}/5</span>}
-            {a.note && <span className="truncate text-xs text-slate-500">{a.note}</span>}
+            {a.grade && <span className="text-xs font-extrabold text-ink-2">{a.grade}/5</span>}
+            {a.note && <span className="truncate text-xs text-ink-3">{a.note}</span>}
           </div>
         ))}
       </div>
@@ -446,7 +446,7 @@ function Billing({ s }: { s: StudentDetail }) {
       {b.offlineMonths.length > 0 && (
         <div>
           <p className="label">Oylik to'lov (offline guruh)</p>
-          <div className="divide-y divide-slate-100">
+          <div className="divide-y divide-line">
             {b.offlineMonths.map((m) => (
               <div key={m.month} className="flex items-center gap-2 py-1.5 text-sm">
                 <span className="flex-1 capitalize">{monthLabel(m.month)}</span>
@@ -456,8 +456,8 @@ function Billing({ s }: { s: StudentDetail }) {
                       {m.amountUzs ? `${formatSum(m.amountUzs)} so'm` : "to'langan"}
                       {m.note ? ` · ${m.note}` : ""}
                     </Badge>
-                    {m.period && <span className="text-[11px] text-slate-500">{m.period}</span>}
-                    <ConfirmButton label="Qaytarilsinmi?" className="btn-ghost btn-sm text-slate-500" onConfirm={() => unmark.mutate(m.paymentMonth ?? m.month)}>
+                    {m.period && <span className="text-[11px] text-ink-3">{m.period}</span>}
+                    <ConfirmButton label="Qaytarilsinmi?" className="btn-ghost btn-sm text-ink-3" onConfirm={() => unmark.mutate(m.paymentMonth ?? m.month)}>
                       <RotateCcw size={14} /> Qaytarish
                     </ConfirmButton>
                   </>
@@ -472,7 +472,7 @@ function Billing({ s }: { s: StudentDetail }) {
               </div>
             ))}
           </div>
-          <p className="mt-1 text-xs text-slate-500">
+          <p className="mt-1 text-xs text-ink-3">
             {b.groupFeeUzs ? `Oylik summa ${formatSum(b.groupFeeUzs)} so'm.` : "Guruhga oylik summa kiritilmagan: to'lovda summani yozasiz."} «To'ladi»da davr (o'quvchining o'z sanasidan) va to'lov sanasi tanlanadi.
           </p>
           {paying && <PayDialog studentId={s.studentId} onClose={() => setPaying(false)} onDone={refreshAll} />}
@@ -485,7 +485,7 @@ function Billing({ s }: { s: StudentDetail }) {
             <Badge tone="green">{b.subscription.planName}</Badge> {date(b.subscription.endsAt)} gacha
           </p>
         ) : (
-          <p className="text-sm text-slate-500">
+          <p className="text-sm text-ink-3">
             Faol obuna yo'q. <Link to="/payments?tab=SUBS" className="font-semibold text-brand">Qo'lda obuna berish</Link>
           </p>
         )}
@@ -493,10 +493,10 @@ function Billing({ s }: { s: StudentDetail }) {
       {b.payments.length > 0 && (
         <div>
           <p className="label">Chek orqali to'lovlar</p>
-          <div className="divide-y divide-slate-100">
+          <div className="divide-y divide-line">
             {b.payments.map((p) => (
               <div key={p.id} className="flex items-center gap-2 py-1.5 text-sm">
-                <span className="w-24 shrink-0 text-slate-500">{date(p.createdAt)}</span>
+                <span className="w-24 shrink-0 text-ink-3">{date(p.createdAt)}</span>
                 <span className="min-w-0 flex-1 truncate">
                   {p.title} · {formatSum(p.amountUzs)} so'm
                 </span>
@@ -517,28 +517,28 @@ function Stats({ s }: { s: StudentDetail }) {
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-3 gap-2 text-center">
-        <div className="rounded-lg bg-slate-50 py-2">
+        <div className="rounded-lg bg-surface-2 py-2">
           <p className="text-lg font-extrabold">{st.lessonsCompleted}</p>
-          <p className="text-[11px] text-slate-500">dars ko'rgan</p>
+          <p className="text-[11px] text-ink-3">dars ko'rgan</p>
         </div>
-        <div className="rounded-lg bg-slate-50 py-2">
+        <div className="rounded-lg bg-surface-2 py-2">
           <p className="text-lg font-extrabold">{st.testsTaken}</p>
-          <p className="text-[11px] text-slate-500">test ishlagan</p>
+          <p className="text-[11px] text-ink-3">test ishlagan</p>
         </div>
-        <div className="rounded-lg bg-slate-50 py-2">
+        <div className="rounded-lg bg-surface-2 py-2">
           <p className="text-lg font-extrabold">{st.averagePercent !== null ? `${st.averagePercent}%` : "—"}</p>
-          <p className="text-[11px] text-slate-500">o'rtacha natija</p>
+          <p className="text-[11px] text-ink-3">o'rtacha natija</p>
         </div>
       </div>
       {st.recentAttempts.length > 0 && (
         <div>
           <p className="label">Oxirgi testlar</p>
-          <div className="divide-y divide-slate-100">
+          <div className="divide-y divide-line">
             {st.recentAttempts.map((a) => (
               <div key={a.id} className="flex items-center gap-2 py-1.5 text-sm">
-                <span className="w-24 shrink-0 text-slate-500">{date(a.finishedAt)}</span>
+                <span className="w-24 shrink-0 text-ink-3">{date(a.finishedAt)}</span>
                 <span className="flex min-w-0 flex-1 items-center gap-1.5 truncate">
-                  {a.type === "MOCK" && <ClipboardCheck size={14} className="shrink-0 text-slate-400" aria-label="Mock" />}
+                  {a.type === "MOCK" && <ClipboardCheck size={14} className="shrink-0 text-ink-4" aria-label="Mock" />}
                   <span className="truncate">{a.title}</span>
                 </span>
                 <Badge tone={a.percent >= 80 ? "green" : a.percent >= 50 ? "brand" : "red"}>{a.percent}%</Badge>
@@ -550,12 +550,12 @@ function Stats({ s }: { s: StudentDetail }) {
       {st.essays.length > 0 && (
         <div>
           <p className="label">Esselar</p>
-          <div className="divide-y divide-slate-100">
+          <div className="divide-y divide-line">
             {st.essays.map((e) => (
               <div key={e.id} className="flex items-center gap-2 py-1.5 text-sm">
-                <span className="w-24 shrink-0 text-slate-500">{date(e.createdAt)}</span>
+                <span className="w-24 shrink-0 text-ink-3">{date(e.createdAt)}</span>
                 <span className="flex min-w-0 flex-1 items-center gap-1.5 truncate">
-                  {e.mode === "AI" ? <Bot size={14} className="shrink-0 text-slate-400" aria-label="AI" /> : <GraduationCap size={14} className="shrink-0 text-slate-400" aria-label="Ustoz" />}
+                  {e.mode === "AI" ? <Bot size={14} className="shrink-0 text-ink-4" aria-label="AI" /> : <GraduationCap size={14} className="shrink-0 text-ink-4" aria-label="Ustoz" />}
                   <span className="truncate">{e.prompt}</span>
                 </span>
                 {e.score !== null ? <Badge tone="green">{formatScore(e.score)}/24</Badge> : <Badge>{ESSAY_STATUS_LABELS[e.status as EssayStatusName] ?? e.status}</Badge>}
@@ -564,7 +564,7 @@ function Stats({ s }: { s: StudentDetail }) {
           </div>
         </div>
       )}
-      {!st.testsTaken && !st.lessonsCompleted && !st.essays.length && <p className="text-sm text-slate-500">Hali ilovadan foydalanmagan.</p>}
+      {!st.testsTaken && !st.lessonsCompleted && !st.essays.length && <p className="text-sm text-ink-3">Hali ilovadan foydalanmagan.</p>}
     </div>
   );
 }

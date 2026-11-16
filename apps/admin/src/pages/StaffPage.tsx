@@ -32,10 +32,10 @@ export function StaffPage() {
       <PageHeader title="Xodimlar" subtitle="Yangi yordamchini Telegram username orqali taklif qiling." />
       <div className="card mb-5 grid grid-cols-1 gap-4 p-4 text-sm sm:grid-cols-2 sm:p-5">
         <div>
-          <p className="mb-1 flex items-center gap-1.5 font-bold text-emerald-700">
+          <p className="mb-1 flex items-center gap-1.5 font-bold text-emerald-300">
             <Check size={16} /> Yordamchi qila oladi
           </p>
-          <ul className="list-disc space-y-0.5 pl-5 text-slate-600">
+          <ul className="list-disc space-y-0.5 pl-5 text-ink-2">
             <li>Darslar, savollar, testlar, videolar</li>
             <li>Esselarni baholash</li>
             <li>O'quvchilarni kiritish, guruhlar, davomat</li>
@@ -43,10 +43,10 @@ export function StaffPage() {
           </ul>
         </div>
         <div>
-          <p className="mb-1 flex items-center gap-1.5 font-bold text-red-700">
+          <p className="mb-1 flex items-center gap-1.5 font-bold text-red-300">
             <X size={16} /> Faqat ega (ustoz)
           </p>
-          <ul className="list-disc space-y-0.5 pl-5 text-slate-600">
+          <ul className="list-disc space-y-0.5 pl-5 text-ink-2">
             <li>To'lovlar, cheklar, obunalar, qarzdorlar — umuman ko'rinmaydi</li>
             <li>Tariflar, karta raqami, esse narxi, oylik summalar</li>
             <li>O'quvchini bloklash, bepul ochish/yopish, botdagi o'quvchini o'chirish</li>
@@ -65,19 +65,19 @@ export function StaffPage() {
         <div className="w-full min-w-0 flex-1 sm:w-auto sm:min-w-[240px]">
           <label className="label">Yordamchi qo'shish</label>
           <input className="input" placeholder="@telegram_username" value={username} onChange={(e) => setUsername(e.target.value)} />
-          <p className="mt-1 text-xs text-slate-500">U botga /admin deb yozib kiradi. Hali botga kirmagan bo'lsa ham qo'shsa bo'ladi.</p>
+          <p className="mt-1 text-xs text-ink-3">U botga /admin deb yozib kiradi. Hali botga kirmagan bo'lsa ham qo'shsa bo'ladi.</p>
         </div>
         <button className="btn-primary" disabled={!username.trim() || add.isPending}><UserPlus size={16} /> Qo'shish</button>
       </form>
 
-      {staff.isPending && <Spinner className="text-slate-400" />}
-      <div className="card divide-y divide-slate-100 overflow-hidden">
+      {staff.isPending && <Spinner className="text-ink-4" />}
+      <div className="card divide-y divide-line overflow-hidden">
         {staff.data?.staff.map((s) => (
           <div key={s.id} className="flex flex-wrap items-center gap-3 px-4 py-4 sm:px-5">
             <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brand text-sm font-bold text-white">{s.firstName[0]}</span>
             <div className="min-w-0 flex-1">
-              <p className="font-bold">{s.firstName} {s.lastName ?? ""} {s.id === me.id && <span className="text-xs font-semibold text-slate-400">(siz)</span>}</p>
-              <p className="text-xs text-slate-500">{s.username ? `@${s.username}` : "username yo'q"}</p>
+              <p className="font-bold">{s.firstName} {s.lastName ?? ""} {s.id === me.id && <span className="text-xs font-semibold text-ink-4">(siz)</span>}</p>
+              <p className="text-xs text-ink-3">{s.username ? `@${s.username}` : "username yo'q"}</p>
             </div>
             <Badge tone={s.role === "TEACHER" ? "brand" : "blue"}>{s.isOwner ? "Ega" : ROLE_LABELS[s.role]}</Badge>
             {!s.isOwner && s.id !== me.id && <ConfirmButton onConfirm={() => remove.mutate(s.id)} label="Olib tashlansinmi?">Olib tashlash</ConfirmButton>}
@@ -85,10 +85,10 @@ export function StaffPage() {
         ))}
         {staff.data?.invites.map((i) => (
           <div key={i.username} className="flex flex-wrap items-center gap-3 px-4 py-4 sm:px-5">
-            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-400"><Clock size={18} /></span>
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-surface-3 text-ink-4"><Clock size={18} /></span>
             <div className="min-w-0 flex-1">
               <p className="font-bold">@{i.username}</p>
-              <p className="text-xs text-slate-500">Taklif qilingan: botga hali kirmagan</p>
+              <p className="text-xs text-ink-3">Taklif qilingan: botga hali kirmagan</p>
             </div>
             <Badge tone="amber">Kutilmoqda</Badge>
             <ConfirmButton onConfirm={() => removeInvite.mutate(i.username)} label="Bekor qilinsinmi?">Bekor qilish</ConfirmButton>

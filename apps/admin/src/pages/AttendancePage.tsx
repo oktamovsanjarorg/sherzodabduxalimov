@@ -20,10 +20,10 @@ const STATUS_STYLE: Record<AttendanceStatusName, { on: string; short: string }> 
 };
 const SYMBOL: Record<AttendanceStatusName, string> = { PRESENT: "✓", LATE: "⏰", ABSENT: "✕", EXCUSED: "S" };
 const CELL: Record<AttendanceStatusName, string> = {
-  PRESENT: "bg-emerald-100 text-emerald-800",
-  LATE: "bg-amber-100 text-amber-800",
-  ABSENT: "bg-red-100 text-red-700",
-  EXCUSED: "bg-slate-100 text-slate-600",
+  PRESENT: "bg-emerald-400/15 text-emerald-300",
+  LATE: "bg-amber-400/15 text-amber-300",
+  ABSENT: "bg-red-500/15 text-red-300",
+  EXCUSED: "bg-surface-3 text-ink-2",
 };
 
 export function AttendancePage() {
@@ -52,7 +52,7 @@ export function AttendancePage() {
         subtitle="Davomat va baholarni saqlang, so'ng «Ota-onalarga yuborish» tugmasi bilan Telegram orqali xabar yuboring."
       />
 
-      {groups.isPending && <Spinner className="text-slate-400" />}
+      {groups.isPending && <Spinner className="text-ink-4" />}
       {groups.data && active.length === 0 && (
         <Empty
           title="Hali guruh yo'q"
@@ -147,14 +147,14 @@ function DayView({ groupId, date }: { groupId: string; date: string }) {
     onError: (e) => toast(errMsg(e), "error"),
   });
 
-  if (day.isPending) return <Spinner className="text-slate-400" />;
-  if (day.isError) return <p className="text-sm text-red-600">{errMsg(day.error)}</p>;
+  if (day.isPending) return <Spinner className="text-ink-4" />;
+  if (day.isError) return <p className="text-sm text-red-400">{errMsg(day.error)}</p>;
   if (day.data.rows.length === 0) return <Empty title="Guruhda o'quvchi yo'q" hint="«Guruhlar» tugmasi orqali o'quvchilarni qo'shing." />;
 
   return (
     <div className="pb-28">
       <div className="mb-2 flex flex-wrap items-center gap-2">
-        <span className="text-sm font-semibold text-slate-500">
+        <span className="text-sm font-semibold text-ink-3">
           {day.data.rows.length} o'quvchi{unmarked ? ` · ${unmarked} ta belgilanmagan` : ""}
         </span>
         <span className="flex-1" />
@@ -166,7 +166,7 @@ function DayView({ groupId, date }: { groupId: string; date: string }) {
           <CheckCheck size={14} /> Qolganlar keldi
         </button>
       </div>
-      <ul className="card divide-y divide-slate-100 overflow-hidden">
+      <ul className="card divide-y divide-line overflow-hidden">
         {day.data.rows.map(({ student: s, notifiedAt }) => {
           const cur = get(s.studentId);
           const dirty = !sameMark(cur, initial[s.studentId] ?? EMPTY);
@@ -178,7 +178,7 @@ function DayView({ groupId, date }: { groupId: string; date: string }) {
                   <p className="truncate font-bold">{s.name}</p>
                   <div className="flex flex-wrap items-center gap-2">
                     <ParentState s={s} />
-                    {cur.status && !dirty && (notifiedAt ? <span className="text-[11px] text-emerald-600">· ota-onaga yuborilgan</span> : <span className="text-[11px] text-amber-600">· yuborilmagan</span>)}
+                    {cur.status && !dirty && (notifiedAt ? <span className="text-[11px] text-emerald-400">· ota-onaga yuborilgan</span> : <span className="text-[11px] text-amber-400">· yuborilmagan</span>)}
                   </div>
                 </div>
                 <div className="grid w-full grid-cols-2 gap-1 sm:w-48">
@@ -187,7 +187,7 @@ function DayView({ groupId, date }: { groupId: string; date: string }) {
                       key={st}
                       onClick={() => patch(s.studentId, { status: st, ...(st === "ABSENT" ? { grade: null } : {}) })}
                       className={`h-10 rounded-lg border px-2 text-xs font-bold transition ${
-                        cur.status === st ? STATUS_STYLE[st].on : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
+                        cur.status === st ? STATUS_STYLE[st].on : "border-line bg-surface text-ink-2 hover:bg-surface-2"
                       }`}
                       aria-pressed={cur.status === st}
                     >
@@ -200,13 +200,13 @@ function DayView({ groupId, date }: { groupId: string; date: string }) {
                 <div className="mt-2 flex flex-wrap items-center gap-2">
                   {cur.status === "PRESENT" && (
                     <div className="flex items-center gap-1" role="group" aria-label="Dars bahosi">
-                      <span className="mr-1 text-xs font-semibold text-slate-500">Baho</span>
+                      <span className="mr-1 text-xs font-semibold text-ink-3">Baho</span>
                       {Array.from({ length: GRADE_MAX - GRADE_MIN + 1 }, (_, i) => GRADE_MIN + i).map((g) => (
                         <button
                           key={g}
                           onClick={() => patch(s.studentId, { grade: cur.grade === g ? null : g })}
                           className={`h-9 w-9 rounded-lg border text-sm font-extrabold transition ${
-                            cur.grade === g ? "border-brand bg-brand text-white" : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
+                            cur.grade === g ? "border-brand bg-brand text-white" : "border-line bg-surface text-ink-2 hover:bg-surface-2"
                           }`}
                           aria-pressed={cur.grade === g}
                         >
@@ -239,10 +239,10 @@ function DayView({ groupId, date }: { groupId: string; date: string }) {
       {/* Telefonda ham doim ko'rinadigan panel */}
       <div
         // Telefonda pastki navigatsiya (64px) ustida turadi
-        className="fixed inset-x-0 bottom-[calc(64px+env(safe-area-inset-bottom,0px))] z-20 border-t border-slate-200 bg-white/95 px-4 py-3 backdrop-blur md:bottom-0"
+        className="fixed inset-x-0 bottom-[calc(64px+env(safe-area-inset-bottom,0px))] z-20 border-t border-line bg-surface/95 px-4 py-3 backdrop-blur md:bottom-0"
       >
         <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-2">
-          <span className="text-sm text-slate-500">{changed.length ? `${changed.length} ta o'zgarish saqlanmagan` : unsent ? `${unsent} ta yozuv ota-onaga yuborilmagan` : "O'zgarish yo'q"}</span>
+          <span className="text-sm text-ink-3">{changed.length ? `${changed.length} ta o'zgarish saqlanmagan` : unsent ? `${unsent} ta yozuv ota-onaga yuborilmagan` : "O'zgarish yo'q"}</span>
           <span className="flex-1" />
           <button className="btn-secondary" disabled={!changed.length || save.isPending} onClick={() => save.mutate()}>
             {save.isPending && <Spinner />} Saqlash
@@ -270,14 +270,14 @@ function MonthView({ groupId }: { groupId: string }) {
         <label className="label">Oy</label>
         <input type="month" className="input w-auto" value={month} onChange={(e) => e.target.value && setMonth(e.target.value)} />
       </div>
-      {m.isPending && <Spinner className="text-slate-400" />}
+      {m.isPending && <Spinner className="text-ink-4" />}
       {m.data && m.data.days.length === 0 && <Empty title="Bu oyda davomat olinmagan" />}
       {m.data && m.data.days.length > 0 && (
         <div className="card overflow-x-auto">
           <table className="w-full min-w-max text-sm">
             <thead>
-              <tr className="border-b border-slate-200 text-xs text-slate-500">
-                <th className="sticky left-0 bg-white px-4 py-2 text-left">O'quvchi</th>
+              <tr className="border-b border-line text-xs text-ink-3">
+                <th className="sticky left-0 bg-surface px-4 py-2 text-left">O'quvchi</th>
                 {m.data.days.map((d) => (
                   <th key={d} className="px-1 py-2 font-bold">{d.slice(8)}</th>
                 ))}
@@ -291,8 +291,8 @@ function MonthView({ groupId }: { groupId: string }) {
                 const gs = Object.values(r.grades);
                 const avg = gs.length ? (gs.reduce((a, b) => a + b, 0) / gs.length).toFixed(1) : "–";
                 return (
-                  <tr key={r.student.studentId} className="border-b border-slate-100 last:border-0">
-                    <td className="sticky left-0 max-w-[160px] truncate bg-white px-4 py-2 font-semibold">{r.student.name}</td>
+                  <tr key={r.student.studentId} className="border-b border-line last:border-0">
+                    <td className="sticky left-0 max-w-[160px] truncate bg-surface px-4 py-2 font-semibold">{r.student.name}</td>
                     {m.data!.days.map((d) => {
                       const x = r.marks[d];
                       return (
@@ -302,7 +302,7 @@ function MonthView({ groupId }: { groupId: string }) {
                               {r.grades[d] ?? SYMBOL[x]}
                             </span>
                           ) : (
-                            <span className="text-slate-300">·</span>
+                            <span className="text-ink-5">·</span>
                           )}
                         </td>
                       );
@@ -318,7 +318,7 @@ function MonthView({ groupId }: { groupId: string }) {
           </table>
         </div>
       )}
-      <p className="mt-2 text-xs text-slate-500">Yashil raqam — dars bahosi, ✓ — keldi (bahosiz), ✕ — kelmadi. Eski yozuvlarda: ⏰ kechikkan, S sababli.</p>
+      <p className="mt-2 text-xs text-ink-3">Yashil raqam — dars bahosi, ✓ — keldi (bahosiz), ✕ — kelmadi. Eski yozuvlarda: ⏰ kechikkan, S sababli.</p>
     </>
   );
 }

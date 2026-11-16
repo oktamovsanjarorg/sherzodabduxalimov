@@ -58,10 +58,10 @@ function CardForm() {
         <CreditCard size={18} className="text-brand" /> To'lov kartasi
       </h2>
       {q.isPending ? (
-        <Spinner className="text-slate-400" />
+        <Spinner className="text-ink-4" />
       ) : (
         <>
-          {!q.data?.card && <p className="rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-800">Karta kiritilmaguncha o'quvchilar to'lov qila olmaydi.</p>}
+          {!q.data?.card && <p className="rounded-lg bg-amber-400/10 px-3 py-2 text-sm text-amber-300">Karta kiritilmaguncha o'quvchilar to'lov qila olmaydi.</p>}
           <Field label="Karta raqami">
             <input
               className="input text-lg tabular-nums tracking-wider"
@@ -111,7 +111,7 @@ function EssayPrice() {
       <h2 className="flex items-center gap-2 font-extrabold">
         <PenLine size={18} className="text-brand" /> Esseni ustoz tekshirishi
       </h2>
-      <p className="text-sm text-slate-500">O'quvchi varoqqa yozgan essesining rasmini yuboradi va shu summani to'laydi. AI tekshiruvi bepul (kuniga 2 ta).</p>
+      <p className="text-sm text-ink-3">O'quvchi varoqqa yozgan essesining rasmini yuboradi va shu summani to'laydi. AI tekshiruvi bepul (kuniga 2 ta).</p>
       <Field label="Bitta esse narxi (so'm)" hint="Bo'sh qoldirilsa, ustoz tekshiruvi o'chiq turadi">
         <input className="input" inputMode="numeric" placeholder="Masalan: 25000" value={v} onChange={(e) => setV(e.target.value.replace(/\D/g, ""))} />
       </Field>
@@ -133,15 +133,15 @@ function Plans() {
           <Plus size={14} /> Yangi tarif
         </button>
       </div>
-      {plans.isPending && <Spinner className="text-slate-400" />}
-      <div className="divide-y divide-slate-100">
+      {plans.isPending && <Spinner className="text-ink-4" />}
+      <div className="divide-y divide-line">
         {plans.data?.map((p) => (
           <div key={p.id} className={`flex items-center gap-3 py-3 ${p.isActive ? "" : "opacity-60"}`}>
             <div className="min-w-0 flex-1">
               <p className="truncate font-bold">
                 {p.name} {!p.isActive && <Badge>yashirin</Badge>}
               </p>
-              <p className="truncate text-xs text-slate-500">
+              <p className="truncate text-xs text-ink-3">
                 {p.durationDays} kun · faol obunachilar: {p.activeSubscribers}
                 {p.description ? ` · ${p.description}` : ""}
               </p>

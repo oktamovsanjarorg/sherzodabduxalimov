@@ -54,15 +54,15 @@ export function GroupManager({ groups, onClose }: { groups: AdminGroup[]; onClos
         <div className="space-y-3">
           <div className="space-y-1">
             {groups.map((g) => (
-              <button key={g.id} onClick={() => setSel(g.id)} className={`flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm ${sel === g.id ? "bg-brand-soft font-bold text-brand-dark" : "hover:bg-slate-50"}`}>
+              <button key={g.id} onClick={() => setSel(g.id)} className={`flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm ${sel === g.id ? "bg-brand-soft font-bold text-brand-light" : "hover:bg-surface-2"}`}>
                 <span className="min-w-0 flex-1 truncate">{g.name}</span>
                 {!g.isActive && <Badge>faol emas</Badge>}
-                <span className="text-xs text-slate-400">{g.studentCount}</span>
+                <span className="text-xs text-ink-4">{g.studentCount}</span>
               </button>
             ))}
           </div>
           <form
-            className="space-y-2 rounded-xl border border-dashed border-slate-300 p-3"
+            className="space-y-2 rounded-xl border border-dashed border-line-strong p-3"
             onSubmit={(e) => {
               e.preventDefault();
               if (name.trim()) create.mutate();
@@ -80,13 +80,13 @@ export function GroupManager({ groups, onClose }: { groups: AdminGroup[]; onClos
 
         <div className="min-w-0">
           {!current ? (
-            <p className="text-sm text-slate-500">Guruhni tanlang yoki yarating</p>
+            <p className="text-sm text-ink-3">Guruhni tanlang yoki yarating</p>
           ) : (
             <>
               <div className="mb-3 flex flex-wrap items-center gap-2">
                 <div className="min-w-0 flex-1">
                   <p className="font-extrabold">{current.name}</p>
-                  {current.schedule && <p className="text-xs text-slate-500">{current.schedule}</p>}
+                  {current.schedule && <p className="text-xs text-ink-3">{current.schedule}</p>}
                 </div>
                 <button className="btn-secondary btn-sm" onClick={() => toggle.mutate(current)}>
                   {current.isActive ? "Faolsizlantirish" : "Faollashtirish"}
@@ -97,18 +97,18 @@ export function GroupManager({ groups, onClose }: { groups: AdminGroup[]; onClos
               </div>
 
               <div className="relative mb-2">
-                <Search size={16} className="absolute left-3 top-3.5 text-slate-400 sm:top-3" />
+                <Search size={16} className="absolute left-3 top-3.5 text-ink-4 sm:top-3" />
                 <input className="input pl-9" placeholder="Qidirib qo'shish (botga kirganlar): ism, @username, telefon" value={search} onChange={(e) => setSearch(e.target.value)} />
               </div>
               {search.trim().length >= 2 && (
-                <div className="mb-4 max-h-56 space-y-1 overflow-y-auto rounded-xl border border-slate-200 p-2">
-                  {found.isPending && <Spinner className="text-slate-400" />}
-                  {found.data?.length === 0 && <p className="p-2 text-sm text-slate-500">Topilmadi</p>}
+                <div className="mb-4 max-h-56 space-y-1 overflow-y-auto rounded-xl border border-line p-2">
+                  {found.isPending && <Spinner className="text-ink-4" />}
+                  {found.data?.length === 0 && <p className="p-2 text-sm text-ink-3">Topilmadi</p>}
                   {found.data?.map((s) => (
-                    <div key={s.studentId} className="flex items-center gap-2 rounded-lg px-2 py-1.5 hover:bg-slate-50">
+                    <div key={s.studentId} className="flex items-center gap-2 rounded-lg px-2 py-1.5 hover:bg-surface-2">
                       <div className="min-w-0 flex-1">
                         <p className="truncate text-sm font-semibold">{s.name}</p>
-                        <p className="truncate text-xs text-slate-500">
+                        <p className="truncate text-xs text-ink-3">
                           {[s.username && `@${s.username}`, s.phone, s.groupName && `guruh: ${s.groupName}`].filter(Boolean).join(" · ")}
                         </p>
                       </div>
@@ -125,15 +125,15 @@ export function GroupManager({ groups, onClose }: { groups: AdminGroup[]; onClos
               )}
 
               <p className="label">Guruhdagi o'quvchilar ({students.data?.length ?? 0})</p>
-              <ul className="divide-y divide-slate-100 rounded-xl border border-slate-200">
-                {students.data?.length === 0 && <li className="p-3 text-sm text-slate-500">Hali o'quvchi yo'q</li>}
+              <ul className="divide-y divide-line rounded-xl border border-line">
+                {students.data?.length === 0 && <li className="p-3 text-sm text-ink-3">Hali o'quvchi yo'q</li>}
                 {students.data?.map((s) => (
                   <li key={s.studentId} className="flex items-center gap-2 px-3 py-2">
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-sm font-semibold">{s.name}</p>
                       <ParentState s={s} />
                     </div>
-                    <button className="btn-ghost h-9 w-9 p-0 text-slate-400 hover:text-red-600" onClick={() => remove.mutate(s.studentId)} aria-label="Guruhdan chiqarish">
+                    <button className="btn-ghost h-9 w-9 p-0 text-ink-4 hover:text-red-400" onClick={() => remove.mutate(s.studentId)} aria-label="Guruhdan chiqarish">
                       <X size={16} />
                     </button>
                   </li>
@@ -150,7 +150,7 @@ export function GroupManager({ groups, onClose }: { groups: AdminGroup[]; onClos
 /** O'quvchining ota-onasi holati (qisqa belgi) */
 export function ParentState({ s }: { s: AdminStudent }) {
   const approved = s.parents.filter((p) => p.status === "APPROVED");
-  if (approved.length) return <span title={approved.map((p) => p.name).join(", ")} className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-700"><ShieldCheck size={13} /> Ota-ona</span>;
-  if (s.parents.length) return <span className="inline-flex items-center gap-1 text-xs font-semibold text-amber-700"><Clock size={13} /> Tekshirilmoqda</span>;
-  return <span className="inline-flex items-center gap-1 text-xs font-semibold text-red-600"><ShieldAlert size={13} /> Ota-ona yo'q</span>;
+  if (approved.length) return <span title={approved.map((p) => p.name).join(", ")} className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-300"><ShieldCheck size={13} /> Ota-ona</span>;
+  if (s.parents.length) return <span className="inline-flex items-center gap-1 text-xs font-semibold text-amber-300"><Clock size={13} /> Tekshirilmoqda</span>;
+  return <span className="inline-flex items-center gap-1 text-xs font-semibold text-red-400"><ShieldAlert size={13} /> Ota-ona yo'q</span>;
 }
