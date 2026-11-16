@@ -17,6 +17,8 @@ const schema = z.object({
   ADMIN_URL: z.string().default("http://127.0.0.1:5181/admin"),
   ADMIN_JWT_TTL: z.string().default("12h"),
   MEDIA_DIR: z.string().default("./.media"),
+  // Kechalik zaxira nusxalari papkasi (read-only ulangan). Bo'lmasa admin paneldagi "Zaxira" bo'limi o'chiq
+  BACKUP_DIR: z.string().optional(),
   REDIS_URL: z.string().default("redis://localhost:6381"),
   QUEUE_PREFIX: z.string().default("onatili"),
   // HLS segmentlari qayerdan beriladi: dev'da API'ning o'zi, prod'da nginx (/media-files/v)

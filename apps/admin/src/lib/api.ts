@@ -14,6 +14,7 @@ import type {
   StudentDetail,
   AdminHwEssay,
   AdminEssayStats,
+  BackupList,
   AdminEssayLogRow,
   EssayStatsPeriod,
   TeacherEssayReviewInput,
@@ -136,6 +137,31 @@ export const api = {
     a.remove();
     setTimeout(() => URL.revokeObjectURL(url), 10_000);
     return name;
+  },
+  backups: () => request<BackupList>("/admin/backups"),
+  /** Zaxira faylini yuklab olish: avtorizatsiya sarlavhasi kerak, shuning uchun havola emas; foiz onProgress ga */
+  downloadBackup: async (name: string, onProgress: (pct: number) => void) => {
+    const res = await fetch(`/api/admin/backups/${encodeURIComponent(name)}`, { headers: { Authorization: `Bearer ${loadSession()?.token}` } });
+    if (!res.ok || !res.body) throw new ApiError(res.status, "Faylni yuklab bo'lmadi");
+    const total = Number(res.headers.get("content-length")) || 0;
+    const reader = res.body.getReader();
+    const parts: Uint8Array[] = [];
+    let got = 0;
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      parts.push(value);
+      got += value.length;
+      if (total) onProgress(Math.min(99, Math.floor((got / total) * 100)));
+    }
+    const url = URL.createObjectURL(new Blob(parts as BlobPart[]));
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = name;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 10_000);
   },
   /** Chek rasmi: avtorizatsiya sarlavhasi kerak, shuning uchun <img src> emas, blob */
   receipt: async (id: string) => {

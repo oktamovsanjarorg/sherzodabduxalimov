@@ -49,8 +49,11 @@ services:
     environment:
       <<: *app-environment
       API_HOST: 0.0.0.0
+      BACKUP_DIR: /backups
     volumes:
       - onatili_media:/data/media
+      # Kechalik zaxiralar (backup.sh): admin paneldagi "Zaxira" bo'limi faqat o'qiydi
+      - /home/ubuntu/onatili-backups:/backups:ro
     command: sh -c "cd packages/db && npx prisma migrate deploy && cd /app && node apps/api/dist/main.js"
     depends_on:
       postgres: { condition: service_healthy }
