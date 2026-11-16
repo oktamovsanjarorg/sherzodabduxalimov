@@ -1,4 +1,4 @@
-import type { RosterRow } from "@onatili/shared";
+import { tashkentToday, type RosterRow } from "@onatili/shared";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ChevronRight, Download, ListPlus, Search, Settings2, UserPlus } from "lucide-react";
 import { useState } from "react";
@@ -8,7 +8,7 @@ import { GroupManager } from "../components/GroupManager";
 import { Inbox } from "../components/Inbox";
 import { Badge, Empty, Field, Modal, PageHeader, Spinner } from "../components/ui";
 import { api, errMsg } from "../lib/api";
-import { fmtDate } from "../lib/format";
+import { fmtDate, fmtShortDateTime, fmtYmd } from "../lib/format";
 import { loadSession } from "../lib/session";
 import { useToast } from "../lib/toast";
 
@@ -129,6 +129,11 @@ function Row({ r, isTeacher, showGroup }: { r: RosterRow; isTeacher: boolean; sh
         <p className="truncate text-xs text-ink-3">
           {[r.phone, r.username && `@${r.username}`, showGroup && (r.group?.name ?? "online")].filter(Boolean).join(" · ") || "ma'lumot yo'q"}
         </p>
+        {(r.lastActiveAt || r.startedOn) && (
+          <p className="truncate text-[11px] text-ink-4">
+            {[r.startedOn && `boshlagan ${fmtYmd(r.startedOn)}`, r.lastActiveAt && `oxirgi kirgan ${fmtShortDateTime(r.lastActiveAt)}`].filter(Boolean).join(" · ")}
+          </p>
+        )}
       </div>
       <div className="flex flex-wrap items-center gap-1">
         {r.blocked && <Badge tone="red">bloklangan</Badge>}
@@ -171,9 +176,9 @@ function AddOneModal({ groupId, onClose }: { groupId: string; onClose: () => voi
   const toast = useToast();
   const qc = useQueryClient();
   const navigate = useNavigate();
-  const [d, setD] = useState({ firstName: "", lastName: "", phone: "", groupId });
+  const [d, setD] = useState({ firstName: "", lastName: "", phone: "", groupId, startedOn: tashkentToday() });
   const save = useMutation({
-    mutationFn: () => api.createStudent({ firstName: d.firstName.trim(), lastName: d.lastName.trim() || null, phone: d.phone.trim() || null, groupId: d.groupId || null }),
+    mutationFn: () => api.createStudent({ firstName: d.firstName.trim(), lastName: d.lastName.trim() || null, phone: d.phone.trim() || null, groupId: d.groupId || null, startedOn: d.startedOn || null }),
     onSuccess: (r) => {
       toast("O'quvchi qo'shildi");
       qc.invalidateQueries({ queryKey: ["roster"] });
@@ -211,6 +216,9 @@ function AddOneModal({ groupId, onClose }: { groupId: string; onClose: () => voi
         </Field>
         <Field label="Guruh">
           <GroupSelect value={d.groupId} onChange={(v) => setD({ ...d, groupId: v })} />
+        </Field>
+        <Field label="O'qishni boshlagan sana" hint="Birinchi to'lov davri shu sanadan boshlanadi">
+          <input className="input" type="date" value={d.startedOn} onChange={(e) => setD({ ...d, startedOn: e.target.value })} />
         </Field>
       </div>
     </Modal>

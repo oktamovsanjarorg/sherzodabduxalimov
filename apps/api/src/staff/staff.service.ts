@@ -42,8 +42,9 @@ export class StaffService {
    * Telegram foydalanuvchisini yaratadi yoki yangilaydi va rolini belgilaydi:
    * ega ro'yxatidagi username: TEACHER; taklif qilingan username: taklifdagi rol.
    */
-  async upsertTelegramUser(tg: TelegramProfile) {
-    return (await this.upsertTelegramUserEx(tg)).user;
+  /** via: qayerdan kirdi — bot (/start) yoki ilova (Mini App). Shu payt faollik sifatida yoziladi */
+  async upsertTelegramUser(tg: TelegramProfile, via?: "bot" | "app") {
+    return (await this.upsertTelegramUserEx(tg, via)).user;
   }
 
   /** Egalarga (ustozlarga) bot orqali qisqa xabar: yangi o'quvchi, guruhga qo'shilish va h.k. */
@@ -54,14 +55,14 @@ export class StaffService {
 
   /** Bot: oddiy /start. Botga kirgan har bir kishi admin panelda ko'rinishi uchun yoziladi */
   async recordVisit(tg: TelegramProfile) {
-    const user = await this.upsertTelegramUser(tg);
+    const user = await this.upsertTelegramUser(tg, "bot");
     // Ota-ona havolasini ochgan odamdan o'quvchi ismi so'ralmaydi
     const parentInvite = user.role === "STUDENT" && !user.nameLocked ? await this.prisma.pendingParent.count({ where: { telegramId: BigInt(tg.id) } }) : 0;
     return { ok: true, needsName: user.role === "STUDENT" && !user.nameLocked && !user.isBlocked && parentInvite === 0 };
   }
 
   /** upsertTelegramUser + yangi yaratilganmi */
-  async upsertTelegramUserEx(tg: TelegramProfile) {
+  async upsertTelegramUserEx(tg: TelegramProfile, via?: "bot" | "app") {
     const profile = {
       username: tg.username ?? null,
       firstName: tg.first_name,
@@ -86,12 +87,16 @@ export class StaffService {
       delete update.firstName;
       delete update.lastName;
     }
+    const now = new Date();
+    const seen = via === "bot" ? { lastBotAt: now } : via === "app" ? { lastAppAt: now } : {};
     let user = await this.prisma.user.upsert({
       where: { telegramId: BigInt(tg.id) },
-      update,
+      update: { ...update, ...seen },
       create: {
         telegramId: BigInt(tg.id),
         ...profile,
+        ...seen,
+        botJoinedAt: now,
         student: { create: { parentLinkCode: randomBytes(4).toString("hex").toUpperCase() } },
       },
     });

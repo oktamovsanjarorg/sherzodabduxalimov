@@ -18,7 +18,7 @@ import {
 import { NotifyService } from "../notify/notify.service";
 import { esc } from "../notify/telegram";
 import { PrismaService } from "../prisma/prisma.service";
-import { coverage, dateCol, effective, pickPayment, referenceDate } from "./offline-period";
+import { coverage, dateCol, effective, pickPayment, referenceDate, ymdOf } from "./offline-period";
 
 const fullName = (u: { firstName: string; lastName: string | null }) => [u.firstName, u.lastName].filter(Boolean).join(" ");
 /** Bir guruh-oy uchun eslatmalar orasidagi eng kam vaqt: ota-onalarni bezovta qilmaslik uchun */
@@ -26,6 +26,7 @@ const REMIND_COOLDOWN_MS = 20 * 3600_000;
 
 const studentSelect = {
   id: true,
+  startedOn: true,
   user: { select: { firstName: true, lastName: true, username: true, phone: true, telegramId: true } },
   parents: { where: { status: "APPROVED" as const }, select: { parent: { select: { telegramId: true } } } },
 };
@@ -61,7 +62,8 @@ export class OfflineBillingService {
     const rows = students
       .map((s) => {
         const p = pickPayment(s.offlinePayments, month, today);
-        const cov = coverage(s.offlinePayments, ref);
+        const started = s.startedOn ? ymdOf(s.startedOn) : null;
+        const cov = coverage(s.offlinePayments, ref, started);
         // Yig'ilgan summa: faqat shu guruhda olingan to'lovlar (boshqa guruhdan o'tgan o'quvchi to'lagan bo'lsa ham "to'lagan" ko'rinadi, lekin ikki marta qo'shilmaydi)
         if (p && p.groupId === groupId) sumHere += p.amountUzs;
         const e = p && effective(p);
@@ -88,6 +90,7 @@ export class OfflineBillingService {
           coveredUntil: cov.coveredUntil,
           overdueDays: p ? null : cov.overdueDays,
           nextPeriodStart: cov.nextPeriodStart,
+          startedOn: started,
         };
       })
       // Qarzdorlar tepada, ichida eng uzoq muddati o'tgani birinchi
@@ -168,9 +171,10 @@ export class OfflineBillingService {
       select: { ...studentSelect, group: { select: { monthlyFeeUzs: true } }, offlinePayments: { orderBy: { month: "desc" }, take: 24 } },
     });
     if (!s) throw new NotFoundException("O'quvchi topilmadi");
-    const cov = coverage(s.offlinePayments, tashkentToday());
+    const startedOn = s.startedOn ? ymdOf(s.startedOn) : null;
+    const cov = coverage(s.offlinePayments, tashkentToday(), startedOn);
     const fee = s.group ? effectiveFee(s.group.monthlyFeeUzs, await defaultMonthlyFee(this.prisma)) : null;
-    return { name: fullName(s.user), approvedParents: s.parents.length, coveredUntil: cov.coveredUntil, nextPeriodStart: cov.nextPeriodStart, feeUzs: fee, hasGroup: !!s.group };
+    return { name: fullName(s.user), approvedParents: s.parents.length, coveredUntil: cov.coveredUntil, nextPeriodStart: cov.nextPeriodStart, startedOn, feeUzs: fee, hasGroup: !!s.group };
   }
 
   async unmark(actorId: string, studentId: string, month: string) {

@@ -24,7 +24,7 @@ export class AuthService {
       throw e;
     }
 
-    const user = await this.staff.upsertTelegramUser(tg);
+    const user = await this.staff.upsertTelegramUser(tg, "app");
     if (user.isBlocked)
       throw new UnauthorizedException({ code: ERROR_CODES.BLOCKED, message: user.blockedReason ? `Hisob bloklangan: ${user.blockedReason}` : "Hisob bloklangan" });
 

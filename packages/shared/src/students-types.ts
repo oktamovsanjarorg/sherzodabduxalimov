@@ -20,7 +20,10 @@ export interface RosterRow {
   paidThisMonth: boolean | null;
   /** Oxirgi 30 kun davomati */
   attendance30: { present: number; absent: number; total: number };
+  /** Botga yoki ilovaga oxirgi kirgan payt (qaysi biri keyin bo'lsa) */
   lastActiveAt: string | null;
+  /** O'qishni boshlagan sana (YYYY-MM-DD): birinchi to'lov davri shundan boshlanadi */
+  startedOn: string | null;
   /** AUTO — obuna/guruh bo'yicha; FREE — ustoz bepul ochgan; CLOSED — ustoz yopgan */
   accessMode: "AUTO" | "FREE" | "CLOSED";
   /** Pullik kontent hozir ochiqmi (rejim, obuna va guruh hisobga olingan) */
@@ -49,6 +52,13 @@ export interface StudentDetail extends RosterRow {
     subscription: { planName: string; endsAt: string } | null;
     payments: { id: string; title: string; amountUzs: number; status: PaymentStatusName; createdAt: string }[];
   } | null;
+  /** Qachon botga ulangan, botga va ilovaga oxirgi kirgan, qaysi darslarni qachon ochgan */
+  activity: {
+    botJoinedAt: string | null;
+    lastBotAt: string | null;
+    lastAppAt: string | null;
+    lessons: { lessonId: string; title: string; topicTitle: string; openedAt: string; completedAt: string | null }[];
+  };
   stats: {
     lessonsCompleted: number;
     testsTaken: number;
@@ -70,6 +80,12 @@ export const studentCreateInput = z.object({
   lastName: z.string().trim().max(60).nullish().transform((v) => v || null),
   phone,
   groupId: z.string().nullish().transform((v) => v || null),
+  /** O'qishni boshlagan sana (YYYY-MM-DD). Bo'sh qoldirilsa: bugun */
+  startedOn: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, "Sana noto'g'ri")
+    .nullish()
+    .transform((v) => v || null),
 });
 export type StudentCreateInput = z.infer<typeof studentCreateInput>;
 

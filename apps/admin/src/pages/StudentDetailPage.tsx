@@ -6,7 +6,7 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import { PayDialog } from "../components/PayDialog";
 import { Badge, ConfirmButton, Field, Modal, Spinner } from "../components/ui";
 import { api, errMsg } from "../lib/api";
-import { fmtDate } from "../lib/format";
+import { fmtDate, fmtDateTime } from "../lib/format";
 import { loadSession } from "../lib/session";
 import { useToast } from "../lib/toast";
 
@@ -41,6 +41,9 @@ export function StudentDetailPage() {
         )}
         <Section title="O'qish natijalari">
           <Stats s={s} />
+        </Section>
+        <Section title="Faollik: bot va darslar">
+          <Activity s={s} />
         </Section>
       </div>
     </div>
@@ -126,11 +129,39 @@ function Header({ s }: { s: StudentDetail }) {
           <button className="btn-secondary btn-sm" onClick={() => setEditing(true)}>
             <Pencil size={14} /> Tahrirlash
           </button>
+          <StartedOn s={s} onDone={refresh} />
 
         </div>
       </div>
       {editing && <EditModal s={s} onClose={() => setEditing(false)} onDone={refresh} />}
     </div>
+  );
+}
+
+/** O'qishni boshlagan sana: birinchi to'lov davri shundan boshlanadi */
+function StartedOn({ s, onDone }: { s: StudentDetail; onDone: () => void }) {
+  const toast = useToast();
+  const save = useMutation({
+    mutationFn: (v: string) => api.updateStudent(s.studentId, { startedOn: v || null }),
+    onSuccess: () => {
+      toast("O'qishni boshlagan sana saqlandi");
+      onDone();
+    },
+    onError: (e) => toast(errMsg(e), "error"),
+  });
+  return (
+    <label className="flex items-center gap-2 text-sm text-ink-3">
+      O'qishni boshlagan:
+      <input
+        type="date"
+        className={`input h-9 w-auto text-sm ${s.startedOn ? "" : "border-amber-400/40"}`}
+        value={s.startedOn ?? ""}
+        disabled={save.isPending}
+        onChange={(e) => save.mutate(e.target.value)}
+        title="Birinchi to'lov davri shu sanadan boshlanadi"
+      />
+      {!s.startedOn && <span className="text-xs text-amber-300">kiritilmagan</span>}
+    </label>
   );
 }
 
@@ -508,6 +539,47 @@ function Billing({ s }: { s: StudentDetail }) {
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+function Activity({ s }: { s: StudentDetail }) {
+  const a = s.activity;
+  const row = (label: string, v: string | null, empty: string) => (
+    <div className="flex justify-between gap-3 py-1.5 text-sm">
+      <span className="text-ink-3">{label}</span>
+      {v ? <b>{fmtDateTime(v)}</b> : <span className="text-ink-4">{empty}</span>}
+    </div>
+  );
+  return (
+    <div className="space-y-4">
+      <div className="divide-y divide-line">
+        {row("Botga ulangan", a.botJoinedAt, s.telegramLinked ? "noma'lum" : "hali kirmagan")}
+        {row("Botga oxirgi kirgan", a.lastBotAt, "ma'lumot yo'q")}
+        {row("Ilovani oxirgi ochgan", a.lastAppAt, "ma'lumot yo'q")}
+      </div>
+      <div>
+        <p className="mb-1.5 text-xs font-bold uppercase tracking-wide text-ink-3">Oxirgi ochilgan darslar</p>
+        {a.lessons.length === 0 ? (
+          <p className="text-sm text-ink-4">Hali dars ochmagan</p>
+        ) : (
+          <ul className="divide-y divide-line">
+            {a.lessons.map((l) => (
+              <li key={l.lessonId} className="flex items-start gap-3 py-2 text-sm">
+                <div className="min-w-0 flex-1">
+                  <p className="truncate font-semibold">{l.title}</p>
+                  <p className="truncate text-xs text-ink-3">{l.topicTitle}</p>
+                </div>
+                <div className="shrink-0 text-right">
+                  <p className="text-xs">{fmtDateTime(l.openedAt)}</p>
+                  {l.completedAt ? <Badge tone="green">tugatgan</Badge> : <span className="text-[11px] text-ink-4">ochgan</span>}
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+      <p className="text-[11px] text-ink-4">Vaqtlar 16.11.2026 dan boshlab yoziladi: undan oldingi kirishlar saqlanmagan.</p>
     </div>
   );
 }

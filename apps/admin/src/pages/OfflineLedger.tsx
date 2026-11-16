@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { PayDialog } from "../components/PayDialog";
 import { Badge, Empty, Spinner } from "../components/ui";
 import { api, errMsg } from "../lib/api";
-import { fmtShortDateTime } from "../lib/format";
+import { fmtShortDateTime, fmtYmd } from "../lib/format";
 import { useToast } from "../lib/toast";
 
 const shiftMonth = (m: string, by: number) => {
@@ -102,6 +102,9 @@ export function OfflineLedgerView() {
                         </a>
                       )}
                       {!r.approvedParents && <span className="ml-2 text-amber-300">ota-ona tasdiqlanmagan</span>}
+                    </p>
+                    <p className="text-xs text-ink-3">
+                      O'qishni boshlagan: {r.startedOn ? <b className="text-ink-2">{fmtYmd(r.startedOn)}</b> : <span className="text-amber-300">kiritilmagan</span>}
                     </p>
                   </div>
                   {r.paid ? (

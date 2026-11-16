@@ -37,6 +37,12 @@ model User {
   isBlocked     Boolean  @default(false)
   /// Bloklash sababi (foydalanuvchiga ko'rsatiladi)
   blockedReason String?
+  /// Telegram hisobi birinchi marta ulangan payt (botga kirgan yoki shaxsiy havolani bosgan)
+  botJoinedAt   DateTime?
+  /// Botga oxirgi marta kirgan payt (/start)
+  lastBotAt     DateTime?
+  /// Ilovani (Mini App) oxirgi marta ochgan payt
+  lastAppAt     DateTime?
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
@@ -95,6 +101,8 @@ model StudentProfile {
   followUps       PaymentFollowUp[]
   /// Ustoz ko'rib chiqqan (guruhga qo'shgan yoki "o'quvchim" deb tasdiqlagan). Botdan o'zi kirgan yangi o'quvchida null
   acceptedAt      DateTime?
+  /// O'qishni boshlagan sana: birinchi to'lov davri shundan boshlanadi. Ustoz kiritadi
+  startedOn       DateTime?         @db.Date
   parents         ParentLink[]
   attendance      Attendance[]
   offlinePayments OfflinePayment[]

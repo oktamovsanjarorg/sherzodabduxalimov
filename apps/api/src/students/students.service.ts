@@ -8,6 +8,7 @@ import {
   currentMonth,
   nameMatchScore,
   periodLabel,
+  tashkentToday,
   normUzPhone,
   parseStudentLine,
   type AdminUserRow,
@@ -46,7 +47,9 @@ const rosterInclude = (month: string, since: Date) =>
         username: true,
         phone: true,
         telegramId: true,
-        updatedAt: true,
+        lastBotAt: true,
+        lastAppAt: true,
+        botJoinedAt: true,
         isBlocked: true,
         blockedReason: true,
         subscriptions: { where: { status: "ACTIVE", endsAt: { gt: new Date() } }, orderBy: { endsAt: "desc" }, take: 1, select: { endsAt: true } },
@@ -58,6 +61,10 @@ const rosterInclude = (month: string, since: Date) =>
     offlinePayments: { where: paidNowWhere(referenceDate(month)), select: { id: true } },
     attendance: { where: { date: { gte: since } }, select: { status: true } },
   }) satisfies Prisma.StudentProfileInclude;
+
+/** Ikki paytning keyingisi (biri yo'q bo'lsa ikkinchisi) */
+const latest = (a: Date | null, b: Date | null) => (a && b ? (a > b ? a : b) : (a ?? b));
+const dateCol = (ymd: string) => new Date(`${ymd}T00:00:00Z`);
 
 type RosterProfile = Prisma.StudentProfileGetPayload<{ include: ReturnType<typeof rosterInclude> }>;
 
@@ -183,7 +190,8 @@ export class StudentsService {
       subscriptionEndsAt: isTeacher ? (r.user.subscriptions[0]?.endsAt.toISOString() ?? null) : null,
       paidThisMonth: isTeacher && r.group ? r.offlinePayments.length > 0 : null,
       attendance30: { present, absent: r.attendance.filter((a) => a.status === "ABSENT").length, total: r.attendance.length },
-      lastActiveAt: r.user.telegramId !== null ? r.user.updatedAt.toISOString() : null,
+      lastActiveAt: latest(r.user.lastBotAt, r.user.lastAppAt)?.toISOString() ?? null,
+      startedOn: r.startedOn ? r.startedOn.toISOString().slice(0, 10) : null,
       accessMode: r.accessMode,
       hasAccess: r.accessMode === "FREE" || (r.accessMode === "AUTO" && (r.user.subscriptions.length > 0 || !!r.group?.isActive)),
       blocked: r.user.isBlocked,
@@ -218,7 +226,14 @@ export class StudentsService {
         phone,
         role: "STUDENT",
         student: {
-          create: { parentLinkCode: randomBytes(4).toString("hex").toUpperCase(), inviteCode: code(), groupId: d.groupId, mode: d.groupId ? "OFFLINE" : "ONLINE", acceptedAt: new Date() },
+          create: {
+            parentLinkCode: randomBytes(4).toString("hex").toUpperCase(),
+            inviteCode: code(),
+            groupId: d.groupId,
+            mode: d.groupId ? "OFFLINE" : "ONLINE",
+            acceptedAt: new Date(),
+            startedOn: dateCol(d.startedOn ?? tashkentToday()),
+          },
         },
       },
       include: { student: true },
@@ -242,7 +257,7 @@ export class StudentsService {
         continue;
       }
       try {
-        await this.create(actorId, { ...p, groupId });
+        await this.create(actorId, { ...p, groupId, startedOn: null });
         added.push([p.firstName, p.lastName].filter(Boolean).join(" "));
       } catch (e) {
         skipped.push({ line, reason: e instanceof Error ? e.message : "Xato" });
@@ -267,8 +282,15 @@ export class StudentsService {
         },
       }),
       ...(d.groupId !== undefined
-        ? [this.prisma.studentProfile.update({ where: { id: studentId }, data: { groupId: d.groupId, mode: d.groupId ? "OFFLINE" : "ONLINE", acceptedAt: new Date() } })]
+        ? [
+            this.prisma.studentProfile.update({
+              where: { id: studentId },
+              // Guruhga birinchi marta qo'shilganda o'qish boshlangan sana bugun (keyin ustoz o'zgartira oladi)
+              data: { groupId: d.groupId, mode: d.groupId ? "OFFLINE" : "ONLINE", acceptedAt: new Date(), ...(d.groupId && !sp.startedOn && !d.startedOn ? { startedOn: dateCol(tashkentToday()) } : {}) },
+            }),
+          ]
         : []),
+      ...(d.startedOn !== undefined ? [this.prisma.studentProfile.update({ where: { id: studentId }, data: { startedOn: d.startedOn ? dateCol(d.startedOn) : null } })] : []),
     ]);
     await this.prisma.auditLog.create({ data: { actorId, action: "student.update", entity: "StudentProfile", entityId: studentId, meta: d as object } });
     return this.detail(studentId, true);
@@ -527,7 +549,7 @@ export class StudentsService {
       d.setUTCMonth(d.getUTCMonth() - i);
       return d.toISOString().slice(0, 7);
     });
-    const [attendance, counts, offline, payments, lessons, attempts, essays] = await Promise.all([
+    const [attendance, counts, offline, payments, lessons, attempts, essays, opened] = await Promise.all([
       this.prisma.attendance.findMany({ where: { studentId }, orderBy: { date: "desc" }, take: 30, include: { group: { select: { name: true } } } }),
       this.prisma.attendance.groupBy({ by: ["status"], where: { studentId }, _count: true }),
       isTeacher ? this.prisma.offlinePayment.findMany({ where: { studentId }, orderBy: { month: "desc" }, take: 24 }) : Promise.resolve([]),
@@ -542,6 +564,13 @@ export class StudentsService {
         include: { test: { select: { title: true, type: true } } },
       }),
       this.prisma.essay.findMany({ where: { userId }, orderBy: { createdAt: "desc" }, take: 10, include: { reviews: { select: { source: true, totalScore: true } } } }),
+      // Dars ochilganda updatedAt yangilanadi (content.service): oxirgi ochilgan darslar
+      this.prisma.lessonProgress.findMany({
+        where: { userId },
+        orderBy: { updatedAt: "desc" },
+        take: 15,
+        select: { lessonId: true, updatedAt: true, completedAt: true, lesson: { select: { title: true, topic: { select: { title: true } } } } },
+      }),
     ]);
     const sub = await this.prisma.subscription.findFirst({
       where: { userId, status: "ACTIVE", endsAt: { gt: new Date() } },
@@ -554,6 +583,18 @@ export class StudentsService {
       ...row,
       createdAt: sp.createdAt.toISOString(),
       blockedReason: sp.user.blockedReason,
+      activity: {
+        botJoinedAt: sp.user.botJoinedAt?.toISOString() ?? null,
+        lastBotAt: sp.user.lastBotAt?.toISOString() ?? null,
+        lastAppAt: sp.user.lastAppAt?.toISOString() ?? null,
+        lessons: opened.map((l) => ({
+          lessonId: l.lessonId,
+          title: l.lesson.title,
+          topicTitle: l.lesson.topic.title,
+          openedAt: l.updatedAt.toISOString(),
+          completedAt: l.completedAt?.toISOString() ?? null,
+        })),
+      },
       inviteUrl: sp.user.telegramId === null ? this.inviteUrl(sp.inviteCode) : null,
       parentInviteUrl: `https://t.me/${this.env.BOT_USERNAME}?start=p_${sp.parentLinkCode}`,
       parentList: sp.parents.map((p) => ({ id: p.id, name: fullName(p.parent), phone: p.phone, relation: p.relation, status: p.status })),
@@ -566,7 +607,7 @@ export class StudentsService {
             // Qo'shilgan oydan oldingilari ko'rsatilmaydi (o'shanda hali o'quvchi bo'lmagan)
             offlineMonths: sp.group
               ? months
-                  .filter((m) => m >= currentMonth(sp.createdAt) || offline.some((x) => x.month === m))
+                  .filter((m) => m >= (sp.startedOn ? sp.startedOn.toISOString().slice(0, 7) : currentMonth(sp.createdAt)) || offline.some((x) => x.month === m))
                   .map((m) => {
                   const p = pickPayment(offline, m);
                   const e = p && effective(p);
@@ -611,7 +652,8 @@ export class StudentsService {
     if (existing && existing.role !== "STUDENT") return { status: "staff" };
     if (existing) await this.mergeInto(sp.userId, existing.id);
     else {
-      await this.prisma.user.update({ where: { id: sp.userId }, data: { telegramId: BigInt(from.id), username: from.username ?? null } });
+      const now = new Date();
+      await this.prisma.user.update({ where: { id: sp.userId }, data: { telegramId: BigInt(from.id), username: from.username ?? null, botJoinedAt: now, lastBotAt: now } });
       await this.prisma.studentProfile.update({ where: { id: sp.id }, data: { inviteCode: null } });
     }
     await this.staff.alertOwners(`🔗 Siz kiritgan <b>${esc(fullName(sp.user))}</b> botga ulandi (shaxsiy havola orqali)${sp.group ? ` · ${esc(sp.group.name)}` : ""}`);
@@ -667,6 +709,7 @@ export class StudentsService {
           groupId: ps.groupId ?? rs.groupId,
           mode: (ps.groupId ?? rs.groupId) ? "OFFLINE" : "ONLINE",
           acceptedAt: rs.acceptedAt ?? ps.acceptedAt ?? new Date(), // ustoz o'zi kiritgan yozuv: ko'rib chiqilgan
+          startedOn: ps.startedOn ?? rs.startedOn,
           ...(ps.accessMode !== "AUTO" ? { accessMode: ps.accessMode } : {}),
         },
       });
