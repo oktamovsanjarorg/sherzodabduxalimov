@@ -48,11 +48,11 @@ function MarkLabel({ m, H }: { m: PageMark; H: number }) {
 /** Belgilangan xatolar turlari bo'yicha soni */
 export function MarkCounts({ counts }: { counts: Record<string, number> }) {
   const items = ERROR_TYPES.filter((t) => counts[t.key]);
-  if (!items.length) return <p className="text-xs text-slate-400">Hali xato belgilanmagan</p>;
+  if (!items.length) return <p className="text-xs text-ink-4">Hali xato belgilanmagan</p>;
   return (
     <div className="flex flex-wrap gap-1.5">
       {items.map((t) => (
-        <span key={t.key} className="rounded-full bg-red-50 px-2.5 py-1 text-xs font-bold text-red-700">
+        <span key={t.key} className="rounded-full bg-red-500/10 px-2.5 py-1 text-xs font-bold text-red-300">
           {t.label}: {counts[t.key]}
         </span>
       ))}
@@ -143,49 +143,49 @@ export function PageAnnotator({ src, value, onChange }: { src: string; value: Pa
 
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <div className="flex flex-wrap items-center gap-1.5 border-b border-slate-200 pb-2">
+      <div className="flex flex-wrap items-center gap-1.5 border-b border-line pb-2">
         {tools.map(({ k, label, Icon }) => (
           <button
             key={k}
             type="button"
             onClick={() => setTool(k)}
-            className={`flex h-9 items-center gap-1.5 rounded-lg px-3 text-xs font-bold ${tool === k ? "bg-brand text-white" : "bg-slate-100 text-slate-700 hover:bg-slate-200"}`}
+            className={`flex h-9 items-center gap-1.5 rounded-lg px-3 text-xs font-bold ${tool === k ? "bg-brand text-white" : "bg-surface-3 text-ink-2 hover:bg-surface-4"}`}
           >
             <Icon size={15} /> {label}
           </button>
         ))}
-        <span className="mx-1 h-6 w-px bg-slate-200" />
+        <span className="mx-1 h-6 w-px bg-surface-4" />
         <button type="button" className="btn-ghost h-9 w-9 p-0" disabled={!history.length} onClick={() => (onChange(history[history.length - 1]), setHistory((h) => h.slice(0, -1)))} aria-label="Bekor qilish">
           <Undo2 size={16} />
         </button>
         <button type="button" className="btn-ghost h-9 w-9 p-0" onClick={() => setZoom((z) => Math.max(1, z - 0.5))} aria-label="Kichraytirish">
           <ZoomOut size={16} />
         </button>
-        <span className="w-10 text-center text-xs font-bold text-slate-500">{Math.round(zoom * 100)}%</span>
+        <span className="w-10 text-center text-xs font-bold text-ink-3">{Math.round(zoom * 100)}%</span>
         <button type="button" className="btn-ghost h-9 w-9 p-0" onClick={() => setZoom((z) => Math.min(3, z + 0.5))} aria-label="Kattalashtirish">
           <ZoomIn size={16} />
         </button>
-        <button type="button" className="ml-auto text-xs font-semibold text-red-600 hover:underline" onClick={() => commit({ strokes: [], marks: [] })}>
+        <button type="button" className="ml-auto text-xs font-semibold text-red-400 hover:underline" onClick={() => commit({ strokes: [], marks: [] })}>
           Varoqni tozalash
         </button>
       </div>
       {tool === "mark" && (
-        <div className="flex flex-wrap items-center gap-1.5 border-b border-slate-200 py-2">
+        <div className="flex flex-wrap items-center gap-1.5 border-b border-line py-2">
           {ERROR_TYPES.map((t) => (
             <button
               key={t.key}
               type="button"
               onClick={() => setType(t.key)}
-              className={`rounded-full border px-3 py-1 text-xs font-bold ${type === t.key ? "border-red-600 bg-red-600 text-white" : "border-slate-200 text-slate-700"}`}
+              className={`rounded-full border px-3 py-1 text-xs font-bold ${type === t.key ? "border-red-600 bg-red-600 text-white" : "border-line text-ink-2"}`}
             >
               {t.label}
             </button>
           ))}
           <input className="input h-8 w-56 text-xs" placeholder="To'g'risi / izoh (ixtiyoriy)" value={note} onChange={(e) => setNote(e.target.value)} maxLength={120} />
-          <span className="text-xs text-slate-500">so'ng xato ustiga bosing</span>
+          <span className="text-xs text-ink-3">so'ng xato ustiga bosing</span>
         </div>
       )}
-      <div className="min-h-0 flex-1 overflow-auto bg-slate-100 p-2">
+      <div className="min-h-0 flex-1 overflow-auto bg-surface-3 p-2">
         <div ref={box} className="relative mx-auto select-none" style={{ width: `${zoom * 100}%`, maxWidth: zoom === 1 ? 900 : undefined }}>
           <img src={src} alt="" draggable={false} className="block w-full" onLoad={(e) => setRatio(e.currentTarget.naturalHeight / e.currentTarget.naturalWidth || 1.4)} />
           <AnnotationOverlay a={live} ratio={ratio} />
@@ -255,10 +255,10 @@ export function TextAnnotator({ text, value, onChange }: { text: string; value: 
   };
   return (
     <div>
-      <div className={`sticky top-0 z-10 mb-2 flex flex-wrap items-center gap-1.5 rounded-lg border p-2 ${sel ? "border-red-300 bg-red-50" : "border-slate-200 bg-white"}`}>
+      <div className={`sticky top-0 z-10 mb-2 flex flex-wrap items-center gap-1.5 rounded-lg border p-2 ${sel ? "border-red-400/40 bg-red-500/10" : "border-line bg-surface"}`}>
         {sel ? (
           <>
-            <span className="text-xs font-bold text-red-700">«{text.slice(sel.start, sel.end).slice(0, 40)}» —</span>
+            <span className="text-xs font-bold text-red-300">«{text.slice(sel.start, sel.end).slice(0, 40)}» —</span>
             {ERROR_TYPES.map((t) => (
               <button key={t.key} type="button" className="rounded-full bg-red-600 px-2.5 py-1 text-xs font-bold text-white hover:bg-red-700" onClick={() => add(t.key)}>
                 {t.label}
@@ -267,10 +267,10 @@ export function TextAnnotator({ text, value, onChange }: { text: string; value: 
             <input className="input h-7 w-44 text-xs" placeholder="To'g'risi (ixtiyoriy)" value={note} onChange={(e) => setNote(e.target.value)} maxLength={120} />
           </>
         ) : (
-          <span className="text-xs text-slate-500">Xato so'z yoki qismni belgilang, so'ng turini tanlang. Belgini o'chirish uchun ustiga bosing.</span>
+          <span className="text-xs text-ink-3">Xato so'z yoki qismni belgilang, so'ng turini tanlang. Belgini o'chirish uchun ustiga bosing.</span>
         )}
       </div>
-      <div ref={ref} onMouseUp={pick} onTouchEnd={() => setTimeout(pick, 50)} className="whitespace-pre-wrap rounded-xl border border-slate-200 bg-white p-4 text-[15px] leading-[2.1]">
+      <div ref={ref} onMouseUp={pick} onTouchEnd={() => setTimeout(pick, 50)} className="whitespace-pre-wrap rounded-xl border border-line bg-surface p-4 text-[15px] leading-[2.1]">
         {segments(text, value).map((s, i) =>
           s.mark ? (
             <span
@@ -279,7 +279,7 @@ export function TextAnnotator({ text, value, onChange }: { text: string; value: 
               onClick={() => onChange(value.filter((_, j) => j !== s.idx))}
               // Yorliq CSS orqali (::after): DOM matni o'zgarmaydi, keyingi belgilarning o'rni to'g'ri hisoblanadi
               data-short={ERROR_TYPES.find((t) => t.key === s.mark!.type)?.short}
-              className="relative cursor-pointer border-b-2 border-red-600 text-red-700 after:ml-0.5 after:rounded after:bg-red-600 after:px-1 after:align-super after:text-[10px] after:font-bold after:text-white after:content-[attr(data-short)]"
+              className="relative cursor-pointer border-b-2 border-red-600 text-red-300 after:ml-0.5 after:rounded after:bg-red-600 after:px-1 after:align-super after:text-[10px] after:font-bold after:text-white after:content-[attr(data-short)]"
             >
               {s.text}
             </span>

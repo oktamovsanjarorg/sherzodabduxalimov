@@ -33,8 +33,8 @@ export function ContentPage() {
           </button>
         }
       />
-      {courses.isPending && <Spinner className="text-slate-400" />}
-      {courses.isError && <p className="text-sm text-red-600">{errMsg(courses.error)}</p>}
+      {courses.isPending && <Spinner className="text-ink-4" />}
+      {courses.isError && <p className="text-sm text-red-400">{errMsg(courses.error)}</p>}
       {courses.data?.length === 0 && <Empty title="Hali kurs yo'q" hint="Birinchi kursni yarating, keyin unga mavzu va darslar qo'shing." />}
       <div className="space-y-6">
         {courses.data?.map((c) => <CourseCard key={c.id} course={c} />)}
@@ -62,7 +62,7 @@ function InlineTitle({ value, onSave, className = "" }: { value: string; onSave:
     return (
       <button className={`tap group flex min-w-0 items-center gap-2 text-left ${className}`} onClick={() => { setV(value); setEdit(true); }}>
         <span className="min-w-0 break-words">{value}</span>
-        <Pencil size={14} className="shrink-0 text-slate-300 group-hover:text-slate-500" />
+        <Pencil size={14} className="shrink-0 text-ink-5 group-hover:text-ink-3" />
       </button>
     );
   const save = () => {
@@ -91,21 +91,21 @@ function CourseCard({ course }: { course: AdminCourse }) {
 
   return (
     <section className="card">
-      <div className="flex flex-wrap items-center gap-3 border-b border-slate-200 px-4 py-4 sm:gap-4 sm:px-5">
+      <div className="flex flex-wrap items-center gap-3 border-b border-line px-4 py-4 sm:gap-4 sm:px-5">
         <InlineTitle value={course.title} onSave={(title) => update.mutate({ title })} className="text-lg font-extrabold" />
         <span className="flex-1" />
         <Toggle checked={course.isPublished} onChange={(isPublished) => update.mutate({ isPublished })} label={course.isPublished ? "Nashr qilingan" : "Yashirin"} />
         <ConfirmButton onConfirm={() => del.mutate()}><Trash2 size={14} /></ConfirmButton>
       </div>
 
-      <div className="divide-y divide-slate-100">
+      <div className="divide-y divide-line">
         {course.topics.map((t, i) => (
           <TopicBlock key={t.id} topic={t} index={i} topicIds={course.topics.map((x) => x.id)} />
         ))}
       </div>
 
       <form
-        className="flex gap-2 border-t border-slate-200 px-4 py-3 sm:px-5"
+        className="flex gap-2 border-t border-line px-4 py-3 sm:px-5"
         onSubmit={(e) => {
           e.preventDefault();
           if (newTopic.trim()) addTopic.mutate();
@@ -145,12 +145,12 @@ function TopicBlock({ topic, index, topicIds }: { topic: AdminTopic; index: numb
   return (
     <div className="px-3 py-4 sm:px-5">
       <div className="mb-2 flex items-center gap-1 sm:gap-2">
-        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-xs font-extrabold text-slate-500">{index + 1}</span>
+        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-surface-3 text-xs font-extrabold text-ink-3">{index + 1}</span>
         <InlineTitle value={topic.title} onSave={(t) => rename.mutate(t)} className="font-bold" />
         <span className="flex-1" />
         <button className="btn-ghost h-9 w-9 shrink-0 p-0" disabled={index === 0} onClick={() => reorder.mutate({ kind: "topic", ids: move(topicIds, index, -1) })} aria-label="Yuqoriga"><ArrowUp size={15} /></button>
         <button className="btn-ghost h-9 w-9 shrink-0 p-0" disabled={index === topicIds.length - 1} onClick={() => reorder.mutate({ kind: "topic", ids: move(topicIds, index, 1) })} aria-label="Pastga"><ArrowDown size={15} /></button>
-        <ConfirmButton onConfirm={() => del.mutate()} className="btn-ghost h-9 w-9 shrink-0 p-0 text-slate-400 hover:text-red-600"><Trash2 size={15} /></ConfirmButton>
+        <ConfirmButton onConfirm={() => del.mutate()} className="btn-ghost h-9 w-9 shrink-0 p-0 text-ink-4 hover:text-red-400"><Trash2 size={15} /></ConfirmButton>
       </div>
 
       <ul className="space-y-0.5 sm:ml-9">
@@ -165,8 +165,8 @@ function TopicBlock({ topic, index, topicIds }: { topic: AdminTopic; index: numb
         ))}
         {topic.tests.map((t) => (
           <li key={t.id}>
-            <Link to={`/tests/${t.id}`} className="flex flex-wrap items-center gap-x-2 gap-y-1.5 rounded-lg px-2 py-2 text-sm hover:bg-slate-50 sm:px-3">
-              <FileText size={16} className="shrink-0 text-sky-600" />
+            <Link to={`/tests/${t.id}`} className="flex flex-wrap items-center gap-x-2 gap-y-1.5 rounded-lg px-2 py-2 text-sm hover:bg-surface-2 sm:px-3">
+              <FileText size={16} className="shrink-0 text-sky-400" />
               <span className="min-w-0 flex-1 font-semibold sm:truncate">{t.title}</span>
               <span className="order-last flex w-full flex-wrap gap-1 pl-6 sm:order-none sm:w-auto sm:pl-0">
                 <Badge tone="blue">Test · {t.questionCount} savol</Badge>
@@ -181,7 +181,7 @@ function TopicBlock({ topic, index, topicIds }: { topic: AdminTopic; index: numb
         <button className="btn-ghost btn-sm text-brand" onClick={() => addLesson.mutate()} disabled={addLesson.isPending}>
           <Plus size={14} /> Dars qo'shish
         </button>
-        <Link to={`/tests/new?topicId=${topic.id}`} className="btn-ghost btn-sm text-sky-700">
+        <Link to={`/tests/new?topicId=${topic.id}`} className="btn-ghost btn-sm text-sky-300">
           <Plus size={14} /> Mavzu testi
         </Link>
       </div>
@@ -201,7 +201,7 @@ export function VideoBadge({ lesson }: { lesson: AdminLesson }) {
 
 function LessonRow({ lesson, first, last, onMove }: { lesson: AdminLesson; first: boolean; last: boolean; onMove: (d: -1 | 1) => void }) {
   return (
-    <li className="group flex flex-wrap items-center gap-x-2 gap-y-1.5 rounded-lg px-2 py-2 hover:bg-slate-50 sm:px-3">
+    <li className="group flex flex-wrap items-center gap-x-2 gap-y-1.5 rounded-lg px-2 py-2 hover:bg-surface-2 sm:px-3">
       <Film size={16} className="shrink-0 text-brand" />
       <Link to={`/lessons/${lesson.id}`} className="tap min-w-0 flex-1 text-sm font-semibold hover:text-brand sm:truncate">
         {lesson.title}

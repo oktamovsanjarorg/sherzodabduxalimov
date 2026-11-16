@@ -32,7 +32,7 @@ export function ParentsPage() {
           ["REJECTED", "Rad etilgan"],
         ] as const}
       />
-      {links.isPending && <Spinner className="text-slate-400" />}
+      {links.isPending && <Spinner className="text-ink-4" />}
       {links.data?.length === 0 && (
         <Empty title={tab === "PENDING" ? "Tekshiriladigan so'rov yo'q" : "Ro'yxat bo'sh"} hint={tab === "PENDING" ? "Yangi so'rovlar shu yerda paydo bo'ladi." : undefined} />
       )}
@@ -46,15 +46,15 @@ export function ParentsPage() {
 function Person({ label, name, username, phone }: { label: string; name: string; username: string | null; phone: string | null }) {
   return (
     <div className="min-w-0 flex-1">
-      <p className="text-[11px] font-bold uppercase tracking-wide text-slate-400">{label}</p>
+      <p className="text-[11px] font-bold uppercase tracking-wide text-ink-4">{label}</p>
       <p className="truncate font-bold">{name}</p>
-      <p className="truncate text-xs text-slate-500">{username ? `@${username}` : "username yo'q"}</p>
+      <p className="truncate text-xs text-ink-3">{username ? `@${username}` : "username yo'q"}</p>
       {phone ? (
         <a href={`tel:${phone}`} className="mt-1 inline-flex items-center gap-1 text-sm font-semibold text-brand">
           <Phone size={14} /> {phone}
         </a>
       ) : (
-        <p className="mt-1 text-xs text-slate-400">Raqam yo'q</p>
+        <p className="mt-1 text-xs text-ink-4">Raqam yo'q</p>
       )}
     </div>
   );
@@ -83,15 +83,15 @@ export function LinkCard({ link }: { link: AdminParentLink }) {
   });
 
   return (
-    <div className={`card p-4 ${link.flags.length && link.status === "PENDING" ? "border-red-300" : ""}`}>
+    <div className={`card p-4 ${link.flags.length && link.status === "PENDING" ? "border-red-400/40" : ""}`}>
       <div className="flex flex-wrap gap-4">
         <Person label="O'quvchi" name={link.student.name} username={link.student.username} phone={link.student.phone} />
         <Person label={`Ota-ona${link.relation ? ` (${link.relation})` : ""}`} name={link.parent.name} username={link.parent.username} phone={link.phone} />
       </div>
-      {link.student.groupName && <p className="mt-2 text-xs text-slate-500">Guruh: {link.student.groupName}</p>}
+      {link.student.groupName && <p className="mt-2 text-xs text-ink-3">Guruh: {link.student.groupName}</p>}
 
       {link.flags.length > 0 && (
-        <ul className="mt-3 space-y-1 rounded-lg bg-red-50 p-3 text-sm text-red-700">
+        <ul className="mt-3 space-y-1 rounded-lg bg-red-500/10 p-3 text-sm text-red-300">
           {link.flags.map((f) => (
             <li key={f} className="flex items-start gap-2">
               <AlertTriangle size={16} className="mt-0.5 shrink-0" /> {PARENT_FLAG_LABELS[f] ?? f}
@@ -100,8 +100,8 @@ export function LinkCard({ link }: { link: AdminParentLink }) {
         </ul>
       )}
 
-      <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-slate-100 pt-3">
-        <span className="text-xs text-slate-400">{fmtShortDateTime(link.createdAt)}</span>
+      <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-line pt-3">
+        <span className="text-xs text-ink-4">{fmtShortDateTime(link.createdAt)}</span>
         <span className="flex-1" />
         {link.status === "PENDING" ? (
           <div className="flex w-full gap-2 sm:w-auto">
@@ -165,12 +165,12 @@ function RejectModal({ link, onClose, onDone }: { link: AdminParentLink; onClose
         </>
       }
     >
-      <p className="mb-3 text-sm text-slate-600">
+      <p className="mb-3 text-sm text-ink-2">
         <b>{link.parent.name}</b> → <b>{link.student.name}</b>. Sabab o'quvchiga yuboriladi.
       </p>
       <div className="mb-3 flex flex-wrap gap-2">
         {REASONS.map((r) => (
-          <button key={r} className={`btn-sm btn border ${reason === r ? "border-red-400 bg-red-50 text-red-700" : "border-slate-200 text-slate-600"}`} onClick={() => setReason(r)}>
+          <button key={r} className={`btn-sm btn border ${reason === r ? "border-red-400 bg-red-500/10 text-red-300" : "border-line text-ink-2"}`} onClick={() => setReason(r)}>
             {r}
           </button>
         ))}

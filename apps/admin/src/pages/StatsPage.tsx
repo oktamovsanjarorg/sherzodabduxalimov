@@ -35,7 +35,7 @@ export function StatsPage() {
         title="Statistika"
         subtitle="Oy bo'yicha: o'quvchilar qanday o'qiyapti, kimga e'tibor kerak va qaysi mavzu qiyin."
         actions={
-          <div className="flex items-center gap-1 rounded-xl border border-slate-200 bg-white p-1">
+          <div className="flex items-center gap-1 rounded-xl border border-line bg-surface p-1">
             <button className="btn-ghost btn-sm" aria-label="Oldingi oy" onClick={() => setMonth(shift(month, -1))}>
               <ChevronLeft size={16} />
             </button>
@@ -60,9 +60,9 @@ export function StatsPage() {
       {tab === "pay" ? (
         <PaymentInsightsView month={month} />
       ) : q.isPending ? (
-        <Spinner className="text-slate-400" />
+        <Spinner className="text-ink-4" />
       ) : q.isError ? (
-        <p className="text-sm text-red-600">{errMsg(q.error)}</p>
+        <p className="text-sm text-red-400">{errMsg(q.error)}</p>
       ) : (
         <Body s={q.data} />
       )}
@@ -97,17 +97,17 @@ function Body({ s }: { s: TeacherStats }) {
           {s.attention.length === 0 ? (
             <Calm text="Hammasi joyida: e'tibor talab qiladigan o'quvchi yo'q" />
           ) : (
-            <ul className="divide-y divide-slate-100">
+            <ul className="divide-y divide-line">
               {s.attention.map((x) => (
                 <li key={x.userId}>
-                  <Link to={`/students/${x.userId}`} className="-mx-2 flex items-start gap-3 rounded-lg px-2 py-2 hover:bg-slate-50">
+                  <Link to={`/students/${x.userId}`} className="-mx-2 flex items-start gap-3 rounded-lg px-2 py-2 hover:bg-surface-2">
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-sm font-bold">
-                        {x.name} {x.group && <span className="font-normal text-slate-500">· {x.group}</span>}
+                        {x.name} {x.group && <span className="font-normal text-ink-3">· {x.group}</span>}
                       </p>
-                      <p className="text-xs text-slate-600">{x.reasons.join(" · ")}</p>
+                      <p className="text-xs text-ink-2">{x.reasons.join(" · ")}</p>
                     </div>
-                    <ChevronRight size={16} className="mt-1 shrink-0 text-slate-300" />
+                    <ChevronRight size={16} className="mt-1 shrink-0 text-ink-5" />
                   </Link>
                 </li>
               ))}
@@ -146,7 +146,7 @@ function Body({ s }: { s: TeacherStats }) {
             </ul>
           )}
           {a.rate !== null && (
-            <p className="mt-4 text-xs text-slate-500">
+            <p className="mt-4 text-xs text-ink-3">
               Jami: {a.present} keldi · {a.late} kechikdi · {a.absent} kelmadi · {a.excused} sababli
             </p>
           )}
@@ -159,7 +159,7 @@ function Body({ s }: { s: TeacherStats }) {
             <>
               <p className="mb-3 text-sm">
                 <b className="text-2xl font-extrabold">{s.mocks.avgTotal === null ? "—" : formatScore(s.mocks.avgTotal)}</b>
-                <span className="text-slate-500"> / 75 o'rtacha · {s.mocks.attempts} ta mock</span>
+                <span className="text-ink-3"> / 75 o'rtacha · {s.mocks.attempts} ta mock</span>
               </p>
               <Levels levels={s.mocks.levels} />
             </>
@@ -174,7 +174,7 @@ function Body({ s }: { s: TeacherStats }) {
             <Mini label="O'rtacha ball" value={s.essays.avgScore === null ? "—" : `${formatScore(s.essays.avgScore)}/24`} />
           </div>
           {s.essays.waiting > 0 && (
-            <Link to="/essays" className="mt-3 inline-flex items-center gap-1 text-sm font-bold text-amber-700 hover:underline">
+            <Link to="/essays" className="mt-3 inline-flex items-center gap-1 text-sm font-bold text-amber-300 hover:underline">
               <AlertTriangle size={15} /> Hozir {s.essays.waiting} ta esse tekshiruv kutmoqda
             </Link>
           )}
@@ -187,13 +187,13 @@ function Body({ s }: { s: TeacherStats }) {
             <ol className="space-y-2">
               {s.top.map((t, i) => (
                 <li key={t.userId}>
-                  <Link to={`/students/${t.userId}`} className="-mx-2 flex items-center gap-3 rounded-lg px-2 py-1.5 hover:bg-slate-50">
-                    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-slate-100 text-xs font-extrabold">{i + 1}</span>
+                  <Link to={`/students/${t.userId}`} className="-mx-2 flex items-center gap-3 rounded-lg px-2 py-1.5 hover:bg-surface-2">
+                    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-surface-3 text-xs font-extrabold">{i + 1}</span>
                     <span className="min-w-0 flex-1 truncate text-sm font-bold">
-                      {t.name} {t.group && <span className="font-normal text-slate-500">· {t.group}</span>}
+                      {t.name} {t.group && <span className="font-normal text-ink-3">· {t.group}</span>}
                     </span>
                     <span className="text-sm font-extrabold">{t.avgPercent}%</span>
-                    <span className="w-14 text-right text-xs text-slate-500">{t.tests} test</span>
+                    <span className="w-14 text-right text-xs text-ink-3">{t.tests} test</span>
                   </Link>
                 </li>
               ))}
@@ -230,12 +230,12 @@ function Body({ s }: { s: TeacherStats }) {
             To'lovlar tahlili: kim to'lamadi, prognoz, AI xulosa <ChevronRight size={15} />
           </Link>
           {s.income.feeMissing > 0 && (
-            <p className="mt-3 flex items-start gap-1.5 text-xs text-amber-700">
+            <p className="mt-3 flex items-start gap-1.5 text-xs text-amber-300">
               <AlertTriangle size={14} className="mt-px shrink-0" /> {s.income.feeMissing} ta offline o'quvchining guruhida oylik summa kiritilmagan — offline daromad to'liq ko'rinmaydi.
             </p>
           )}
           {s.income.offlineDebtors > 0 && (
-            <Link to="/payments?tab=OFFLINE" className="mt-3 inline-flex items-center gap-1 text-sm font-bold text-amber-700 hover:underline">
+            <Link to="/payments?tab=OFFLINE" className="mt-3 inline-flex items-center gap-1 text-sm font-bold text-amber-300 hover:underline">
               <AlertTriangle size={15} /> <span className="capitalize">{monthLabel(s.month)}</span>: {s.income.offlineDebtors} ta offline o'quvchi hali to'lamagan
             </Link>
           )}
@@ -250,11 +250,11 @@ function Body({ s }: { s: TeacherStats }) {
 function Kpi({ Icon, label, value, hint }: { Icon: LucideIcon; label: string; value: string; hint: string }) {
   return (
     <div className="card p-4">
-      <p className="flex items-center gap-1.5 text-xs font-bold text-slate-500">
+      <p className="flex items-center gap-1.5 text-xs font-bold text-ink-3">
         <Icon size={14} /> {label}
       </p>
       <p className="mt-1 text-3xl font-extrabold tracking-tight">{value}</p>
-      <p className="mt-0.5 text-xs leading-snug text-slate-500">{hint}</p>
+      <p className="mt-0.5 text-xs leading-snug text-ink-3">{hint}</p>
     </div>
   );
 }
@@ -265,28 +265,28 @@ function Card({ title, hint, Icon, children }: { title: string; hint: string; Ic
       <h2 className="flex items-center gap-2 font-extrabold">
         <Icon size={17} className="text-brand" /> {title}
       </h2>
-      <p className="mb-4 mt-0.5 text-xs text-slate-500">{hint}</p>
+      <p className="mb-4 mt-0.5 text-xs text-ink-3">{hint}</p>
       {children}
     </section>
   );
 }
 
 function Calm({ text }: { text: string }) {
-  return <p className="rounded-lg bg-slate-50 px-3 py-4 text-center text-sm text-slate-500">{text}</p>;
+  return <p className="rounded-lg bg-surface-2 px-3 py-4 text-center text-sm text-ink-3">{text}</p>;
 }
 
 function Mini({ label, value }: { label: string; value: number | string }) {
   return (
-    <div className="rounded-lg bg-slate-50 px-3 py-2">
+    <div className="rounded-lg bg-surface-2 px-3 py-2">
       <p className="text-lg font-extrabold">{value}</p>
-      <p className="text-[11px] text-slate-500">{label}</p>
+      <p className="text-[11px] text-ink-3">{label}</p>
     </div>
   );
 }
 
 /** Foiz chizig'i. Holat matn bilan ham yoziladi (faqat rangga tayanmaydi) */
 function Meter({ label, value, note }: { label: string; value: number | null; note: string }) {
-  const state = value === null ? null : value >= 85 ? { t: "yaxshi", c: "text-emerald-700" } : value >= 65 ? { t: "o'rtacha", c: "text-amber-700" } : { t: "past", c: "text-red-700" };
+  const state = value === null ? null : value >= 85 ? { t: "yaxshi", c: "text-emerald-300" } : value >= 65 ? { t: "o'rtacha", c: "text-amber-300" } : { t: "past", c: "text-red-300" };
   return (
     <div>
       <div className="mb-1 flex items-baseline gap-2 text-sm">
@@ -294,10 +294,10 @@ function Meter({ label, value, note }: { label: string; value: number | null; no
         {state && <span className={`text-xs font-bold ${state.c}`}>{state.t}</span>}
         <span className="w-11 text-right font-extrabold">{value === null ? "—" : `${value}%`}</span>
       </div>
-      <div className="h-2 overflow-hidden rounded-full bg-slate-100">
+      <div className="h-2 overflow-hidden rounded-full bg-surface-3">
         <div className="h-full rounded-full" style={{ width: `${value ?? 0}%`, background: S1 }} />
       </div>
-      <p className="mt-0.5 text-[11px] text-slate-500">{note}</p>
+      <p className="mt-0.5 text-[11px] text-ink-3">{note}</p>
     </div>
   );
 }
@@ -311,7 +311,7 @@ function Levels({ levels }: { levels: TeacherStats["mocks"]["levels"] }) {
         <div key={l.code} className="flex h-full flex-1 flex-col items-center justify-end gap-1" title={`${l.code === "—" ? "46 dan kam" : `${l.code} daraja`}: ${l.count} ta`}>
           <span className="text-xs font-bold">{l.count || ""}</span>
           <div className="w-full max-w-[44px] rounded-t" style={{ height: `${(l.count / max) * 100}%`, minHeight: l.count ? 4 : 0, background: S1 }} />
-          <span className="text-[11px] font-bold text-slate-600">{l.code === "—" ? "<46" : l.code}</span>
+          <span className="text-[11px] font-bold text-ink-2">{l.code === "—" ? "<46" : l.code}</span>
         </div>
       ))}
     </div>
@@ -341,26 +341,26 @@ function Columns({
   return (
     <div>
       {/* Qiymatlar qatori (tooltip o'rnida) */}
-      <div className="mb-3 flex min-h-[40px] flex-wrap items-center gap-x-4 gap-y-1 rounded-lg bg-slate-50 px-3 py-2 text-sm">
+      <div className="mb-3 flex min-h-[40px] flex-wrap items-center gap-x-4 gap-y-1 rounded-lg bg-surface-2 px-3 py-2 text-sm">
         <span className="font-bold first-letter:uppercase">{cur?.title}</span>
         {series.map((s, i) => (
-          <span key={s.name} className="flex items-center gap-1.5 text-slate-600">
+          <span key={s.name} className="flex items-center gap-1.5 text-ink-2">
             <span className="h-2.5 w-2.5 rounded-sm" style={{ background: s.color }} />
-            {s.name}: <b className="text-slate-900">{format(cur?.values[i] ?? 0)}</b>
+            {s.name}: <b className="text-ink">{format(cur?.values[i] ?? 0)}</b>
           </span>
         ))}
         {total && (
-          <span className="text-slate-600">
-            Jami: <b className="text-slate-900">{format(sums[sel] ?? 0)}</b>
+          <span className="text-ink-2">
+            Jami: <b className="text-ink">{format(sums[sel] ?? 0)}</b>
           </span>
         )}
       </div>
-      <div className="flex h-44 items-end gap-2 border-b border-slate-200 sm:gap-4" onMouseLeave={() => setHover(null)}>
+      <div className="flex h-44 items-end gap-2 border-b border-line sm:gap-4" onMouseLeave={() => setHover(null)}>
         {data.map((d, i) => (
           <button
             key={d.key}
             type="button"
-            className={`flex h-full flex-1 flex-col justify-end rounded-t-md px-1 ${i === sel ? "bg-slate-50" : ""}`}
+            className={`flex h-full flex-1 flex-col justify-end rounded-t-md px-1 ${i === sel ? "bg-surface-2" : ""}`}
             onMouseEnter={() => setHover(i)}
             onFocus={() => setHover(i)}
             onClick={() => setHover(i)}
@@ -382,13 +382,13 @@ function Columns({
       </div>
       <div className="mt-1 flex gap-2 sm:gap-4">
         {data.map((d, i) => (
-          <span key={d.key} className={`flex-1 truncate text-center text-[11px] ${i === sel ? "font-bold text-slate-900" : "text-slate-500"}`}>
+          <span key={d.key} className={`flex-1 truncate text-center text-[11px] ${i === sel ? "font-bold text-ink" : "text-ink-3"}`}>
             {d.label}
           </span>
         ))}
       </div>
       {/* Legenda */}
-      <div className="mt-3 flex flex-wrap gap-4 text-xs text-slate-600">
+      <div className="mt-3 flex flex-wrap gap-4 text-xs text-ink-2">
         {series.map((s) => (
           <span key={s.name} className="flex items-center gap-1.5">
             <span className="h-2.5 w-2.5 rounded-sm" style={{ background: s.color }} />

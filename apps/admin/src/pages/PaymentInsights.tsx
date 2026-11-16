@@ -15,8 +15,8 @@ const sum = (n: number) => `${formatSum(n)} so'm`;
 /** To'lovlar tahlili: kim to'lashi kerak edi, qancha tushdi, prognoz, kim to'lamayapti va ular bilan ishlash */
 export function PaymentInsightsView({ month }: { month: string }) {
   const q = useQuery({ queryKey: ["payment-insights", month], queryFn: () => api.paymentInsights(month) });
-  if (q.isPending) return <Spinner className="text-slate-400" />;
-  if (q.isError) return <p className="text-sm text-red-600">{errMsg(q.error)}</p>;
+  if (q.isPending) return <Spinner className="text-ink-4" />;
+  if (q.isError) return <p className="text-sm text-red-400">{errMsg(q.error)}</p>;
   const d = q.data;
   return (
     <div className="space-y-5">
@@ -43,11 +43,11 @@ export function PaymentInsightsView({ month }: { month: string }) {
         <Kpi label="Prognoz: oy oxiriga" value={sum(d.forecast.endOfMonthUzs)} hint={`Keyingi oy kutilmoqda: ${sum(d.forecast.nextMonthExpectedUzs)}`} />
       </div>
       {d.offline.paidNoAmount > 0 && (
-        <p className="-mt-2 flex items-start gap-1.5 text-xs text-amber-700">
+        <p className="-mt-2 flex items-start gap-1.5 text-xs text-amber-300">
           <AlertTriangle size={14} className="mt-px shrink-0" /> {d.offline.paidNoAmount} ta to'lov summasi yozilmay belgilangan (0 so'm). O'quvchi sahifasida «Qaytarish» qilib, summa bilan qayta belgilang.
         </p>
       )}
-      <p className="-mt-2 text-xs text-slate-500">
+      <p className="-mt-2 text-xs text-ink-3">
         <TrendingUp size={12} className="mr-1 inline" />
         Prognoz qanday hisoblandi: {d.forecast.basis}.
       </p>
@@ -66,7 +66,7 @@ export function PaymentInsightsView({ month }: { month: string }) {
             </ul>
           )}
           {d.offline.feeMissing > 0 && (
-            <p className="mt-3 flex items-start gap-1.5 text-xs text-amber-700">
+            <p className="mt-3 flex items-start gap-1.5 text-xs text-amber-300">
               <AlertTriangle size={14} className="mt-px shrink-0" /> {d.offline.feeMissing} o'quvchining guruhida oylik summa kiritilmagan — kutilgan tushumga qo'shilmadi.{" "}
               <Link to="/payments?tab=OFFLINE" className="font-bold underline">
                 Kiritish
@@ -78,15 +78,15 @@ export function PaymentInsightsView({ month }: { month: string }) {
           <div className="grid grid-cols-3 gap-2 text-center">
             <Mini label="Muddati tugaydi" value={d.online.due} />
             <Mini label="Uzaytirdi" value={d.online.renewed} />
-            <Mini label="Uzaytirmadi" value={d.online.lapsed} tone={d.online.lapsed ? "text-red-700" : undefined} />
+            <Mini label="Uzaytirmadi" value={d.online.lapsed} tone={d.online.lapsed ? "text-red-300" : undefined} />
           </div>
           {d.online.pendingReceipts > 0 && (
-            <Link to="/payments" className="mt-3 inline-flex items-center gap-1 text-sm font-bold text-amber-700 hover:underline">
+            <Link to="/payments" className="mt-3 inline-flex items-center gap-1 text-sm font-bold text-amber-300 hover:underline">
               <AlertTriangle size={15} /> {d.online.pendingReceipts} ta chek tasdiqlanishini kutmoqda ({sum(d.online.pendingUzs)})
             </Link>
           )}
-          <p className="mt-3 text-xs text-slate-500">Shu oy obunalardan tushgan (yangi va uzaytirilgan): {sum(d.online.collectedUzs)}</p>
-          <p className="mt-1 text-xs text-slate-500">
+          <p className="mt-3 text-xs text-ink-3">Shu oy obunalardan tushgan (yangi va uzaytirilgan): {sum(d.online.collectedUzs)}</p>
+          <p className="mt-1 text-xs text-ink-3">
             Esse tekshiruvi: {d.essays.count} ta · {sum(d.essays.collectedUzs)}
           </p>
         </Card>
@@ -108,7 +108,7 @@ export function PaymentInsightsView({ month }: { month: string }) {
         {d.debtors.length === 0 ? (
           <Calm text="Hamma to'lagan 🎉" />
         ) : (
-          <ul className="divide-y divide-slate-100">
+          <ul className="divide-y divide-line">
             {d.debtors.map((x) => (
               <Debtor key={`${x.kind}-${x.studentId}`} x={x} month={d.month} />
             ))}
@@ -138,11 +138,11 @@ function FeeMissing({ d }: { d: Insights }) {
     onError: (e) => toast(errMsg(e), "error"),
   });
   return (
-    <section className="rounded-2xl border border-amber-300 bg-amber-50 p-4 sm:p-5">
-      <p className="flex items-center gap-2 font-extrabold text-amber-900">
+    <section className="rounded-2xl border border-amber-400/40 bg-amber-400/10 p-4 sm:p-5">
+      <p className="flex items-center gap-2 font-extrabold text-amber-200">
         <AlertTriangle size={18} /> Oylik to'lov narxi noma'lum
       </p>
-      <p className="mt-1 text-sm text-amber-900/80">
+      <p className="mt-1 text-sm text-amber-200/80">
         Tariflarda oylik tarif yo'q, shuning uchun {d.offline.feeMissing} ta o'quvchidan qancha pul tushishi kerakligini hisoblab bo'lmayapti.{" "}
         <Link to="/billing" className="font-bold underline">
           Tariflarda oylik tarif yarating
@@ -153,7 +153,7 @@ function FeeMissing({ d }: { d: Insights }) {
         {missing.map((g) => (
           <div key={g.groupId} className="flex flex-wrap items-center gap-2">
             <span className="min-w-[160px] text-sm font-bold">
-              {g.name} <span className="font-normal text-slate-500">· {g.students} o'quvchi</span>
+              {g.name} <span className="font-normal text-ink-3">· {g.students} o'quvchi</span>
             </span>
             <input
               className="input h-9 w-40 text-sm"
@@ -162,7 +162,7 @@ function FeeMissing({ d }: { d: Insights }) {
               value={vals[g.groupId] ?? ""}
               onChange={(e) => setVals({ ...vals, [g.groupId]: e.target.value })}
             />
-            <span className="text-sm text-slate-500">so'm / oy</span>
+            <span className="text-sm text-ink-3">so'm / oy</span>
             <button
               className="btn-primary btn-sm h-9"
               disabled={save.isPending || !Number((vals[g.groupId] ?? "").replace(/\D/g, ""))}
@@ -187,7 +187,7 @@ function Headline({ d }: { d: Insights }) {
   const timePct = Math.round((d.day / d.daysInMonth) * 100);
   return (
     <section className="card p-4 sm:p-5">
-      <p className="text-xs font-bold uppercase tracking-wide text-slate-400">{monthLabel(d.month)}</p>
+      <p className="text-xs font-bold uppercase tracking-wide text-ink-4">{monthLabel(d.month)}</p>
       <p className="mt-1 text-lg font-extrabold leading-snug sm:text-xl">
         {parts.length ? parts.map((p, i) => (
           <Fragment key={i}>
@@ -199,12 +199,12 @@ function Headline({ d }: { d: Insights }) {
       </p>
       {d.total.expectedUzs > 0 && (
         <div className="mt-3">
-          <div className="relative h-3 overflow-hidden rounded-full bg-slate-100">
+          <div className="relative h-3 overflow-hidden rounded-full bg-surface-3">
             <div className="h-full rounded-full" style={{ width: `${Math.min(100, pct)}%`, background: S1 }} />
             {/* Oyning qancha qismi o'tgani: shu chiziqdan orqada bo'lsa — to'lovlar kechikmoqda */}
             {d.day < d.daysInMonth && <div className="absolute inset-y-0 w-0.5 bg-slate-500" style={{ left: `${timePct}%` }} title={`Oyning ${timePct}% i o'tdi`} />}
           </div>
-          <p className="mt-1.5 text-xs text-slate-500">
+          <p className="mt-1.5 text-xs text-ink-3">
             {sum(planned)} / {sum(d.total.expectedUzs)} · {pct}% tushdi
             {d.day < d.daysInMonth ? ` · oyning ${timePct}% i o'tdi (kulrang chiziq)` : ""}
           </p>
@@ -226,7 +226,7 @@ function GroupLine({ g, month }: { g: Insights["offline"]["groups"][number]; mon
     <li>
       <Progress label={`${g.name} · ${g.paid}/${g.students} to'ladi`} got={g.collectedUzs} of={g.expectedUzs} />
       <div className="mt-1 flex flex-wrap items-center gap-3 text-xs">
-        <span className="text-slate-500">{g.feeUzs ? `Oylik: ${sum(g.feeUzs)}` : "Oylik summa kiritilmagan"}</span>
+        <span className="text-ink-3">{g.feeUzs ? `Oylik: ${sum(g.feeUzs)}` : "Oylik summa kiritilmagan"}</span>
         {unpaid > 0 && (
           <button className="tap inline-flex items-center gap-1 font-bold text-brand hover:underline disabled:opacity-50" disabled={remind.isPending} onClick={() => remind.mutate()}>
             <BellRing size={13} /> {unpaid} qarzdorga va ota-onasiga bot orqali eslatish
@@ -268,9 +268,9 @@ function Debtor({ x, month }: { x: DebtorRow; month: string }) {
       <div className="flex flex-wrap items-start gap-x-3 gap-y-2">
         <Link to={`/students/${x.studentId}`} className="min-w-0 flex-1 basis-56">
           <p className="flex items-center gap-1 font-bold">
-            {x.name} <ChevronRight size={14} className="text-slate-300" />
+            {x.name} <ChevronRight size={14} className="text-ink-5" />
           </p>
-          <p className="text-xs text-slate-500">
+          <p className="text-xs text-ink-3">
             {x.kind === "OFFLINE" ? "Offline" : "Online"}
             {x.where ? ` · ${x.where}` : ""} · {x.amountUzs ? sum(x.amountUzs) : "oylik summa kiritilmagan"}
           </p>
@@ -288,7 +288,7 @@ function Debtor({ x, month }: { x: DebtorRow; month: string }) {
 
       <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs">
         {x.parent ? (
-          <span className="text-slate-600">
+          <span className="text-ink-2">
             Ota-ona: <b>{x.parent.name}</b>{" "}
             {x.parent.phone && (
               <a href={`tel:${x.parent.phone}`} className="inline-flex items-center gap-0.5 font-bold text-brand">
@@ -297,27 +297,27 @@ function Debtor({ x, month }: { x: DebtorRow; month: string }) {
             )}
           </span>
         ) : (
-          <span className="text-amber-700">Ota-ona ulanmagan</span>
+          <span className="text-amber-300">Ota-ona ulanmagan</span>
         )}
         {x.phone && (
-          <a href={`tel:${x.phone}`} className="inline-flex items-center gap-0.5 font-bold text-slate-600">
+          <a href={`tel:${x.phone}`} className="inline-flex items-center gap-0.5 font-bold text-ink-2">
             <Phone size={12} /> o'quvchi {x.phone}
           </a>
         )}
       </div>
 
       {x.followUps.length > 0 && (
-        <ul className="mt-2 space-y-1 border-l-2 border-slate-200 pl-3">
+        <ul className="mt-2 space-y-1 border-l-2 border-line pl-3">
           {x.followUps.map((f) => (
-            <li key={f.id} className="flex items-start gap-2 text-xs text-slate-600">
-              {f.kind === "BOT" ? <Bot size={13} className="mt-px shrink-0 text-slate-400" /> : <MessageSquare size={13} className="mt-px shrink-0 text-slate-400" />}
+            <li key={f.id} className="flex items-start gap-2 text-xs text-ink-2">
+              {f.kind === "BOT" ? <Bot size={13} className="mt-px shrink-0 text-ink-4" /> : <MessageSquare size={13} className="mt-px shrink-0 text-ink-4" />}
               <span className="min-w-0 flex-1">
                 <b>{FOLLOW_UP_LABELS[f.kind]}</b>
                 {f.promisedAt ? ` (${fmtDate(f.promisedAt)} gacha)` : ""}
-                {f.note ? `: ${f.note}` : ""} <span className="text-slate-400">· {fmtShortDateTime(f.createdAt)}{f.by ? ` · ${f.by}` : ""}</span>
+                {f.note ? `: ${f.note}` : ""} <span className="text-ink-4">· {fmtShortDateTime(f.createdAt)}{f.by ? ` · ${f.by}` : ""}</span>
               </span>
               {f.kind !== "BOT" && (
-                <button className="text-slate-300 hover:text-red-600" aria-label="O'chirish" onClick={() => del.mutate(f.id)}>
+                <button className="text-ink-5 hover:text-red-400" aria-label="O'chirish" onClick={() => del.mutate(f.id)}>
                   <X size={13} />
                 </button>
               )}
@@ -327,7 +327,7 @@ function Debtor({ x, month }: { x: DebtorRow; month: string }) {
       )}
 
       {form ? (
-        <div className="mt-2 flex flex-wrap items-center gap-2 rounded-lg bg-slate-50 p-2">
+        <div className="mt-2 flex flex-wrap items-center gap-2 rounded-lg bg-surface-2 p-2">
           <b className="text-xs">{FOLLOW_UP_LABELS[form]}:</b>
           {form === "PROMISE" && <input type="date" className="input h-8 w-40 text-sm" value={date} onChange={(e) => setDate(e.target.value)} />}
           <input
@@ -378,25 +378,25 @@ function AiReport({ month }: { month: string }) {
   const [report, setReport] = useState<{ text: string; generatedAt: string } | null>(null);
   const gen = useMutation({ mutationFn: () => api.paymentAi(month), onSuccess: setReport, onError: (e) => toast(errMsg(e), "error") });
   return (
-    <section className="rounded-2xl border border-violet-200 bg-violet-50/50 p-4 sm:p-5">
+    <section className="rounded-2xl border border-violet-400/30 bg-violet-400/10 p-4 sm:p-5">
       <div className="flex flex-wrap items-center gap-3">
         <h2 className="flex flex-1 items-center gap-2 font-extrabold">
-          <Sparkles size={17} className="text-violet-600" /> AI xulosa
+          <Sparkles size={17} className="text-violet-300" /> AI xulosa
         </h2>
         <button className="btn-secondary btn-sm" disabled={gen.isPending} onClick={() => gen.mutate()}>
           {gen.isPending ? <Spinner /> : <Sparkles size={14} />} {report ? "Yangilash" : "Xulosa tayyorlash"}
         </button>
       </div>
       {!report && !gen.isPending && (
-        <p className="mt-2 text-sm text-slate-600">
+        <p className="mt-2 text-sm text-ink-2">
           AI shu oyning raqamlari va qarzdorlar ro'yxatini tahlil qilib, qisqa hisobot beradi: ahvol, prognoz, kim bilan birinchi bog'lanish kerak va nima qilish. O'quvchilarning ismlari AI'ga yuborilmaydi.
         </p>
       )}
-      {gen.isPending && <p className="mt-2 text-sm text-slate-500">Tahlil qilinmoqda… (10–30 soniya)</p>}
+      {gen.isPending && <p className="mt-2 text-sm text-ink-3">Tahlil qilinmoqda… (10–30 soniya)</p>}
       {report && (
         <>
-          <div className="mt-3 space-y-1.5 text-sm leading-relaxed text-slate-800">{renderReport(report.text)}</div>
-          <p className="mt-3 text-[11px] text-slate-400">AI tayyorladi: {fmtShortDateTime(report.generatedAt)} · raqamlarni yuqoridagi jadvallar bilan solishtiring</p>
+          <div className="mt-3 space-y-1.5 text-sm leading-relaxed text-ink">{renderReport(report.text)}</div>
+          <p className="mt-3 text-[11px] text-ink-4">AI tayyorladi: {fmtShortDateTime(report.generatedAt)} · raqamlarni yuqoridagi jadvallar bilan solishtiring</p>
         </>
       )}
     </section>
@@ -422,11 +422,11 @@ function renderReport(text: string) {
 function Kpi({ label, value, hint, strong, warn }: { label: string; value: string; hint: string; strong?: boolean; warn?: boolean }) {
   return (
     <div className="card p-4">
-      <p className="flex items-center gap-1.5 text-xs font-bold text-slate-500">
+      <p className="flex items-center gap-1.5 text-xs font-bold text-ink-3">
         <Wallet size={13} /> {label}
       </p>
-      <p className={`mt-1 text-2xl font-extrabold tracking-tight ${strong ? "text-brand-dark" : warn ? "text-red-700" : ""}`}>{value}</p>
-      <p className="mt-0.5 text-xs text-slate-500">{hint}</p>
+      <p className={`mt-1 text-2xl font-extrabold tracking-tight ${strong ? "text-brand-light" : warn ? "text-red-300" : ""}`}>{value}</p>
+      <p className="mt-0.5 text-xs text-ink-3">{hint}</p>
     </div>
   );
 }
@@ -435,21 +435,21 @@ function Card({ title, hint, children }: { title: string; hint: string; children
   return (
     <section className="card p-4 sm:p-5">
       <h2 className="font-extrabold">{title}</h2>
-      <p className="mb-4 mt-0.5 text-xs text-slate-500">{hint}</p>
+      <p className="mb-4 mt-0.5 text-xs text-ink-3">{hint}</p>
       {children}
     </section>
   );
 }
 
 function Calm({ text }: { text: string }) {
-  return <p className="rounded-lg bg-slate-50 px-3 py-4 text-center text-sm text-slate-500">{text}</p>;
+  return <p className="rounded-lg bg-surface-2 px-3 py-4 text-center text-sm text-ink-3">{text}</p>;
 }
 
 function Mini({ label, value, tone }: { label: string; value: number; tone?: string }) {
   return (
-    <div className="rounded-lg bg-slate-50 px-2 py-2">
+    <div className="rounded-lg bg-surface-2 px-2 py-2">
       <p className={`text-xl font-extrabold ${tone ?? ""}`}>{value}</p>
-      <p className="text-[11px] text-slate-500">{label}</p>
+      <p className="text-[11px] text-ink-3">{label}</p>
     </div>
   );
 }
@@ -460,12 +460,12 @@ function Progress({ label, got, of }: { label: string; got: number; of: number }
     <div>
       <div className="mb-1 flex items-baseline gap-2 text-sm">
         <span className="min-w-0 flex-1 truncate font-semibold first-letter:uppercase">{label}</span>
-        <span className="text-xs text-slate-500">
+        <span className="text-xs text-ink-3">
           {formatSum(got)} / {of ? formatSum(of) : "—"}
         </span>
         <span className="w-11 text-right font-extrabold">{pct === null ? "—" : `${pct}%`}</span>
       </div>
-      <div className="h-2 overflow-hidden rounded-full bg-slate-100">
+      <div className="h-2 overflow-hidden rounded-full bg-surface-3">
         <div className="h-full rounded-full" style={{ width: `${Math.min(100, pct ?? 0)}%`, background: S1 }} />
       </div>
     </div>

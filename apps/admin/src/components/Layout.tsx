@@ -174,11 +174,11 @@ export function Layout() {
                   key={t.to}
                   to={t.to}
                   className={`h-9 shrink-0 rounded-full px-4 text-sm font-bold leading-9 transition ${
-                    active ? "bg-white text-navy" : "bg-navy-light text-blue-100 hover:bg-navy-line"
+                    active ? "bg-brand text-white" : "bg-navy-light text-blue-100 hover:bg-navy-line"
                   }`}
                 >
                   {t.label}
-                  {t.badge ? <span className={`ml-1.5 ${active ? "text-red-600" : "text-red-300"}`}>{t.badge}</span> : null}
+                  {t.badge ? <span className={`ml-1.5 ${active ? "text-red-200" : "text-red-300"}`}>{t.badge}</span> : null}
                 </NavLink>
               );
             })}
@@ -194,7 +194,7 @@ export function Layout() {
 
       {/* Telefon/planshet: pastki navigatsiya */}
       <nav
-        className="fixed inset-x-0 bottom-0 z-30 border-t border-slate-200 bg-white/95 backdrop-blur md:hidden"
+        className="fixed inset-x-0 bottom-0 z-30 border-t border-navy-line bg-navy/95 backdrop-blur md:hidden"
         style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
       >
         <ul className={`grid ${groups.length >= 5 ? "grid-cols-5" : "grid-cols-4"}`}>
@@ -202,8 +202,8 @@ export function Layout() {
             const active = g.match.test(pathname);
             return (
               <li key={g.to}>
-                <NavLink to={g.to} className={`flex h-16 flex-col items-center justify-center gap-1 text-[11px] font-bold ${active ? "text-brand" : "text-slate-500"}`}>
-                  <span className={`relative flex h-8 w-12 items-center justify-center rounded-full ${active ? "bg-brand-soft" : ""}`}>
+                <NavLink to={g.to} className={`flex h-16 flex-col items-center justify-center gap-1 text-[11px] font-bold ${active ? "text-white" : "text-blue-300/70"}`}>
+                  <span className={`relative flex h-8 w-12 items-center justify-center rounded-full ${active ? "bg-brand" : ""}`}>
                     <g.Icon size={21} strokeWidth={active ? 2.4 : 2} />
                     <Badge n={g.badge} />
                   </span>

@@ -17,8 +17,8 @@ export function LessonEditorPage() {
     refetchInterval: (q) => (q.state.data?.video?.status === "PROCESSING" ? 3000 : false),
   });
 
-  if (lesson.isPending) return <Spinner className="text-slate-400" />;
-  if (lesson.isError) return <p className="text-sm text-red-600">{errMsg(lesson.error)}</p>;
+  if (lesson.isPending) return <Spinner className="text-ink-4" />;
+  if (lesson.isError) return <p className="text-sm text-red-400">{errMsg(lesson.error)}</p>;
   return <Editor key={lesson.data.id} lesson={lesson.data} onChanged={() => { qc.invalidateQueries({ queryKey: ["lesson", id] }); qc.invalidateQueries({ queryKey: ["courses"] }); }} />;
 }
 
@@ -63,7 +63,7 @@ function Editor({ lesson, onChanged }: { lesson: AdminLesson; onChanged: () => v
 
   return (
     <>
-      <Link to="/content" className="tap mb-3 inline-flex items-center gap-1 text-sm font-semibold text-slate-500 hover:text-slate-800">
+      <Link to="/content" className="tap mb-3 inline-flex items-center gap-1 text-sm font-semibold text-ink-3 hover:text-ink">
         <ArrowLeft size={16} /> Darslar
       </Link>
       <PageHeader
@@ -86,17 +86,17 @@ function Editor({ lesson, onChanged }: { lesson: AdminLesson; onChanged: () => v
             <h2 className="mb-4 font-extrabold">Videodars</h2>
             <VideoSection lesson={lesson} onChanged={onChanged} />
             <details className="mt-4">
-              <summary className="cursor-pointer text-sm font-semibold text-slate-500">Yoki tashqi havola (YouTube va h.k.)</summary>
+              <summary className="cursor-pointer text-sm font-semibold text-ink-3">Yoki tashqi havola (YouTube va h.k.)</summary>
               <div className="mt-2">
                 <input className="input" placeholder="https://youtu.be/…" value={f.videoUrl} onChange={(e) => set("videoUrl", e.target.value)} />
-                <p className="mt-1 text-xs text-slate-500">Diqqat: tashqi havola himoyalanmaydi. Yuklangan video bo'lsa, havola ishlatilmaydi.</p>
+                <p className="mt-1 text-xs text-ink-3">Diqqat: tashqi havola himoyalanmaydi. Yuklangan video bo'lsa, havola ishlatilmaydi.</p>
               </div>
             </details>
           </section>
 
           <section className="card p-5">
             <h2 className="mb-1 font-extrabold">Konspekt</h2>
-            <p className="mb-3 text-xs text-slate-500">
+            <p className="mb-3 text-xs text-ink-3">
               Formatlash: <code># Sarlavha</code>, <code>- ro'yxat</code>, <code>**qalin**</code>, <code>*kursiv*</code>
             </p>
             <textarea className="textarea min-h-[280px] font-mono text-[13px]" value={f.content} onChange={(e) => set("content", e.target.value)} placeholder="Dars bo'yicha qisqacha konspekt…" />
@@ -114,8 +114,8 @@ function Editor({ lesson, onChanged }: { lesson: AdminLesson; onChanged: () => v
             <Toggle checked={f.isFree} onChange={(v) => set("isFree", v)} label="Bepul dars" hint="Obunasiz o'quvchilar ham ko'radi" />
             <Toggle checked={f.isPublished} onChange={(v) => set("isPublished", v)} label="Nashr qilish" hint="O'quvchilarga ko'rinadi" />
           </section>
-          <section className="card p-5 text-sm text-slate-600">
-            <p className="mb-2 font-bold text-slate-900">Video himoyasi</p>
+          <section className="card p-5 text-sm text-ink-2">
+            <p className="mb-2 font-bold text-ink">Video himoyasi</p>
             <ul className="list-disc space-y-1 pl-5">
               <li>Video shifrlanadi, yuklab olib bo'lmaydi</li>
               <li>Burchakda «Sherzod-Abduxalimov» belgisi turadi</li>
@@ -196,20 +196,20 @@ function VideoSection({ lesson, onChanged }: { lesson: AdminLesson; onChanged: (
     const pct = Math.floor((progress.sent / progress.total) * 100);
     const eta = progress.speedBps > 0 ? Math.round((progress.total - progress.sent) / progress.speedBps) : null;
     return (
-      <div className="rounded-xl border border-slate-200 p-4">
+      <div className="rounded-xl border border-line p-4">
         <div className="mb-2 flex items-center justify-between text-sm">
           <span className="truncate font-semibold">{progress.video.originalName}</span>
           <button className="btn-ghost btn-sm" onClick={() => abort.current?.abort()}><X size={14} /> To'xtatish</button>
         </div>
-        <div className="h-2 overflow-hidden rounded-full bg-slate-100">
+        <div className="h-2 overflow-hidden rounded-full bg-surface-3">
           <div className="h-full rounded-full bg-brand transition-all" style={{ width: `${pct}%` }} />
         </div>
-        <p className="mt-2 text-xs text-slate-500">
+        <p className="mt-2 text-xs text-ink-3">
           {pct}% · {formatBytes(progress.sent)} / {formatBytes(progress.total)}
           {progress.speedBps > 0 && ` · ${formatBytes(progress.speedBps)}/s`}
           {eta !== null && ` · ~${eta > 90 ? `${Math.round(eta / 60)} daq` : `${eta} s`} qoldi`}
         </p>
-        <p className="mt-1 text-xs text-slate-400">Internet uzilsa, yuklash o'zi davom etadi. Sahifani yopmang.</p>
+        <p className="mt-1 text-xs text-ink-4">Internet uzilsa, yuklash o'zi davom etadi. Sahifani yopmang.</p>
       </div>
     );
   }
@@ -217,18 +217,18 @@ function VideoSection({ lesson, onChanged }: { lesson: AdminLesson; onChanged: (
   return (
     <div className="space-y-3">
       {v && (
-        <div className="flex items-center gap-3 rounded-xl border border-slate-200 p-4">
-          {v.status === "READY" ? <CheckCircle2 className="text-emerald-600" /> : v.status === "FAILED" ? <AlertTriangle className="text-red-600" /> : <Spinner className="text-amber-600" />}
+        <div className="flex items-center gap-3 rounded-xl border border-line p-4">
+          {v.status === "READY" ? <CheckCircle2 className="text-emerald-400" /> : v.status === "FAILED" ? <AlertTriangle className="text-red-400" /> : <Spinner className="text-amber-400" />}
           <div className="min-w-0 flex-1">
             <p className="truncate text-sm font-bold">{v.originalName}</p>
-            <p className="text-xs text-slate-500">
+            <p className="text-xs text-ink-3">
               {v.status === "READY" && `Tayyor · ${v.durationSec ? `${Math.floor(v.durationSec / 60)}:${String(v.durationSec % 60).padStart(2, "0")}` : ""} · ${formatBytes(v.sizeBytes)}`}
               {v.status === "PROCESSING" && `Tayyorlanmoqda: ${v.processingPct ?? 0}% (shifrlash va sifatlarga ajratish)`}
               {v.status === "UPLOADING" && `Yuklash tugallanmagan: ${formatBytes(v.receivedBytes)} / ${formatBytes(v.sizeBytes)}. Davom ettirish uchun xuddi shu faylni qayta tanlang.`}
               {v.status === "FAILED" && `Xato: ${v.error ?? "noma'lum"}`}
             </p>
             {v.status === "PROCESSING" && (
-              <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-slate-100">
+              <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-surface-3">
                 <div className="h-full rounded-full bg-amber-500 transition-all" style={{ width: `${v.processingPct ?? 0}%` }} />
               </div>
             )}
@@ -251,12 +251,12 @@ function VideoSection({ lesson, onChanged }: { lesson: AdminLesson; onChanged: (
         }}
         onClick={() => input.current?.click()}
         className={`flex cursor-pointer flex-col items-center gap-2 rounded-xl border-2 border-dashed px-6 py-8 text-center transition ${
-          drag ? "border-brand bg-brand-soft/40" : "border-slate-300 hover:border-brand hover:bg-slate-50"
+          drag ? "border-brand bg-brand-soft/40" : "border-line-strong hover:border-brand hover:bg-surface-2"
         }`}
       >
-        {v ? <Film className="text-slate-400" /> : <UploadCloud className="text-brand" size={32} />}
+        {v ? <Film className="text-ink-4" /> : <UploadCloud className="text-brand" size={32} />}
         <p className="text-sm font-bold">{v ? "Boshqa video yuklash" : "Videoni shu yerga tashlang yoki tanlang"}</p>
-        <p className="text-xs text-slate-500">MP4, MOV, MKV, WEBM · 8 GB gacha</p>
+        <p className="text-xs text-ink-3">MP4, MOV, MKV, WEBM · 8 GB gacha</p>
         <input
           ref={input}
           type="file"
@@ -269,7 +269,7 @@ function VideoSection({ lesson, onChanged }: { lesson: AdminLesson; onChanged: (
           }}
         />
       </div>
-      {error && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm font-semibold text-red-700">{error}</p>}
+      {error && <p className="rounded-lg bg-red-500/10 px-3 py-2 text-sm font-semibold text-red-300">{error}</p>}
     </div>
   );
 }

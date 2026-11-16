@@ -73,12 +73,12 @@ export function StudentsPage() {
       </div>
 
       <div className="relative mb-3 max-w-md">
-        <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+        <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-4" />
         <input className="input pl-9" placeholder="Ism, @username yoki telefon" value={q} onChange={(e) => setQ(e.target.value)} />
       </div>
 
       {!groupId && <AllUsers q={q.trim()} groups={groups.data ?? []} isTeacher={isTeacher} />}
-      {!!groupId && roster.isPending && <Spinner className="text-slate-400" />}
+      {!!groupId && roster.isPending && <Spinner className="text-ink-4" />}
       {!!groupId && roster.data?.length === 0 && (
         <Empty
           title={q ? "Topilmadi" : "Bu yerda hali o'quvchi yo'q"}
@@ -87,8 +87,8 @@ export function StudentsPage() {
       )}
       {!!groupId && !!roster.data?.length && (
         <>
-          <p className="mb-2 text-xs text-slate-500">{roster.data.length} ta o'quvchi</p>
-          <div className="card divide-y divide-slate-100">
+          <p className="mb-2 text-xs text-ink-3">{roster.data.length} ta o'quvchi</p>
+          <div className="card divide-y divide-line">
             {roster.data.map((r) => (
               <Row key={r.studentId} r={r} isTeacher={isTeacher} showGroup={groupId === "none"} />
             ))}
@@ -113,7 +113,7 @@ export function StudentsPage() {
 
 function Chip({ on, onClick, children }: { on: boolean; onClick: () => void; children: React.ReactNode }) {
   return (
-    <button onClick={onClick} className={`h-9 shrink-0 whitespace-nowrap rounded-full px-4 text-sm font-bold ${on ? "bg-brand text-white" : "bg-slate-100 text-slate-600 hover:bg-slate-200"}`}>
+    <button onClick={onClick} className={`h-9 shrink-0 whitespace-nowrap rounded-full px-4 text-sm font-bold ${on ? "bg-brand text-white" : "bg-surface-3 text-ink-2 hover:bg-surface-4"}`}>
       {children}
     </button>
   );
@@ -123,10 +123,10 @@ function Row({ r, isTeacher, showGroup }: { r: RosterRow; isTeacher: boolean; sh
   const navigate = useNavigate();
   const soon = r.subscriptionEndsAt && new Date(r.subscriptionEndsAt).getTime() < Date.now() + 5 * 86_400_000;
   return (
-    <button onClick={() => navigate(`/students/${r.studentId}`)} className="flex w-full flex-wrap items-center gap-x-3 gap-y-1 px-4 py-3 text-left hover:bg-slate-50">
+    <button onClick={() => navigate(`/students/${r.studentId}`)} className="flex w-full flex-wrap items-center gap-x-3 gap-y-1 px-4 py-3 text-left hover:bg-surface-2">
       <div className="min-w-0 basis-full sm:basis-0 sm:flex-1">
         <p className="truncate font-semibold">{r.name}</p>
-        <p className="truncate text-xs text-slate-500">
+        <p className="truncate text-xs text-ink-3">
           {[r.phone, r.username && `@${r.username}`, showGroup && (r.group?.name ?? "online")].filter(Boolean).join(" · ") || "ma'lumot yo'q"}
         </p>
       </div>
@@ -146,7 +146,7 @@ function Row({ r, isTeacher, showGroup }: { r: RosterRow; isTeacher: boolean; sh
           </Badge>
         )}
       </div>
-      <ChevronRight size={18} className="hidden text-slate-400 sm:block" />
+      <ChevronRight size={18} className="hidden text-ink-4 sm:block" />
     </button>
   );
 }
@@ -264,7 +264,7 @@ function BulkModal({ groupId: initial, onClose }: { groupId: string; onClose: ()
           />
         </Field>
         {result && result.skipped.length > 0 && (
-          <div className="rounded-lg bg-amber-50 p-3 text-sm text-amber-900">
+          <div className="rounded-lg bg-amber-400/10 p-3 text-sm text-amber-200">
             <p className="font-bold">
               {result.added} ta qo'shildi, {result.skipped.length} ta qo'shilmadi:
             </p>

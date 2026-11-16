@@ -24,7 +24,7 @@ export function HwEssays() {
         onChange={setTab}
         options={[["pending", `Tekshirilmagan${tab === "pending" && list.data?.length ? ` (${list.data.length})` : ""}`], ["reviewed", "Tekshirilgan"]] as const}
       />
-      {list.isPending && <Spinner className="text-slate-400" />}
+      {list.isPending && <Spinner className="text-ink-4" />}
       {list.data?.length === 0 && (
         <Empty title={tab === "pending" ? "Tekshiriladigan esse yo'q" : "Hali esse tekshirilmagan"} hint={tab === "pending" ? "To'lovi tasdiqlangan esselar shu yerga tushadi." : undefined} />
       )}
@@ -35,12 +35,12 @@ export function HwEssays() {
             <button key={e.id} onClick={() => setOpen(e)} className="card flex w-full items-center gap-3 p-4 text-left transition hover:border-brand">
               <div className="min-w-0 flex-1">
                 <p className="truncate font-bold">{e.student.name}</p>
-                <p className="truncate text-xs text-slate-500">
+                <p className="truncate text-xs text-ink-3">
                   «{e.prompt}» · {e.pages} varoq · {fmtShortDateTime(e.createdAt)}
                 </p>
               </div>
               {t ? <Badge tone="green">{formatScore(t.totalScore)}/{ESSAY_MAX_SCORE}</Badge> : <Badge tone="amber">Kutmoqda</Badge>}
-              <ChevronRight size={18} className="text-slate-400" />
+              <ChevronRight size={18} className="text-ink-4" />
             </button>
           );
         })}
@@ -55,12 +55,12 @@ function PageImage({ id, n, anno, onSave }: { id: string; n: number; anno: PageA
   const [ratio, setRatio] = useState(1.4);
   const [saving, setSaving] = useState(false);
   const img = useQuery({ queryKey: ["essay-page", id, n], queryFn: () => api.essayPage(id, n), staleTime: Infinity, gcTime: 10 * 60_000 });
-  if (img.isPending) return <div className="flex h-64 items-center justify-center rounded-xl bg-slate-100"><Spinner className="text-slate-400" /></div>;
-  if (!img.data) return <div className="flex h-24 items-center justify-center gap-2 rounded-xl bg-slate-100 text-sm text-slate-500"><ImageOff size={16} /> Rasm yuklanmadi</div>;
+  if (img.isPending) return <div className="flex h-64 items-center justify-center rounded-xl bg-surface-3"><Spinner className="text-ink-4" /></div>;
+  if (!img.data) return <div className="flex h-24 items-center justify-center gap-2 rounded-xl bg-surface-3 text-sm text-ink-3"><ImageOff size={16} /> Rasm yuklanmadi</div>;
   const marks = anno.marks.length + anno.strokes.length;
   return (
     <>
-      <div className="relative overflow-hidden rounded-xl bg-slate-100">
+      <div className="relative overflow-hidden rounded-xl bg-surface-3">
         <div className="relative mx-auto w-full max-w-[640px]">
           <img src={img.data} alt={`${n + 1}-varoq`} className="block w-full" onLoad={(e) => setRatio(e.currentTarget.naturalHeight / e.currentTarget.naturalWidth || 1.4)} />
           <AnnotationOverlay a={anno} ratio={ratio} />
@@ -70,7 +70,7 @@ function PageImage({ id, n, anno, onSave }: { id: string; n: number; anno: PageA
         </button>
       </div>
       {edit && (
-        <div className="fixed inset-0 z-[70] flex flex-col bg-white p-3" style={{ paddingTop: "max(12px, env(safe-area-inset-top, 0px))" }}>
+        <div className="fixed inset-0 z-[70] flex flex-col bg-surface p-3" style={{ paddingTop: "max(12px, env(safe-area-inset-top, 0px))" }}>
           <div className="mb-2 flex items-center gap-2">
             <p className="flex-1 font-extrabold">{n + 1}-varoqni belgilash</p>
             <button className="btn-secondary btn-sm" onClick={() => setEdit(null)}>
@@ -105,15 +105,15 @@ const countMarksTotal = (a: EssayAnnotations) => Object.values(countMarks(a)).re
 
 function AiHint({ r }: { r: EssayReviewView }) {
   return (
-    <details className="rounded-lg bg-sky-50 p-3 text-sm">
-      <summary className="cursor-pointer font-bold text-sky-900">
+    <details className="rounded-lg bg-sky-400/10 p-3 text-sm">
+      <summary className="cursor-pointer font-bold text-sky-200">
         AI bahosi (taxminiy): {formatScore(r.totalScore)}/{r.maxScore}
         {r.special ? ` · ${r.special.label}` : ""}
       </summary>
-      <ul className="mt-2 space-y-1 text-sky-900">
+      <ul className="mt-2 space-y-1 text-sky-200">
         {r.criteria.map((c) => (
           <li key={c.key}>
-            <b>{c.label}:</b> {formatScore(c.score)}/{c.max} {c.comment && <span className="text-sky-800/80">— {c.comment}</span>}
+            <b>{c.label}:</b> {formatScore(c.score)}/{c.max} {c.comment && <span className="text-sky-300/80">— {c.comment}</span>}
           </li>
         ))}
       </ul>
@@ -200,7 +200,7 @@ function ReviewModal({ essay, onClose }: { essay: AdminHwEssay; onClose: () => v
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]">
         <div className="space-y-3">
           <p className="text-sm">
-            <span className="text-slate-500">Mavzu:</span> <b>{essay.prompt}</b>
+            <span className="text-ink-3">Mavzu:</span> <b>{essay.prompt}</b>
             {essay.student.phone && (
               <a href={`tel:${essay.student.phone}`} className="ml-3 inline-flex items-center gap-1 text-xs font-semibold text-brand">
                 <Phone size={12} /> {essay.student.phone}
@@ -209,16 +209,16 @@ function ReviewModal({ essay, onClose }: { essay: AdminHwEssay; onClose: () => v
           </p>
           {Array.from({ length: essay.pages }, (_, n) => (
             <div key={n}>
-              <p className="mb-1 text-xs font-bold text-slate-400">{n + 1}-varoq</p>
+              <p className="mb-1 text-xs font-bold text-ink-4">{n + 1}-varoq</p>
               <PageImage id={essay.id} n={n} anno={anno.pages[n]} onSave={(p) => savePage(n, p)} />
             </div>
           ))}
-          {essay.text && <p className="whitespace-pre-wrap rounded-lg bg-slate-50 p-3 text-sm">{essay.text}</p>}
+          {essay.text && <p className="whitespace-pre-wrap rounded-lg bg-surface-2 p-3 text-sm">{essay.text}</p>}
           {ai && <AiHint r={ai} />}
         </div>
         <div className="space-y-3">
-          <div className="rounded-lg border border-slate-200 p-3">
-            <p className="mb-1.5 text-xs font-bold uppercase tracking-wide text-slate-500">Belgilangan xatolar</p>
+          <div className="rounded-lg border border-line p-3">
+            <p className="mb-1.5 text-xs font-bold uppercase tracking-wide text-ink-3">Belgilangan xatolar</p>
             <MarkCounts counts={countMarks(anno)} />
             {ai?.annotations && ai.annotations.pages.some((p) => p.marks.length) && (
               <button
@@ -244,7 +244,7 @@ function ReviewModal({ essay, onClose }: { essay: AdminHwEssay; onClose: () => v
                 🤖 AI belgilarini olish ({countMarksTotal(ai.annotations)} ta)
               </button>
             )}
-            <p className="mt-1.5 text-[11px] text-slate-400">Mezondagi "1–2 o'rinda", "3–4 o'rinda" bandlarini shunga qarab qo'ying. Bir xil xato takrorlansa — bitta.</p>
+            <p className="mt-1.5 text-[11px] text-ink-4">Mezondagi "1–2 o'rinda", "3–4 o'rinda" bandlarini shunga qarab qo'ying. Bir xil xato takrorlansa — bitta.</p>
           </div>
           <RubricForm value={rubric} onChange={setRubric} aiHint={ai ? Object.fromEntries(ai.criteria.map((c) => [c.key, c.score])) : undefined} />
           <textarea
@@ -254,8 +254,8 @@ function ReviewModal({ essay, onClose }: { essay: AdminHwEssay; onClose: () => v
             onChange={(e) => setFeedback(e.target.value)}
           />
           {essay.voice && !voice && (
-            <div className="rounded-lg bg-slate-50 p-3">
-              <p className="mb-1 text-xs font-bold text-slate-500">Yuborilgan ovozli izoh</p>
+            <div className="rounded-lg bg-surface-2 p-3">
+              <p className="mb-1 text-xs font-bold text-ink-3">Yuborilgan ovozli izoh</p>
               <VoicePlayer voice={essay.voice} />
             </div>
           )}

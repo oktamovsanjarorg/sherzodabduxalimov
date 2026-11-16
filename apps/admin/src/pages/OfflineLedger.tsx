@@ -39,7 +39,7 @@ export function OfflineLedgerView() {
     onError: (e) => toast(errMsg(e), "error"),
   });
 
-  if (groups.isPending) return <Spinner className="text-slate-400" />;
+  if (groups.isPending) return <Spinner className="text-ink-4" />;
   if (!active.length) return <Empty title="Faol guruh yo'q" hint="Guruhlarni Davomat bo'limida yaratib, o'quvchilarni qo'shing. Guruhdagi o'quvchiga ilova obunasiz ochiladi." />;
   const l = ledger.data;
   const isCurrent = month === currentMonth();
@@ -54,7 +54,7 @@ export function OfflineLedgerView() {
             </option>
           ))}
         </select>
-        <div className="flex items-center rounded-lg border border-slate-200 bg-white">
+        <div className="flex items-center rounded-lg border border-line bg-surface">
           <button className="btn-ghost h-10 w-10 p-0" onClick={() => setMonth(shiftMonth(month, -1))} aria-label="Oldingi oy">
             <ChevronLeft size={18} />
           </button>
@@ -67,20 +67,20 @@ export function OfflineLedgerView() {
       </div>
 
       {!l ? (
-        <Spinner className="text-slate-400" />
+        <Spinner className="text-ink-4" />
       ) : (
         <>
           <div className="mb-3 grid grid-cols-3 gap-2 sm:max-w-lg">
-            <Stat label="To'lagan" value={`${l.totals.paid} / ${l.totals.students}`} tone="text-emerald-700" />
-            <Stat label="Qarzdor" value={String(l.totals.debtors)} tone={l.totals.debtors ? "text-red-600" : "text-slate-700"} />
-            <Stat label="Yig'ildi" value={`${formatSum(l.totals.sumUzs)}`} tone="text-slate-900" />
+            <Stat label="To'lagan" value={`${l.totals.paid} / ${l.totals.students}`} tone="text-emerald-300" />
+            <Stat label="Qarzdor" value={String(l.totals.debtors)} tone={l.totals.debtors ? "text-red-400" : "text-ink-2"} />
+            <Stat label="Yig'ildi" value={`${formatSum(l.totals.sumUzs)}`} tone="text-ink" />
           </div>
           {l.totals.debtors > 0 && (
             <div className="mb-3 flex flex-wrap items-center gap-3">
               <button className="btn-secondary" disabled={remind.isPending} onClick={() => remind.mutate()}>
                 <Bell size={16} /> Qarzdorlarga eslatma yuborish
               </button>
-              <span className="text-xs text-slate-500">
+              <span className="text-xs text-ink-3">
                 Ota-onasiga (tasdiqlangan bo'lsa) va o'quvchining o'ziga bot orqali.
                 {l.lastReminderAt && ` Oxirgi marta: ${fmtShortDateTime(l.lastReminderAt)}`}
               </span>
@@ -89,19 +89,19 @@ export function OfflineLedgerView() {
           {!l.rows.length ? (
             <Empty title="Guruhda o'quvchi yo'q" hint="Davomat → Guruhlar bo'limidan qo'shing." />
           ) : (
-            <div className="card divide-y divide-slate-100">
+            <div className="card divide-y divide-line">
               {l.rows.map((r) => (
                 <div key={r.studentId} className="flex flex-wrap items-center gap-3 px-4 py-3">
                   <div className="min-w-0 flex-1">
                     <p className="truncate font-semibold">{r.name}</p>
-                    <p className="truncate text-xs text-slate-500">
+                    <p className="truncate text-xs text-ink-3">
                       {r.username ? `@${r.username}` : ""}
                       {r.phone && (
                         <a href={`tel:${r.phone}`} className="ml-2 inline-flex items-center gap-1 font-semibold text-brand">
                           <Phone size={11} /> {r.phone}
                         </a>
                       )}
-                      {!r.approvedParents && <span className="ml-2 text-amber-700">ota-ona tasdiqlanmagan</span>}
+                      {!r.approvedParents && <span className="ml-2 text-amber-300">ota-ona tasdiqlanmagan</span>}
                     </p>
                   </div>
                   {r.paid ? (
@@ -110,7 +110,7 @@ export function OfflineLedgerView() {
                         <Badge tone="green">
                           <Check size={11} /> {formatSum(r.paid.amountUzs)} so'm{r.paid.note ? ` · ${r.paid.note}` : ""}
                         </Badge>
-                        <span className="text-[11px] text-slate-500">
+                        <span className="text-[11px] text-ink-3">
                           {periodLabel(r.paid.periodStart, r.paid.periodEnd)} davri · to'ladi {shortDate(r.paid.paidOn)}
                         </span>
                         {r.paid.lateDays > 0 && <Badge tone="amber">{r.paid.lateDays} kun kechikib to'ladi</Badge>}
@@ -123,7 +123,7 @@ export function OfflineLedgerView() {
                     <>
                       <div className="flex flex-col items-end gap-1 text-right">
                         <Badge tone="red">{r.overdueDays ? `Qarzdor · ${r.overdueDays} kun o'tdi` : "Qarzdor"}</Badge>
-                        <span className="text-[11px] text-slate-500">{r.coveredUntil ? `To'lov muddati ${shortDate(r.coveredUntil)} da tugagan` : "Hali to'lamagan"}</span>
+                        <span className="text-[11px] text-ink-3">{r.coveredUntil ? `To'lov muddati ${shortDate(r.coveredUntil)} da tugagan` : "Hali to'lamagan"}</span>
                       </div>
                       <button className="btn-primary btn-sm" onClick={() => setPaying(r)}>
                         To'ladi
@@ -144,7 +144,7 @@ export function OfflineLedgerView() {
 function Stat({ label, value, tone }: { label: string; value: string; tone: string }) {
   return (
     <div className="card px-3 py-2">
-      <p className="text-[11px] font-bold uppercase tracking-wide text-slate-400">{label}</p>
+      <p className="text-[11px] font-bold uppercase tracking-wide text-ink-4">{label}</p>
       <p className={`text-lg font-extrabold ${tone}`}>{value}</p>
     </div>
   );
@@ -180,7 +180,7 @@ function FeeEditor({ groupId, fee, defaultFee, onSaved }: { groupId: string; fee
         value={v}
         onChange={(e) => setV(e.target.value.replace(/\D/g, ""))}
       />
-      <span className="text-sm text-slate-500">{v ? "so'm/oy (shu guruh uchun)" : defaultFee ? "umumiy narx" : "so'm/oy"}</span>
+      <span className="text-sm text-ink-3">{v ? "so'm/oy (shu guruh uchun)" : defaultFee ? "umumiy narx" : "so'm/oy"}</span>
       {changed && (
         <button className="btn-primary btn-sm" disabled={save.isPending}>
           Saqlash

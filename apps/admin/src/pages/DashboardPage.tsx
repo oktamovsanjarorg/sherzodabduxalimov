@@ -12,8 +12,8 @@ export function DashboardPage() {
   const name = loadSession()?.user.firstName ?? "";
   const isTeacher = loadSession()?.user.role === "TEACHER";
 
-  if (d.isPending) return <Spinner className="text-slate-400" />;
-  if (d.isError) return <p className="text-sm text-red-600">{errMsg(d.error)}</p>;
+  if (d.isPending) return <Spinner className="text-ink-4" />;
+  if (d.isError) return <p className="text-sm text-red-400">{errMsg(d.error)}</p>;
   const x = d.data;
   const unmarked = x.attendanceToday.groups.filter((g) => g.total > 0 && g.marked < g.total);
   const payments = isTeacher ? x.pendingPayments : 0;
@@ -23,7 +23,7 @@ export function DashboardPage() {
   return (
     <div className="space-y-6">
       <div>
-        <p className="text-sm text-slate-500">Assalomu alaykum</p>
+        <p className="text-sm text-ink-3">Assalomu alaykum</p>
         <h1 className="text-2xl font-extrabold tracking-tight">{name}</h1>
       </div>
 
@@ -72,7 +72,7 @@ export function DashboardPage() {
           <Todo to="/content" tone="gray" Icon={Film} title={`${x.videos.processing} ta video tayyorlanmoqda`} hint="Tayyor bo'lgach o'quvchilarga ko'rinadi" />
         )}
         {todo === 0 && (
-          <div className="card flex items-center gap-3 p-4 text-sm font-semibold text-emerald-700">
+          <div className="card flex items-center gap-3 p-4 text-sm font-semibold text-emerald-300">
             <CheckCircle2 size={20} /> Hammasi joyida, kutayotgan ish yo'q
           </div>
         )}
@@ -109,10 +109,10 @@ export function DashboardPage() {
 }
 
 const TONES = {
-  amber: "border-amber-300 bg-amber-50 text-amber-900",
-  brand: "border-brand/30 bg-brand-soft/40 text-brand-dark",
-  red: "border-red-300 bg-red-50 text-red-800",
-  gray: "border-slate-200 bg-white text-slate-700",
+  amber: "border-amber-400/40 bg-amber-400/10 text-amber-200",
+  brand: "border-brand/30 bg-brand-soft/40 text-brand-light",
+  red: "border-red-400/40 bg-red-500/10 text-red-300",
+  gray: "border-line bg-surface text-ink-2",
 };
 
 function Todo({ to, tone, Icon, title, hint }: { to: string; tone: keyof typeof TONES; Icon: typeof Users; title: string; hint: string }) {
@@ -142,10 +142,10 @@ function Quick({ to, Icon, label }: { to: string; Icon: typeof Users; label: str
 function Stat({ Icon, value, label, hint }: { Icon: typeof Users; value: number; label: string; hint?: ReactNode }) {
   return (
     <div className="card p-4">
-      <Icon size={18} className="text-slate-400" />
+      <Icon size={18} className="text-ink-4" />
       <p className="mt-2 text-2xl font-extrabold tabular-nums">{value}</p>
-      <p className="text-sm font-semibold text-slate-600">{label}</p>
-      {hint && <p className="mt-1 text-xs text-slate-500">{hint}</p>}
+      <p className="text-sm font-semibold text-ink-2">{label}</p>
+      {hint && <p className="mt-1 text-xs text-ink-3">{hint}</p>}
     </div>
   );
 }

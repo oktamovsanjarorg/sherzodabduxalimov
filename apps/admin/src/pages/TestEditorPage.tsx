@@ -13,8 +13,8 @@ export function TestEditorPage() {
   const { id = "" } = useParams();
   const isNew = id === "new";
   const test = useQuery({ queryKey: ["test", id], queryFn: () => api.test(id), enabled: !isNew });
-  if (!isNew && test.isPending) return <Spinner className="text-slate-400" />;
-  if (!isNew && test.isError) return <p className="text-sm text-red-600">{errMsg(test.error)}</p>;
+  if (!isNew && test.isPending) return <Spinner className="text-ink-4" />;
+  if (!isNew && test.isError) return <p className="text-sm text-red-400">{errMsg(test.error)}</p>;
   return <Editor key={id} initial={isNew ? null : test.data!} />;
 }
 
@@ -87,7 +87,7 @@ function Editor({ initial }: { initial: AdminTestDetail | null }) {
 
   return (
     <>
-      <Link to="/tests" className="tap mb-3 inline-flex items-center gap-1 text-sm font-semibold text-slate-500 hover:text-slate-800">
+      <Link to="/tests" className="tap mb-3 inline-flex items-center gap-1 text-sm font-semibold text-ink-3 hover:text-ink">
         <ArrowLeft size={16} /> Testlar
       </Link>
       <PageHeader
@@ -101,12 +101,12 @@ function Editor({ initial }: { initial: AdminTestDetail | null }) {
         }
       />
       {items.some((i) => i.question.keyStatus) && (
-        <p className="mb-4 rounded-lg bg-amber-50 px-3 py-2 text-sm font-semibold text-amber-900">
+        <p className="mb-4 rounded-lg bg-amber-400/10 px-3 py-2 text-sm font-semibold text-amber-200">
           {items.filter((i) => i.question.keyStatus).length} ta savolning javob kaliti hali tasdiqlanmagan
           ({items.filter((i) => i.question.keyStatus === "uncertain").length} tasi shubhali). Nashr qilishdan oldin har birini ochib tekshiring.
         </p>
       )}
-      {err && <p className="mb-4 rounded-lg bg-red-50 px-3 py-2 text-sm font-semibold text-red-700">{err}</p>}
+      {err && <p className="mb-4 rounded-lg bg-red-500/10 px-3 py-2 text-sm font-semibold text-red-300">{err}</p>}
 
       <div className="grid grid-cols-1 min-w-0 gap-6 lg:grid-cols-[320px_minmax(0,1fr)]">
         <aside className="card h-fit space-y-4 p-5">
@@ -140,18 +140,18 @@ function Editor({ initial }: { initial: AdminTestDetail | null }) {
         </aside>
 
         <section className="card">
-          <div className="flex flex-wrap items-center gap-2 border-b border-slate-200 px-4 py-4 sm:px-5">
+          <div className="flex flex-wrap items-center gap-2 border-b border-line px-4 py-4 sm:px-5">
             <h2 className="font-extrabold">Savollar</h2>
             <Badge>{items.length} ta{milliy ? " · ball Rasch modeli bilan" : ` · ${total} ball`}</Badge>
             <span className="flex-1" />
             <button className="btn-secondary btn-sm" onClick={() => setCreating(true)}><Plus size={14} /> Yangi savol</button>
             <button className="btn-primary btn-sm" onClick={() => setPicker(true)}><Plus size={14} /> Bankdan tanlash</button>
           </div>
-          {items.length === 0 && <p className="px-5 py-10 text-center text-sm text-slate-500">Testga hali savol qo'shilmagan</p>}
-          <ol className="divide-y divide-slate-100">
+          {items.length === 0 && <p className="px-5 py-10 text-center text-sm text-ink-3">Testga hali savol qo'shilmagan</p>}
+          <ol className="divide-y divide-line">
             {items.map((it, i) => (
               <li key={it.question.id} className="flex flex-wrap items-start gap-x-3 gap-y-2 px-4 py-3 sm:flex-nowrap sm:px-5">
-                <span className="mt-1 w-6 shrink-0 text-sm font-extrabold text-slate-400">{i + 1}.</span>
+                <span className="mt-1 w-6 shrink-0 text-sm font-extrabold text-ink-4">{i + 1}.</span>
                 <div className="min-w-0 flex-1 basis-[calc(100%-3rem)] sm:basis-auto">
                   <p className="line-clamp-2 text-sm font-semibold">{plainText(it.question.text)}</p>
                   <div className="mt-1 flex gap-1.5">
@@ -163,7 +163,7 @@ function Editor({ initial }: { initial: AdminTestDetail | null }) {
                 {/* Telefonda: matn tagida alohida qator */}
                 <div className="ml-9 flex items-center gap-1 sm:ml-0">
                 {/* Milliy sertifikat: ballni Rasch modeli beradi, qo'lda ball qo'yilmaydi */}
-                {!milliy && <label className="flex items-center gap-1 text-xs font-bold text-slate-500">
+                {!milliy && <label className="flex items-center gap-1 text-xs font-bold text-ink-3">
                   Ball
                   <input
                     className="input h-9 w-16 px-2"
@@ -177,7 +177,7 @@ function Editor({ initial }: { initial: AdminTestDetail | null }) {
                 </label>}
                 <button className="btn-ghost h-9 w-9 p-0" disabled={i === 0} onClick={() => moveItem(i, -1)} aria-label="Yuqoriga"><ArrowUp size={14} /></button>
                 <button className="btn-ghost h-9 w-9 p-0" disabled={i === items.length - 1} onClick={() => moveItem(i, 1)} aria-label="Pastga"><ArrowDown size={14} /></button>
-                <button className="btn-ghost h-9 w-9 p-0 text-slate-400 hover:text-red-600" onClick={() => setItems((cur) => cur.filter((_, j) => j !== i))} aria-label="Olib tashlash"><X size={16} /></button>
+                <button className="btn-ghost h-9 w-9 p-0 text-ink-4 hover:text-red-400" onClick={() => setItems((cur) => cur.filter((_, j) => j !== i))} aria-label="Olib tashlash"><X size={16} /></button>
                 </div>
               </li>
             ))}
@@ -206,7 +206,7 @@ function Picker({ defaultTopicId, exclude, onClose, onPick }: { defaultTopicId: 
       onClose={onClose}
       footer={
         <>
-          <span className="mr-auto self-center text-sm font-semibold text-slate-500">{sel.size} ta tanlandi</span>
+          <span className="mr-auto self-center text-sm font-semibold text-ink-3">{sel.size} ta tanlandi</span>
           <button className="btn-secondary" onClick={onClose}>Bekor qilish</button>
           <button className="btn-primary" disabled={sel.size === 0} onClick={() => { onPick([...sel.values()]); onClose(); }}>Qo'shish</button>
         </>
@@ -218,20 +218,20 @@ function Picker({ defaultTopicId, exclude, onClose, onPick }: { defaultTopicId: 
           {topics.map((t) => <option key={t.id} value={t.id}>{t.title}</option>)}
         </select>
         <div className="relative min-w-0 flex-1">
-          <Search size={16} className="absolute left-3 top-3.5 text-slate-400 sm:top-3" />
+          <Search size={16} className="absolute left-3 top-3.5 text-ink-4 sm:top-3" />
           <input className="input pl-9" placeholder="Qidirish" value={search} onChange={(e) => setSearch(e.target.value)} />
         </div>
         {list.length > 0 && (
           <button className="btn-ghost btn-sm" onClick={() => setSel(new Map(list.map((q) => [q.id, q])))}>Hammasini tanlash</button>
         )}
       </div>
-      {qs.isPending && <Spinner className="text-slate-400" />}
-      {qs.data && list.length === 0 && <p className="py-8 text-center text-sm text-slate-500">Qo'shiladigan savol yo'q</p>}
+      {qs.isPending && <Spinner className="text-ink-4" />}
+      {qs.data && list.length === 0 && <p className="py-8 text-center text-sm text-ink-3">Qo'shiladigan savol yo'q</p>}
       <div className="space-y-1">
         {list.map((q) => {
           const on = sel.has(q.id);
           return (
-            <label key={q.id} className={`flex cursor-pointer items-start gap-3 rounded-lg border p-3 ${on ? "border-brand bg-brand-soft/30" : "border-slate-200 hover:bg-slate-50"}`}>
+            <label key={q.id} className={`flex cursor-pointer items-start gap-3 rounded-lg border p-3 ${on ? "border-brand bg-brand-soft/30" : "border-line hover:bg-surface-2"}`}>
               <input
                 type="checkbox"
                 className="mt-1 h-4 w-4 accent-brand"

@@ -38,19 +38,19 @@ function MockEssays() {
   return (
     <>
       <Chips className="mb-4" value={tab} onChange={setTab} options={[["pending", "Tekshirilmagan"], ["reviewed", "Tekshirilgan"]] as const} />
-      {list.isPending && <Spinner className="text-slate-400" />}
+      {list.isPending && <Spinner className="text-ink-4" />}
       {list.data?.length === 0 && <Empty title={tab === "pending" ? "Tekshiriladigan esse yo'q" : "Hali esse tekshirilmagan"} />}
       <div className="space-y-2">
         {list.data?.map((e) => (
           <button key={`${e.attemptId}-${e.questionId}`} onClick={() => setOpen(e)} className="card flex w-full items-center gap-3 p-4 text-left transition hover:border-brand">
             <div className="min-w-0 flex-1">
               <p className="truncate font-bold">{e.student.name}</p>
-              <p className="truncate text-xs text-slate-500">
+              <p className="truncate text-xs text-ink-3">
                 {e.testTitle} · {e.words} ta so'z · {fmtShortDateTime(e.submittedAt)}
               </p>
             </div>
             {e.points !== null ? <Badge tone="green">{formatScore(e.points)}/{formatScore(e.maxPoints)}</Badge> : <Badge tone="amber">{formatScore(e.maxPoints)} ball</Badge>}
-            <ChevronRight size={18} className="text-slate-400" />
+            <ChevronRight size={18} className="text-ink-4" />
           </button>
         ))}
       </div>
@@ -111,22 +111,22 @@ function ReviewModal({ essay, onClose }: { essay: AdminEssay; onClose: () => voi
       }
     >
       <div className="space-y-4">
-        <details className="rounded-xl bg-slate-50 p-3 text-sm">
-          <summary className="cursor-pointer font-bold text-slate-700">Topshiriq ({essay.testTitle})</summary>
-          <p className="mt-2 whitespace-pre-line text-slate-700">{essay.prompt.replace(/\*\*|#\s?/g, "")}</p>
+        <details className="rounded-xl bg-surface-2 p-3 text-sm">
+          <summary className="cursor-pointer font-bold text-ink-2">Topshiriq ({essay.testTitle})</summary>
+          <p className="mt-2 whitespace-pre-line text-ink-2">{essay.prompt.replace(/\*\*|#\s?/g, "")}</p>
         </details>
 
         <div>
           <div className="mb-1 flex items-center justify-between">
             <span className="label mb-0">Esse</span>
-            <span className="text-xs font-semibold text-slate-500">{essay.words} ta so'z</span>
+            <span className="text-xs font-semibold text-ink-3">{essay.words} ta so'z</span>
           </div>
           {essay.milliy ? (
             <div className="max-h-[55vh] overflow-y-auto">
               <TextAnnotator text={essay.text} value={marks} onChange={setMarks} />
             </div>
           ) : (
-            <div className="max-h-[45vh] overflow-y-auto whitespace-pre-line rounded-xl border border-slate-200 bg-white p-4 text-[15px] leading-relaxed">
+            <div className="max-h-[45vh] overflow-y-auto whitespace-pre-line rounded-xl border border-line bg-surface p-4 text-[15px] leading-relaxed">
               {essay.text}
             </div>
           )}
@@ -145,8 +145,8 @@ function ReviewModal({ essay, onClose }: { essay: AdminEssay; onClose: () => voi
               <textarea className="textarea min-h-[110px]" value={comment} onChange={(e) => setComment(e.target.value)} placeholder="Ekspert xulosasi: kuchli tomonlari, xatolari, tavsiyalar…" />
             </Field>
             {essay.voice && !voice && (
-              <div className="rounded-lg bg-slate-50 p-3">
-                <p className="mb-1 text-xs font-bold text-slate-500">Yuborilgan ovozli izoh</p>
+              <div className="rounded-lg bg-surface-2 p-3">
+                <p className="mb-1 text-xs font-bold text-ink-3">Yuborilgan ovozli izoh</p>
                 <VoicePlayer voice={essay.voice} />
               </div>
             )}
@@ -158,7 +158,7 @@ function ReviewModal({ essay, onClose }: { essay: AdminEssay; onClose: () => voi
             <input className="input text-lg font-bold" inputMode="decimal" value={points} onChange={(e) => setPoints(e.target.value.replace(/[^\d.,]/g, ""))} placeholder="0" />
             <div className="mt-2 flex flex-wrap gap-1">
               {[0.25, 0.5, 0.75, 1].map((f) => (
-                <button key={f} type="button" className="btn-sm btn border border-slate-200 text-slate-600" onClick={() => setPoints(formatScore(essay.maxPoints * f))}>
+                <button key={f} type="button" className="btn-sm btn border border-line text-ink-2" onClick={() => setPoints(formatScore(essay.maxPoints * f))}>
                   {formatScore(essay.maxPoints * f)}
                 </button>
               ))}
@@ -169,7 +169,7 @@ function ReviewModal({ essay, onClose }: { essay: AdminEssay; onClose: () => voi
           </Field>
         </div>
         )}
-        {!essay.milliy && points.trim() !== "" && !valid && <p className="text-sm font-semibold text-red-600">Ball 0 dan {formatScore(essay.maxPoints)} gacha bo'lishi kerak</p>}
+        {!essay.milliy && points.trim() !== "" && !valid && <p className="text-sm font-semibold text-red-400">Ball 0 dan {formatScore(essay.maxPoints)} gacha bo'lishi kerak</p>}
       </div>
     </Modal>
   );

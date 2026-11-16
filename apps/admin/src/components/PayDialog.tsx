@@ -16,9 +16,9 @@ export function PayDialog({ studentId, onClose, onDone }: { studentId: string; o
   return (
     <Modal title="To'lovni belgilash" onClose={onClose}>
       {info.isPending ? (
-        <Spinner className="text-slate-400" />
+        <Spinner className="text-ink-4" />
       ) : info.isError ? (
-        <p className="text-sm font-semibold text-red-600">{errMsg(info.error)}</p>
+        <p className="text-sm font-semibold text-red-400">{errMsg(info.error)}</p>
       ) : (
         <Form studentId={studentId} info={info.data} onClose={onClose} onDone={onDone} />
       )}
@@ -48,11 +48,11 @@ function Form({ studentId, info, onClose, onDone }: { studentId: string; info: A
   });
   return (
     <>
-      <p className="mb-1 text-sm text-slate-700">
+      <p className="mb-1 text-sm text-ink-2">
         <b>{info.name}</b>
         {info.feeUzs ? ` · oylik ${formatSum(info.feeUzs)} so'm` : ""}
       </p>
-      <p className="mb-4 text-xs text-slate-500">
+      <p className="mb-4 text-xs text-ink-3">
         {info.coveredUntil ? `Oxirgi to'langan davr ${shortDate(info.coveredUntil)} gacha edi: yangi davr shundan keyingi kundan boshlandi.` : "Hali to'lamagan: davr boshini o'zi boshlagan kundan qo'ying."}
       </p>
       <div className="grid grid-cols-2 gap-3">
@@ -69,8 +69,8 @@ function Form({ studentId, info, onClose, onDone }: { studentId: string; info: A
           <input className="input" inputMode="numeric" autoFocus value={amount} onChange={(e) => setAmount(e.target.value.replace(/\D/g, ""))} />
         </Field>
       </div>
-      {late > 0 && <p className="mt-3 rounded-lg bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-800">Davr boshidan {late} kun keyin to'laydi: «kechikib to'ladi» deb belgilanadi.</p>}
-      {badRange && <p className="mt-3 text-xs font-semibold text-red-600">Davr oxiri boshidan oldin bo'lishi mumkin emas.</p>}
+      {late > 0 && <p className="mt-3 rounded-lg bg-amber-400/10 px-3 py-2 text-xs font-semibold text-amber-300">Davr boshidan {late} kun keyin to'laydi: «kechikib to'ladi» deb belgilanadi.</p>}
+      {badRange && <p className="mt-3 text-xs font-semibold text-red-400">Davr oxiri boshidan oldin bo'lishi mumkin emas.</p>}
       <div className="mt-3">
         <Field label="Izoh">
           <input className="input" value={note} maxLength={300} onChange={(e) => setNote(e.target.value)} />
@@ -78,7 +78,7 @@ function Form({ studentId, info, onClose, onDone }: { studentId: string; info: A
       </div>
       <div className="mt-3 flex flex-wrap gap-2">
         {["Naqd", "Kartaga", "Chegirma"].map((n) => (
-          <button key={n} type="button" className={`rounded-full border px-3 py-1 text-xs font-semibold ${note === n ? "border-brand bg-brand-soft text-brand-dark" : "border-slate-200"}`} onClick={() => setNote(n)}>
+          <button key={n} type="button" className={`rounded-full border px-3 py-1 text-xs font-semibold ${note === n ? "border-brand bg-brand-soft text-brand-light" : "border-line"}`} onClick={() => setNote(n)}>
             {n}
           </button>
         ))}

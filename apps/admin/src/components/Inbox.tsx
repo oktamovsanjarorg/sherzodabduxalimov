@@ -30,21 +30,21 @@ export function Inbox({ groups }: { groups: AdminGroup[] }) {
   if (!n && !p && !d) return null;
   const parts = [d && `ikki marta: ${d}`, n && `yangi kirganlar: ${n}`, p && `ota-ona so'rovlari: ${p}`].filter(Boolean).join(" · ");
   return (
-    <section className="mb-4 rounded-2xl border border-amber-200 bg-amber-50/60">
+    <section className="mb-4 rounded-2xl border border-amber-400/30 bg-amber-400/10">
       {/* O'quvchilar ko'payganda blok ro'yxat va guruh tablarini pastga surib yubormasligi uchun: yig'iladi, ochilganda balandligi cheklangan */}
       <button type="button" onClick={toggle} aria-expanded={open} className="flex w-full flex-wrap items-center gap-x-2 gap-y-1 px-4 py-3 text-left sm:px-5">
-        <InboxIcon size={18} className="text-amber-700" />
+        <InboxIcon size={18} className="text-amber-300" />
         <span className="font-extrabold">Ko'rib chiqish kerak</span>
         <span className="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-red-600 px-1.5 text-[11px] font-extrabold text-white">{n + p + d}</span>
-        <span className="min-w-0 flex-1 truncate text-xs text-slate-600">{parts}</span>
-        <ChevronDown size={18} className={`shrink-0 text-slate-500 transition-transform ${open ? "rotate-180" : ""}`} />
+        <span className="min-w-0 flex-1 truncate text-xs text-ink-2">{parts}</span>
+        <ChevronDown size={18} className={`shrink-0 text-ink-3 transition-transform ${open ? "rotate-180" : ""}`} />
       </button>
       {open && (
-      <div className="max-h-[60vh] overflow-y-auto border-t border-amber-200 px-4 pb-4 sm:px-5">
+      <div className="max-h-[60vh] overflow-y-auto border-t border-amber-400/30 px-4 pb-4 sm:px-5">
       {d > 0 && (
         <>
-          <p className="mb-2 mt-3 text-sm font-bold text-slate-700">Bitta o'quvchi ikki marta ({d})</p>
-          <p className="mb-3 text-xs text-slate-600">
+          <p className="mb-2 mt-3 text-sm font-bold text-ink-2">Bitta o'quvchi ikki marta ({d})</p>
+          <p className="mb-3 text-xs text-ink-2">
             Chapda — botga kirgan hisob, o'ngda — siz qo'lda kiritgan yozuv. Bitta odam bo'lsa, birlashtiring: ism, guruh, davomat va to'lovlar botdagi hisobga o'tadi, ortiqcha yozuv yo'qoladi.
           </p>
           <div className="space-y-2">
@@ -56,8 +56,8 @@ export function Inbox({ groups }: { groups: AdminGroup[] }) {
       )}
       {n > 0 && (
         <>
-          <p className="mb-2 mt-3 text-sm font-bold text-slate-700">Botdan yangi kirganlar ({n})</p>
-          <p className="mb-3 text-xs text-slate-600">O'quvchingiz bo'lsa — guruhiga qo'shing yoki online o'quvchi deb belgilang. Begona bo'lsa — bloklang yoki o'chiring.</p>
+          <p className="mb-2 mt-3 text-sm font-bold text-ink-2">Botdan yangi kirganlar ({n})</p>
+          <p className="mb-3 text-xs text-ink-2">O'quvchingiz bo'lsa — guruhiga qo'shing yoki online o'quvchi deb belgilang. Begona bo'lsa — bloklang yoki o'chiring.</p>
           <div className="space-y-2">
             {news.data!.map((s) => (
               <Newcomer key={s.studentId} s={s} groups={groups.filter((g) => g.isActive)} />
@@ -67,13 +67,13 @@ export function Inbox({ groups }: { groups: AdminGroup[] }) {
       )}
       {p > 0 && (
         <>
-          <p className="mb-2 mt-5 flex items-center justify-between text-sm font-bold text-slate-700">
+          <p className="mb-2 mt-5 flex items-center justify-between text-sm font-bold text-ink-2">
             <span>Ota-ona so'rovlari ({p})</span>
             <Link to="/parents" className="text-xs font-bold text-brand hover:underline">
               Tasdiqlangan va rad etilganlar →
             </Link>
           </p>
-          <p className="mb-3 text-xs text-slate-600">Raqamga qo'ng'iroq qilib, haqiqatan ota-onasi ekanini tekshiring.</p>
+          <p className="mb-3 text-xs text-ink-2">Raqamga qo'ng'iroq qilib, haqiqatan ota-onasi ekanini tekshiring.</p>
           <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
             {parents.data!.map((l) => (
               <LinkCard key={l.id} link={l} />
@@ -140,16 +140,16 @@ function Newcomer({ s, groups }: { s: NewcomerRow; groups: AdminGroup[] }) {
         {s.photoUrl ? (
           <img src={s.photoUrl} alt="" className="h-10 w-10 shrink-0 rounded-full object-cover" />
         ) : (
-          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-slate-200 font-extrabold text-slate-600">{s.name.slice(0, 1)}</span>
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-surface-4 font-extrabold text-ink-2">{s.name.slice(0, 1)}</span>
         )}
         <div className="min-w-0">
           <p className="flex items-center gap-1 truncate font-bold">
-            {s.name} <ChevronRight size={14} className="shrink-0 text-slate-300" />
+            {s.name} <ChevronRight size={14} className="shrink-0 text-ink-5" />
           </p>
-          <p className="truncate text-xs text-slate-500">
+          <p className="truncate text-xs text-ink-3">
             {[s.username && `@${s.username}`, s.phone, `kirdi ${fmtShortDateTime(s.createdAt)}`].filter(Boolean).join(" · ")}
           </p>
-          <p className="mt-0.5 flex flex-wrap items-center gap-2 text-[11px] text-slate-500">
+          <p className="mt-0.5 flex flex-wrap items-center gap-2 text-[11px] text-ink-3">
             {!s.nameConfirmed && <Badge tone="amber">ismini hali yozmagan</Badge>}
             {s.parentStatus === "APPROVED" ? <Badge tone="green">ota-ona ✓</Badge> : s.parentStatus === "PENDING" ? <Badge tone="blue">ota-ona kutilmoqda</Badge> : <Badge>ota-ona yo'q</Badge>}
             <span className="inline-flex items-center gap-0.5"><BookOpen size={11} /> {act.lessons}</span>
@@ -159,8 +159,8 @@ function Newcomer({ s, groups }: { s: NewcomerRow; groups: AdminGroup[] }) {
         </div>
       </Link>
       {s.matches.length > 0 && (
-        <div className="basis-full rounded-xl bg-emerald-50 p-2">
-          <p className="mb-1 text-xs font-bold text-emerald-800">Ro'yxatingizdagi shu o'quvchi bo'lishi mumkin:</p>
+        <div className="basis-full rounded-xl bg-emerald-400/10 p-2">
+          <p className="mb-1 text-xs font-bold text-emerald-300">Ro'yxatingizdagi shu o'quvchi bo'lishi mumkin:</p>
           <div className="flex flex-wrap gap-2">
             {s.matches.map((m) => {
               const who = `${m.name}${m.groupName ? ` · ${m.groupName}` : ""}`;
@@ -195,10 +195,10 @@ function Newcomer({ s, groups }: { s: NewcomerRow; groups: AdminGroup[] }) {
         </button>
         {isTeacher && (
           <>
-            <ConfirmButton label="Bloklansinmi?" className="btn-ghost btn-sm h-9 text-slate-600" onConfirm={() => block.mutate()}>
+            <ConfirmButton label="Bloklansinmi?" className="btn-ghost btn-sm h-9 text-ink-2" onConfirm={() => block.mutate()}>
               <Ban size={14} /> Bloklash
             </ConfirmButton>
-            <ConfirmButton label="Korzinkaga o'tsinmi?" className="btn-ghost btn-sm h-9 text-red-600" onConfirm={() => del.mutate()}>
+            <ConfirmButton label="Korzinkaga o'tsinmi?" className="btn-ghost btn-sm h-9 text-red-400" onConfirm={() => del.mutate()}>
               <Trash2 size={14} /> O'chirish
             </ConfirmButton>
           </>
@@ -227,16 +227,16 @@ function Duplicate({ r }: { r: DuplicateRow }) {
     <div className="card flex flex-wrap items-center gap-3 p-3">
       <Link to={`/students/${s.id}`} className="min-w-0 flex-1 basis-56">
         <p className="truncate font-bold">{s.name}</p>
-        <p className="truncate text-xs text-slate-500">{[s.username && `@${s.username}`, s.phone, s.groupName ?? "guruhsiz"].filter(Boolean).join(" · ")}</p>
+        <p className="truncate text-xs text-ink-3">{[s.username && `@${s.username}`, s.phone, s.groupName ?? "guruhsiz"].filter(Boolean).join(" · ")}</p>
         <p className="mt-0.5 text-[11px]">{s.parentStatus === "APPROVED" ? <Badge tone="green">ota-ona ✓</Badge> : s.parentStatus === "PENDING" ? <Badge tone="blue">ota-ona kutilmoqda</Badge> : <Badge>ota-ona yo'q</Badge>}</p>
       </Link>
-      <ArrowLeftRight size={16} className="shrink-0 text-slate-400" />
+      <ArrowLeftRight size={16} className="shrink-0 text-ink-4" />
       <Link to={`/students/${ph.id}`} className="min-w-0 flex-1 basis-56">
         <p className="truncate font-bold">{ph.name}</p>
-        <p className="truncate text-xs text-slate-500">
+        <p className="truncate text-xs text-ink-3">
           {[ph.groupName ?? "guruhsiz", "botga kirmagan", `davomat: ${ph.attendance}`].join(" · ")}
         </p>
-        {moves && <p className="mt-0.5 text-[11px] font-semibold text-amber-700">Guruhi boshqa: birlashtirilsa {ph.groupName} guruhiga o'tadi</p>}
+        {moves && <p className="mt-0.5 text-[11px] font-semibold text-amber-300">Guruhi boshqa: birlashtirilsa {ph.groupName} guruhiga o'tadi</p>}
       </Link>
       <ConfirmButton label="Bitta odammi? Birlashtirilsinmi?" className="btn-primary btn-sm h-9" onConfirm={() => !link.isPending && link.mutate()}>
         <Link2 size={14} /> Birlashtirish

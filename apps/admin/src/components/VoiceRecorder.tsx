@@ -16,12 +16,12 @@ function pickMime() {
 /** Saqlangan ovozli izohni tinglash (avtorizatsiya bilan blob) */
 export function VoicePlayer({ voice }: { voice: VoiceView }) {
   const q = useQuery({ queryKey: ["voice", voice.id, voice.status], queryFn: () => api.voiceBlob(voice.id), staleTime: Infinity });
-  if (voice.status === "FAILED") return <p className="text-xs text-red-600">Ovozli izohni o'girib bo'lmadi, qayta yozing</p>;
+  if (voice.status === "FAILED") return <p className="text-xs text-red-400">Ovozli izohni o'girib bo'lmadi, qayta yozing</p>;
   return (
     <div className="flex items-center gap-2">
-      {q.data ? <audio controls src={q.data} className="h-9 w-full max-w-xs" /> : <span className="text-xs text-slate-400">Yuklanmoqda…</span>}
-      {voice.status === "PROCESSING" && <span className="text-xs text-slate-500">o'quvchiga yuborilmoqda…</span>}
-      {voice.durationSec && voice.status === "READY" && <span className="text-xs text-slate-500">{fmt(voice.durationSec)} · yuborilgan</span>}
+      {q.data ? <audio controls src={q.data} className="h-9 w-full max-w-xs" /> : <span className="text-xs text-ink-4">Yuklanmoqda…</span>}
+      {voice.status === "PROCESSING" && <span className="text-xs text-ink-3">o'quvchiga yuborilmoqda…</span>}
+      {voice.durationSec && voice.status === "READY" && <span className="text-xs text-ink-3">{fmt(voice.durationSec)} · yuborilgan</span>}
     </div>
   );
 }
@@ -76,7 +76,7 @@ export function VoiceRecorder({ value, onChange }: { value: Blob | null; onChang
   };
 
   return (
-    <div className="rounded-lg border border-slate-200 p-3">
+    <div className="rounded-lg border border-line p-3">
       <p className="mb-2 text-sm font-bold">🎙 Ovozli izoh (ixtiyoriy)</p>
       {rec ? (
         <div className="flex items-center gap-3">
@@ -92,7 +92,7 @@ export function VoiceRecorder({ value, onChange }: { value: Blob | null; onChang
           <button type="button" className="btn-secondary btn-sm" onClick={start}>
             <Mic size={13} /> Qayta yozish
           </button>
-          <button type="button" className="btn-ghost btn-sm text-red-600" onClick={() => onChange(null)} aria-label="O'chirish">
+          <button type="button" className="btn-ghost btn-sm text-red-400" onClick={() => onChange(null)} aria-label="O'chirish">
             <Trash2 size={13} />
           </button>
         </div>
@@ -118,8 +118,8 @@ export function VoiceRecorder({ value, onChange }: { value: Blob | null; onChang
           </label>
         </div>
       )}
-      {err && <p className="mt-2 text-xs text-red-600">{err}</p>}
-      <p className="mt-2 text-xs text-slate-500">Baholash bilan birga o'quvchiga Telegram'da ovozli xabar bo'lib boradi va ilovada ham eshitiladi.</p>
+      {err && <p className="mt-2 text-xs text-red-400">{err}</p>}
+      <p className="mt-2 text-xs text-ink-3">Baholash bilan birga o'quvchiga Telegram'da ovozli xabar bo'lib boradi va ilovada ham eshitiladi.</p>
     </div>
   );
 }

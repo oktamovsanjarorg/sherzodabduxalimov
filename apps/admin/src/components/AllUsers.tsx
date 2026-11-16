@@ -14,12 +14,12 @@ const WAITING = { TEACHER: "ustoz", PARENT: "ota-ona", PAYMENT: "to'lov" } as co
 /** O'quvchilar → Hammasi: botga kirgan har bir kishi, umumiy holati va tezkor amallar. Davomat va boshqalar guruh ichida */
 export function AllUsers({ q, groups, isTeacher }: { q: string; groups: AdminGroup[]; isTeacher: boolean }) {
   const users = useQuery({ queryKey: ["users", q], queryFn: () => api.users(q), placeholderData: (p) => p });
-  if (users.isPending) return <Spinner className="text-slate-400" />;
+  if (users.isPending) return <Spinner className="text-ink-4" />;
   if (!users.data?.length) return <Empty title={q ? "Topilmadi" : "Hali hech kim kirmagan"} hint={q ? undefined : "Botda /start bosgan har bir kishi shu yerda ko'rinadi."} />;
   return (
     <>
-      <p className="mb-2 text-xs text-slate-500">{users.data.length} ta foydalanuvchi</p>
-      <div className="card divide-y divide-slate-100">
+      <p className="mb-2 text-xs text-ink-3">{users.data.length} ta foydalanuvchi</p>
+      <div className="card divide-y divide-line">
         {users.data.map((u) => (
           <Row key={u.userId} u={u} groups={groups} isTeacher={isTeacher} />
         ))}
@@ -64,8 +64,8 @@ function Row({ u, groups, isTeacher }: { u: AdminUserRow; groups: AdminGroup[]; 
         ) : (
           <p className="truncate font-semibold">{u.name}</p>
         )}
-        <p className="truncate text-xs text-slate-500">{contact}</p>
-        {u.children.length > 0 && <p className="truncate text-xs text-slate-500">Farzandi: {u.children.join(", ")}</p>}
+        <p className="truncate text-xs text-ink-3">{contact}</p>
+        {u.children.length > 0 && <p className="truncate text-xs text-ink-3">Farzandi: {u.children.join(", ")}</p>}
       </div>
       <div className="flex flex-wrap items-center gap-1">
         {u.blocked && <Badge tone="red">bloklangan</Badge>}
@@ -137,14 +137,14 @@ function PlanModal({ u, onClose, onDone }: { u: AdminUserRow; onClose: () => voi
   const active = plans.data?.filter((p) => p.isActive) ?? [];
   return (
     <Modal title={`${u.name}: tarifni tanlang`} onClose={onClose}>
-      <p className="mb-3 text-sm text-slate-500">O'quvchi guruhda emas, shuning uchun to'lov obuna sifatida yoziladi. Guruhda o'qisa, avval guruhga qo'shing.</p>
-      {plans.isPending && <Spinner className="text-slate-400" />}
+      <p className="mb-3 text-sm text-ink-3">O'quvchi guruhda emas, shuning uchun to'lov obuna sifatida yoziladi. Guruhda o'qisa, avval guruhga qo'shing.</p>
+      {plans.isPending && <Spinner className="text-ink-4" />}
       {plans.data && !active.length && <Empty title="Faol tarif yo'q" hint="Avval Tariflar bo'limida tarif qo'shing." />}
       <div className="space-y-2">
         {active.map((p) => (
           <button key={p.id} className="btn-secondary w-full justify-between" disabled={grant.isPending} onClick={() => grant.mutate(p.id)}>
             <span>{p.name}</span>
-            <span className="text-xs text-slate-500">{p.priceUzs.toLocaleString("ru-RU")} so'm</span>
+            <span className="text-xs text-ink-3">{p.priceUzs.toLocaleString("ru-RU")} so'm</span>
           </button>
         ))}
       </div>
