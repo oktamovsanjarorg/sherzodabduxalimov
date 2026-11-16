@@ -1,9 +1,10 @@
 import { Body, Controller, Delete, Get, HttpCode, Param, ParseIntPipe, Post, Put, Query, Res } from "@nestjs/common";
-import { createEssayInput, essayAnnotationsSchema, teacherEssayReviewInput } from "@onatili/shared";
+import { ESSAY_STATS_PERIODS, createEssayInput, essayAnnotationsSchema, teacherEssayReviewInput, type EssayStatsPeriod } from "@onatili/shared";
 import type { FastifyReply } from "fastify";
 import { z } from "zod";
 import { parse } from "../admin/zod";
 import { CurrentUser, Roles, type JwtUser } from "../auth/decorators";
+import { EssayStatsService } from "./essay-stats.service";
 import { EssaysService } from "./essays.service";
 
 /** O'quvchi: esse yozish, varoq rasmlari, natija */
@@ -92,5 +93,34 @@ export class AdminEssaySettingsController {
   @Put() set(@CurrentUser() u: JwtUser, @Body() b: unknown) {
     const d = parse(z.object({ priceUzs: z.coerce.number().int().min(0).max(10_000_000).nullable() }), b);
     return this.svc.setTeacherPrice(u.sub, d.priceUzs || null);
+  }
+}
+
+const period = (v?: string): EssayStatsPeriod => {
+  const n = Number(v);
+  return (ESSAY_STATS_PERIODS as readonly number[]).includes(n) ? (n as EssayStatsPeriod) : 30;
+};
+
+/** Ustoz va yordamchi: barcha erkin esselar (AI va ustoz) statistikasi va jurnali */
+@Roles("TEACHER", "ASSISTANT")
+@Controller("admin/essay-log")
+export class AdminEssayLogController {
+  constructor(private readonly stats: EssayStatsService, private readonly svc: EssaysService) {}
+
+  @Get("stats") summary(@Query("days") days?: string) {
+    return this.stats.stats(period(days));
+  }
+
+  @Get() list(@Query("days") days?: string, @Query("mode") mode?: string, @Query("q") q?: string, @Query("student") student?: string) {
+    return this.stats.log({
+      days: period(days),
+      mode: mode === "AI" || mode === "TEACHER" ? mode : null,
+      q: q?.slice(0, 100) || null,
+      studentId: student?.slice(0, 40) || null,
+    });
+  }
+
+  @Get(":id") detail(@Param("id") id: string) {
+    return this.svc.adminDetail(id);
   }
 }

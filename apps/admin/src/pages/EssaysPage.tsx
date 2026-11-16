@@ -9,23 +9,29 @@ import { Badge, Empty, Field, Modal, PageHeader, Spinner, Segmented, Chips } fro
 import { api, errMsg } from "../lib/api";
 import { fmtShortDateTime } from "../lib/format";
 import { useToast } from "../lib/toast";
+import { EssayLog, EssayStats } from "./EssayInsights";
 import { HwEssays } from "./HwEssays";
 
 
+const SUBTITLES = {
+  hw: "O'quvchi varoqqa yozib rasmini yuborgan va ustoz tekshiruvi uchun to'lagan esselar. Baho bot orqali o'quvchiga boradi.",
+  mock: "Mock testlardagi esselar. Ball qo'yilgach, o'quvchiga umumiy natija va daraja bot orqali yuboriladi.",
+  log: "Botda yuborilgan barcha esselar: kim yubordi, AI va ustoz qancha ball qo'ydi. Bosing: har band bo'yicha baho, xatolar va tavsiyalar.",
+  stats: "Esselar soni, o'rtacha ball va o'quvchilar qaysi bandlarda zaif.",
+} as const;
+
 export function EssaysPage() {
-  const [source, setSource] = useState<"hw" | "mock">("hw");
+  const [source, setSource] = useState<"hw" | "mock" | "log" | "stats">("hw");
   return (
     <>
-      <PageHeader
-        title="Esselar"
-        subtitle={
-          source === "hw"
-            ? "O'quvchi varoqqa yozib rasmini yuborgan va ustoz tekshiruvi uchun to'lagan esselar. Baho bot orqali o'quvchiga boradi."
-            : "Mock testlardagi esselar. Ball qo'yilgach, o'quvchiga umumiy natija va daraja bot orqali yuboriladi."
-        }
+      <PageHeader title="Esselar" subtitle={SUBTITLES[source]} />
+      <Segmented
+        className="mb-4"
+        value={source}
+        onChange={setSource}
+        options={[["hw", "Qo'lyozma"], ["mock", "Mock"], ["log", "Barcha esselar"], ["stats", "Statistika"]] as const}
       />
-      <Segmented className="mb-4" value={source} onChange={setSource} options={[["hw", "Qo'lyozma esselar"], ["mock", "Mock esselari"]] as const} />
-      {source === "hw" ? <HwEssays /> : <MockEssays />}
+      {source === "hw" ? <HwEssays /> : source === "mock" ? <MockEssays /> : source === "log" ? <EssayLog /> : <EssayStats />}
     </>
   );
 }
