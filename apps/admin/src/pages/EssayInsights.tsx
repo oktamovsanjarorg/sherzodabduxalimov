@@ -382,7 +382,11 @@ function EssayDetailModal({ id, onClose }: { id: string; onClose: () => void }) 
             {e.text && <p className="whitespace-pre-wrap rounded-lg bg-surface-2 p-3 text-sm leading-relaxed">{e.text}</p>}
           </div>
           <div className="space-y-4">
-            {!ai && !teacher && <p className="rounded-lg bg-surface-2 p-3 text-sm text-ink-3">Hali baholanmagan</p>}
+            {!ai && !teacher && (
+              <p className={`rounded-lg p-3 text-sm ${e.error ? "bg-red-500/10 text-red-300" : "bg-surface-2 text-ink-3"}`}>
+                {e.error ? `AI tekshira olmadi: ${e.error}` : "Hali baholanmagan"}
+              </p>
+            )}
             {teacher && <ReviewBlock r={teacher} />}
             {ai && <ReviewBlock r={ai} />}
           </div>

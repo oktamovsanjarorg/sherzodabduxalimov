@@ -69,6 +69,7 @@ function toAdminEssay(e: Prisma.EssayGetPayload<{ include: typeof adminInclude }
     text: e.text,
     pages: e.imageUrls.length,
     status: e.status,
+    error: e.error,
     createdAt: e.createdAt.toISOString(),
     reviews: e.reviews.map(toReviewView),
     voice: toVoiceView(e.voice),
