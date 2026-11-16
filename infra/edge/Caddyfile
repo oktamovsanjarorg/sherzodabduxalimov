@@ -30,13 +30,13 @@ sherzodabduxalimov.uzbek-talim.uz {
 	redir https://app.sherzodabduxalimov.uz{uri} permanent
 }
 
-# Staging: noutbukdan teskari SSH tunnel (scripts/staging.sh). Noutbuk o'chiq bo'lsa 502 o'rniga yozuv
+# Staging: /home/ubuntu/onatili-staging (scripts/staging.sh), web 172.18.0.1:18098 da. O'chiq bo'lsa 502 o'rniga yozuv
 staging.sherzodabduxalimov.uzbek-talim.uz {
 	encode zstd gzip
 	header -Server
 	reverse_proxy 172.18.0.1:18098
 	handle_errors {
-		respond "Staging o'chiq (noutbukda scripts/staging.sh up)" 503
+		respond "Staging o'chiq (noutbukdan: scripts/staging.sh deploy)" 503
 	}
 }
 
