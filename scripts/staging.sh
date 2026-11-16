@@ -24,7 +24,8 @@ COMPOSE=(docker compose -f docker-compose.staging.yml)
 PROD_BOT="sherzodabduxalimovbot"
 
 [[ -f "$ENV_FILE" ]] || { echo "✗ .env.staging yo'q: cp .env.staging.example .env.staging va to'ldiring"; exit 1; }
-envval() { grep -E "^$1=" "$ENV_FILE" | head -1 | cut -d= -f2- | sed 's/[[:space:]]*#.*$//; s/^"//; s/"$//'; }
+# Kalit yo'q bo'lsa bo'sh qaytaradi (set -e/pipefail skriptni to'xtatmasin)
+envval() { { grep -E "^$1=" "$ENV_FILE" || true; } | head -1 | cut -d= -f2- | sed 's/[[:space:]]*#.*$//; s/^"//; s/"$//'; }
 SSH_HOST="$(envval STAGING_SSH_HOST)"; SSH_HOST="${SSH_HOST:-onatili-yangi}"
 REMOTE_BIND="$(envval STAGING_REMOTE_BIND)"; REMOTE_BIND="${REMOTE_BIND:-172.18.0.1:18098}"
 PUBLIC_URL="$(envval MINIAPP_URL)"

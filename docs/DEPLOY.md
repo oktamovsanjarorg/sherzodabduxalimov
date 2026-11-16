@@ -20,7 +20,8 @@ Production faqat `/home/ubuntu/onatili-prod` dan ishga tushiriladi. Dev papkasid
 
 ## Git'da yo'q server fayllari
 - `docker-compose.override.yml`: worker CPU limiti, tashqi media volume, log limitlari.
-- `~/edge/`: `edge-caddy` (HTTPS, reverse proxy).
+- `~/edge/`: `edge-caddy` (HTTPS, reverse proxy). Nusxasi repo'da: `infra/edge/`. Serverda o'zgartirsangiz, repo'dagini ham yangilang.
+- `~/ustoz-site/`: landing (`sherzodabduxalimov.uz`). Fayllari repo'da: `sites/landing/`.
 - `~/.onatili/auto-deploy.sh`: `scripts/auto-deploy.sh` nusxasi. Skript o'zgarsa, qo'lda yangilang.
 - `~/onatili-backups/backup.sh`: amaldagi zaxira skripti (`scripts/backup.sh` dan farq qiladi).
 
