@@ -4,6 +4,7 @@ import { NAME_MATCH_THRESHOLD, nameMatchScore, type AdminParentLink, type ChildV
 import { ENV, type Env } from "../config/env";
 import { esc } from "../notify/telegram";
 import { NotifyService, type Keyboard } from "../notify/notify.service";
+import { ExternalService } from "../external/external.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { StudentsService } from "../students/students.service";
 import { StaffService, type TelegramProfile } from "../staff/staff.service";
@@ -48,6 +49,7 @@ export class ParentsService {
     private readonly staff: StaffService,
     private readonly notify: NotifyService,
     private readonly students: StudentsService,
+    private readonly external: ExternalService,
   ) {}
 
   // ---------------- Bot (ichki) ----------------
@@ -203,13 +205,14 @@ export class ParentsService {
         },
       },
     });
-    return links.map((l) => ({
+    return Promise.all(links.map(async (l) => ({
       name: fullName(l.student.user),
       status: l.status,
       groupName: l.student.group?.name ?? null,
       // Tasdiqlanmagan ota-onaga davomat ko'rsatilmaydi
       recent: l.status === "APPROVED" ? l.student.attendance.map((a) => ({ date: a.date.toISOString().slice(0, 10), status: a.status, grade: a.grade, note: a.note })) : [],
-    }));
+      tests: l.status === "APPROVED" ? await this.external.forStudent(l.studentId, 5) : [],
+    })));
   }
 
   // ---------------- Admin ----------------

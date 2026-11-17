@@ -22,6 +22,7 @@ import {
 import { randomBytes } from "node:crypto";
 import { AccessService, isFullAccess } from "../access/access.service";
 import { ENV, type Env } from "../config/env";
+import { ExternalService } from "../external/external.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { TrashService } from "../trash/trash.service";
 import { defaultMonthlyFee, effectiveFee } from "../billing/fee";
@@ -79,6 +80,7 @@ export class StudentsService {
     private readonly staff: StaffService,
     @Inject(ENV) private readonly env: Env,
     private readonly trash: TrashService,
+    private readonly external: ExternalService,
   ) {}
 
   private inviteUrl(c: string | null) {
@@ -583,6 +585,7 @@ export class StudentsService {
       ...row,
       createdAt: sp.createdAt.toISOString(),
       blockedReason: sp.user.blockedReason,
+      externalResults: await this.external.forStudent(studentId, 20),
       activity: {
         botJoinedAt: sp.user.botJoinedAt?.toISOString() ?? null,
         lastBotAt: sp.user.lastBotAt?.toISOString() ?? null,

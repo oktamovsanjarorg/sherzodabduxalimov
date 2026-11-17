@@ -37,13 +37,14 @@ export function useNavGroups(): NavGroup[] {
       to: "/content",
       label: "Kontent",
       Icon: BookOpen,
-      match: /^\/(content|lessons|questions|tests|essays)/,
+      match: /^\/(content|lessons|questions|tests|essays|external)/,
       badge: dash.data?.pendingEssays,
       sub: [
         { to: "/content", label: "Darslar", match: /^\/(content|lessons)/ },
         { to: "/questions", label: "Savollar", match: /^\/questions/ },
         { to: "/tests", label: "Testlar", match: /^\/tests/ },
         { to: "/essays", label: "Esselar", match: /^\/essays/, badge: dash.data?.pendingEssays },
+        { to: "/external", label: "utest", match: /^\/external/ },
       ],
     },
     {

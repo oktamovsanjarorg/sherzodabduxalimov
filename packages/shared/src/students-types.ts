@@ -52,6 +52,8 @@ export interface StudentDetail extends RosterRow {
     subscription: { planName: string; endsAt: string } | null;
     payments: { id: string; title: string; amountUzs: number; status: PaymentStatusName; createdAt: string }[];
   } | null;
+  /** utest natijalari (import qilingan) */
+  externalResults: import("./external-types").MyExternalResult[];
   /** Qachon botga ulangan, botga va ilovaga oxirgi kirgan, qaysi darslarni qachon ochgan */
   activity: {
     botJoinedAt: string | null;

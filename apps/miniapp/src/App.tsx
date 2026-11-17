@@ -46,6 +46,7 @@ const MyAttendancePage = page(() => import("./pages/MyAttendancePage"), "MyAtten
 const StudentNamePage = lazy(() => import("./pages/StudentNamePage").then((m) => ({ default: m.StudentNamePage })));
 const SettingsPage = page(() => import("./pages/SettingsPage"), "SettingsPage");
 const StatsPage = page(() => import("./pages/StatsPage"), "StatsPage");
+const ExternalResultPage = page(() => import("./pages/ExternalResultPage"), "ExternalResultPage");
 const SubscribePage = page(() => import("./pages/SubscribePage"), "SubscribePage");
 const TopicTestsPage = page(() => import("./pages/TopicTestsPage"), "TopicTestsPage");
 
@@ -116,6 +117,7 @@ export function App() {
         <Route path="subscribe" element={<SubscribePage />} />
         <Route path="parents" element={<ParentsPage />} />
         <Route path="stats" element={<StatsPage />} />
+        <Route path="external/:id" element={<ExternalResultPage />} />
         <Route path="my-attendance" element={<MyAttendancePage />} />
         <Route path="settings" element={<SettingsPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />

@@ -113,4 +113,6 @@ export interface ChildView {
   status: "PENDING" | "APPROVED" | "REJECTED";
   groupName: string | null;
   recent: { date: string; status: AttendanceStatusName; grade: number | null; note: string | null }[];
+  /** utest natijalari (faqat natijasi ochiq testlar, tasdiqlangan ota-onaga) */
+  tests: import("./external-types").MyExternalResult[];
 }

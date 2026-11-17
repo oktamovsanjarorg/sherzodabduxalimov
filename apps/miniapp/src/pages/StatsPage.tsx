@@ -12,6 +12,7 @@ export function StatsPage() {
   useBackButton(() => navigate("/profile"));
   const stats = useQuery({ queryKey: ["stats"], queryFn: api.stats });
   const attempts = useQuery({ queryKey: ["my-attempts"], queryFn: api.myAttempts });
+  const externals = useQuery({ queryKey: ["my-externals"], queryFn: api.myExternals });
   const s = stats.data;
   const mocks = attempts.data?.filter((a) => a.testType === "MOCK") ?? [];
   const best = mocks.length ? Math.max(...mocks.map((m) => m.score)) : null;
@@ -25,6 +26,28 @@ export function StatsPage() {
         <Tile Icon={Target} value={s?.averagePercent != null ? `${s.averagePercent}%` : "—"} label="O'rtacha natija" />
         <Tile Icon={ClipboardCheck} value={best !== null ? fmtPoints(best) : "—"} label="Eng yaxshi mock (ball)" />
       </div>
+
+      {externals.data && externals.data.length > 0 && (
+        <>
+          <h2 className="mb-2 mt-6 px-1 text-[15px] font-bold">utest natijalari</h2>
+          <ul className="space-y-2">
+            {externals.data.map((x) => (
+              <li key={x.id}>
+                <button onClick={() => navigate(`/external/${x.id}`)} className="card tap flex w-full items-center gap-3 text-left">
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-sm font-bold">{x.title}</span>
+                    <span className="block text-xs text-hint">
+                      {x.takenAt ? formatDate(x.takenAt) : ""} · {x.correct}/{x.questionCount} to'g'ri · {x.rank}-o'rin / {x.participants}
+                    </span>
+                  </span>
+                  <ScoreBadge percent={Math.round(x.percent)} />
+                  <ChevronRight size={18} className="text-hint" />
+                </button>
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
 
       <h2 className="mb-2 mt-6 px-1 text-[15px] font-bold">Natijalar tarixi</h2>
       {attempts.isPending && <div className="skeleton h-40" />}

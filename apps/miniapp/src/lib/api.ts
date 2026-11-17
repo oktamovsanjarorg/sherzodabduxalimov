@@ -1,4 +1,6 @@
 import type {
+  MyExternalResult,
+  MyExternalResultDetail,
   CreateEssayInput,
   EssayConfig,
   MyEssayDetail,
@@ -113,6 +115,8 @@ export const api = {
   myChildren: () => request<ChildView[]>("/me/children"),
   stats: () => request<StudentStats>("/me/stats"),
   myAttempts: () => request<MyAttempt[]>("/me/attempts"),
+  myExternals: () => request<MyExternalResult[]>("/me/external"),
+  myExternal: (id: string) => request<MyExternalResultDetail>(`/me/external/${id}`),
   myAttendance: () => request<MyAttendance>("/me/attendance"),
 
   courses: () => request<CourseView[]>("/courses"),

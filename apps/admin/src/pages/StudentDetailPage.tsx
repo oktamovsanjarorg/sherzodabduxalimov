@@ -42,6 +42,9 @@ export function StudentDetailPage() {
         <Section title="O'qish natijalari">
           <Stats s={s} />
         </Section>
+        <Section title="utest natijalari">
+          <ExternalResults s={s} />
+        </Section>
         <Section title="Faollik: bot va darslar">
           <Activity s={s} />
         </Section>
@@ -539,6 +542,35 @@ function Billing({ s }: { s: StudentDetail }) {
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+function ExternalResults({ s }: { s: StudentDetail }) {
+  const r = s.externalResults;
+  if (!r.length) return <p className="text-sm text-ink-4">utest'dan import qilingan natija yo'q</p>;
+  // Eskidan yangiga: o'sish chizig'i
+  const trend = [...r].reverse();
+  return (
+    <div className="space-y-3">
+      <div className="flex h-16 items-end gap-1" title="Foiz, eskidan yangiga">
+        {trend.map((x) => (
+          <div key={x.id} className={`flex-1 rounded-t ${x.percent >= 60 ? "bg-brand" : "bg-amber-400"}`} style={{ height: `${Math.max(4, x.percent)}%` }} title={`${x.title}: ${x.percent}%`} />
+        ))}
+      </div>
+      <ul className="divide-y divide-line">
+        {r.map((x) => (
+          <li key={x.id} className="flex items-center gap-3 py-2 text-sm">
+            <div className="min-w-0 flex-1">
+              <p className="truncate font-semibold">{x.title}</p>
+              <p className="text-xs text-ink-3">
+                {x.takenAt ? date(x.takenAt) : ""} · {x.correct}/{x.questionCount} to'g'ri · {x.rank}-o'rin / {x.participants}
+              </p>
+            </div>
+            <Badge tone={x.percent >= 80 ? "green" : x.percent >= 60 ? "blue" : x.percent >= 40 ? "amber" : "red"}>{formatScore(x.percent)}%</Badge>
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }

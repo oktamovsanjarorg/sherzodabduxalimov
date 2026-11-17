@@ -42,7 +42,7 @@ export function ParentHomePage() {
                 <p className="mt-2 flex items-center gap-2 text-sm text-hint">
                   <Clock size={16} /> Ustoz tasdiqlashi kutilmoqda
                 </p>
-              ) : c.recent.length === 0 ? (
+              ) : c.recent.length === 0 && c.tests.length === 0 ? (
                 <p className="mt-2 text-sm text-hint">Hali davomat olinmagan</p>
               ) : (
                 <ul className="mt-3 divide-y divide-hint/10">
@@ -56,6 +56,26 @@ export function ParentHomePage() {
                     </li>
                   ))}
                 </ul>
+              )}
+              {c.tests.length > 0 && (
+                <>
+                  <p className="mt-3 text-xs font-bold uppercase tracking-wide text-hint">Test natijalari</p>
+                  <ul className="divide-y divide-hint/10">
+                    {c.tests.map((t) => (
+                      <li key={t.id} className="flex items-center justify-between gap-3 py-2 text-sm">
+                        <span className="min-w-0">
+                          <span className="block truncate font-semibold">{t.title}</span>
+                          <span className="block text-xs text-hint">
+                            {t.correct}/{t.questionCount} to'g'ri · {t.rank}-o'rin / {t.participants}
+                          </span>
+                        </span>
+                        <span className={`rounded-full px-2.5 py-1 text-xs font-extrabold ${t.percent >= 80 ? "bg-success/15 text-success" : t.percent >= 50 ? "bg-brand-soft text-brand" : "bg-danger/15 text-danger"}`}>
+                          {Math.round(t.percent)}%
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </>
               )}
             </div>
           ))}

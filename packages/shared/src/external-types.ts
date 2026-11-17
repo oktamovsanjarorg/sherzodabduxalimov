@@ -1,0 +1,202 @@
+// ===================== Tashqi testlar (utest) =====================
+
+export type ExternalSourceName = "UTEST" | "CSV";
+
+export interface ExternalSection {
+  title: string | null;
+  fromQ: number;
+  toQ: number;
+}
+export interface ExternalSectionScore extends ExternalSection {
+  correct: number;
+  wrong: number;
+  blank: number;
+  raw: number;
+  max: number;
+  percent: number;
+}
+
+/** Import qilinadigan bitta natija (utest API yoki CSV dan) */
+export interface ExternalRowInput {
+  key: string;
+  telegramId: string | null;
+  name: string;
+  username: string | null;
+  correct: number;
+  wrong: number;
+  blank: number;
+  score: number;
+  maxScore: number;
+  percent: number;
+  scaledScore: number | null;
+  grade: string | null;
+  sections: ExternalSectionScore[];
+  /** Har savol bitta harf: c to'g'ri, w xato, b bo'sh, v bekor, p qisman, - yo'q */
+  answers: string;
+  submittedAt: string | null;
+  durationSec: number | null;
+}
+
+export interface ExternalTestInput {
+  source: ExternalSourceName;
+  code: string;
+  title: string;
+  subject: string | null;
+  questionCount: number;
+  sections: ExternalSection[];
+  resultsVisible: boolean;
+  rows: ExternalRowInput[];
+}
+
+/** Import oldidan ko'rinish: kim topildi, kim yo'q */
+export interface ExternalPreview {
+  test: Omit<ExternalTestInput, "rows"> & { participants: number; alreadyImported: boolean };
+  rows: { key: string; name: string; username: string | null; percent: number; match: { studentId: string; name: string; how: "telegram" | "username" | "name" } | null }[];
+}
+
+export interface ExternalTestSummary {
+  id: string;
+  source: ExternalSourceName;
+  code: string;
+  title: string;
+  subject: string | null;
+  questionCount: number;
+  participants: number;
+  matched: number;
+  avgPercent: number | null;
+  resultsVisible: boolean;
+  takenAt: string | null;
+  importedAt: string;
+  notifiedAt: string | null;
+}
+
+export interface ExternalTestDetail extends ExternalTestSummary {
+  sections: ExternalSection[];
+  stats: {
+    median: number | null;
+    /** 0–9, 10–19, ... 90–100 foiz */
+    buckets: { label: string; count: number }[];
+    /** Har savol: to'g'ri javob ulushi (0..100), eng qiyini birinchi emas — tartib 1..N */
+    questions: { q: number; correctPct: number; blankPct: number }[];
+    sections: { title: string | null; fromQ: number; toQ: number; avgPercent: number }[];
+  };
+  rows: {
+    id: string;
+    rank: number;
+    name: string;
+    username: string | null;
+    student: { id: string; name: string } | null;
+    manualMatch: boolean;
+    correct: number;
+    wrong: number;
+    blank: number;
+    score: number;
+    maxScore: number;
+    percent: number;
+    scaledScore: number | null;
+    grade: string | null;
+    answers: string;
+    submittedAt: string | null;
+    notifiedAt: string | null;
+  }[];
+}
+
+/** Bir nechta tashqi test bo'yicha reyting */
+export interface ExternalRankingRow {
+  studentId: string;
+  name: string;
+  groupName: string | null;
+  tests: number;
+  avgPercent: number;
+  best: number;
+  last: number;
+}
+
+/** O'quvchi va ota-ona ilovasida: faqat natijasi ochiq testlar */
+export interface MyExternalResult {
+  id: string;
+  title: string;
+  subject: string | null;
+  takenAt: string | null;
+  correct: number;
+  questionCount: number;
+  score: number;
+  maxScore: number;
+  percent: number;
+  scaledScore: number | null;
+  grade: string | null;
+  rank: number;
+  participants: number;
+}
+export interface MyExternalResultDetail extends MyExternalResult {
+  wrong: number;
+  blank: number;
+  sections: ExternalSectionScore[];
+  answers: string;
+  avgPercent: number;
+}
+
+/**
+ * utest matrix.csv: "Ism;Username;Q1..Qn;Jami" (ajratgich ";", BOM bo'lishi mumkin).
+ * Kataklar: 1 to'g'ri, 0 xato yoki bo'sh (utest ularni ajratmaydi), bo'sh katak: savol yo'q.
+ */
+export function parseUtestMatrix(text: string): { questionCount: number; rows: ExternalRowInput[] } {
+  const lines = text.replace(/^﻿/, "").split(/\r?\n/).filter((l) => l.trim());
+  if (lines.length < 2) throw new Error("Faylda natija yo'q");
+  const sep = lines[0].includes(";") ? ";" : lines[0].includes("\t") ? "\t" : ",";
+  const head = splitCsv(lines[0], sep);
+  const qCols = head.map((h, i) => [h.trim(), i] as const).filter(([h]) => /^Q\d+$/i.test(h));
+  if (!qCols.length) throw new Error("Bu utest matritsa fayli emas: Q1, Q2 ... ustunlari topilmadi");
+  const nameCol = head.findIndex((h) => /ism|name/i.test(h));
+  const userCol = head.findIndex((h) => /username/i.test(h));
+  const seen = new Map<string, number>();
+  const rows = lines.slice(1).map((line) => {
+    const c = splitCsv(line, sep);
+    const name = (c[nameCol >= 0 ? nameCol : 0] ?? "").replace(/^'/, "").trim() || "Noma'lum";
+    const username = (userCol >= 0 ? c[userCol] : "")?.replace(/^'?@?/, "").trim() || null;
+    const answers = qCols.map(([, i]) => (c[i]?.trim() === "1" ? "c" : c[i]?.trim() === "0" ? "w" : "-")).join("");
+    const correct = [...answers].filter((x) => x === "c").length;
+    const wrong = [...answers].filter((x) => x === "w").length;
+    // Bir xil ismli ikki o'quvchi bo'lsa kalit takrorlanmasin
+    const base = `name:${(username ?? name).toLowerCase()}`;
+    const n = (seen.get(base) ?? 0) + 1;
+    seen.set(base, n);
+    return {
+      key: n > 1 ? `${base}#${n}` : base,
+      telegramId: null,
+      name,
+      username,
+      correct,
+      wrong,
+      blank: qCols.length - correct - wrong,
+      score: correct,
+      maxScore: qCols.length,
+      percent: Math.round((correct / qCols.length) * 1000) / 10,
+      scaledScore: null,
+      grade: null,
+      sections: [],
+      answers,
+      submittedAt: null,
+      durationSec: null,
+    };
+  });
+  return { questionCount: qCols.length, rows };
+}
+
+function splitCsv(line: string, sep: string): string[] {
+  const out: string[] = [];
+  let cur = "";
+  let q = false;
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i];
+    if (q) {
+      if (ch === '"' && line[i + 1] === '"') (cur += '"'), i++;
+      else if (ch === '"') q = false;
+      else cur += ch;
+    } else if (ch === '"') q = true;
+    else if (ch === sep) out.push(cur), (cur = "");
+    else cur += ch;
+  }
+  out.push(cur);
+  return out;
+}

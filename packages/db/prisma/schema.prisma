@@ -22,19 +22,19 @@ enum StudyMode {
 }
 
 model User {
-  id            String   @id @default(cuid())
+  id            String    @id @default(cuid())
   /// Ustoz qo'lda kiritgan o'quvchida null: botga kirganda (telefon yoki shaxsiy havola orqali) bog'lanadi
-  telegramId    BigInt?  @unique
+  telegramId    BigInt?   @unique
   username      String?
   firstName     String
   lastName      String?
   phone         String?
   photoUrl      String?
   languageCode  String?
-  role          Role     @default(STUDENT)
+  role          Role      @default(STUDENT)
   /// Ism-familiyani ustoz yozgan: Telegram'dan kirganda ustiga yozilmaydi
-  nameLocked    Boolean  @default(false)
-  isBlocked     Boolean  @default(false)
+  nameLocked    Boolean   @default(false)
+  isBlocked     Boolean   @default(false)
   /// Bloklash sababi (foydalanuvchiga ko'rsatiladi)
   blockedReason String?
   /// Telegram hisobi birinchi marta ulangan payt (botga kirgan yoki shaxsiy havolani bosgan)
@@ -43,8 +43,8 @@ model User {
   lastBotAt     DateTime?
   /// Ilovani (Mini App) oxirgi marta ochgan payt
   lastAppAt     DateTime?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
 
   student               StudentProfile?
   parentLinks           ParentLink[]      @relation("ParentOf")
@@ -56,6 +56,7 @@ model User {
   payments              Payment[]
   paymentsReviewed      Payment[]         @relation("PaymentReviewer")
   attendanceMarked      Attendance[]      @relation("AttendanceMarker")
+  externalTestsImported ExternalTest[]    @relation("ExternalTestImporter")
   offlinePaymentsMarked OfflinePayment[]  @relation("OfflinePaymentMarker")
   voiceNotes            VoiceNote[]       @relation("VoiceAuthor")
   lessonProgress        LessonProgress[]
@@ -106,6 +107,7 @@ model StudentProfile {
   parents         ParentLink[]
   attendance      Attendance[]
   offlinePayments OfflinePayment[]
+  externalResults ExternalResult[]
   createdAt       DateTime          @default(now())
 }
 
@@ -561,22 +563,22 @@ enum FollowUpKind {
 }
 
 model OfflinePayment {
-  id         String         @id @default(cuid())
-  studentId  String
-  student    StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  groupId    String?
-  group      Group?         @relation(fields: [groupId], references: [id], onDelete: SetNull)
-  month      String // "2026-11"
-  amountUzs  Int
-  note       String?
-  markedById String?
-  markedBy   User?          @relation("OfflinePaymentMarker", fields: [markedById], references: [id], onDelete: SetNull)
+  id          String         @id @default(cuid())
+  studentId   String
+  student     StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  groupId     String?
+  group       Group?         @relation(fields: [groupId], references: [id], onDelete: SetNull)
+  month       String // "2026-11"
+  amountUzs   Int
+  note        String?
+  markedById  String?
+  markedBy    User?          @relation("OfflinePaymentMarker", fields: [markedById], references: [id], onDelete: SetNull)
   /// To'lov davri: o'quvchining o'z sanasidan (05.11 – 04.12). null: eski yozuv, butun `month` oyi
-  periodStart DateTime?     @db.Date
-  periodEnd   DateTime?     @db.Date
+  periodStart DateTime?      @db.Date
+  periodEnd   DateTime?      @db.Date
   /// To'lov qabul qilingan kun (kechikkanini bilish uchun). null: eski yozuv, createdAt kuni
-  paidOn      DateTime?     @db.Date
-  createdAt  DateTime       @default(now())
+  paidOn      DateTime?      @db.Date
+  createdAt   DateTime       @default(now())
 
   @@unique([studentId, month])
   @@index([groupId, month])
@@ -703,4 +705,74 @@ model TrashItem {
   purgeAt     DateTime
 
   @@index([purgeAt])
+}
+
+// ===================== Tashqi testlar (utest) =====================
+
+enum ExternalSource {
+  UTEST // test kodi bilan API orqali
+  CSV // utest matrix.csv fayli
+}
+
+/// Boshqa platformada (utest) o'tkazilgan test: natijalari shu yerga import qilinadi
+model ExternalTest {
+  id             String           @id @default(cuid())
+  source         ExternalSource
+  /// utest test kodi; CSV da fayl nomidan olingan kod
+  code           String
+  title          String
+  subject        String?
+  questionCount  Int
+  /// Bo'limlar: [{title, fromQ, toQ}]
+  sections       Json             @default("[]")
+  /// utest'da natija o'quvchiga ochiqmi. Yopiq bo'lsa ilovada ko'rinmaydi va xabar ketmaydi
+  resultsVisible Boolean          @default(true)
+  /// Test o'tkazilgan payt (birinchi topshirish)
+  takenAt        DateTime?
+  importedById   String?
+  importedBy     User?            @relation("ExternalTestImporter", fields: [importedById], references: [id], onDelete: SetNull)
+  /// O'quvchi va ota-onalarga "natija tayyor" xabari oxirgi marta yuborilgan payt
+  notifiedAt     DateTime?
+  results        ExternalResult[]
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  @@unique([source, code])
+}
+
+model ExternalResult {
+  id          String          @id @default(cuid())
+  testId      String
+  test        ExternalTest    @relation(fields: [testId], references: [id], onDelete: Cascade)
+  /// Bu platformadagi o'quvchi. Topilmasa null: ustoz qo'lda bog'laydi
+  studentId   String?
+  student     StudentProfile? @relation(fields: [studentId], references: [id], onDelete: SetNull)
+  /// Qatorni qayta importda topish kaliti: "tg:<telegramId>" yoki CSV da "name:<ism>"
+  key         String
+  telegramId  BigInt?
+  name        String
+  username    String?
+  /// Qo'lda bog'langan: qayta importda avtomatik moslash uni almashtirmaydi
+  manualMatch Boolean         @default(false)
+  correct     Int
+  wrong       Int
+  blank       Int
+  score       Float
+  maxScore    Float
+  percent     Float
+  scaledScore Float?
+  grade       String?
+  /// Bo'limlar: [{title, fromQ, toQ, correct, wrong, blank, raw, max, percent}]
+  sections    Json            @default("[]")
+  /// Har savol bitta harf: c to'g'ri, w xato, b bo'sh, v bekor, p qisman, - yo'q
+  answers     String
+  submittedAt DateTime?
+  durationSec Int?
+  /// "Natija tayyor" xabari shu o'quvchi (va ota-onasi)ga yuborilgan payt
+  notifiedAt  DateTime?
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  @@unique([testId, key])
+  @@index([studentId])
 }

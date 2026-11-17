@@ -19,6 +19,9 @@ const schema = z.object({
   MEDIA_DIR: z.string().default("./.media"),
   // Kechalik zaxira nusxalari papkasi (read-only ulangan). Bo'lmasa admin paneldagi "Zaxira" bo'limi o'chiq
   BACKUP_DIR: z.string().optional(),
+  // utest (universaltest) bilan bog'lanish: test natijalarini import qilish. Kalit bo'lmasa faqat CSV import ishlaydi
+  UTEST_API_URL: z.string().url().default("https://universaltest.uzbek-talim.uz/api"),
+  UTEST_API_KEY: z.preprocess((v) => (typeof v === "string" ? v.trim() || undefined : v), z.string().min(32).optional()),
   REDIS_URL: z.string().default("redis://localhost:6381"),
   QUEUE_PREFIX: z.string().default("onatili"),
   // HLS segmentlari qayerdan beriladi: dev'da API'ning o'zi, prod'da nginx (/media-files/v)

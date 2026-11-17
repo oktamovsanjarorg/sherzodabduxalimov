@@ -15,6 +15,10 @@ import type {
   AdminHwEssay,
   AdminEssayStats,
   BackupList,
+  ExternalPreview,
+  ExternalTestSummary,
+  ExternalTestDetail,
+  ExternalRankingRow,
   AdminEssayLogRow,
   EssayStatsPeriod,
   TeacherEssayReviewInput,
@@ -139,6 +143,17 @@ export const api = {
     return name;
   },
   backups: () => request<BackupList>("/admin/backups"),
+  externalTests: () => request<{ utestEnabled: boolean; tests: ExternalTestSummary[] }>("/admin/external-tests"),
+  externalTest: (id: string) => request<ExternalTestDetail>(`/admin/external-tests/${id}`),
+  externalRanking: (days: number) => request<ExternalRankingRow[]>(`/admin/external-tests/ranking?days=${days}`),
+  externalUtestPreview: (code: string) => request<ExternalPreview>("/admin/external-tests/utest/preview", json("POST", { code })),
+  externalUtestImport: (code: string) => request<{ id: string; created: number; updated: number; matched: number }>("/admin/external-tests/utest/import", json("POST", { code })),
+  externalCsvPreview: (d: { fileName: string; content: string; title: string | null }) => request<ExternalPreview>("/admin/external-tests/csv/preview", json("POST", d)),
+  externalCsvImport: (d: { fileName: string; content: string; title: string | null }) =>
+    request<{ id: string; created: number; updated: number; matched: number }>("/admin/external-tests/csv/import", json("POST", d)),
+  externalLink: (testId: string, resultId: string, studentId: string | null) => request(`/admin/external-tests/${testId}/results/${resultId}`, json("PATCH", { studentId })),
+  externalNotify: (id: string) => request<{ students: number; parents: number }>(`/admin/external-tests/${id}/notify`, json("POST")),
+  externalDelete: (id: string) => request(`/admin/external-tests/${id}`, { method: "DELETE" }),
   /** Zaxira faylini yuklab olish: avtorizatsiya sarlavhasi kerak, shuning uchun havola emas; foiz onProgress ga */
   downloadBackup: async (name: string, onProgress: (pct: number) => void) => {
     const res = await fetch(`/api/admin/backups/${encodeURIComponent(name)}`, { headers: { Authorization: `Bearer ${loadSession()?.token}` } });
