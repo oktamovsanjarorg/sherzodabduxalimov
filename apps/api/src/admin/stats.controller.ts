@@ -135,7 +135,7 @@ export class StatsController {
       const seen = lastSeen.get(s.id) ?? s.createdAt;
       const idle = Math.floor((now.getTime() - seen.getTime()) / DAY);
       if (isOnline && idle >= 14 && now.getTime() - s.createdAt.getTime() >= 14 * DAY) reasons.push(`${idle} kundan beri ilovada hech narsa qilmagan`);
-      if (reasons.length) attention.push({ userId: s.id, name: name(s), group: s.student?.group?.name ?? null, reasons });
+      if (reasons.length) attention.push({ userId: s.id, studentId: s.student?.id ?? null, name: name(s), group: s.student?.group?.name ?? null, reasons });
     }
     attention.sort((a, b) => b.reasons.length - a.reasons.length || a.name.localeCompare(b.name));
 
@@ -144,7 +144,7 @@ export class StatsController {
       .map(([id, l]) => ({ id, avg: Math.round(l.reduce((s, x) => s + x, 0) / l.length), n: l.length }))
       .sort((a, b) => b.avg - a.avg || b.n - a.n)
       .slice(0, 5)
-      .map((x) => ({ userId: x.id, name: byUser.get(x.id) ? name(byUser.get(x.id)!) : "—", group: byUser.get(x.id)?.student?.group?.name ?? null, avgPercent: x.avg, tests: x.n }));
+      .map((x) => ({ userId: x.id, studentId: byUser.get(x.id)?.student?.id ?? null, name: byUser.get(x.id) ? name(byUser.get(x.id)!) : "—", group: byUser.get(x.id)?.student?.group?.name ?? null, avgPercent: x.avg, tests: x.n }));
 
     return {
       month,

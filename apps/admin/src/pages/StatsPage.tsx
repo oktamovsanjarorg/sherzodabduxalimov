@@ -100,7 +100,7 @@ function Body({ s }: { s: TeacherStats }) {
             <ul className="divide-y divide-line">
               {s.attention.map((x) => (
                 <li key={x.userId}>
-                  <Link to={`/students/${x.userId}`} className="-mx-2 flex items-start gap-3 rounded-lg px-2 py-2 hover:bg-surface-2">
+                  <Link to={x.studentId ? `/students/${x.studentId}` : "/students"} className="-mx-2 flex items-start gap-3 rounded-lg px-2 py-2 hover:bg-surface-2">
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-sm font-bold">
                         {x.name} {x.group && <span className="font-normal text-ink-3">· {x.group}</span>}
@@ -187,7 +187,7 @@ function Body({ s }: { s: TeacherStats }) {
             <ol className="space-y-2">
               {s.top.map((t, i) => (
                 <li key={t.userId}>
-                  <Link to={`/students/${t.userId}`} className="-mx-2 flex items-center gap-3 rounded-lg px-2 py-1.5 hover:bg-surface-2">
+                  <Link to={t.studentId ? `/students/${t.studentId}` : "/students"} className="-mx-2 flex items-center gap-3 rounded-lg px-2 py-1.5 hover:bg-surface-2">
                     <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-surface-3 text-xs font-extrabold">{i + 1}</span>
                     <span className="min-w-0 flex-1 truncate text-sm font-bold">
                       {t.name} {t.group && <span className="font-normal text-ink-3">· {t.group}</span>}

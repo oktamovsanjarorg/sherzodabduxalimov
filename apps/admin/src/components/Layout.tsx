@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { BookOpen, ClipboardCheck, GraduationCap, Home, LogOut, MoreHorizontal, type LucideIcon } from "lucide-react";
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { api } from "../lib/api";
+import { useDismissed } from "../lib/dismiss";
 import { clearSession, loadSession } from "../lib/session";
 
 interface NavGroup {
@@ -22,6 +23,12 @@ export function useNavGroups(): NavGroup[] {
   const isTeacher = loadSession()?.user.role === "TEACHER";
   // Kutayotgan ota-ona so'rovlari soni: navigatsiya tugmasida ko'rsatiladi
   const dash = useQuery({ queryKey: ["dashboard"], queryFn: api.dashboard, refetchInterval: 30_000 });
+  // Bosh sahifada yashirilgan xabar menyuda ham raqam bilan chiqmaydi (yangi ish qo'shilsa qaytadi)
+  const { hidden } = useDismissed();
+  const shown = (key: string, n?: number) => (n && !hidden(key, n) ? n : 0);
+  const essays = shown("essays", dash.data?.pendingEssays);
+  const people = shown("newStudents", dash.data?.newStudents) + shown("parents", dash.data?.pendingParents);
+  const payments = shown("payments", dash.data?.pendingPayments);
   return [
     {
       to: "/",
@@ -51,9 +58,9 @@ export function useNavGroups(): NavGroup[] {
       label: "Baholash",
       Icon: ClipboardCheck,
       match: /^\/(essays|external)/,
-      badge: dash.data?.pendingEssays,
+      badge: essays || undefined,
       sub: [
-        { to: "/essays", label: "Esselar", match: /^\/essays/, badge: dash.data?.pendingEssays },
+        { to: "/essays", label: "Esselar", match: /^\/essays/, badge: essays || undefined },
         { to: "/external", label: "Offline testlar", match: /^\/external/ },
       ],
     },
@@ -63,9 +70,9 @@ export function useNavGroups(): NavGroup[] {
       Icon: GraduationCap,
       match: /^\/(students|attendance|parents)/,
       // Yangi kelganlar va ota-ona so'rovlari O'quvchilar sahifasining tepasida ko'rib chiqiladi
-      badge: (dash.data?.newStudents ?? 0) + (dash.data?.pendingParents ?? 0) || undefined,
+      badge: people || undefined,
       sub: [
-        { to: "/students", label: "O'quvchilar", match: /^\/(students|parents)/, badge: (dash.data?.newStudents ?? 0) + (dash.data?.pendingParents ?? 0) || undefined },
+        { to: "/students", label: "O'quvchilar", match: /^\/(students|parents)/, badge: people || undefined },
         { to: "/attendance", label: "Davomat", match: /^\/attendance/ },
       ],
     },
@@ -77,9 +84,9 @@ export function useNavGroups(): NavGroup[] {
             label: "Ko'proq",
             Icon: MoreHorizontal,
             match: /^\/(more|staff|payments|billing|trash|backups)/,
-            badge: dash.data?.pendingPayments,
+            badge: payments || undefined,
             sub: [
-              { to: "/payments", label: "To'lovlar", match: /^\/payments/, badge: dash.data?.pendingPayments },
+              { to: "/payments", label: "To'lovlar", match: /^\/payments/, badge: payments || undefined },
               { to: "/billing", label: "Tariflar", match: /^\/billing/ },
               { to: "/staff", label: "Xodimlar", match: /^\/staff/ },
               { to: "/trash", label: "Korzinka", match: /^\/trash/ },

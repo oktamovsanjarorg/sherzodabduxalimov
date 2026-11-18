@@ -88,6 +88,14 @@ describe("O'quvchi faolligi va o'qishni boshlagan sana (e2e)", () => {
     expect((await req("GET", `/admin/offline-payments/student/${studentId}`)).json().nextPeriodStart).toBe(tashkentToday());
   });
 
+  it("Statistika «e'tibor kerak» ro'yxati o'quvchi sahifasini profil ID si bilan ochadi (foydalanuvchi ID si emas)", async () => {
+    const old = new Date(Date.now() - 30 * 86_400_000);
+    const u = await prisma.user.create({ data: { firstName: `${TAG} Jim`, role: "STUDENT", createdAt: old, student: { create: { parentLinkCode: `E2EJIM${Date.now()}` } } }, include: { student: true } });
+    const row = (await req("GET", "/admin/stats")).json().attention.find((x: { userId: string }) => x.userId === u.id);
+    expect(row).toMatchObject({ studentId: u.student!.id });
+    expect((await req("GET", `/admin/students/${row.studentId}`)).statusCode).toBe(200);
+  });
+
   it("qo'lda qo'shilgan o'quvchi: sana berilmasa bugun, berilsa o'sha", async () => {
     const a = (await req("POST", "/admin/students", { firstName: `${TAG} Qo'lda` })).json();
     expect((await req("GET", `/admin/students/${a.studentId}`)).json()).toMatchObject({ startedOn: tashkentToday(), activity: { botJoinedAt: null, lessons: [] } });
