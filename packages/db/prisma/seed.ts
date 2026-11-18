@@ -54,6 +54,24 @@ async function main() {
     create: { id: "plan-monthly", name: "Oylik obuna", priceUzs: 150000, durationDays: 30 },
   });
 
+  // To'lov kartasi: repo ochiq, shuning uchun raqam kodda emas, .env da (SEED_BILLING_CARD, SEED_BILLING_HOLDER).
+  // Mavjud sozlama ustidan yozilmaydi: keyin admin paneldan o'zgartiriladi.
+  const card = process.env.SEED_BILLING_CARD?.replace(/\s/g, "");
+  if (card) {
+    await prisma.appSetting.upsert({
+      where: { key: "billing" },
+      update: {},
+      create: {
+        key: "billing",
+        value: {
+          number: card,
+          holder: process.env.SEED_BILLING_HOLDER?.trim() ?? "",
+          note: "To'lov chekini yuborishingiz shart! Admin to'lovni tasdiqlaguncha kuting!",
+        },
+      },
+    });
+  }
+
   const course = await prisma.course.upsert({
     where: { id: "course-abituriyent" },
     update: {},
