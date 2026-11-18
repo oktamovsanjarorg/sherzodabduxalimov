@@ -30,17 +30,17 @@ export function Inbox({ groups }: { groups: AdminGroup[] }) {
   if (!n && !p && !d) return null;
   const parts = [d && `ikki marta: ${d}`, n && `yangi kirganlar: ${n}`, p && `ota-ona so'rovlari: ${p}`].filter(Boolean).join(" · ");
   return (
-    <section className="mb-4 rounded-2xl border border-amber-400/30 bg-amber-400/10">
+    <section className="mb-4 rounded-2xl border border-amber-300 bg-amber-50">
       {/* O'quvchilar ko'payganda blok ro'yxat va guruh tablarini pastga surib yubormasligi uchun: yig'iladi, ochilganda balandligi cheklangan */}
       <button type="button" onClick={toggle} aria-expanded={open} className="flex w-full flex-wrap items-center gap-x-2 gap-y-1 px-4 py-3 text-left sm:px-5">
-        <InboxIcon size={18} className="text-amber-300" />
-        <span className="font-extrabold">Ko'rib chiqish kerak</span>
+        <InboxIcon size={18} className="text-amber-800" />
+        <span className="font-extrabold text-ink">Ko'rib chiqish kerak</span>
         <span className="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-red-600 px-1.5 text-[11px] font-extrabold text-white">{n + p + d}</span>
         <span className="min-w-0 flex-1 truncate text-xs text-ink-2">{parts}</span>
         <ChevronDown size={18} className={`shrink-0 text-ink-3 transition-transform ${open ? "rotate-180" : ""}`} />
       </button>
       {open && (
-      <div className="max-h-[60vh] overflow-y-auto border-t border-amber-400/30 px-4 pb-4 sm:px-5">
+      <div className="max-h-[60vh] overflow-y-auto border-t border-amber-200 px-4 pb-4 sm:px-5">
       {d > 0 && (
         <>
           <p className="mb-2 mt-3 text-sm font-bold text-ink-2">Bitta o'quvchi ikki marta ({d})</p>
@@ -159,8 +159,8 @@ function Newcomer({ s, groups }: { s: NewcomerRow; groups: AdminGroup[] }) {
         </div>
       </Link>
       {s.matches.length > 0 && (
-        <div className="basis-full rounded-xl bg-emerald-400/10 p-2">
-          <p className="mb-1 text-xs font-bold text-emerald-300">Ro'yxatingizdagi shu o'quvchi bo'lishi mumkin:</p>
+        <div className="basis-full rounded-xl border border-emerald-200 bg-emerald-50 p-2">
+          <p className="mb-1 text-xs font-bold text-emerald-800">Ro'yxatingizdagi shu o'quvchi bo'lishi mumkin:</p>
           <div className="flex flex-wrap gap-2">
             {s.matches.map((m) => {
               const who = `${m.name}${m.groupName ? ` · ${m.groupName}` : ""}`;

@@ -321,7 +321,7 @@ function LogList({ rows, onOpen, hideStudent }: { rows: AdminEssayLogRow[]; onOp
     <div className="space-y-2">
       {rows.map((r) => (
         <button key={r.id} onClick={() => onOpen(r.id)} className="card flex w-full items-center gap-3 p-3 text-left transition hover:border-brand sm:p-4">
-          <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${r.mode === "AI" ? "bg-brand-soft text-brand-light" : "bg-amber-400/15 text-amber-300"}`}>
+          <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${r.mode === "AI" ? "bg-brand-soft text-brand-dark" : "bg-amber-100 text-amber-800"}`}>
             {r.mode === "AI" ? <Bot size={18} /> : <UserCheck size={18} />}
           </span>
           <div className="min-w-0 flex-1">
@@ -342,7 +342,7 @@ function LogList({ rows, onOpen, hideStudent }: { rows: AdminEssayLogRow[]; onOp
             {r.ai && <Badge tone={scoreTone(r.ai.score)}>AI {formatScore(r.ai.score)}/{ESSAY_MAX_SCORE}</Badge>}
             {r.teacher && <Badge tone={scoreTone(r.teacher.score)}>Ustoz {formatScore(r.teacher.score)}/{ESSAY_MAX_SCORE}</Badge>}
             {!r.ai && !r.teacher && <Badge tone={r.status === "AI_FAILED" ? "red" : "gray"}>{ESSAY_STATUS_LABELS[r.status]}</Badge>}
-            {(r.ai?.special || r.teacher?.special) && <span className="text-[11px] text-amber-300">{r.teacher?.special ?? r.ai?.special}</span>}
+            {(r.ai?.special || r.teacher?.special) && <span className="text-[11px] font-semibold text-amber-800">{r.teacher?.special ?? r.ai?.special}</span>}
           </div>
           <ChevronRight size={16} className="shrink-0 text-ink-4" />
         </button>
@@ -383,7 +383,7 @@ function EssayDetailModal({ id, onClose }: { id: string; onClose: () => void }) 
           </div>
           <div className="space-y-4">
             {!ai && !teacher && (
-              <p className={`rounded-lg p-3 text-sm ${e.error ? "bg-red-500/10 text-red-300" : "bg-surface-2 text-ink-3"}`}>
+              <p className={`rounded-lg p-3 text-sm ${e.error ? "border border-red-200 bg-red-50 text-red-700" : "bg-surface-2 text-ink-3"}`}>
                 {e.error ? `AI tekshira olmadi: ${e.error}` : "Hali baholanmagan"}
               </p>
             )}
@@ -408,7 +408,7 @@ function ReviewBlock({ r }: { r: EssayReviewView }) {
   return (
     <section className="rounded-xl border border-line p-3 sm:p-4">
       <div className="mb-3 flex flex-wrap items-center gap-2">
-        <span className={`flex h-8 w-8 items-center justify-center rounded-lg ${isAi ? "bg-brand-soft text-brand-light" : "bg-amber-400/15 text-amber-300"}`}>
+        <span className={`flex h-8 w-8 items-center justify-center rounded-lg ${isAi ? "bg-brand-soft text-brand-dark" : "bg-amber-100 text-amber-800"}`}>
           {isAi ? <Bot size={16} /> : <UserCheck size={16} />}
         </span>
         <div className="min-w-0 flex-1">
@@ -419,14 +419,14 @@ function ReviewBlock({ r }: { r: EssayReviewView }) {
           {formatScore(r.totalScore)} / {r.maxScore}
         </Badge>
       </div>
-      {r.special && <p className="mb-3 rounded-lg bg-amber-400/10 px-3 py-2 text-sm font-semibold text-amber-300">Baholanmadi: {r.special.label}</p>}
+      {r.special && <p className="mb-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm font-semibold text-amber-800">Baholanmadi: {r.special.label}</p>}
       {r.criteria.length > 0 && (
         <ul className="divide-y divide-line rounded-lg border border-line text-sm">
           {r.criteria.map((c) => (
             <li key={c.key} className="px-3 py-2">
               <div className="flex justify-between gap-3">
                 <span className="font-semibold">{c.label}</span>
-                <b className={c.score < c.max / 2 ? "text-red-400" : c.score < c.max ? "text-amber-300" : "text-emerald-300"}>
+                <b className={c.score < c.max / 2 ? "text-red-600" : c.score < c.max ? "text-amber-700" : "text-emerald-700"}>
                   {formatScore(c.score)} / {c.max}
                 </b>
               </div>

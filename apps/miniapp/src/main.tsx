@@ -1,3 +1,4 @@
+import "@fontsource-variable/fraunces";
 import "@fontsource-variable/manrope";
 import "./index.css";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";

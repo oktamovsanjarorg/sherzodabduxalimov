@@ -24,7 +24,7 @@ export function BackupsPage() {
         title="Zaxira nusxalari"
         subtitle="Har kecha 03:00 da baza va media nusxasi olinadi, serverda 14 kun, bulutda (S3) 90 kun saqlanadi. Bu yerdan kompyuteringizga yuklab olishingiz mumkin."
       />
-      <div className="mb-4 flex gap-3 rounded-xl border border-amber-400/30 bg-amber-400/10 p-3 text-sm text-amber-200">
+      <div className="mb-4 flex gap-3 rounded-xl border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">
         <ShieldAlert size={18} className="mt-0.5 shrink-0" />
         <p>
           Baza faylida barcha o'quvchilar, telefonlar va to'lovlar bor. Faqat o'zingizning ishonchli qurilmangizga yuklang va hech kimga yubormang. Har bir yuklab olish

@@ -272,7 +272,7 @@ function BulkModal({ groupId: initial, onClose }: { groupId: string; onClose: ()
           />
         </Field>
         {result && result.skipped.length > 0 && (
-          <div className="rounded-lg bg-amber-400/10 p-3 text-sm text-amber-200">
+          <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
             <p className="font-bold">
               {result.added} ta qo'shildi, {result.skipped.length} ta qo'shilmadi:
             </p>

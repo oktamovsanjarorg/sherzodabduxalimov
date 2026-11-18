@@ -84,7 +84,7 @@ export function useNavGroups(): NavGroup[] {
 function Badge({ n }: { n?: number }) {
   if (!n) return null;
   return (
-    <span className="absolute -right-2 -top-1 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-red-600 px-1 text-[10px] font-extrabold text-white">
+    <span className="absolute -right-2 -top-1 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-gold px-1 text-[10px] font-extrabold text-navy">
       {n > 99 ? "99+" : n}
     </span>
   );
@@ -104,10 +104,10 @@ export function Layout() {
   return (
     <div className="min-h-screen">
       {/* Kompyuter: chap tomonda sidebar, barcha bo'limlar ochiq */}
-      <aside className="fixed inset-y-0 left-0 z-30 hidden w-60 flex-col border-r border-line bg-navy text-ink-2 md:flex">
+      <aside className="fixed inset-y-0 left-0 z-30 hidden w-60 flex-col bg-navy text-mist md:flex">
         <div className="flex h-16 items-center gap-3 px-5">
-          <img src={`${import.meta.env.BASE_URL}favicon.svg`} alt="" className="h-8 w-8 rounded-lg ring-1 ring-white/10" />
-          <span className="text-sm font-extrabold text-white">Ona tili · Admin</span>
+          <img src={`${import.meta.env.BASE_URL}favicon.svg`} alt="" className="h-8 w-8" />
+          <span className="font-display text-[15px] font-medium tracking-tight text-white">Ona tili</span>
         </div>
         <nav className="flex-1 space-y-4 overflow-y-auto px-3 pb-4">
           {groups.filter((g) => !g.sidebarIn).map((g) => {
@@ -116,7 +116,7 @@ export function Layout() {
             return (
               <div key={g.to}>
                 {g.sub && (
-                  <p className="mb-1 flex items-center gap-2 px-3 text-[11px] font-bold uppercase tracking-wide text-ink-4">
+                  <p className="mb-1 flex items-center gap-2 px-3 text-[11px] font-bold uppercase tracking-[0.14em] text-gold-hi/80">
                     <g.Icon size={13} /> {g.label}
                   </p>
                 )}
@@ -128,7 +128,7 @@ export function Layout() {
                         <NavLink
                           to={t.to}
                           className={`relative flex h-9 items-center gap-2.5 rounded-lg px-3 text-sm font-semibold transition ${
-                            active ? "bg-surface-3 text-ink before:absolute before:inset-y-2 before:left-0 before:w-[3px] before:rounded-full before:bg-brand" : "text-ink-3 hover:bg-navy-light hover:text-ink"
+                            active ? "bg-gold-hi text-navy" : "text-mist/90 hover:bg-navy-light hover:text-white"
                           }`}
                         >
                           {!g.sub && <g.Icon size={16} />}
@@ -150,20 +150,20 @@ export function Layout() {
         <div className="flex items-center gap-2 border-t border-navy-line px-5 py-3 text-xs leading-tight">
           <div className="min-w-0 flex-1">
             <p className="truncate font-bold text-white">{[s.user.firstName, s.user.lastName].filter(Boolean).join(" ")}</p>
-            <p className="text-ink-4">{ROLE_LABELS[s.user.role]}</p>
+            <p className="text-mist/70">{ROLE_LABELS[s.user.role]}</p>
           </div>
-          <button className="btn btn-sm px-2 text-ink-3 hover:bg-navy-light hover:text-ink" onClick={logout} title="Chiqish (qayta kirish: botga /admin)">
+          <button className="btn btn-sm px-2 text-mist/80 hover:bg-navy-light hover:text-white" onClick={logout} title="Chiqish (qayta kirish: botga /admin)">
             <LogOut size={15} /> Chiqish
           </button>
         </div>
       </aside>
 
       {/* Telefon/planshet: yuqorida sarlavha va guruh ichidagi bo'limlar */}
-      <header className="sticky top-0 z-30 border-b border-line bg-navy text-ink md:hidden" style={{ paddingTop: "env(safe-area-inset-top, 0px)" }}>
+      <header className="sticky top-0 z-30 bg-navy text-white shadow-sm md:hidden" style={{ paddingTop: "env(safe-area-inset-top, 0px)" }}>
         <div className="flex h-14 items-center gap-3 px-4">
-          <img src={`${import.meta.env.BASE_URL}favicon.svg`} alt="" className="h-8 w-8 rounded-lg ring-1 ring-white/10" />
-          <span className="flex-1 font-extrabold">{current.label}</span>
-          <button className="btn btn-sm px-2 text-ink-3 hover:bg-navy-light hover:text-ink" onClick={logout} aria-label="Chiqish" title="Chiqish">
+          <img src={`${import.meta.env.BASE_URL}favicon.svg`} alt="" className="h-8 w-8" />
+          <span className="flex-1 font-display text-lg font-medium tracking-tight">{current.label}</span>
+          <button className="btn btn-sm px-2 text-mist/80 hover:bg-navy-light hover:text-white" onClick={logout} aria-label="Chiqish" title="Chiqish">
             <LogOut size={18} />
           </button>
         </div>
@@ -176,11 +176,11 @@ export function Layout() {
                   key={t.to}
                   to={t.to}
                   className={`h-9 shrink-0 rounded-full px-4 text-sm font-bold leading-9 transition ${
-                    active ? "bg-ink text-page" : "bg-navy-light text-ink-3 hover:bg-navy-line"
+                    active ? "bg-gold-hi text-navy" : "bg-navy-light text-mist hover:bg-navy-line"
                   }`}
                 >
                   {t.label}
-                  {t.badge ? <span className={`ml-1.5 ${active ? "text-red-600" : "text-red-400"}`}>{t.badge}</span> : null}
+                  {t.badge ? <span className={`ml-1.5 ${active ? "text-red-600" : "text-red-300"}`}>{t.badge}</span> : null}
                 </NavLink>
               );
             })}
@@ -196,7 +196,7 @@ export function Layout() {
 
       {/* Telefon/planshet: pastki navigatsiya */}
       <nav
-        className="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-navy/95 backdrop-blur md:hidden"
+        className="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-surface/95 backdrop-blur md:hidden"
         style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
       >
         <ul className={`grid ${groups.length >= 5 ? "grid-cols-5" : "grid-cols-4"}`}>
@@ -204,8 +204,8 @@ export function Layout() {
             const active = g.match.test(pathname);
             return (
               <li key={g.to}>
-                <NavLink to={g.to} className={`flex h-16 flex-col items-center justify-center gap-1 text-[11px] font-bold ${active ? "text-ink" : "text-ink-4"}`}>
-                  <span className={`relative flex h-8 w-12 items-center justify-center rounded-full ${active ? "bg-surface-4" : ""}`}>
+                <NavLink to={g.to} className={`flex h-16 flex-col items-center justify-center gap-1 text-[11px] font-bold ${active ? "text-brand" : "text-ink-4"}`}>
+                  <span className={`relative flex h-8 w-12 items-center justify-center rounded-full ${active ? "bg-brand-soft" : ""}`}>
                     <g.Icon size={21} strokeWidth={active ? 2.4 : 2} />
                     <Badge n={g.badge} />
                   </span>

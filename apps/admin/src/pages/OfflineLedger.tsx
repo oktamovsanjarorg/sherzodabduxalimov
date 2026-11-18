@@ -80,8 +80,8 @@ export function OfflineLedgerView({ q = "", onClearSearch }: { q?: string; onCle
       ) : (
         <>
           <div className="mb-3 grid grid-cols-3 gap-2 sm:max-w-lg">
-            <Stat label="To'lagan" value={`${l.totals.paid} / ${l.totals.students}`} tone="text-emerald-300" />
-            <Stat label="Qarzdor" value={String(l.totals.debtors)} tone={l.totals.debtors ? "text-red-400" : "text-ink-2"} />
+            <Stat label="To'lagan" value={`${l.totals.paid} / ${l.totals.students}`} tone="text-emerald-700" />
+            <Stat label="Qarzdor" value={String(l.totals.debtors)} tone={l.totals.debtors ? "text-red-600" : "text-ink-2"} />
             <Stat label="Yig'ildi" value={`${formatSum(l.totals.sumUzs)}`} tone="text-ink" />
           </div>
           {l.totals.debtors > 0 && (
@@ -125,10 +125,10 @@ export function OfflineLedgerView({ q = "", onClearSearch }: { q?: string; onCle
                           <Phone size={11} /> {r.phone}
                         </a>
                       )}
-                      {!r.approvedParents && <span className="ml-2 text-amber-300">ota-ona tasdiqlanmagan</span>}
+                      {!r.approvedParents && <span className="ml-2 font-semibold text-amber-800">ota-ona tasdiqlanmagan</span>}
                     </p>
                     <p className="text-xs text-ink-3">
-                      O'qishni boshlagan: {r.startedOn ? <b className="text-ink-2">{fmtYmd(r.startedOn)}</b> : <span className="text-amber-300">kiritilmagan</span>}
+                      O'qishni boshlagan: {r.startedOn ? <b className="text-ink-2">{fmtYmd(r.startedOn)}</b> : <span className="font-semibold text-amber-800">kiritilmagan</span>}
                     </p>
                   </div>
                   {r.paid ? (

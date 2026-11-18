@@ -289,7 +289,7 @@ function RejectModal({ p, revoke = false, onClose, onDone }: { p: AdminPayment; 
       </p>
       <div className="mb-3 flex flex-wrap gap-2">
         {(revoke ? REVOKE_REASONS : REASONS).map((r) => (
-          <button key={r} className={`rounded-full border px-3 py-1 text-xs font-semibold ${reason === r ? "border-brand bg-brand-soft text-brand-light" : "border-line"}`} onClick={() => setReason(r)}>
+          <button key={r} className={`rounded-full border px-3 py-1 text-xs font-semibold ${reason === r ? "border-brand bg-brand-soft text-brand-dark" : "border-line text-ink-2 hover:bg-surface-2"}`} onClick={() => setReason(r)}>
             {r}
           </button>
         ))}
@@ -341,7 +341,7 @@ function Subscribers({ q, onClearSearch }: { q: string; onClearSearch: () => voi
             ["lapsed", `Uzaytirmagan (${subs.data?.lapsed.length ?? 0})`],
           ] as const
         ).map(([k, l]) => (
-          <button key={k} onClick={() => setView(k)} className={`h-9 shrink-0 rounded-full px-4 text-sm font-bold ${view === k ? "bg-ink text-page" : "bg-surface-3 text-ink-2 hover:bg-surface-4"}`}>
+          <button key={k} onClick={() => setView(k)} className={`h-9 shrink-0 rounded-full px-4 text-sm font-bold ${view === k ? "bg-brand text-white" : "bg-surface-3 text-ink-2 hover:bg-surface-4"}`}>
             {l}
           </button>
         ))}

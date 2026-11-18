@@ -218,7 +218,7 @@ function VideoSection({ lesson, onChanged }: { lesson: AdminLesson; onChanged: (
     <div className="space-y-3">
       {v && (
         <div className="flex items-center gap-3 rounded-xl border border-line p-4">
-          {v.status === "READY" ? <CheckCircle2 className="text-emerald-400" /> : v.status === "FAILED" ? <AlertTriangle className="text-red-400" /> : <Spinner className="text-amber-400" />}
+          {v.status === "READY" ? <CheckCircle2 className="text-emerald-600" /> : v.status === "FAILED" ? <AlertTriangle className="text-red-600" /> : <Spinner className="text-amber-600" />}
           <div className="min-w-0 flex-1">
             <p className="truncate text-sm font-bold">{v.originalName}</p>
             <p className="text-xs text-ink-3">
@@ -269,7 +269,7 @@ function VideoSection({ lesson, onChanged }: { lesson: AdminLesson; onChanged: (
           }}
         />
       </div>
-      {error && <p className="rounded-lg bg-red-500/10 px-3 py-2 text-sm font-semibold text-red-300">{error}</p>}
+      {error && <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm font-semibold text-red-700">{error}</p>}
     </div>
   );
 }

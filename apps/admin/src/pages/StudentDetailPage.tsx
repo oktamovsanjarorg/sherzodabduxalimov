@@ -157,13 +157,13 @@ function StartedOn({ s, onDone }: { s: StudentDetail; onDone: () => void }) {
       O'qishni boshlagan:
       <input
         type="date"
-        className={`input h-9 w-auto text-sm ${s.startedOn ? "" : "border-amber-400/40"}`}
+        className={`input h-9 w-auto text-sm ${s.startedOn ? "" : "border-amber-400"}`}
         value={s.startedOn ?? ""}
         disabled={save.isPending}
         onChange={(e) => save.mutate(e.target.value)}
         title="Birinchi to'lov davri shu sanadan boshlanadi"
       />
-      {!s.startedOn && <span className="text-xs text-amber-300">kiritilmagan</span>}
+      {!s.startedOn && <span className="text-xs font-semibold text-amber-800">kiritilmagan</span>}
     </label>
   );
 }
@@ -172,7 +172,7 @@ function ConnectCard({ s }: { s: StudentDetail }) {
   const qc = useQueryClient();
   const reset = useMutation({ mutationFn: () => api.resetStudentInvite(s.studentId), onSuccess: () => qc.invalidateQueries({ queryKey: ["student", s.studentId] }) });
   return (
-    <div className="card border-amber-400/40 bg-amber-400/10 p-4 sm:p-5">
+    <div className="card border-amber-300 bg-amber-50 p-4 sm:p-5">
       <p className="font-bold">O'quvchi hali botga kirmagan</p>
       <p className="mt-1 text-sm text-ink-2">
         Davomat va to'lovlarni hozirdan belgilayverishingiz mumkin. Ilovadan foydalanishi uchun u botga kirib <b>telefon raqamini ulashsa</b> ({s.phone ?? "raqam kiritilmagan"}) yoki quyidagi{" "}
@@ -389,7 +389,7 @@ function Manage({ s }: { s: StudentDetail }) {
             <p className="label">Bloklash</p>
             {s.blocked ? (
               <>
-                <p className="rounded-lg bg-red-500/10 px-3 py-2 text-sm text-red-300">
+                <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
                   Bloklangan{s.blockedReason ? `: ${s.blockedReason}` : ""}. Ilovani ocha olmaydi.
                 </p>
                 <button className="btn-secondary btn-sm mt-2" disabled={block.isPending} onClick={() => block.mutate(false)}>

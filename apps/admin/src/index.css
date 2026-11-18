@@ -3,15 +3,21 @@
 @tailwind utilities;
 
 @layer base {
-  /* Brauzerning o'z elementlari (scrollbar, sana tanlash, select) ham qorong'i bo'lsin */
-  :root { color-scheme: dark; }
+  :root { color-scheme: light; }
   body { @apply bg-page font-sans text-ink antialiased; -webkit-tap-highlight-color: transparent; }
   /* Bitta element ekrandan chiqib ketsa ham butun sahifa yonga surilmasin */
   html, body { overflow-x: hidden; }
 }
 
+/* Sarlavhalar saytdagi serif bilan bir xil. Utility qatlami ustidan yoziladi. */
+h1 {
+  font-family: "Fraunces Variable", Georgia, serif;
+  font-weight: 520;
+  letter-spacing: -0.02em;
+}
+
 @layer components {
-  .card { @apply rounded-2xl border border-line bg-surface shadow-[0_1px_3px_rgb(0_0_0/0.25)]; }
+  .card { @apply rounded-2xl border border-line bg-surface shadow-[0_1px_2px_rgb(21_32_29/0.04)]; }
   .input {
     @apply h-11 w-full rounded-lg border border-line-strong bg-surface px-3 text-[16px] outline-none transition sm:h-10 sm:text-sm
       placeholder:text-ink-4 focus:border-brand focus:ring-2 focus:ring-brand/20 disabled:bg-surface-3;
@@ -24,7 +30,7 @@
   }
   .btn-primary { @apply btn bg-brand text-white hover:bg-brand-dark; }
   .btn-secondary { @apply btn border border-line-strong bg-surface text-ink-2 hover:bg-surface-2; }
-  .btn-danger { @apply btn border border-red-400/30 bg-surface text-red-400 hover:bg-red-500/10; }
+  .btn-danger { @apply btn border border-red-200 bg-surface text-red-600 hover:bg-red-50; }
   .btn-ghost { @apply btn px-2 text-ink-2 hover:bg-surface-3; }
   .btn-sm { @apply h-8 px-3 text-xs; }
 }

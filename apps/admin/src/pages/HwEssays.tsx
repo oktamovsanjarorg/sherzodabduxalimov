@@ -105,12 +105,12 @@ const countMarksTotal = (a: EssayAnnotations) => Object.values(countMarks(a)).re
 
 function AiHint({ r }: { r: EssayReviewView }) {
   return (
-    <details className="rounded-lg bg-sky-400/10 p-3 text-sm">
-      <summary className="cursor-pointer font-bold text-sky-200">
+    <details className="rounded-lg border border-sky-200 bg-sky-50 p-3 text-sm">
+      <summary className="cursor-pointer font-bold text-sky-900">
         AI bahosi (taxminiy): {formatScore(r.totalScore)}/{r.maxScore}
         {r.special ? ` · ${r.special.label}` : ""}
       </summary>
-      <ul className="mt-2 space-y-1 text-sky-200">
+      <ul className="mt-2 space-y-1 text-sky-800">
         {r.criteria.map((c) => (
           <li key={c.key}>
             <b>{c.label}:</b> {formatScore(c.score)}/{c.max} {c.comment && <span className="text-sky-300/80">— {c.comment}</span>}

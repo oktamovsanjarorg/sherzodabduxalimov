@@ -23,8 +23,8 @@ export function DashboardPage() {
   return (
     <div className="space-y-6">
       <div>
-        <p className="text-sm text-ink-3">Assalomu alaykum</p>
-        <h1 className="text-2xl font-extrabold tracking-tight">{name}</h1>
+        <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-gold">Assalomu alaykum</p>
+        <h1 className="mt-1 text-[2rem] leading-none">{name}</h1>
       </div>
 
       {/* Bugun nima qilish kerak */}
@@ -72,7 +72,7 @@ export function DashboardPage() {
           <Todo to="/content" tone="gray" Icon={Film} title={`${x.videos.processing} ta video tayyorlanmoqda`} hint="Tayyor bo'lgach o'quvchilarga ko'rinadi" />
         )}
         {todo === 0 && (
-          <div className="card flex items-center gap-3 p-4 text-sm font-semibold text-emerald-300">
+          <div className="card flex items-center gap-3 p-4 text-sm font-semibold text-emerald-700">
             <CheckCircle2 size={20} /> Hammasi joyida, kutayotgan ish yo'q
           </div>
         )}
@@ -109,9 +109,9 @@ export function DashboardPage() {
 }
 
 const TONES = {
-  amber: "border-amber-400/40 bg-amber-400/10 text-amber-200",
-  brand: "border-brand/30 bg-brand-soft/40 text-brand-light",
-  red: "border-red-400/40 bg-red-500/10 text-red-300",
+  amber: "border-amber-300 bg-amber-50 text-amber-900",
+  brand: "border-brand/30 bg-brand-soft/40 text-brand-dark",
+  red: "border-red-300 bg-red-50 text-red-800",
   gray: "border-line bg-surface text-ink-2",
 };
 
@@ -143,7 +143,7 @@ function Stat({ Icon, value, label, hint }: { Icon: typeof Users; value: number;
   return (
     <div className="card p-4">
       <Icon size={18} className="text-ink-4" />
-      <p className="mt-2 text-2xl font-extrabold tabular-nums">{value}</p>
+      <p className="mt-2 font-display text-3xl font-medium tabular-nums tracking-tight">{value}</p>
       <p className="text-sm font-semibold text-ink-2">{label}</p>
       {hint && <p className="mt-1 text-xs text-ink-3">{hint}</p>}
     </div>

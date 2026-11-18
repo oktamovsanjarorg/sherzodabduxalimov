@@ -52,7 +52,7 @@ export function MarkCounts({ counts }: { counts: Record<string, number> }) {
   return (
     <div className="flex flex-wrap gap-1.5">
       {items.map((t) => (
-        <span key={t.key} className="rounded-full bg-red-500/10 px-2.5 py-1 text-xs font-bold text-red-300">
+        <span key={t.key} className="rounded-full border border-red-200 bg-red-50 px-2.5 py-1 text-xs font-bold text-red-700">
           {t.label}: {counts[t.key]}
         </span>
       ))}
@@ -255,10 +255,10 @@ export function TextAnnotator({ text, value, onChange }: { text: string; value: 
   };
   return (
     <div>
-      <div className={`sticky top-0 z-10 mb-2 flex flex-wrap items-center gap-1.5 rounded-lg border p-2 ${sel ? "border-red-400/40 bg-red-500/10" : "border-line bg-surface"}`}>
+      <div className={`sticky top-0 z-10 mb-2 flex flex-wrap items-center gap-1.5 rounded-lg border p-2 ${sel ? "border-red-300 bg-red-50" : "border-line bg-surface"}`}>
         {sel ? (
           <>
-            <span className="text-xs font-bold text-red-300">«{text.slice(sel.start, sel.end).slice(0, 40)}» —</span>
+            <span className="text-xs font-bold text-red-700">«{text.slice(sel.start, sel.end).slice(0, 40)}» —</span>
             {ERROR_TYPES.map((t) => (
               <button key={t.key} type="button" className="rounded-full bg-red-600 px-2.5 py-1 text-xs font-bold text-white hover:bg-red-700" onClick={() => add(t.key)}>
                 {t.label}
@@ -279,7 +279,7 @@ export function TextAnnotator({ text, value, onChange }: { text: string; value: 
               onClick={() => onChange(value.filter((_, j) => j !== s.idx))}
               // Yorliq CSS orqali (::after): DOM matni o'zgarmaydi, keyingi belgilarning o'rni to'g'ri hisoblanadi
               data-short={ERROR_TYPES.find((t) => t.key === s.mark!.type)?.short}
-              className="relative cursor-pointer border-b-2 border-red-600 text-red-300 after:ml-0.5 after:rounded after:bg-red-600 after:px-1 after:align-super after:text-[10px] after:font-bold after:text-white after:content-[attr(data-short)]"
+              className="relative cursor-pointer border-b-2 border-red-600 text-red-600 after:ml-0.5 after:rounded after:bg-red-600 after:px-1 after:align-super after:text-[10px] after:font-bold after:text-white after:content-[attr(data-short)]"
             >
               {s.text}
             </span>

@@ -36,9 +36,9 @@ export function ProfilePage() {
         ) : (
           <span className="flex h-16 w-16 items-center justify-center rounded-full bg-brand text-2xl font-bold text-white">{user.firstName[0]}</span>
         )}
-        <p className="mt-2 text-lg font-extrabold">
+        <h1 className="mt-2 text-2xl leading-none">
           {user.firstName} {user.lastName ?? ""}
-        </p>
+        </h1>
         <p className="text-sm text-hint">
           {user.username ? `@${user.username} · ` : ""}
           {ROLE_LABELS[user.role]}

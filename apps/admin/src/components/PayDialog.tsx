@@ -77,8 +77,8 @@ function Form({ studentId, info, onClose, onDone }: { studentId: string; info: A
           <input className="input" inputMode="numeric" autoFocus value={amount} onChange={(e) => setAmount(e.target.value.replace(/\D/g, ""))} />
         </Field>
       </div>
-      {late > 0 && <p className="mt-3 rounded-lg bg-amber-400/10 px-3 py-2 text-xs font-semibold text-amber-300">Davr boshidan {late} kun keyin to'laydi: «kechikib to'ladi» deb belgilanadi.</p>}
-      {badRange && <p className="mt-3 text-xs font-semibold text-red-400">Davr oxiri boshidan oldin bo'lishi mumkin emas.</p>}
+      {late > 0 && <p className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-800">Davr boshidan {late} kun keyin to'laydi: «kechikib to'ladi» deb belgilanadi.</p>}
+      {badRange && <p className="mt-3 text-xs font-semibold text-red-600">Davr oxiri boshidan oldin bo'lishi mumkin emas.</p>}
       <div className="mt-3">
         <Field label="Izoh">
           <input className="input" value={note} maxLength={300} onChange={(e) => setNote(e.target.value)} />
@@ -86,7 +86,7 @@ function Form({ studentId, info, onClose, onDone }: { studentId: string; info: A
       </div>
       <div className="mt-3 flex flex-wrap gap-2">
         {["Naqd", "Kartaga", "Chegirma"].map((n) => (
-          <button key={n} type="button" className={`rounded-full border px-3 py-1 text-xs font-semibold ${note === n ? "border-brand bg-brand-soft text-brand-light" : "border-line"}`} onClick={() => setNote(n)}>
+          <button key={n} type="button" className={`rounded-full border px-3 py-1 text-xs font-semibold ${note === n ? "border-brand bg-brand-soft text-brand-dark" : "border-line text-ink-2 hover:bg-surface-2"}`} onClick={() => setNote(n)}>
             {n}
           </button>
         ))}

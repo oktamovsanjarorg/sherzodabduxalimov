@@ -37,7 +37,7 @@ export function RubricForm({ value, onChange, aiHint }: { value: RubricValue; on
                 key={k}
                 type="button"
                 onClick={() => onChange({ ...value, special: on ? null : k })}
-                className={`rounded-full border px-3 py-1 text-xs font-semibold ${on ? "border-red-500 bg-red-500/10 text-red-300" : "border-line text-ink-2 hover:bg-surface-2"}`}
+                className={`rounded-full border px-3 py-1 text-xs font-semibold ${on ? "border-red-300 bg-red-50 text-red-700" : "border-line text-ink-2 hover:bg-surface-2"}`}
               >
                 {ESSAY_SPECIAL[k].label} · {ESSAY_SPECIAL[k].score} ball
               </button>
@@ -54,10 +54,10 @@ export function RubricForm({ value, onChange, aiHint }: { value: RubricValue; on
           return (
             <div key={c.key}>
               {header && <p className="mb-1 mt-2 text-[11px] font-bold uppercase tracking-wide text-ink-4">{header}</p>}
-              <div className={`rounded-lg border p-3 ${cur === undefined ? "border-amber-400/40" : "border-line"}`}>
+              <div className={`rounded-lg border p-3 ${cur === undefined ? "border-amber-400" : "border-line"}`}>
                 <p className="text-sm font-bold">
                   {i + 1}. {c.label}
-                  {aiHint?.[c.key] !== undefined && <span className="ml-2 text-xs font-semibold text-sky-300">AI: {fmt(aiHint[c.key])}</span>}
+                  {aiHint?.[c.key] !== undefined && <span className="ml-2 text-xs font-semibold text-brand">AI: {fmt(aiHint[c.key])}</span>}
                 </p>
                 <div className="mt-2 grid grid-cols-1 gap-1 sm:grid-cols-5">
                   {RUBRIC_STEPS.map((step, j) => {

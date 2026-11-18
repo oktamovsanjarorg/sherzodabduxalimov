@@ -20,9 +20,9 @@ const STATUS_STYLE: Record<AttendanceStatusName, { on: string; short: string }> 
 };
 const SYMBOL: Record<AttendanceStatusName, string> = { PRESENT: "✓", LATE: "⏰", ABSENT: "✕", EXCUSED: "S" };
 const CELL: Record<AttendanceStatusName, string> = {
-  PRESENT: "bg-emerald-400/15 text-emerald-300",
-  LATE: "bg-amber-400/15 text-amber-300",
-  ABSENT: "bg-red-500/15 text-red-300",
+  PRESENT: "bg-emerald-100 text-emerald-800",
+  LATE: "bg-amber-100 text-amber-800",
+  ABSENT: "bg-red-100 text-red-700",
   EXCUSED: "bg-surface-3 text-ink-2",
 };
 
@@ -178,7 +178,7 @@ function DayView({ groupId, date }: { groupId: string; date: string }) {
                   <p className="truncate font-bold">{s.name}</p>
                   <div className="flex flex-wrap items-center gap-2">
                     <ParentState s={s} />
-                    {cur.status && !dirty && (notifiedAt ? <span className="text-[11px] text-emerald-400">· ota-onaga yuborilgan</span> : <span className="text-[11px] text-amber-400">· yuborilmagan</span>)}
+                    {cur.status && !dirty && (notifiedAt ? <span className="text-[11px] text-emerald-600">· ota-onaga yuborilgan</span> : <span className="text-[11px] text-amber-600">· yuborilmagan</span>)}
                   </div>
                 </div>
                 <div className="grid w-full grid-cols-2 gap-1 sm:w-48">

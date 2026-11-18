@@ -138,11 +138,11 @@ function FeeMissing({ d }: { d: Insights }) {
     onError: (e) => toast(errMsg(e), "error"),
   });
   return (
-    <section className="rounded-2xl border border-amber-400/40 bg-amber-400/10 p-4 sm:p-5">
-      <p className="flex items-center gap-2 font-extrabold text-amber-200">
+    <section className="rounded-2xl border border-amber-300 bg-amber-50 p-4 sm:p-5">
+      <p className="flex items-center gap-2 font-extrabold text-amber-900">
         <AlertTriangle size={18} /> Oylik to'lov narxi noma'lum
       </p>
-      <p className="mt-1 text-sm text-amber-200/80">
+      <p className="mt-1 text-sm text-amber-800">
         Tariflarda oylik tarif yo'q, shuning uchun {d.offline.feeMissing} ta o'quvchidan qancha pul tushishi kerakligini hisoblab bo'lmayapti.{" "}
         <Link to="/billing" className="font-bold underline">
           Tariflarda oylik tarif yarating

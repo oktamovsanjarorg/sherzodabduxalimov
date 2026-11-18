@@ -61,7 +61,7 @@ function CardForm() {
         <Spinner className="text-ink-4" />
       ) : (
         <>
-          {!q.data?.card && <p className="rounded-lg bg-amber-400/10 px-3 py-2 text-sm text-amber-300">Karta kiritilmaguncha o'quvchilar to'lov qila olmaydi.</p>}
+          {!q.data?.card && <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">Karta kiritilmaguncha o'quvchilar to'lov qila olmaydi.</p>}
           <Field label="Karta raqami">
             <input
               className="input text-lg tabular-nums tracking-wider"

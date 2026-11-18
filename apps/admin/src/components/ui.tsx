@@ -5,7 +5,7 @@ export function PageHeader({ title, subtitle, actions }: { title: string; subtit
   return (
     <div className="mb-5 flex flex-wrap items-end justify-between gap-3 sm:mb-6">
       <div className="min-w-0">
-        <h1 className="break-words text-xl font-extrabold tracking-tight sm:text-2xl">{title}</h1>
+        <h1 className="break-words text-2xl leading-tight sm:text-[1.7rem]">{title}</h1>
         {subtitle && <p className="mt-1 text-sm text-ink-3">{subtitle}</p>}
       </div>
       {actions && <div className="flex flex-wrap gap-2">{actions}</div>}
@@ -66,12 +66,12 @@ export function Toggle({ checked, onChange, label, hint }: { checked: boolean; o
 }
 
 const tones = {
-  green: "bg-emerald-400/15 text-emerald-300",
+  green: "bg-emerald-100 text-emerald-800",
   gray: "bg-surface-3 text-ink-2",
-  amber: "bg-amber-400/15 text-amber-300",
-  red: "bg-red-500/15 text-red-300",
-  blue: "bg-sky-400/15 text-sky-300",
-  brand: "bg-brand-soft text-brand-light",
+  amber: "bg-amber-100 text-amber-800",
+  red: "bg-red-100 text-red-700",
+  blue: "bg-sky-100 text-sky-800",
+  brand: "bg-brand-soft text-brand-dark",
 };
 export function Badge({ tone = "gray", children }: { tone?: keyof typeof tones; children: ReactNode }) {
   // Telefonda uzun yorliq ekrandan chiqib ketmasin: kerak bo'lsa keyingi qatorga o'tadi
@@ -92,7 +92,7 @@ export function ConfirmButton({ onConfirm, children, label = "O'chirilsinmi?", c
   }, [ask]);
   return ask ? (
     <span className="inline-flex items-center gap-1">
-      <span className="text-xs font-bold text-red-400">{label}</span>
+      <span className="text-xs font-bold text-red-600">{label}</span>
       <button className="btn-sm btn bg-red-600 text-white hover:bg-red-700" onClick={() => { setAsk(false); onConfirm(); }}>
         Ha
       </button>

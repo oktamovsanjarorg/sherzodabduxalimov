@@ -91,7 +91,7 @@ export function LinkCard({ link }: { link: AdminParentLink }) {
       {link.student.groupName && <p className="mt-2 text-xs text-ink-3">Guruh: {link.student.groupName}</p>}
 
       {link.flags.length > 0 && (
-        <ul className="mt-3 space-y-1 rounded-lg bg-red-500/10 p-3 text-sm text-red-300">
+        <ul className="mt-3 space-y-1 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
           {link.flags.map((f) => (
             <li key={f} className="flex items-start gap-2">
               <AlertTriangle size={16} className="mt-0.5 shrink-0" /> {PARENT_FLAG_LABELS[f] ?? f}
@@ -170,7 +170,7 @@ function RejectModal({ link, onClose, onDone }: { link: AdminParentLink; onClose
       </p>
       <div className="mb-3 flex flex-wrap gap-2">
         {REASONS.map((r) => (
-          <button key={r} className={`btn-sm btn border ${reason === r ? "border-red-400 bg-red-500/10 text-red-300" : "border-line text-ink-2"}`} onClick={() => setReason(r)}>
+          <button key={r} className={`btn-sm btn border ${reason === r ? "border-red-300 bg-red-50 text-red-700" : "border-line text-ink-2"}`} onClick={() => setReason(r)}>
             {r}
           </button>
         ))}

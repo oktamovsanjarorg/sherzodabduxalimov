@@ -9,7 +9,10 @@ export default {
   content: ["./index.html", "./src/**/*.{ts,tsx}"],
   theme: {
     extend: {
-      fontFamily: { sans: ['"Manrope Variable"', "system-ui", "sans-serif"] },
+      fontFamily: {
+        sans: ['"Manrope Variable"', "system-ui", "sans-serif"],
+        display: ['"Fraunces Variable"', "Georgia", "serif"],
+      },
       colors: {
         bg: c("bg"),
         surface: c("surface"),
@@ -18,7 +21,8 @@ export default {
         hint: c("hint"),
         link: c("link"),
         danger: c("danger"),
-        brand: { DEFAULT: "rgb(15 118 110 / <alpha-value>)", soft: "rgb(15 118 110 / 0.14)" },
+        brand: { DEFAULT: "rgb(13 74 66 / <alpha-value>)", soft: "rgb(13 74 66 / 0.12)" },
+        gold: "rgb(154 114 41 / <alpha-value>)",
         success: "rgb(22 163 74 / <alpha-value>)",
       },
       borderRadius: { card: "16px" },

@@ -23,16 +23,15 @@ export function BottomNav() {
               end={end}
               onClick={haptic}
               className={({ isActive }) =>
-                `flex h-16 flex-col items-center justify-center gap-1 text-xs font-semibold transition ${
+                `flex h-16 flex-col items-center justify-center gap-0.5 text-[11px] font-bold tracking-wide transition ${
                   isActive ? "text-brand" : "text-hint"
                 }`
               }
             >
               {({ isActive }) => (
                 <>
-                  <span className={`flex h-8 w-14 items-center justify-center rounded-full ${isActive ? "bg-brand-soft" : ""}`}>
-                    <Icon size={22} strokeWidth={isActive ? 2.4 : 2} />
-                  </span>
+                  <span className={`mb-0.5 h-0.5 w-5 rounded-full ${isActive ? "bg-gold" : "bg-transparent"}`} />
+                  <Icon size={22} strokeWidth={isActive ? 2.25 : 1.75} />
                   {label}
                 </>
               )}

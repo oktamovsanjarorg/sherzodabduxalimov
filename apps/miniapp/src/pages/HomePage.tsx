@@ -31,15 +31,15 @@ export function HomePage() {
     <div className="mx-auto max-w-md">
       <header className="flex items-center gap-3 px-1">
         {user.photoUrl ? (
-          <img src={user.photoUrl} alt="" className="h-11 w-11 rounded-full object-cover" />
+          <img src={user.photoUrl} alt="" className="h-11 w-11 rounded-full object-cover ring-1 ring-hint/20" />
         ) : (
-          <span className="flex h-11 w-11 items-center justify-center rounded-full bg-brand text-lg font-bold text-white">
+          <span className="flex h-11 w-11 items-center justify-center rounded-full bg-brand font-display text-lg text-white">
             {user.firstName[0]}
           </span>
         )}
         <div className="min-w-0 flex-1">
-          <p className="text-xs text-hint">Xush kelibsiz</p>
-          <h1 className="truncate text-lg font-extrabold leading-tight">{user.firstName}</h1>
+          <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-hint">Xush kelibsiz</p>
+          <h1 className="truncate text-[1.65rem] leading-none">{user.firstName}</h1>
         </div>
         <button className="-my-2.5 py-2.5" onClick={go("/subscribe")}>{sub ? <Badge>Obuna faol</Badge> : user.offlineGroup ? <Badge>Offline guruh</Badge> : <Badge tone="muted">Bepul</Badge>}</button>
       </header>
@@ -52,11 +52,11 @@ export function HomePage() {
       ) : (
         <button
           onClick={go(s?.lastLesson ? `/lesson/${s.lastLesson.id}` : "/lessons")}
-          className="card tap mt-5 flex w-full items-center gap-3 bg-brand text-left text-white"
+          className="card tap mt-5 flex w-full items-center gap-3 border-transparent bg-brand text-left text-white"
         >
           <span className="min-w-0 flex-1">
-            <span className="block text-xs font-semibold opacity-80">{s?.lastLesson ? "Davom ettirish" : "Boshlash"}</span>
-            <span className="mt-1 block truncate text-base font-bold">
+            <span className="block text-[11px] font-bold uppercase tracking-[0.14em] text-[#e9cf96]">{s?.lastLesson ? "Davom ettirish" : "Boshlash"}</span>
+            <span className="mt-1 block truncate font-display text-lg font-medium leading-tight">
               {s?.lastLesson ? `${s.lastLesson.topicTitle} · ${s.lastLesson.title}` : "Birinchi darsni ochish"}
             </span>
           </span>
@@ -85,7 +85,7 @@ export function HomePage() {
 function Stat({ value, label }: { value: string; label: string }) {
   return (
     <div>
-      <p className="text-xl font-extrabold tabular-nums">{value}</p>
+      <p className="font-display text-2xl font-medium tabular-nums">{value}</p>
       <p className="text-xs text-hint">{label}</p>
     </div>
   );

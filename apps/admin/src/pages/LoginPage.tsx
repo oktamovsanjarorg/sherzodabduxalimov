@@ -30,16 +30,17 @@ export function LoginPage() {
   }, [navigate]);
 
   return (
-    <div className="flex min-h-screen items-center justify-center p-6">
-      <div className="card w-full max-w-md p-8 text-center shadow-2xl">
+    <div className="flex min-h-screen items-center justify-center bg-navy p-6">
+      <div className="card w-full max-w-md p-8 text-center shadow-[0_24px_60px_-28px_rgb(0_0_0/0.55)]">
         <img src={`${import.meta.env.BASE_URL}favicon.svg`} alt="" className="mx-auto h-14 w-14" />
-        <h1 className="mt-4 text-xl font-extrabold">Admin panel</h1>
+        <p className="mt-5 text-[11px] font-bold uppercase tracking-[0.18em] text-gold">Sherzod Abduxalimov</p>
+        <h1 className="mt-2 text-[1.7rem]">Admin panel</h1>
         {busy ? (
           <p className="mt-3 text-sm text-ink-3">Kirilmoqda…</p>
         ) : (
           <>
             {(error || expired) && (
-              <p className="mt-4 rounded-lg bg-red-500/10 px-3 py-2 text-sm font-semibold text-red-300">
+              <p className="mt-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm font-semibold text-red-700">
                 {error ?? "Sessiya tugadi. Qayta kiring."}
               </p>
             )}
@@ -48,7 +49,7 @@ export function LoginPage() {
               <ol className="list-decimal space-y-1 pl-5">
                 <li>Telegramda botni oching</li>
                 <li>
-                  <code className="rounded bg-surface-3 px-1.5 py-0.5 font-bold text-ink">/admin</code> deb yozing
+                  <code className="rounded bg-brand-soft px-1.5 py-0.5 font-bold text-brand-dark">/admin</code> deb yozing
                 </li>
                 <li>«Admin panelni ochish» tugmasini bosing</li>
               </ol>

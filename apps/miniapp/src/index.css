@@ -25,10 +25,16 @@
   }
 }
 
+h1 {
+  font-family: "Fraunces Variable", Georgia, serif;
+  font-weight: 520;
+  letter-spacing: -0.02em;
+}
+
 /* @layer components ichida: shunda utility klasslar (bg-brand va h.k.) ularni bosib keta oladi */
 @layer components {
   .card {
-    @apply rounded-card bg-section p-4;
+    @apply rounded-card border border-hint/15 bg-section p-4;
   }
   .tap {
     @apply transition active:scale-[0.98] active:opacity-80;

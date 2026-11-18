@@ -4,7 +4,7 @@ import type { ReactNode } from "react";
 export function SectionTitle({ children, action }: { children: ReactNode; action?: ReactNode }) {
   return (
     <div className="mb-2 mt-6 flex items-center justify-between px-1">
-      <h2 className="text-[15px] font-bold">{children}</h2>
+      <h2 className="text-[11px] font-bold uppercase tracking-[0.16em] text-hint">{children}</h2>
       {action}
     </div>
   );

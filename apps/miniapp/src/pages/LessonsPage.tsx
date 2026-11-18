@@ -12,8 +12,9 @@ export function LessonsPage() {
 
   return (
     <div className="mx-auto max-w-md">
-      <h1 className="px-1 text-xl font-extrabold">Videodarslar</h1>
-      <p className="mb-4 px-1 text-sm text-hint">Mavzular bo'yicha</p>
+      <p className="px-1 text-[11px] font-bold uppercase tracking-[0.16em] text-hint">Kurs</p>
+      <h1 className="px-1 text-[1.7rem] leading-none">Videodarslar</h1>
+      <p className="mb-4 mt-2 px-1 text-sm text-hint">Mavzular bo'yicha</p>
 
       {courses.isPending && <ListSkeleton />}
       {courses.isError && <p className="card text-sm text-danger">Yuklab bo'lmadi: {courses.error.message}</p>}

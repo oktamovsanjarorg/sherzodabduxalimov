@@ -193,7 +193,7 @@ export function QuestionModal({ question, defaultTopicId, onClose, onSaved }: { 
         </div>
 
         {question?.keyStatus && (
-          <p className="rounded-lg bg-amber-400/10 px-3 py-2 text-sm text-amber-200">
+          <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
             Bu savol PDF'dan import qilingan, javob kaliti taklif sifatida qo'yilgan
             {question.keyStatus === "uncertain" ? " va shubhali" : ""}. Tekshirib, «Saqlash»ni bossangiz, kalit tasdiqlangan hisoblanadi.
           </p>
@@ -235,11 +235,11 @@ export function QuestionModal({ question, defaultTopicId, onClose, onSaved }: { 
                 const Icon = type === "SINGLE" ? (o.isCorrect ? CheckCircle2 : Circle) : o.isCorrect ? SquareCheck : Square;
                 return (
                   <div key={o.id ?? `new-${i}`} className="flex items-center gap-2">
-                    <button type="button" onClick={() => markCorrect(i)} className={o.isCorrect ? "text-emerald-400" : "text-ink-5 hover:text-ink-3"} aria-label="To'g'ri javob">
+                    <button type="button" onClick={() => markCorrect(i)} className={o.isCorrect ? "text-emerald-600" : "text-ink-5 hover:text-ink-3"} aria-label="To'g'ri javob">
                       <Icon size={22} />
                     </button>
                     <span className="w-5 text-sm font-extrabold text-ink-4">{String.fromCharCode(65 + i)}</span>
-                    <input className={`input ${o.isCorrect ? "border-emerald-400" : ""}`} value={o.text} onChange={(e) => setOpt(i, { text: e.target.value })} />
+                    <input className={`input ${o.isCorrect ? "border-emerald-500" : ""}`} value={o.text} onChange={(e) => setOpt(i, { text: e.target.value })} />
                     <button type="button" className="btn-ghost h-9 w-9 p-0 text-ink-4" disabled={options.length <= 2} onClick={() => setOptions((x) => x.filter((_, j) => j !== i))} aria-label="Variantni o'chirish">
                       <Trash2 size={15} />
                     </button>
@@ -258,7 +258,7 @@ export function QuestionModal({ question, defaultTopicId, onClose, onSaved }: { 
         <Field label="Izoh (natijada ko'rsatiladi)">
           <textarea className="textarea min-h-[60px]" value={explanation} onChange={(e) => setExplanation(e.target.value)} placeholder="Nega bu javob to'g'ri?" />
         </Field>
-        {err && <p className="rounded-lg bg-red-500/10 px-3 py-2 text-sm font-semibold text-red-300">{err}</p>}
+        {err && <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm font-semibold text-red-700">{err}</p>}
       </div>
       {newPassage && <PassageModal onClose={() => setNewPassage(false)} onSaved={(p) => setPassageId(p.id)} />}
     </Modal>
