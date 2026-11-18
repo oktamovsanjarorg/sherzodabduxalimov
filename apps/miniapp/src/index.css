@@ -12,6 +12,17 @@
     --c-hint: 107 114 128;
     --c-link: 15 118 110;
     --c-danger: 220 38 38;
+    /* Brend: landing bilan bir xil to'q yashil va oltin */
+    --c-brand: 13 74 66;
+    --c-gold: 154 114 41;
+    --brand-soft-alpha: 0.1;
+  }
+  /* Telegram tungi rejimi: to'q yashil qora fonda ko'rinmaydi, shuning uchun ochroq.
+     #23907c: oq matn bilan ~4:1, qorong'i fon bilan ~4:1 kontrast */
+  [data-scheme="dark"] {
+    --c-brand: 35 144 124;
+    --c-gold: 233 207 150;
+    --brand-soft-alpha: 0.18;
   }
   html,
   body,

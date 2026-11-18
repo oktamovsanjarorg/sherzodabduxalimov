@@ -21,8 +21,9 @@ export default {
         hint: c("hint"),
         link: c("link"),
         danger: c("danger"),
-        brand: { DEFAULT: "rgb(13 74 66 / <alpha-value>)", soft: "rgb(13 74 66 / 0.12)" },
-        gold: "rgb(154 114 41 / <alpha-value>)",
+        // Brend ranglari ham o'zgaruvchida: tungi rejimda (data-scheme="dark") ochroq variant, index.css
+        brand: { DEFAULT: c("brand"), soft: "rgb(var(--c-brand) / var(--brand-soft-alpha))" },
+        gold: c("gold"),
         success: "rgb(22 163 74 / <alpha-value>)",
       },
       borderRadius: { card: "16px" },

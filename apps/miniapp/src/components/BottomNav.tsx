@@ -30,8 +30,9 @@ export function BottomNav() {
             >
               {({ isActive }) => (
                 <>
-                  <span className={`mb-0.5 h-0.5 w-5 rounded-full ${isActive ? "bg-gold" : "bg-transparent"}`} />
-                  <Icon size={22} strokeWidth={isActive ? 2.25 : 1.75} />
+                  <span className={`flex h-8 w-14 items-center justify-center rounded-full transition-colors ${isActive ? "bg-brand-soft" : ""}`}>
+                    <Icon size={22} strokeWidth={isActive ? 2.25 : 1.75} />
+                  </span>
                   {label}
                 </>
               )}
