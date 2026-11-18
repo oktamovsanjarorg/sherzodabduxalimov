@@ -333,14 +333,14 @@ function Results({ t, onChanged }: { t: ExternalTestDetail; onChanged: () => voi
       </div>
       <ul className="mt-3 divide-y divide-line border-t border-line">
         {rows.map((r) => (
-          <li key={r.id} className="flex flex-wrap items-center gap-3 px-4 py-3 sm:px-5">
-            <span className="w-7 text-center font-extrabold text-ink-3">{r.rank}</span>
+          <li key={r.id} className="flex items-center gap-2 px-4 py-3 sm:gap-3 sm:px-5">
+            <span className="w-6 shrink-0 text-center font-extrabold text-ink-3 sm:w-7">{r.rank}</span>
             <div className="min-w-0 flex-1">
-              <p className="truncate font-semibold">
+              <p className="break-words font-semibold sm:truncate">
                 {r.student ? <Link to={`/students/${r.student.id}`} className="hover:underline">{r.student.name}</Link> : r.name}
                 {r.student && r.student.name !== r.name && <span className="ml-1.5 text-xs font-normal text-ink-4">testda: {r.name}</span>}
               </p>
-              <p className="truncate text-xs text-ink-3">
+              <p className="text-xs text-ink-3 sm:truncate">
                 {r.correct} to'g'ri · {r.wrong} xato · {r.blank} bo'sh
                 {r.testScore != null ? ` · test ${formatScore(r.testScore)}${r.essayScore != null ? ` · esse ${formatScore(r.essayScore)}/24` : ""}` : ""}
                 {r.scaledScore != null ? ` · ${formatScore(r.scaledScore)} ball` : ""}
@@ -349,11 +349,11 @@ function Results({ t, onChanged }: { t: ExternalTestDetail; onChanged: () => voi
               </p>
             </div>
             {t.rasch && (
-              <button className="btn-ghost btn-sm" onClick={() => setCard(r)} title="Natija kartasi">
+              <button className="btn-ghost btn-sm h-9 w-9 p-0" onClick={() => setCard(r)} title="Natija kartasi" aria-label="Natija kartasi">
                 <FileText size={14} />
               </button>
             )}
-            <button className="btn-ghost btn-sm" onClick={() => setLinking(r)} title="O'quvchiga bog'lash">
+            <button className="btn-ghost btn-sm h-9 w-9 p-0" onClick={() => setLinking(r)} title="O'quvchiga bog'lash" aria-label="O'quvchiga bog'lash">
               <Link2 size={14} />
             </button>
             <Badge tone={tone(r.percent)}>{formatScore(r.percent)}%</Badge>
@@ -404,8 +404,8 @@ function Tile({ label, value, hint }: { label: string; value: string | number; h
   return (
     <div className="card p-4">
       <p className="text-xs font-bold uppercase tracking-wide text-ink-3">{label}</p>
-      <p className="mt-1 truncate text-2xl font-extrabold tracking-tight">{value}</p>
-      {hint && <p className="mt-0.5 truncate text-xs text-ink-3">{hint}</p>}
+      <p className="mt-1 break-words text-xl font-extrabold leading-tight tracking-tight sm:truncate sm:text-2xl">{value}</p>
+      {hint && <p className="mt-0.5 line-clamp-2 text-xs text-ink-3 sm:truncate">{hint}</p>}
     </div>
   );
 }

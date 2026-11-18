@@ -122,8 +122,10 @@ function Header({ s }: { s: StudentDetail }) {
           {s.accessMode === "FREE" && <Badge tone="blue">bepul ochiq</Badge>}
           {s.accessMode === "CLOSED" && <Badge tone="red">kirish yopiq</Badge>}
         </p>
-        <div className="mt-3 flex flex-wrap items-center gap-2">
-          <select className="input h-9 w-auto min-w-[200px] text-sm" value={s.group?.id ?? ""} disabled={move.isPending} onChange={(e) => move.mutate(e.target.value)}>
+      </div>
+      {/* Telefonda boshqaruvlar ism ostida to'liq kenglikda: sana maydoni ekrandan chiqib ketmasin */}
+      <div className="flex w-full flex-wrap items-center gap-2 sm:pl-[4.5rem]">
+          <select className="input h-10 w-full min-w-0 text-sm sm:h-9 sm:w-auto sm:min-w-[200px]" value={s.group?.id ?? ""} disabled={move.isPending} onChange={(e) => move.mutate(e.target.value)}>
             <option value="">Guruhsiz (online)</option>
             {groups.data
               ?.filter((g) => g.isActive || g.id === s.group?.id)
@@ -137,8 +139,6 @@ function Header({ s }: { s: StudentDetail }) {
             <Pencil size={14} /> Tahrirlash
           </button>
           <StartedOn s={s} onDone={refresh} />
-
-        </div>
       </div>
       {editing && <EditModal s={s} onClose={() => setEditing(false)} onDone={refresh} />}
     </div>
@@ -157,11 +157,11 @@ function StartedOn({ s, onDone }: { s: StudentDetail; onDone: () => void }) {
     onError: (e) => toast(errMsg(e), "error"),
   });
   return (
-    <label className="flex items-center gap-2 text-sm text-ink-3">
+    <label className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-ink-3">
       O'qishni boshlagan:
       <input
         type="date"
-        className={`input h-9 w-auto text-sm ${s.startedOn ? "" : "border-amber-400"}`}
+        className={`input h-10 w-auto min-w-0 text-sm sm:h-9 ${s.startedOn ? "" : "border-amber-400"}`}
         value={s.startedOn ?? ""}
         disabled={save.isPending}
         onChange={(e) => save.mutate(e.target.value)}

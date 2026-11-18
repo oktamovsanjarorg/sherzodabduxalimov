@@ -36,7 +36,9 @@ export function Inbox({ groups }: { groups: AdminGroup[] }) {
         <InboxIcon size={18} className="text-amber-800" />
         <span className="font-extrabold text-ink">Ko'rib chiqish kerak</span>
         <span className="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-red-600 px-1.5 text-[11px] font-extrabold text-white">{n + p + d}</span>
-        <span className="min-w-0 flex-1 truncate text-xs text-ink-2">{parts}</span>
+        {/* Telefonda izoh alohida qatorda: sarlavha yonida siqilib «yangi kirganla…» bo'lib qolmasin */}
+        <span className="order-last w-full text-xs text-ink-2 sm:order-none sm:w-auto sm:min-w-0 sm:flex-1 sm:truncate">{parts}</span>
+        <span className="flex-1 sm:hidden" />
         <ChevronDown size={18} className={`shrink-0 text-ink-3 transition-transform ${open ? "rotate-180" : ""}`} />
       </button>
       {open && (

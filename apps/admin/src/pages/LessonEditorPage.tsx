@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { AlertTriangle, ArrowLeft, CheckCircle2, Film, RefreshCw, Trash2, UploadCloud, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { ConfirmButton, Field, PageHeader, Spinner, Toggle } from "../components/ui";
+import { ConfirmButton, Field, PageHeader, Spinner, Toggle, MobileBar } from "../components/ui";
 import { api, errMsg } from "../lib/api";
 import { useToast } from "../lib/toast";
 import { formatBytes, uploadVideo, type UploadProgress } from "../lib/uploader";
@@ -73,7 +73,7 @@ function Editor({ lesson, onChanged }: { lesson: AdminLesson; onChanged: () => v
             <ConfirmButton onConfirm={() => del.mutate()} label="Dars o'chirilsinmi?" className="btn-danger">
               <Trash2 size={16} /> O'chirish
             </ConfirmButton>
-            <button className="btn-primary" onClick={() => save.mutate()} disabled={save.isPending}>
+            <button className="btn-primary hidden md:inline-flex" onClick={() => save.mutate()} disabled={save.isPending}>
               {save.isPending && <Spinner />} Saqlash
             </button>
           </>
@@ -124,6 +124,9 @@ function Editor({ lesson, onChanged }: { lesson: AdminLesson; onChanged: () => v
           </section>
         </aside>
       </div>
+      <MobileBar><button className="btn-primary w-full" onClick={() => save.mutate()} disabled={save.isPending}>
+              {save.isPending && <Spinner />} Saqlash
+            </button></MobileBar>
     </>
   );
 }

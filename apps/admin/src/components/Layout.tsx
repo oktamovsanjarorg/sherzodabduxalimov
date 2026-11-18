@@ -1,6 +1,7 @@
 import { ROLE_LABELS } from "@onatili/shared";
 import { useQuery } from "@tanstack/react-query";
 import { BookOpen, ClipboardCheck, GraduationCap, Home, LogOut, MoreHorizontal, type LucideIcon } from "lucide-react";
+import { useEffect, useRef } from "react";
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { api } from "../lib/api";
 import { useDismissed } from "../lib/dismiss";
@@ -17,6 +18,8 @@ interface NavGroup {
   badge?: number;
   /** Kompyuter sidebar'ida shu guruh ichida ko'rsatiladi (telefonda pastki tugma alohida) */
   sidebarIn?: string;
+  /** Faqat telefonda (pastki menyuda) */
+  mobileOnly?: boolean;
 }
 
 export function useNavGroups(): NavGroup[] {
@@ -77,11 +80,10 @@ export function useNavGroups(): NavGroup[] {
         { to: "/attendance", label: "Davomat", match: /^\/attendance/ },
       ],
     },
-    // Pul va xodimlar: faqat ega (yordamchida bu bo'lim umuman yo'q)
-    ...(isTeacher
-      ? [
-          {
-            to: "/payments",
+    // Telefonda «Ko'proq»: bo'limlar ro'yxati va chiqish. Pul va xodimlar faqat egada
+    isTeacher
+      ? {
+            to: "/more",
             label: "Ko'proq",
             Icon: MoreHorizontal,
             match: /^\/(more|staff|payments|billing|trash|backups)/,
@@ -93,9 +95,8 @@ export function useNavGroups(): NavGroup[] {
               { to: "/trash", label: "Korzinka", match: /^\/trash/ },
               { to: "/backups", label: "Zaxira", match: /^\/backups/ },
             ],
-          },
-        ]
-      : []),
+          }
+      : { to: "/more", label: "Ko'proq", Icon: MoreHorizontal, match: /^\/more/, mobileOnly: true },
   ];
 }
 
@@ -118,6 +119,12 @@ export function Layout() {
   const groups = useNavGroups();
   const s = loadSession()!;
   const current = groups.find((g) => g.match.test(pathname)) ?? groups[0];
+  // Telefonda faol bo'lim tugmasi ko'rinib tursin (Korzinka, Zaxira kabi oxirgilari ekran chetida qolmasin)
+  const tabs = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    tabs.current?.querySelector('[aria-current="page"]')?.scrollIntoView({ inline: "center", block: "nearest" });
+  }, [pathname]);
+  const chips = pathname !== "/more" ? current.sub : undefined;
 
   return (
     <div className="min-h-screen">
@@ -128,7 +135,7 @@ export function Layout() {
           <span className="font-display text-[15px] font-medium tracking-tight text-white">Ona tili</span>
         </div>
         <nav className="flex-1 space-y-4 overflow-y-auto px-3 pb-4">
-          {groups.filter((g) => !g.sidebarIn).map((g) => {
+          {groups.filter((g) => !g.sidebarIn && !g.mobileOnly).map((g) => {
             const extra = groups.filter((x) => x.sidebarIn === g.to).map((x) => ({ to: x.to, label: x.label, match: x.match, badge: x.badge }));
             const items = [...(g.sub ?? [{ to: g.to, label: g.label, match: g.match, badge: g.badge }]), ...extra];
             return (
@@ -176,23 +183,17 @@ export function Layout() {
         </div>
       </aside>
 
-      {/* Telefon/planshet: yuqorida sarlavha va guruh ichidagi bo'limlar */}
+      {/* Telefon/planshet: yuqorida faqat guruh ichidagi bo'limlar (qaysi guruhdaligi pastki menyuda ko'rinadi) */}
       <header className="sticky top-0 z-30 bg-navy text-white shadow-sm md:hidden" style={{ paddingTop: "env(safe-area-inset-top, 0px)" }}>
-        <div className="flex h-14 items-center gap-3 px-4">
-          <img src={`${import.meta.env.BASE_URL}favicon.svg`} alt="" className="h-8 w-8" />
-          <span className="flex-1 font-display text-lg font-medium tracking-tight">{current.label}</span>
-          <button className="btn btn-sm px-2 text-mist/80 hover:bg-navy-light hover:text-white" onClick={logout} aria-label="Chiqish" title="Chiqish">
-            <LogOut size={18} />
-          </button>
-        </div>
-        {current.sub && (
-          <div className="flex gap-1 overflow-x-auto px-4 pb-2">
-            {current.sub.map((t) => {
+        {chips ? (
+          <div ref={tabs} className="no-scrollbar flex gap-1.5 overflow-x-auto px-4 py-2.5">
+            {chips.map((t) => {
               const active = t.match.test(pathname);
               return (
                 <NavLink
                   key={t.to}
                   to={t.to}
+                  aria-current={active ? "page" : undefined}
                   className={`h-9 shrink-0 rounded-full px-4 text-sm font-bold leading-9 transition ${
                     active ? "bg-white text-navy" : "bg-navy-light text-mist hover:bg-navy-line"
                   }`}
@@ -202,6 +203,11 @@ export function Layout() {
                 </NavLink>
               );
             })}
+          </div>
+        ) : (
+          <div className="flex h-14 items-center gap-3 px-4">
+            <img src={`${import.meta.env.BASE_URL}favicon.svg`} alt="" className="h-8 w-8" />
+            <span className="font-display text-lg font-medium tracking-tight">{current.label}</span>
           </div>
         )}
       </header>
@@ -217,7 +223,7 @@ export function Layout() {
         className="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-surface/95 backdrop-blur md:hidden"
         style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
       >
-        <ul className={`grid ${groups.length >= 5 ? "grid-cols-5" : "grid-cols-4"}`}>
+        <ul className="grid grid-cols-5">
           {groups.map((g) => {
             const active = g.match.test(pathname);
             return (

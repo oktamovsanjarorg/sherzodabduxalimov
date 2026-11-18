@@ -46,3 +46,7 @@ h1 {
     margin-bottom: -10px;
   }
 }
+
+/* Gorizontal aylanadigan tugmalar qatori: scrollbar ko'rinmasin (telefonda baribir barmoq bilan suriladi) */
+.no-scrollbar { scrollbar-width: none; }
+.no-scrollbar::-webkit-scrollbar { display: none; }

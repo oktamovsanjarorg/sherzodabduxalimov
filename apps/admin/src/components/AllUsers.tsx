@@ -100,7 +100,7 @@ function Row({ u, groups, isTeacher }: { u: AdminUserRow; groups: AdminGroup[]; 
           {u.waiting.includes("TEACHER") ? (
             // Tasdiqlash bitta tugma: online yoki darhol guruhga
             <select
-              className="btn-primary btn-sm h-9 w-[140px] cursor-pointer appearance-none text-sm"
+              className="btn-primary btn-sm h-10 w-auto min-w-[160px] cursor-pointer appearance-none px-4 text-sm sm:h-9"
               aria-label="Tasdiqlash"
               disabled={busy}
               value=""

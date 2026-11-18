@@ -13,6 +13,18 @@ export function PageHeader({ title, subtitle, actions }: { title: string; subtit
   );
 }
 
+/** Telefonda pastki menyu ustida doim ko'rinadigan amal (masalan, «Saqlash»): uzun formada tepaga qaytish shart emas */
+export function MobileBar({ children }: { children: ReactNode }) {
+  return (
+    <>
+      <div className="h-16 md:hidden" />
+      <div className="fixed inset-x-0 z-20 border-t border-line bg-surface/95 px-4 py-2.5 backdrop-blur md:hidden" style={{ bottom: "calc(4rem + env(safe-area-inset-bottom, 0px))" }}>
+        {children}
+      </div>
+    </>
+  );
+}
+
 export function Modal({ title, onClose, children, footer, wide }: { title: string; onClose: () => void; children: ReactNode; footer?: ReactNode; wide?: boolean }) {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();

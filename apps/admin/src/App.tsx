@@ -11,6 +11,7 @@ import { EssaysPage } from "./pages/EssaysPage";
 import { ParentsPage } from "./pages/ParentsPage";
 import { LessonEditorPage } from "./pages/LessonEditorPage";
 import { LoginPage } from "./pages/LoginPage";
+import { MorePage } from "./pages/MorePage";
 import { QuestionsPage } from "./pages/QuestionsPage";
 import { BillingSettingsPage } from "./pages/BillingSettingsPage";
 import { PaymentsPage } from "./pages/PaymentsPage";
@@ -44,7 +45,7 @@ export function App() {
         <Route path="stats" element={<StatsPage />} />
         <Route path="trash" element={<TrashPage />} />
         <Route path="content" element={<ContentPage />} />
-        <Route path="more" element={<Navigate to={loadSession()?.user.role === "TEACHER" ? "/payments" : "/"} replace />} />
+        <Route path="more" element={<MorePage />} />
         <Route path="essays" element={<EssaysPage />} />
         <Route path="external" element={<ExternalTestsPage />} />
         <Route path="external/:id" element={<ExternalTestPage />} />

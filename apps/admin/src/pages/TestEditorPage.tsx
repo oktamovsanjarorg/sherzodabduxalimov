@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowDown, ArrowLeft, ArrowUp, Plus, Search, Trash2, X } from "lucide-react";
 import { useState } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
-import { Badge, ConfirmButton, Field, Modal, PageHeader, Spinner, Toggle } from "../components/ui";
+import { Badge, ConfirmButton, Field, Modal, PageHeader, Spinner, Toggle, MobileBar } from "../components/ui";
 import { api, errMsg } from "../lib/api";
 import { plainText } from "../lib/format";
 import { useToast } from "../lib/toast";
@@ -96,7 +96,7 @@ function Editor({ initial }: { initial: AdminTestDetail | null }) {
         actions={
           <>
             {initial && <ConfirmButton onConfirm={() => del.mutate()} className="btn-danger" label="Test o'chirilsinmi?"><Trash2 size={16} /> O'chirish</ConfirmButton>}
-            <button className="btn-primary" onClick={() => { setErr(null); save.mutate(); }} disabled={save.isPending}>{save.isPending && <Spinner />} Saqlash</button>
+            <button className="btn-primary hidden md:inline-flex" onClick={() => { setErr(null); save.mutate(); }} disabled={save.isPending}>{save.isPending && <Spinner />} Saqlash</button>
           </>
         }
       />
@@ -187,6 +187,7 @@ function Editor({ initial }: { initial: AdminTestDetail | null }) {
 
       {picker && <Picker defaultTopicId={topicId} exclude={items.map((i) => i.question.id)} onClose={() => setPicker(false)} onPick={add} />}
       {creating && <QuestionModal question={null} defaultTopicId={topicId || null} onClose={() => setCreating(false)} onSaved={(q) => add([q])} />}
+      <MobileBar><button className="btn-primary w-full" onClick={() => { setErr(null); save.mutate(); }} disabled={save.isPending}>{save.isPending && <Spinner />} Saqlash</button></MobileBar>
     </>
   );
 }

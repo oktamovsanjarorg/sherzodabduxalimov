@@ -29,7 +29,7 @@ export function RaschCard({ t }: { t: ExternalTestDetail }) {
   return (
     <section className="card overflow-hidden">
       <div className="flex flex-wrap items-start gap-3 px-4 pt-4 sm:px-5">
-        <div className="min-w-0 flex-1">
+        <div className="w-full min-w-0 sm:w-auto sm:flex-1">
           <h2 className="font-extrabold">Rasch tahlili</h2>
           <p className="mt-1 max-w-3xl text-xs text-ink-3">
             {r.calibrated
