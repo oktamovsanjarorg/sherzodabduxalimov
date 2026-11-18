@@ -15,7 +15,7 @@ const shiftMonth = (m: string, by: number) => {
 };
 
 /** Offline guruhlar: kim shu oy to'ladi, kim qarzdor */
-export function OfflineLedgerView() {
+export function OfflineLedgerView({ q = "", onClearSearch }: { q?: string; onClearSearch?: () => void } = {}) {
   const toast = useToast();
   const qc = useQueryClient();
   const groups = useQuery({ queryKey: ["groups"], queryFn: api.groups });
@@ -43,6 +43,15 @@ export function OfflineLedgerView() {
   if (!active.length) return <Empty title="Faol guruh yo'q" hint="Guruhlarni Davomat bo'limida yaratib, o'quvchilarni qo'shing. Guruhdagi o'quvchiga ilova obunasiz ochiladi." />;
   const l = ledger.data;
   const isCurrent = month === currentMonth();
+  const needle = q.trim().toLowerCase();
+  const digitsOnly = needle.replace(/\D/g, "");
+  const rows = (l?.rows ?? []).filter((r) => {
+    if (!needle) return true;
+    const hay = `${r.name} ${r.username ?? ""} ${r.phone ?? ""}`.toLowerCase();
+    if (hay.includes(needle)) return true;
+    if (digitsOnly.length >= 3 && r.phone?.replace(/\D/g, "").includes(digitsOnly)) return true;
+    return false;
+  });
 
   return (
     <>
@@ -86,11 +95,26 @@ export function OfflineLedgerView() {
               </span>
             </div>
           )}
-          {!l.rows.length ? (
-            <Empty title="Guruhda o'quvchi yo'q" hint="Davomat → Guruhlar bo'limidan qo'shing." />
+          {needle && (
+            <p className="mb-2 text-xs text-ink-3">
+              {rows.length} / {l.rows.length} ta o'quvchi topildi
+            </p>
+          )}
+          {!rows.length ? (
+            <Empty
+              title={needle ? "O'quvchi topilmadi" : "Guruhda o'quvchi yo'q"}
+              hint={needle ? `«${q.trim()}» so'rovi bo'yicha hech qanday o'quvchi topilmadi` : "Davomat → Guruhlar bo'limidan qo'shing."}
+              action={
+                needle && onClearSearch ? (
+                  <button className="btn-secondary btn-sm" onClick={onClearSearch}>
+                    Qidiruvni tozalash
+                  </button>
+                ) : undefined
+              }
+            />
           ) : (
             <div className="card divide-y divide-line">
-              {l.rows.map((r) => (
+              {rows.map((r) => (
                 <div key={r.studentId} className="flex flex-wrap items-center gap-3 px-4 py-3">
                   <div className="min-w-0 flex-1">
                     <p className="truncate font-semibold">{r.name}</p>

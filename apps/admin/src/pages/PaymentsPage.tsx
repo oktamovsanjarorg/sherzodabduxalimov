@@ -21,6 +21,7 @@ export function PaymentsPage() {
   const tab: Tab = TABS.includes(params.get("tab") as Tab) ? (params.get("tab") as Tab) : "PENDING";
   const setTab = (t: Tab) => setParams(t === "PENDING" ? {} : { tab: t }, { replace: true });
   const [granting, setGranting] = useState(false);
+  const [q, setQ] = useState("");
   const pending = useQuery({ queryKey: ["payments", "PENDING"], queryFn: () => api.payments("PENDING"), refetchInterval: 15_000 });
   const n = pending.data?.length ?? 0;
 
@@ -35,35 +36,113 @@ export function PaymentsPage() {
           </button>
         }
       />
-      <Segmented
-        className="mb-4"
-        value={tab}
-        onChange={setTab}
-        options={[
-          ["PENDING", `Kutilmoqda${n ? ` (${n})` : ""}`],
-          ["APPROVED", "Tasdiqlangan"],
-          ["REJECTED", "Rad etilgan"],
-          ["SUBS", "Online obunalar"],
-          ["OFFLINE", "Offline guruhlar"],
-        ] as const}
-      />
-      {tab === "SUBS" ? <Subscribers /> : tab === "OFFLINE" ? <OfflineLedgerView /> : <PaymentList status={tab} />}
+      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <Segmented
+          value={tab}
+          onChange={setTab}
+          options={[
+            ["PENDING", `Kutilmoqda${n ? ` (${n})` : ""}`],
+            ["APPROVED", "Tasdiqlangan"],
+            ["REJECTED", "Rad etilgan"],
+            ["SUBS", "Online obunalar"],
+            ["OFFLINE", "Offline guruhlar"],
+          ] as const}
+        />
+        <div className="relative w-full sm:w-80">
+          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-4" />
+          <input
+            className="input pl-9 pr-8"
+            placeholder="Ism, @username, telefon, summa..."
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+          />
+          {q && (
+            <button
+              type="button"
+              onClick={() => setQ("")}
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-ink-4 hover:text-ink"
+              aria-label="Tozalash"
+            >
+              <X size={15} />
+            </button>
+          )}
+        </div>
+      </div>
+      {tab === "SUBS" ? (
+        <Subscribers q={q} onClearSearch={() => setQ("")} />
+      ) : tab === "OFFLINE" ? (
+        <OfflineLedgerView q={q} onClearSearch={() => setQ("")} />
+      ) : (
+        <PaymentList status={tab} q={q} onClearSearch={() => setQ("")} />
+      )}
       {granting && <GrantModal onClose={() => setGranting(false)} />}
     </>
   );
 }
 
-function PaymentList({ status }: { status: PaymentStatusName }) {
+function PaymentList({ status, q, onClearSearch }: { status: PaymentStatusName; q: string; onClearSearch: () => void }) {
   const list = useQuery({ queryKey: ["payments", status], queryFn: () => api.payments(status) });
   if (list.isPending) return <Spinner className="text-ink-4" />;
   if (!list.data?.length)
-    return <Empty title={status === "PENDING" ? "Tekshiriladigan chek yo'q" : "Ro'yxat bo'sh"} hint={status === "PENDING" ? "Yangi cheklar shu yerda paydo bo'ladi, botga ham xabar keladi." : undefined} />;
+    return (
+      <Empty
+        title={status === "PENDING" ? "Tekshiriladigan chek yo'q" : "Ro'yxat bo'sh"}
+        hint={status === "PENDING" ? "Yangi cheklar shu yerda paydo bo'ladi, botga ham xabar keladi." : undefined}
+      />
+    );
+
+  const needle = q.trim().toLowerCase();
+  const digitsOnly = needle.replace(/\D/g, "");
+
+  const filtered = list.data.filter((p) => {
+    if (!needle) return true;
+    const hay = [
+      p.student.name,
+      p.student.username,
+      p.student.phone,
+      p.plan?.name,
+      p.essay?.prompt,
+      p.payerNote,
+      p.reviewNote,
+      p.reviewedBy,
+      dateTime(p.createdAt),
+      date(p.createdAt),
+    ]
+      .filter(Boolean)
+      .join(" ")
+      .toLowerCase();
+
+    if (hay.includes(needle)) return true;
+    if (digitsOnly.length >= 3 && p.amountUzs.toString().includes(digitsOnly)) return true;
+    if (digitsOnly.length >= 3 && p.student.phone?.replace(/\D/g, "").includes(digitsOnly)) return true;
+    return false;
+  });
+
   return (
-    <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
-      {list.data.map((p) => (
-        <PaymentCard key={p.id} p={p} />
-      ))}
-    </div>
+    <>
+      {needle && (
+        <p className="mb-3 text-xs text-ink-3">
+          {filtered.length} / {list.data.length} ta to'lov topildi
+        </p>
+      )}
+      {!filtered.length ? (
+        <Empty
+          title="To'lov topilmadi"
+          hint={`«${q.trim()}» so'rovi bo'yicha hech qanday to'lov topilmadi`}
+          action={
+            <button className="btn-secondary btn-sm" onClick={onClearSearch}>
+              Qidiruvni tozalash
+            </button>
+          }
+        />
+      ) : (
+        <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
+          {filtered.map((p) => (
+            <PaymentCard key={p.id} p={p} />
+          ))}
+        </div>
+      )}
+    </>
   );
 }
 
@@ -220,10 +299,9 @@ function RejectModal({ p, revoke = false, onClose, onDone }: { p: AdminPayment; 
   );
 }
 
-function Subscribers() {
+function Subscribers({ q, onClearSearch }: { q: string; onClearSearch: () => void }) {
   const toast = useToast();
   const qc = useQueryClient();
-  const [q, setQ] = useState("");
   const [view, setView] = useState<"all" | "soon" | "lapsed">("all");
   const subs = useQuery({ queryKey: ["subscriptions"], queryFn: api.subscriptions });
   const cancel = useMutation({
@@ -244,7 +322,14 @@ function Subscribers() {
       ? (subs.data?.lapsed ?? [])
       : (subs.data?.active ?? []).filter((s) => view === "all" || (lastEnd.get(s.student.id)! <= soon && new Date(s.endsAt).getTime() === lastEnd.get(s.student.id)));
   const needle = q.trim().toLowerCase();
-  const rows = base.filter((s) => !needle || `${s.student.name} ${s.student.username ?? ""} ${s.student.phone ?? ""}`.toLowerCase().includes(needle));
+  const digitsOnly = needle.replace(/\D/g, "");
+  const rows = base.filter((s) => {
+    if (!needle) return true;
+    const hay = `${s.student.name} ${s.student.username ?? ""} ${s.student.phone ?? ""} ${s.planName}`.toLowerCase();
+    if (hay.includes(needle)) return true;
+    if (digitsOnly.length >= 3 && s.student.phone?.replace(/\D/g, "").includes(digitsOnly)) return true;
+    return false;
+  });
   const soonCount = [...lastEnd.values()].filter((t) => t <= soon).length;
   return (
     <>
@@ -260,10 +345,11 @@ function Subscribers() {
             {l}
           </button>
         ))}
-        <div className="relative ml-auto w-full max-w-xs sm:w-auto">
-          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-4" />
-          <input className="input pl-9" placeholder="Ism, username yoki telefon" value={q} onChange={(e) => setQ(e.target.value)} />
-        </div>
+        {needle && (
+          <span className="ml-auto text-xs text-ink-3">
+            {rows.length} / {base.length} ta obuna topildi
+          </span>
+        )}
       </div>
       <p className="mb-2 text-xs text-ink-3">
         {view === "lapsed"
@@ -271,7 +357,17 @@ function Subscribers() {
           : "Bot o'quvchiga obuna tugashiga 3 kun va 1 kun qolganda hamda tugagan kuni avtomatik eslatadi."}
       </p>
       {!rows.length ? (
-        <Empty title={view === "lapsed" ? "Uzaytirmagan o'quvchi yo'q" : "Ro'yxat bo'sh"} />
+        <Empty
+          title={needle ? "Obuna topilmadi" : view === "lapsed" ? "Uzaytirmagan o'quvchi yo'q" : "Ro'yxat bo'sh"}
+          hint={needle ? `«${q.trim()}» so'rovi bo'yicha hech qanday obuna topilmadi` : undefined}
+          action={
+            needle ? (
+              <button className="btn-secondary btn-sm" onClick={onClearSearch}>
+                Qidiruvni tozalash
+              </button>
+            ) : undefined
+          }
+        />
       ) : (
         <div className="card divide-y divide-line">
           {rows.map((s: AdminSubscription) => (
