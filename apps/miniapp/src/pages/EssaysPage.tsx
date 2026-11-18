@@ -187,6 +187,14 @@ export function NewEssayPage() {
               onClick={() => setMode("TEACHER")}
             />
           </div>
+          {!aiOk && !teacherOk && (
+            <p className="card mt-3 flex gap-2 text-sm text-hint">
+              <Info size={18} className="shrink-0 text-brand" />
+              {c.aiEnabled
+                ? "Bugungi AI limiti tugadi, ustoz tekshiruvi hali yoqilmagan. Ertaga yana urinib ko'ring yoki esseni ustozga darsda topshiring."
+                : "Esse tekshiruvi hozircha yoqilmagan. Esseni ustozga darsda topshiring — yoqilgach shu yerda yuborish mumkin bo'ladi."}
+            </p>
+          )}
 
           {mode && (
             <details className="card mt-4 text-sm">

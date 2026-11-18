@@ -183,6 +183,7 @@ function AddOneModal({ groupId, onClose }: { groupId: string; onClose: () => voi
       toast("O'quvchi qo'shildi");
       qc.invalidateQueries({ queryKey: ["roster"] });
       qc.invalidateQueries({ queryKey: ["groups"] });
+      qc.invalidateQueries({ queryKey: ["users"] });
       navigate(`/students/${r.studentId}`);
     },
     onError: (e) => toast(errMsg(e), "error"),
@@ -239,6 +240,7 @@ function BulkModal({ groupId: initial, onClose }: { groupId: string; onClose: ()
       toast(`${r.added} ta o'quvchi qo'shildi`);
       qc.invalidateQueries({ queryKey: ["roster"] });
       qc.invalidateQueries({ queryKey: ["groups"] });
+      qc.invalidateQueries({ queryKey: ["users"] });
       if (!r.skipped.length) onClose();
       else setText(r.skipped.map((s) => s.line).join("\n"));
     },
