@@ -1,6 +1,6 @@
 import { milliyLevel } from "./content-types";
 import { splitCsv, type ExternalRowInput, type ExternalSection, type ExternalSectionScore } from "./external-types";
-import { RASCH_MIN_SAMPLE, calibrate, estimateTheta, raschT } from "./rasch";
+import { RASCH_MIN_SAMPLE, abilityT, calibrate, difficultyWeights } from "./rasch";
 
 /**
  * Skaner (OMR) eksporti: "Экзамен, …, Имя, Общая оценка, …, Sertifikat -1-32, …, Q 1 Options, Q 1 Key, Q 1 Marks, …".
@@ -98,18 +98,18 @@ function sectionScore(s: ExternalSection, answers: string): ExternalSectionScore
 }
 
 /**
- * Milliy sertifikat bahosi (ilova ichidagi mock testlar bilan bir xil, rasch.ts):
+ * Milliy sertifikat bahosi (ilova ichidagi mock testlar bilan bir xil, rasch.ts → abilityT):
  * guruh yetarli bo'lsa (≥ RASCH_MIN_SAMPLE) savol qiyinliklari shu natijalardan kalibrlanadi va
- * T = 50 + 10(θ − μ)/σ (0..75); kam bo'lsa barcha savollar teng qiyin deb dastlabki baho.
+ * og'irlik bo'ladi; kam bo'lsa barcha savollar teng. Ball guruh o'rtachasiga bog'liq emas.
  * Faqat test qismi: esse bu faylda yo'q. Daraja 46 balldan past bo'lsa null.
  */
 export function gradeMilliy(rows: ExternalRowInput[]): { calibrated: boolean } {
   if (!rows.length) return { calibrated: false };
   const matrix = rows.map((r) => [...r.answers].map((x) => (x === "c" ? 1 : 0)) as (0 | 1)[]);
   const calibrated = rows.length >= RASCH_MIN_SAMPLE;
-  const c = calibrated ? calibrate(matrix) : null;
+  const weights = calibrated ? difficultyWeights(calibrate(matrix).b) : matrix[0].map(() => 1);
   rows.forEach((r, i) => {
-    const scaled = c ? raschT(c.theta[i], c.mu, c.sigma) : raschT(estimateTheta(matrix[i], matrix[i].map(() => 0)), 0, 1);
+    const scaled = abilityT(matrix[i], weights);
     const level = milliyLevel(scaled).code;
     r.scaledScore = scaled;
     r.grade = level === "—" ? null : level;

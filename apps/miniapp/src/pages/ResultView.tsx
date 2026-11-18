@@ -130,7 +130,7 @@ function MilliyCard({ m }: { m: MilliyBreakdown }) {
         `${m.test.correct} / ${m.test.total} to'g'ri · ` +
           (m.test.calibrated
             ? `${m.test.sampleSize} ta natija asosida`
-            : `dastlabki baho: model ${RASCH_MIN_SAMPLE} ta natijadan keyin kalibrlanadi (hozir ${m.test.sampleSize} ta)`),
+            : `savollar qiyinligi ${RASCH_MIN_SAMPLE} ta natijadan keyin hisobga olinadi (hozir ${m.test.sampleSize} ta)`),
       )}
       {m.essayPending
         ? row("Yozma ish (esse)", "tekshirilmoqda", "Ustoz baholagach bot orqali xabar keladi")

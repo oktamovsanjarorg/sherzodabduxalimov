@@ -1,5 +1,5 @@
 import type { Prisma } from "@onatili/db";
-import { ESSAY_MAX_SCORE, estimateTheta, milliyBreakdown, raschT, type MilliyBreakdown } from "@onatili/shared";
+import { ESSAY_MAX_SCORE, abilityT, difficultyWeights, estimateTheta, milliyBreakdown, type MilliyBreakdown } from "@onatili/shared";
 
 /** Urinishdan Milliy sertifikat natijasini hisoblash uchun kerakli maydonlar */
 export const milliySelect = {
@@ -19,8 +19,9 @@ type Row = Prisma.AttemptGetPayload<{ select: typeof milliySelect }>;
 
 /**
  * Baholash mezonlari hujjati bo'yicha natija:
- * - test qismi Rasch modeli bilan: savol qiyinliklari bo'yicha θ, so'ng T = 50 + 10(θ − μ)/σ (0..75).
- *   Kalibrlash uchun natijalar yetarli bo'lmasa: barcha savollar teng qiyin, μ = 0, σ = 1 (dastlabki baho);
+ * - test qismi: Rasch bilan kalibrlangan savol qiyinliklari og'irlik bo'ladi, ball esa o'quvchining
+ *   og'irlangan ulushidan (abilityT, 0..75; guruh o'rtachasiga bog'liq emas).
+ *   Kalibrlash uchun natijalar yetarli bo'lmasa barcha savollar teng og'irlikda;
  * - yozma ish 24 ballik mezon bo'yicha, jadval asosida 75 ballik shkalaga;
  * - umumiy ball ikki qismning o'rtachasi.
  * Milliy sertifikat bo'lmasa null.
@@ -36,7 +37,8 @@ export function milliyOf(a: Row): MilliyBreakdown | null {
   const calibrated = t.raschMu !== null && t.raschSigma !== null && items.every((q) => q.raschB !== null);
   const b = items.map((q) => (calibrated ? q.raschB! : 0));
   const theta = estimateTheta(responses, b);
-  const scaled = calibrated ? raschT(theta, t.raschMu!, t.raschSigma!) : raschT(theta, 0, 1);
+  // Mutlaq shkala (rasch.ts, abilityT): guruh faqat savol qiyinligini beradi, o'rtachaga tortilmaydi
+  const scaled = abilityT(responses, calibrated ? difficultyWeights(b) : b.map(() => 1));
 
   // Esse: Milliy sertifikatda ball har doim rasmiy mezon bo'yicha 0..24 saqlanadi (savolning "points"i ishlatilmaydi)
   let essayScore24: number | null = null;

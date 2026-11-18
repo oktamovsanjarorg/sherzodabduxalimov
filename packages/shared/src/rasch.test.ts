@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { calibrate, estimateTheta, raschT } from "./rasch";
+import { abilityT, calibrate, difficultyWeights, estimateTheta, raschT } from "./rasch";
 
 /** Ma'lum qiyinlik va qobiliyatlardan simulyatsiya: model ularni qayta tiklay olishi kerak */
 function simulate(thetas: number[], bs: number[], seed = 7) {
@@ -38,5 +38,21 @@ describe("Rasch modeli", () => {
     expect(raschT(5, 0, 1)).toBe(75);
     expect(raschT(-9, 0, 1)).toBe(0);
     expect(raschT(1, 0.5, 0.5)).toBe(60);
+  });
+
+  it("mutlaq T: guruhga bog'liq emas, teng savollarda C ≈ 43%, A+ ≈ 81%", () => {
+    const w = new Array(40).fill(1);
+    const share = (k: number) => abilityT(Array.from({ length: 40 }, (_, j) => (j < k ? 1 : 0)), w);
+    expect(share(17)).toBeGreaterThanOrEqual(46 - 1.5); // ≈43% → C chegarasi atrofida
+    expect(share(17)).toBeLessThan(50);
+    expect(share(32)).toBeLessThan(70); // 80% hali A emas
+    expect(share(33)).toBeGreaterThanOrEqual(70); // 82,5% → A+
+    expect(share(40)).toBe(75);
+    expect(share(0)).toBe(0);
+  });
+  it("og'irlik: qiyin savol yechgan teng to'g'ri sonda yuqori turadi", () => {
+    const w = difficultyWeights([-2, -1, 0, 1, 2]);
+    expect(w[4]).toBeGreaterThan(w[0]);
+    expect(abilityT([0, 0, 0, 1, 1], w)).toBeGreaterThan(abilityT([1, 1, 0, 0, 0], w));
   });
 });

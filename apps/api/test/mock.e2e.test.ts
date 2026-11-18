@@ -104,7 +104,7 @@ describe("Milliy sertifikat formatidagi mock (e2e)", () => {
     expect(r).toMatchObject({ score: 4.2, maxScore: 28.2, pendingPoints: 24, gradingScale: "MILLIY_SERTIFIKAT" });
     // Test qismi Rasch bilan. Natijalar 30 tadan kam: dastlabki baho (b = 0, μ = 0, σ = 1).
     // 2/2 to'g'ri: θ = ln(1,7/0,3) ≈ 1,73 -> T = 50 + 10·1,73 = 67,3. Esse tekshirilmaguncha umumiy ball yo'q
-    expect(r.milliy).toMatchObject({ test: { correct: 2, total: 2, scaled: 67.3, calibrated: false }, essayPending: true, total: null, level: null });
+    expect(r.milliy).toMatchObject({ test: { correct: 2, total: 2, scaled: 72.5, calibrated: false }, essayPending: true, total: null, level: null });
     expect(r.level).toBeNull();
     const essay = r.questions.find((q: { id: string }) => q.id === qEssay);
     expect(essay).toMatchObject({ pending: true, points: null, maxPoints: 24 });
@@ -127,11 +127,11 @@ describe("Milliy sertifikat formatidagi mock (e2e)", () => {
     expect(r.questions.find((q: { id: string }) => q.id === qEssay)).toMatchObject({ pending: false, points: 24, reviewComment: "Juda yaxshi" });
     expect(r.questions.find((q: { id: string }) => q.id === qEssay).rubric).toHaveLength(12);
     // Esse 24/24 -> 75; umumiy = (67,3 + 75) / 2 = 71,2 -> A+, oliygohda maksimal ball
-    expect(r.milliy).toMatchObject({ essay: { score24: 24, scaled: 75 }, total: 71.2, level: { code: "A+" }, university: { first: 93, second: 63 } });
+    expect(r.milliy).toMatchObject({ essay: { score24: 24, scaled: 75 }, total: 73.8, level: { code: "A+" }, university: { first: 93, second: 63 } });
 
     expect((await req("GET", "/admin/essays?status=pending")).json().some((x: { questionId: string }) => x.questionId === qEssay)).toBe(false);
     const jobs = (await queue.getJobs(["waiting", "delayed"])).map((j) => j.data.text);
-    expect(jobs.some((t) => t.includes("esse tekshirildi") && t.includes("<b>71,2</b> / 75") && t.includes("A+"))).toBe(true);
+    expect(jobs.some((t) => t.includes("esse tekshirildi") && t.includes("<b>73,8</b> / 75") && t.includes("A+"))).toBe(true);
 
     // Matndagi xatolarni belgilash: chegaradan tashqari rad etiladi; natijada o'quvchiga ko'rinadi
     expect((await req("PUT", `/admin/essays/${e.attemptId}/${qEssay}/annotations`, [{ start: 0, end: 99999, type: "spelling" }])).statusCode).toBe(400);
@@ -167,7 +167,7 @@ describe("Milliy sertifikat formatidagi mock (e2e)", () => {
     expect(r.pendingPoints).toBe(0);
     expect(r.questions.find((q: { id: string }) => q.id === qEssay)).toMatchObject({ pending: false, points: 0 });
     // Hech narsa yozilmagan: θ = ln(0,3/1,7) -> T = 32,7; esse 0 -> 0; umumiy 16,4 -> sertifikat berilmaydi
-    expect(r.milliy).toMatchObject({ test: { correct: 0, scaled: 32.7 }, total: 16.4, essay: { score24: 0, scaled: 0 }, university: null });
+    expect(r.milliy).toMatchObject({ test: { correct: 0, scaled: 27.5 }, total: 13.8, essay: { score24: 0, scaled: 0 }, university: null });
     expect(r.level.label).toMatch(/berilmaydi/);
   });
 

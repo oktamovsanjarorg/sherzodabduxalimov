@@ -43,7 +43,7 @@ describe("parseOmrExport", () => {
     expect(p.rows[1].sections[1]).toMatchObject({ correct: 2, max: 2, percent: 100 });
   });
 
-  it("Milliy baho: ko'proq to'g'ri — yuqori ball; kam qatnashchida dastlabki", () => {
+  it("Milliy baho: ko'proq to'g'ri — yuqori ball; kam qatnashchida savollar teng", () => {
     const p = parseOmrExport(file, null);
     expect(gradeMilliy(p.rows)).toEqual({ calibrated: false });
     expect(p.rows[1].scaledScore!).toBeGreaterThan(p.rows[0].scaledScore!);

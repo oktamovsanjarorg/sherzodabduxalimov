@@ -125,3 +125,38 @@ export function raschT(theta: number, mu: number, sigma: number): number {
   const t = 50 + (10 * (theta - mu)) / (sigma || 1);
   return Math.round(Math.max(0, Math.min(75, t)) * 10) / 10;
 }
+
+/*
+  ── Mutlaq T-ball (2026-11-18, utest ADR-097 dan ko'chirildi) ──
+
+  ⚠️ `raschT` (50 + 10Z) har guruh o'rtachasini 50 ga tortadi: guruh butunlay kuchaysa ham
+  o'rtacha 50 qolib, o'sish ko'rinmaydi; 88 kishilik offline Mock22 da ham o'rtacha aynan 50 chiqdi.
+  Milliy imtihonda shkalani yuz minglab odam ushlab turadi, bitta ustozning guruhi bunga asos emas.
+  Endi guruh faqat savol qiyinligini aytadi (og'irlik), ball esa o'quvchining og'irlangan ulushidan:
+    og'irlik_j = exp(0.25 · clamp(z(b_j), ±2)),  T = 50 + 14 · logit((Σ javob·og'irlik + 0.5) / (Σ og'irlik + 1))
+  Qiyalik 14 utest prod natijalarida tanlangan (teng savollarda C ≈ 43%, A+ ≈ 80%), haqiqiy milliy
+  natijalar bilan solishtirilmagan: shunday ma'lumot yig'ilsa ABILITY_SLOPE tekshirilsin.
+*/
+const DIFFICULTY_STRENGTH = 0.25;
+const DIFFICULTY_Z_LIMIT = 2;
+const ABILITY_SLOPE = 14;
+
+/** Savol qiyinligidan og'irlik: oson savol ham bilim (≈1), qiyinroq biroz og'irroq */
+export function difficultyWeights(b: number[]): number[] {
+  const n = b.length;
+  const mean = n ? b.reduce((s, x) => s + x, 0) / n : 0;
+  const sd = n > 1 ? Math.sqrt(b.reduce((s, x) => s + (x - mean) ** 2, 0) / (n - 1)) : 0;
+  return b.map((x) => {
+    const z = sd > 1e-9 ? (x - mean) / sd : 0;
+    return Math.exp(DIFFICULTY_STRENGTH * Math.max(-DIFFICULTY_Z_LIMIT, Math.min(DIFFICULTY_Z_LIMIT, z)));
+  });
+}
+
+/** Mutlaq T-ball (test qismi 0..75): guruh o'rtachasiga bog'liq emas */
+export function abilityT(responses: (0 | 1)[], weights: number[]): number {
+  const total = weights.reduce((s, w) => s + w, 0);
+  const got = responses.reduce<number>((s, x, j) => s + x * (weights[j] ?? 1), 0);
+  const p = (got + 0.5) / (total + 1);
+  const t = 50 + ABILITY_SLOPE * Math.log(p / (1 - p));
+  return Math.round(Math.max(0, Math.min(75, t)) * 10) / 10;
+}

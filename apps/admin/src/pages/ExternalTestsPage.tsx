@@ -130,7 +130,7 @@ function ImportModal({ onClose, onDone }: { onClose: () => void; onDone: (id: st
             {preview.test.sections.length > 0 && (
               <p className="mt-1 text-ink-3">
                 Bo'limlar: {preview.test.sections.map((s) => `${s.title} (${s.toQ - s.fromQ + 1} katak)`).join(", ")}. Ball Milliy sertifikat shkalasida (Rasch, 75 dan)
-                {preview.test.participants < RASCH_MIN_SAMPLE ? `: qatnashchi ${RASCH_MIN_SAMPLE} tadan kam, shuning uchun baho dastlabki` : ""}; esse bu faylda yo'q, daraja faqat test qismidan.
+                {preview.test.participants < RASCH_MIN_SAMPLE ? `: qatnashchi ${RASCH_MIN_SAMPLE} tadan kam, shuning uchun savollar qiyinligi hisobga olinmaydi` : ""}; esse bu faylda yo'q, daraja faqat test qismidan.
               </p>
             )}
             {preview.test.alreadyImported && <p className="mt-1 text-ink-3">Bu test oldin import qilingan: natijalar yangilanadi, qo'lda bog'laganlaringiz saqlanadi.</p>}

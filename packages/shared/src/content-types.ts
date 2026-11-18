@@ -187,8 +187,8 @@ export function essayTo75(score24: number): number {
 
 export interface MilliyBreakdown {
   /**
-   * Test qismi Rasch modeli bilan: θ (qobiliyat), T = 50 + 10Z (0..75).
-   * calibrated=false: savol qiyinliklari hali yetarli natijadan hisoblanmagan (dastlabki baho)
+   * Test qismi: Rasch qiyinliklari og'irlik, ball o'quvchining og'irlangan ulushidan (abilityT, 0..75).
+   * calibrated=false: savol qiyinliklari hali yetarli natijadan hisoblanmagan (hamma savol teng)
    */
   test: { correct: number; total: number; theta: number; scaled: number; calibrated: boolean; sampleSize: number };
   /** Yozma ish: 24 ballik baho va 75 ballik shkaladagisi. Testda esse bo'lmasa null */
