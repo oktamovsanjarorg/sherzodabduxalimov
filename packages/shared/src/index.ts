@@ -14,4 +14,5 @@ export * from "./name-match";
 export * from "./rasch";
 export * from "./annotation-types";
 export * from "./stats-types";
+export * from "./advisor-types";
 export * from "./period";

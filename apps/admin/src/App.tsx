@@ -1,4 +1,5 @@
 import { Navigate, Route, Routes } from "react-router-dom";
+import { AdvisorPage } from "./pages/AdvisorPage";
 import { Layout } from "./components/Layout";
 import { loadSession } from "./lib/session";
 import { AttendancePage } from "./pages/AttendancePage";
@@ -51,6 +52,7 @@ export function App() {
         <Route path="questions" element={<QuestionsPage />} />
         <Route path="tests" element={<TestsPage />} />
         <Route path="tests/:id" element={<TestEditorPage />} />
+        <Route path="advisor" element={<AdvisorPage />} />
         <Route path="students" element={<StudentsPage />} />
         <Route path="students/:id" element={<StudentDetailPage />} />
         <Route path="attendance" element={<AttendancePage />} />

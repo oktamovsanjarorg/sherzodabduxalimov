@@ -1,4 +1,5 @@
 import { ATTENDANCE_LABELS, ESSAY_STATUS_LABELS, formatSum, monthLabel, type AttendanceStatusName, type EssayStatusName, type StudentDetail, formatScore } from "@onatili/shared";
+import { StudentAdvisor } from "../components/StudentAdvisor";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, Bot, Check, ClipboardCheck, Copy, GraduationCap, Pencil, Phone, RotateCcw, Trash2, X } from "lucide-react";
 import { useState, type ReactNode } from "react";
@@ -26,6 +27,9 @@ export function StudentDetailPage() {
       </Link>
       <Header s={s} />
       {!s.telegramLinked && <ConnectCard s={s} />}
+      <Section title="Yo'nalish va tavsiyalar">
+        <StudentAdvisor id={s.studentId} />
+      </Section>
       <Manage s={s} />
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <Section title="Ota-onalar">

@@ -5,6 +5,7 @@ import { Fragment, useState, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { Badge, Spinner } from "../components/ui";
 import { PayDialog } from "../components/PayDialog";
+import { AiText } from "../components/AiText";
 import { api, errMsg } from "../lib/api";
 import { fmtDate, fmtShortDateTime } from "../lib/format";
 import { useToast } from "../lib/toast";
@@ -395,26 +396,12 @@ function AiReport({ month }: { month: string }) {
       {gen.isPending && <p className="mt-2 text-sm text-ink-3">Tahlil qilinmoqda… (10–30 soniya)</p>}
       {report && (
         <>
-          <div className="mt-3 space-y-1.5 text-sm leading-relaxed text-ink">{renderReport(report.text)}</div>
+          <div className="mt-3"><AiText text={report.text} /></div>
           <p className="mt-3 text-[11px] text-ink-4">AI tayyorladi: {fmtShortDateTime(report.generatedAt)} · raqamlarni yuqoridagi jadvallar bilan solishtiring</p>
         </>
       )}
     </section>
   );
-}
-
-/** Oddiy markdown: **qalin**, "- " va "1. " ro'yxatlar */
-function renderReport(text: string) {
-  const bold = (s: string) => s.split(/(\*\*[^*]+\*\*)/g).map((p, i) => (p.startsWith("**") ? <b key={i}>{p.slice(2, -2)}</b> : <Fragment key={i}>{p}</Fragment>));
-  return text
-    .split("\n")
-    .filter((l) => l.trim())
-    .map((l, i) => {
-      const t = l.trim();
-      if (/^[-*•]\s+/.test(t)) return <p key={i} className="pl-4 -indent-3">• {bold(t.replace(/^[-*•]\s+/, ""))}</p>;
-      if (/^\d+\.\s/.test(t) || /^\*\*\d+\./.test(t)) return <p key={i} className="pt-2 font-semibold">{bold(t)}</p>;
-      return <p key={i}>{bold(t)}</p>;
-    });
 }
 
 // ---------------- Bo'laklar ----------------

@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { FileText, AlertTriangle, BookOpen, CalendarCheck, CheckCircle2, ChevronRight, ClipboardList, CreditCard, Film, LibraryBig, Plus, ShieldCheck, UserPlus, Users, X } from "lucide-react";
 import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
+import { AdviceList } from "../components/Advisor";
 import { Spinner } from "../components/ui";
 import { api, errMsg } from "../lib/api";
 import { useDismissed } from "../lib/dismiss";
@@ -75,6 +76,9 @@ export function DashboardPage() {
           </button>
         )}
       </section>
+
+      {/* Yordamchi: eng muhim tavsiyalar (to'liq ro'yxat /advisor da) */}
+      <AdvisorTeaser />
 
       {/* Tezkor amallar */}
       <section>
@@ -161,5 +165,22 @@ function Stat({ Icon, value, label, hint }: { Icon: typeof Users; value: number;
       <p className="text-sm font-semibold text-ink-2">{label}</p>
       {hint && <p className="mt-1 text-xs text-ink-3">{hint}</p>}
     </div>
+  );
+}
+
+function AdvisorTeaser() {
+  const q = useQuery({ queryKey: ["advisor"], queryFn: api.advisor, staleTime: 5 * 60_000 });
+  const top = q.data?.advice.filter((a) => a.level !== "idea") ?? [];
+  if (!top.length) return null;
+  return (
+    <section>
+      <div className="mb-2 flex items-center justify-between">
+        <h2 className="label">Yordamchi tavsiyasi</h2>
+        <Link to="/advisor" className="tap flex items-center gap-1 text-sm font-bold text-brand hover:underline">
+          Hammasi va AI reja <ChevronRight size={15} />
+        </Link>
+      </div>
+      <AdviceList items={top} scope="platform" limit={3} />
+    </section>
   );
 }

@@ -34,9 +34,10 @@ export function useNavGroups(): NavGroup[] {
       to: "/",
       label: "Asosiy",
       Icon: Home,
-      match: /^\/($|stats)/,
+      match: /^\/($|stats|advisor)/,
       sub: [
         { to: "/", label: "Bugun", match: /^\/$/ },
+        { to: "/advisor", label: "Yordamchi", match: /^\/advisor/ },
         { to: "/stats", label: "Statistika", match: /^\/stats/ },
       ],
     },
