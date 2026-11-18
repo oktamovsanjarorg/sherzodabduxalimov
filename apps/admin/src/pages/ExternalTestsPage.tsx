@@ -1,4 +1,4 @@
-import { type ExternalPreview, type ExternalTestDetail, formatScore } from "@onatili/shared";
+import { MILLIY_LEVELS, RASCH_MIN_SAMPLE, type ExternalPreview, type ExternalTestDetail, formatScore } from "@onatili/shared";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ChevronRight, FileSpreadsheet, FileUp, Link2, Send, Trash2, Trophy, Upload } from "lucide-react";
 import { useRef, useState } from "react";
@@ -34,7 +34,7 @@ export function ExternalTestsPage() {
       ) : (
         <>
           {q.isPending && <Spinner className="text-ink-4" />}
-          {q.data?.tests.length === 0 && <Empty Icon={FileSpreadsheet} title="Hali import qilinmagan" hint="«Import qilish» tugmasini bosing: matrix.csv fayli bilan." />}
+          {q.data?.tests.length === 0 && <Empty Icon={FileSpreadsheet} title="Hali import qilinmagan" hint="«Import qilish» tugmasini bosing: skaner eksporti yoki matrix.csv fayli bilan." />}
           <div className="space-y-2">
             {q.data?.tests.map((t) => (
               <button key={t.id} onClick={() => navigate(`/external/${t.id}`)} className="card flex w-full items-center gap-3 p-4 text-left transition hover:border-brand">
@@ -113,9 +113,9 @@ function ImportModal({ onClose, onDone }: { onClose: () => void; onDone: (id: st
           }}
         />
         <button className="btn-secondary w-full" onClick={() => input.current?.click()}>
-          <FileUp size={16} /> {file ? file.fileName : "matrix.csv faylini tanlang"}
+          <FileUp size={16} /> {file ? file.fileName : "CSV faylni tanlang"}
         </button>
-        <Field label="Test nomi" hint="Natijalar saytidan → «Matritsa (CSV)». Faylda faqat to'g'ri/xato bor: ball va bo'limlar kelmaydi">
+        <Field label="Test nomi" hint="Ikki xil fayl qabul qilinadi: skaner eksporti (Q 1 Marks… va «Sertifikat» bo'limlari bilan: Milliy sertifikat bali va darajasi hisoblanadi) yoki natijalar saytidagi «Matritsa (CSV)» (faqat to'g'ri/xato). Bo'sh qoldirsangiz, nom fayldan olinadi.">
           <input className="input" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Masalan: Mock #3, 15-noyabr" />
         </Field>
       </div>
@@ -127,6 +127,12 @@ function ImportModal({ onClose, onDone }: { onClose: () => void; onDone: (id: st
               {preview.test.questionCount} savol · {preview.test.participants} qatnashchi · <b className="text-emerald-700">{found} tasi topildi</b>
               {preview.rows.length - found > 0 && <b className="text-amber-700"> · {preview.rows.length - found} tasi topilmadi</b>}
             </p>
+            {preview.test.sections.length > 0 && (
+              <p className="mt-1 text-ink-3">
+                Bo'limlar: {preview.test.sections.map((s) => `${s.title} (${s.toQ - s.fromQ + 1} katak)`).join(", ")}. Ball Milliy sertifikat shkalasida (Rasch, 75 dan)
+                {preview.test.participants < RASCH_MIN_SAMPLE ? `: qatnashchi ${RASCH_MIN_SAMPLE} tadan kam, shuning uchun baho dastlabki` : ""}; esse bu faylda yo'q, daraja faqat test qismidan.
+              </p>
+            )}
             {preview.test.alreadyImported && <p className="mt-1 text-ink-3">Bu test oldin import qilingan: natijalar yangilanadi, qo'lda bog'laganlaringiz saqlanadi.</p>}
           </div>
           <ul className="max-h-72 divide-y divide-line overflow-y-auto rounded-lg border border-line text-sm">
@@ -137,6 +143,11 @@ function ImportModal({ onClose, onDone }: { onClose: () => void; onDone: (id: st
                   {r.username && <span className="text-ink-4"> @{r.username}</span>}
                 </span>
                 {r.match ? <span className="truncate text-xs text-emerald-700">→ {r.match.name} ({HOW[r.match.how]})</span> : <span className="text-xs text-amber-700">topilmadi</span>}
+                {r.scaledScore != null && (
+                  <span className="w-20 shrink-0 text-right text-xs text-ink-3">
+                    {formatScore(r.scaledScore)} ball{r.grade ? ` · ${r.grade}` : ""}
+                  </span>
+                )}
                 <b className="w-12 text-right">{formatScore(r.percent)}%</b>
               </li>
             ))}
@@ -194,6 +205,10 @@ export function ExternalTestPage() {
   if (q.isError) return <p className="text-sm text-red-600">{errMsg(q.error)}</p>;
   const t = q.data;
   const waiting = t.rows.filter((r) => r.student && !r.notifiedAt).length;
+  // Milliy sertifikat bahosi bor (skaner eksporti): daraja taqsimoti foizdan muhimroq
+  const scaled = t.rows.map((r) => r.scaledScore).filter((x): x is number => x != null);
+  const milliy = scaled.length > 0;
+  const levels = [...MILLIY_LEVELS.map((l) => l.code), null].map((code) => ({ label: code ?? "Sertifikatsiz", value: t.rows.filter((r) => r.grade === code).length }));
   return (
     <div className="space-y-4">
       <Link to="/external" className="tap inline-flex items-center gap-1 text-sm font-semibold text-ink-3 hover:text-ink">
@@ -216,13 +231,27 @@ export function ExternalTestPage() {
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <Tile label="Qatnashchi" value={t.participants} hint={`${t.matched} tasi platformada topilgan`} />
         <Tile label="O'rtacha" value={t.avgPercent != null ? `${formatScore(t.avgPercent)}%` : "—"} hint={t.stats.median != null ? `mediana ${formatScore(t.stats.median)}%` : undefined} />
-        <Tile label="Eng yuqori" value={t.rows[0] ? `${formatScore(t.rows[0].percent)}%` : "—"} hint={t.rows[0]?.name} />
+        {milliy ? (
+          <Tile label="O'rtacha ball" value={formatScore(Math.round((scaled.reduce((s, x) => s + x, 0) / scaled.length) * 10) / 10)} hint={`75 dan · sertifikat olgan: ${t.rows.filter((r) => r.grade).length} ta`} />
+        ) : (
+          <Tile label="Eng yuqori" value={t.rows[0] ? `${formatScore(t.rows[0].percent)}%` : "—"} hint={t.rows[0]?.name} />
+        )}
         <Tile label="Xabar" value={t.notifiedAt ? fmtDate(t.notifiedAt) : "yuborilmagan"} hint={waiting ? `${waiting} ta o'quvchi kutmoqda` : undefined} />
       </div>
       <div className="grid gap-4 lg:grid-cols-2">
         <section className="card p-4 sm:p-5">
-          <h2 className="mb-3 font-extrabold">Foiz taqsimoti</h2>
-          <Bars items={t.stats.buckets.map((b) => ({ label: b.label, value: b.count }))} />
+          {milliy ? (
+            <>
+              <h2 className="mb-1 font-extrabold">Darajalar</h2>
+              <p className="mb-3 text-xs text-ink-3">Milliy sertifikat shkalasi (Rasch), faqat test qismi: esse bu faylda yo'q</p>
+              <Bars items={levels} />
+            </>
+          ) : (
+            <>
+              <h2 className="mb-3 font-extrabold">Foiz taqsimoti</h2>
+              <Bars items={t.stats.buckets.map((b) => ({ label: b.label, value: b.count }))} />
+            </>
+          )}
         </section>
         {t.stats.sections.length > 0 ? (
           <section className="card p-4 sm:p-5">
@@ -232,7 +261,8 @@ export function ExternalTestPage() {
                 <li key={i}>
                   <div className="mb-1 flex justify-between gap-3">
                     <span className="text-ink-2">
-                      {s.title ?? `${i + 1}-bo'lim`} <span className="text-ink-4">({s.fromQ}–{s.toQ})</span>
+                      {s.title ?? `${i + 1}-bo'lim`}
+                      {s.title !== `${s.fromQ}–${s.toQ}` && <span className="text-ink-4"> (fayldagi {s.fromQ}–{s.toQ}-kataklar)</span>}
                     </span>
                     <b>{formatScore(s.avgPercent)}%</b>
                   </div>

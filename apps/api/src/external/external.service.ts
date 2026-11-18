@@ -3,6 +3,9 @@ import { Prisma } from "@onatili/db";
 import {
   NAME_MATCH_THRESHOLD,
   nameMatchScore,
+  gradeMilliy,
+  isOmrExport,
+  parseOmrExport,
   parseTestMatrix,
   type ExternalPreview,
   type ExternalRankingRow,
@@ -41,6 +44,7 @@ export class ExternalService {
   // ---------------- CSV import ----------------
 
   fromCsv(d: { fileName: string; title: string | null; content: string }): ExternalTestInput {
+    if (isOmrExport(d.content)) return this.fromOmr(d);
     let parsed;
     try {
       parsed = parseTestMatrix(d.content);
@@ -50,6 +54,22 @@ export class ExternalService {
     // "test-K7P2QX-matritsa.csv" -> K7P2QX; bo'lmasa fayl nomi
     const code = /test-([A-Z0-9]{4,12})/i.exec(d.fileName)?.[1]?.toUpperCase() ?? d.fileName.replace(/\.[^.]+$/, "").slice(0, 60);
     return { source: "CSV", code, title: d.title?.trim() || `Test ${code}`, subject: null, questionCount: parsed.questionCount, sections: [], rows: parsed.rows };
+  }
+
+  /** Skaner eksporti (Mock22_2026-09-01.csv): bo'limlar va Milliy sertifikat bahosi bilan */
+  private fromOmr(d: { fileName: string; title: string | null; content: string }): ExternalTestInput {
+    const date = /(\d{4}-\d{2}-\d{2})/.exec(d.fileName)?.[1] ?? null;
+    let p;
+    try {
+      p = parseOmrExport(d.content, date);
+    } catch (e) {
+      throw new BadRequestException(e instanceof Error ? e.message : "Faylni o'qib bo'lmadi");
+    }
+    if (p.milliy) gradeMilliy(p.rows);
+    const code = d.fileName.replace(/\.[^.]+$/, "").slice(0, 60);
+    const when = date ? ` · ${date.split("-").reverse().join(".")}` : "";
+    const title = d.title?.trim() || `${p.exam ?? code}${when}`;
+    return { source: "CSV", code, title, subject: null, questionCount: p.questionCount, sections: p.sections, rows: p.rows };
   }
 
   // ---------------- O'quvchini topish ----------------
@@ -78,7 +98,7 @@ export class ExternalService {
     const { rows, ...test } = input;
     return {
       test: { ...test, participants: rows.length, alreadyImported: Boolean(existing) },
-      rows: rows.map((r) => ({ key: r.key, name: r.name, username: r.username, percent: r.percent, match: match(r) })),
+      rows: rows.map((r) => ({ key: r.key, name: r.name, username: r.username, percent: r.percent, scaledScore: r.scaledScore, grade: r.grade, match: match(r) })),
     };
   }
 

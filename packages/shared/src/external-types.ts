@@ -50,7 +50,7 @@ export interface ExternalTestInput {
 /** Import oldidan ko'rinish: kim topildi, kim yo'q */
 export interface ExternalPreview {
   test: Omit<ExternalTestInput, "rows"> & { participants: number; alreadyImported: boolean };
-  rows: { key: string; name: string; username: string | null; percent: number; match: { studentId: string; name: string; how: "username" | "name" } | null }[];
+  rows: { key: string; name: string; username: string | null; percent: number; scaledScore: number | null; grade: string | null; match: { studentId: string; name: string; how: "username" | "name" } | null }[];
 }
 
 export interface ExternalTestSummary {
@@ -181,7 +181,7 @@ export function parseTestMatrix(text: string): { questionCount: number; rows: Ex
   return { questionCount: qCols.length, rows };
 }
 
-function splitCsv(line: string, sep: string): string[] {
+export function splitCsv(line: string, sep: string): string[] {
   const out: string[] = [];
   let cur = "";
   let q = false;

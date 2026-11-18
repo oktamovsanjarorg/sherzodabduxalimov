@@ -1,0 +1,52 @@
+import { describe, expect, it } from "vitest";
+import { gradeMilliy, isOmrExport, parseOmrExport } from "./external-omr";
+
+/** Skaner eksporti: 4 savol, oxirgi bo'lim "3-3" deb yozilgan, lekin 2 katak (ikki qismli yozma savol) */
+function csv(rows: [string, string[], string[]][]) {
+  const head = ["Экзамен", "Имя", "Общая оценка", "Sertifikat -1-2", "Sertifikat -3-3"];
+  for (let q = 1; q <= 4; q++) head.push(`Q ${q} Options`, `Q ${q} Key`, `Q ${q} Marks`);
+  const lines = rows.map(([name, opts, marks]) => {
+    const m = marks.map(Number);
+    const cells = ["Mock1", name, String(m.reduce((s, x) => s + x, 0)), String(m[0] + m[1]), String(m[2] + m[3])];
+    for (let q = 0; q < 4; q++) cells.push(opts[q], q < 2 ? "A" : "True", marks[q]);
+    return cells.join(",");
+  });
+  return "﻿" + [head.join(","), ...lines].join("\r\n");
+}
+
+describe("parseOmrExport", () => {
+  const file = csv([
+    ["Aziz", ["A", "B", "True", ""], ["1", "0", "1", "0"]],
+    ["Lola", ["", "A", "True", "True"], ["0", "1", "1", "1"]],
+  ]);
+
+  it("formatni taniydi, matrix.csv ni emas", () => {
+    expect(isOmrExport(file)).toBe(true);
+    expect(isOmrExport("Ism;Username;Q1;Jami\nAli;;1;1")).toBe(false);
+  });
+
+  it("javoblar: Marks 1 to'g'ri, belgilanmagan bo'sh, qolgani xato", () => {
+    const p = parseOmrExport(file, "2026-09-01");
+    expect(p.exam).toBe("Mock1");
+    expect(p.questionCount).toBe(4);
+    expect(p.rows[0]).toMatchObject({ name: "Aziz", answers: "cwcb", correct: 2, wrong: 1, blank: 1, percent: 50, submittedAt: "2026-09-01" });
+    expect(p.rows[1]).toMatchObject({ answers: "bccc", correct: 3, blank: 1 });
+  });
+
+  it("oxirgi bo'lim fayldagi yig'indiga qarab oxirgi katakkacha cho'ziladi", () => {
+    const p = parseOmrExport(file, null);
+    expect(p.milliy).toBe(true);
+    expect(p.sections).toEqual([
+      { title: "1–2", fromQ: 1, toQ: 2 },
+      { title: "3–3", fromQ: 3, toQ: 4 },
+    ]);
+    expect(p.rows[1].sections[1]).toMatchObject({ correct: 2, max: 2, percent: 100 });
+  });
+
+  it("Milliy baho: ko'proq to'g'ri — yuqori ball; kam qatnashchida dastlabki", () => {
+    const p = parseOmrExport(file, null);
+    expect(gradeMilliy(p.rows)).toEqual({ calibrated: false });
+    expect(p.rows[1].scaledScore!).toBeGreaterThan(p.rows[0].scaledScore!);
+    for (const r of p.rows) expect(r.scaledScore).toBeGreaterThanOrEqual(0), expect(r.scaledScore).toBeLessThanOrEqual(75);
+  });
+});
