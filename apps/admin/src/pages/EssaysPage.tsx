@@ -5,13 +5,13 @@ import { VoicePlayer, VoiceRecorder } from "../components/VoiceRecorder";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ChevronRight, PenLine } from "lucide-react";
 import { useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { Badge, Empty, Field, Modal, PageHeader, Spinner, Segmented, Chips } from "../components/ui";
 import { api, errMsg } from "../lib/api";
 import { fmtShortDateTime } from "../lib/format";
 import { useToast } from "../lib/toast";
 import { EssayLog, EssayStats } from "./EssayInsights";
 import { HwEssays } from "./HwEssays";
-
 
 const SUBTITLES = {
   hw: "O'quvchi varoqqa yozib rasmini yuborgan va ustoz tekshiruvi uchun to'lagan esselar. Baho bot orqali o'quvchiga boradi.",
@@ -20,8 +20,18 @@ const SUBTITLES = {
   stats: "Esselar soni, o'rtacha ball va o'quvchilar qaysi bandlarda zaif.",
 } as const;
 
+type Source = keyof typeof SUBTITLES;
+const SOURCES = Object.keys(SUBTITLES) as Source[];
+
 export function EssaysPage() {
-  const [source, setSource] = useState<"hw" | "mock" | "log" | "stats">("hw");
+  const [params, setParams] = useSearchParams();
+  // Menyudagi son ikkala navbatni qo'shib sanaydi: ochilganda kutayotgan esse bor bo'limga o'tiladi
+  const dash = useQuery({ queryKey: ["dashboard"], queryFn: api.dashboard, refetchInterval: 30_000 });
+  const by = dash.data?.pendingEssaysBy;
+  const fromUrl = params.get("tab") as Source | null;
+  const source: Source = fromUrl && SOURCES.includes(fromUrl) ? fromUrl : by && !by.hw && by.mock ? "mock" : "hw";
+  const setSource = (s: Source) => setParams({ tab: s }, { replace: true });
+  const count = (n?: number) => (n ? <span className="ml-1.5 rounded-full bg-red-600 px-1.5 text-[11px] text-white">{n}</span> : null);
   return (
     <>
       <PageHeader title="Esselar" subtitle={SUBTITLES[source]} />
@@ -29,7 +39,7 @@ export function EssaysPage() {
         className="mb-4"
         value={source}
         onChange={setSource}
-        options={[["hw", "Qo'lyozma"], ["mock", "Mock"], ["log", "Barcha esselar"], ["stats", "Statistika"]] as const}
+        options={[["hw", <>Qo'lyozma{count(by?.hw)}</>], ["mock", <>Mock{count(by?.mock)}</>], ["log", "Barcha esselar"], ["stats", "Statistika"]] as const}
       />
       {source === "hw" ? <HwEssays /> : source === "mock" ? <MockEssays /> : source === "log" ? <EssayLog /> : <EssayStats />}
     </>

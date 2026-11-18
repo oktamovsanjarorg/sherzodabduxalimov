@@ -11,7 +11,7 @@ import { useToast } from "../lib/toast";
 const tone = (p: number) => (p >= 80 ? "green" : p >= 60 ? "blue" : p >= 40 ? "amber" : "red");
 const HOW = { username: "username", name: "ism bo'yicha" } as const;
 
-/** Test natijalari: import, tahlil, reyting */
+/** Offline testlar: import, tahlil, reyting */
 export function ExternalTestsPage() {
   const [tab, setTab] = useState<"tests" | "ranking">("tests");
   const [importing, setImporting] = useState(false);
@@ -20,8 +20,8 @@ export function ExternalTestsPage() {
   return (
     <>
       <PageHeader
-        title="Test natijalari"
-        subtitle="Test natijalari CSV fayl orqali import qiling: tahlil, reyting, o'quvchi va ota-ona ilovasida ko'rinadi."
+        title="Offline testlar"
+        subtitle="Qog'ozda o'tkazilgan test natijalarini CSV (matrix.csv) orqali import qiling: tahlil va reyting chiqadi, o'quvchi va ota-ona ilovada ko'radi."
         actions={
           <button className="btn-primary" onClick={() => setImporting(true)}>
             <Upload size={16} /> Import qilish
@@ -197,7 +197,7 @@ export function ExternalTestPage() {
   return (
     <div className="space-y-4">
       <Link to="/external" className="tap inline-flex items-center gap-1 text-sm font-semibold text-ink-3 hover:text-ink">
-        ← Test natijalari
+        ← Offline testlar
       </Link>
       <PageHeader
         title={t.title}

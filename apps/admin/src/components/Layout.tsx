@@ -1,6 +1,6 @@
 import { ROLE_LABELS } from "@onatili/shared";
 import { useQuery } from "@tanstack/react-query";
-import { BookOpen, GraduationCap, Home, LogOut, MoreHorizontal, type LucideIcon } from "lucide-react";
+import { BookOpen, ClipboardCheck, GraduationCap, Home, LogOut, MoreHorizontal, type LucideIcon } from "lucide-react";
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { api } from "../lib/api";
 import { clearSession, loadSession } from "../lib/session";
@@ -37,14 +37,24 @@ export function useNavGroups(): NavGroup[] {
       to: "/content",
       label: "Kontent",
       Icon: BookOpen,
-      match: /^\/(content|lessons|questions|tests|essays|external)/,
-      badge: dash.data?.pendingEssays,
+      // Ish tartibi bo'yicha: darslar → ularga testlar → testlar uchun savollar banki
+      match: /^\/(content|lessons|questions|tests)/,
       sub: [
         { to: "/content", label: "Darslar", match: /^\/(content|lessons)/ },
-        { to: "/questions", label: "Savollar", match: /^\/questions/ },
         { to: "/tests", label: "Testlar", match: /^\/tests/ },
+        { to: "/questions", label: "Savollar banki", match: /^\/questions/ },
+      ],
+    },
+    {
+      // O'quvchi ishini baholash: tekshiriladigan esselar va qog'ozda o'tkazilgan test natijalari
+      to: "/essays",
+      label: "Baholash",
+      Icon: ClipboardCheck,
+      match: /^\/(essays|external)/,
+      badge: dash.data?.pendingEssays,
+      sub: [
         { to: "/essays", label: "Esselar", match: /^\/essays/, badge: dash.data?.pendingEssays },
-        { to: "/external", label: "Test natijalari", match: /^\/external/ },
+        { to: "/external", label: "Offline testlar", match: /^\/external/ },
       ],
     },
     {

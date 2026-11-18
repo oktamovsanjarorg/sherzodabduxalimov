@@ -8,6 +8,8 @@ export interface AdminDashboard {
   /** Botdan o'zi kirgan, ustoz hali ko'rib chiqmagan o'quvchilar */
   newStudents: number;
   pendingEssays: number;
+  /** Esselar sahifasidagi bo'limlar bo'yicha: qo'lyozma (ustoz tekshiruvi) va mock test esselari */
+  pendingEssaysBy: { hw: number; mock: number };
   pendingPayments: number;
   /** 7 kun ichida tugaydigan online obunalar */
   expiringSubscriptions: number;
@@ -91,6 +93,7 @@ export class DashboardController {
       newStudents,
       pendingParents,
       pendingEssays: pendingEssays + pendingHwEssays,
+      pendingEssaysBy: { hw: pendingHwEssays, mock: pendingEssays },
       pendingPayments: isTeacher ? pendingPayments : 0,
       expiringSubscriptions: isTeacher ? expiringSubscriptions : 0,
       videos: { processing, failed },

@@ -37,7 +37,7 @@ export function DashboardPage() {
           <Todo to="/payments?tab=SUBS" tone="brand" Icon={CreditCard} title={`${expiring} ta online obuna 7 kun ichida tugaydi`} hint="Bot o'quvchilarga o'zi eslatadi. Ro'yxatni ko'rish" />
         )}
         {x.pendingEssays > 0 && (
-          <Todo to="/essays" tone="amber" Icon={FileText} title={`${x.pendingEssays} ta esse tekshirilmagan`} hint="O'quvchilar yakuniy natijani kutmoqda" />
+          <Todo to={x.pendingEssaysBy.hw ? "/essays?tab=hw" : "/essays?tab=mock"} tone="amber" Icon={FileText} title={`${x.pendingEssays} ta esse tekshirilmagan`} hint="O'quvchilar yakuniy natijani kutmoqda" />
         )}
         {x.newStudents > 0 && (
           <Todo to="/students" tone="amber" Icon={UserPlus} title={`Botga ${x.newStudents} ta yangi o'quvchi kirdi`} hint="O'quvchingizmi? Guruhiga qo'shing, begona bo'lsa — bloklang" />

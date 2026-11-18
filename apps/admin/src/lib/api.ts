@@ -87,6 +87,7 @@ export interface AdminDashboard {
   pendingParents: number;
   newStudents: number;
   pendingEssays: number;
+  pendingEssaysBy: { hw: number; mock: number };
   pendingPayments: number;
   expiringSubscriptions: number;
   videos: { processing: number; failed: number };

@@ -15,7 +15,7 @@ export function TestsPage() {
     <>
       <PageHeader
         title="Testlar"
-        subtitle="Mavzu testlari dars sahifasida, mock testlar alohida bo'limda chiqadi."
+        subtitle="Mavzu testi o'z mavzusining darslari ostida, mock test ilovadagi «Mock testlar» bo'limida chiqadi. Savollar «Savollar banki»dan olinadi."
         actions={
           <>
             <Link to="/tests/new?type=TOPIC" className="btn-secondary"><Plus size={16} /> Mavzu testi</Link>
@@ -36,6 +36,8 @@ export function TestsPage() {
                 {t.timeLimitSec ? ` · ${formatDuration(t.timeLimitSec)}` : ""} · {t.attemptCount} marta topshirilgan
               </p>
             </div>
+            {/* Mavzusi o'chirilgan mavzu testi o'quvchi ilovasida hech qayerda chiqmaydi */}
+            {t.type === "TOPIC" && !t.topicId && <Badge tone="red">Mavzusiz: ko'rinmaydi</Badge>}
             {t.isFree && <Badge tone="brand">Bepul</Badge>}
             {t.isPublished ? <Badge tone="green">Nashr</Badge> : <Badge>Qoralama</Badge>}
           </Link>

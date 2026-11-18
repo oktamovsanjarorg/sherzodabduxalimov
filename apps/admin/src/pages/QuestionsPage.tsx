@@ -44,7 +44,7 @@ export function QuestionsPage() {
     <>
       <PageHeader
         title="Savollar banki"
-        subtitle="Savollar bir marta kiritiladi va istalgan testda qayta ishlatiladi."
+        subtitle="Savol bir marta kiritiladi va istalgan testga qo'shiladi. Savolga mavzu bersangiz, Statistikada o'quvchilar qaysi mavzuda zaifligi ko'rinadi."
         actions={<button className="btn-primary" onClick={() => setEditing("new")}><Plus size={16} /> Savol qo'shish</button>}
       />
       <div className="mb-4 flex flex-wrap gap-2">

@@ -26,7 +26,7 @@ export function ContentPage() {
     <>
       <PageHeader
         title="Darslar"
-        subtitle="Kurs → mavzu → dars. O'quvchilar faqat «Nashr qilingan» darslarni ko'radi."
+        subtitle="Kurs → mavzu → dars va mavzu testi. O'quvchi faqat nashr qilingan kursdagi nashr qilingan dars va testlarni ko'radi."
         actions={
           <button className="btn-secondary" onClick={() => create.mutate()} disabled={create.isPending}>
             <Plus size={16} /> Kurs qo'shish
@@ -94,10 +94,16 @@ function CourseCard({ course }: { course: AdminCourse }) {
       <div className="flex flex-wrap items-center gap-3 border-b border-line px-4 py-4 sm:gap-4 sm:px-5">
         <InlineTitle value={course.title} onSave={(title) => update.mutate({ title })} className="text-lg font-extrabold" />
         <span className="flex-1" />
-        <Toggle checked={course.isPublished} onChange={(isPublished) => update.mutate({ isPublished })} label={course.isPublished ? "Nashr qilingan" : "Yashirin"} />
+        <Toggle checked={course.isPublished} onChange={(isPublished) => update.mutate({ isPublished })} label={course.isPublished ? "Nashr qilingan" : "Qoralama"} />
         <ConfirmButton onConfirm={() => del.mutate()}><Trash2 size={14} /></ConfirmButton>
       </div>
 
+      {!course.isPublished && (
+        <p className="border-b border-line bg-amber-50 px-4 py-2.5 text-sm text-amber-800 sm:px-5">
+          Kurs qoralamada: ichidagi darslar va testlar «Nashr» bo'lsa ham o'quvchiga ko'rinmaydi.
+        </p>
+      )}
+      {course.topics.length === 0 && <p className="px-4 py-4 text-sm text-ink-3 sm:px-5">Hali mavzu yo'q. Pastda birinchi mavzuni qo'shing.</p>}
       <div className="divide-y divide-line">
         {course.topics.map((t, i) => (
           <TopicBlock key={t.id} topic={t} index={i} topicIds={course.topics.map((x) => x.id)} />
