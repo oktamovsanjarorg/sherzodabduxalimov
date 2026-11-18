@@ -41,7 +41,7 @@ export function HomePage() {
           <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-hint">Xush kelibsiz</p>
           <h1 className="truncate text-[1.65rem] leading-none">{user.firstName}</h1>
         </div>
-        <button className="-my-2.5 py-2.5" onClick={go("/subscribe")}>{sub ? <Badge>Obuna faol</Badge> : user.offlineGroup ? <Badge>Offline guruh</Badge> : <Badge tone="muted">Bepul</Badge>}</button>
+        <button className="-my-2.5 py-2.5" onClick={go("/subscribe")}>{sub ? <Badge>Obuna faol</Badge> : user.offlineGroup ? <Badge>Offline guruh</Badge> : <Badge>Obuna olish</Badge>}</button>
       </header>
 
       <TrialBanner user={user} />

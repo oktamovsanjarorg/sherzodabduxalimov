@@ -1,6 +1,6 @@
 import type { TopicView } from "@onatili/shared";
 import { useQuery } from "@tanstack/react-query";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, ListChecks } from "lucide-react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { FullPage } from "../components/FullPage";
@@ -9,6 +9,7 @@ import { api } from "../lib/api";
 import { useBackButton } from "../lib/hooks";
 import { haptic } from "../lib/telegram";
 import { ListSkeleton } from "./LessonsPage";
+import { Empty } from "../components/ui";
 
 /** Mavzulashtirilgan testlar: faqat testlar, mavzular bo'yicha */
 export function TopicTestsPage() {
@@ -23,7 +24,7 @@ export function TopicTestsPage() {
       <p className="mb-4 px-1 text-sm text-hint">Har bir mavzu bo'yicha bilimingizni mustahkamlang</p>
       {courses.isPending && <ListSkeleton />}
       {courses.isError && <p className="card text-sm text-danger">Yuklab bo'lmadi: {courses.error.message}</p>}
-      {courses.data && !topics.length && <p className="card text-center text-sm text-hint">Hozircha testlar yo'q</p>}
+      {courses.data && !topics.length && <Empty Icon={ListChecks} title="Hozircha test yo'q" hint="Ustoz mavzu testlarini qo'shgach shu yerda chiqadi." />}
       <div className="space-y-2">
         {topics.map((t, i) => (
           <TopicTests key={t.id} topic={t} index={i + 1} defaultOpen={topics.length <= 3 || i === 0} />

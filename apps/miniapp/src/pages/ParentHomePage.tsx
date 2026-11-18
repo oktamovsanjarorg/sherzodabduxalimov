@@ -2,6 +2,7 @@ import { ATTENDANCE_LABELS, type AttendanceStatusName } from "@onatili/shared";
 import { useQuery } from "@tanstack/react-query";
 import { Clock, Users } from "lucide-react";
 import { SafeTopBar } from "../components/AppLayout";
+import { Empty } from "../components/ui";
 import { api } from "../lib/api";
 import { useAuth } from "../store/auth";
 
@@ -26,10 +27,7 @@ export function ParentHomePage() {
         <h2 className="mb-2 mt-5 px-1 text-[15px] font-bold">Farzandlarim</h2>
         {children.isPending && <div className="skeleton h-32" />}
         {children.data?.length === 0 && (
-          <div className="card flex flex-col items-center gap-2 py-8 text-center">
-            <Users className="text-hint" />
-            <p className="text-sm text-hint">Hali farzand ulanmagan. Farzandingiz yuborgan havolani oching.</p>
-          </div>
+          <Empty Icon={Users} title="Hali farzand ulanmagan" hint="Farzandingiz ilovadagi «Ota-onam» bo'limidan yuborgan havolani oching." />
         )}
         <div className="space-y-3">
           {children.data?.map((c, i) => (

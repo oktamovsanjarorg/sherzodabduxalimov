@@ -5,6 +5,7 @@ import { useNavigate } from "react-router-dom";
 import { FullPage } from "../components/FullPage";
 import { api } from "../lib/api";
 import { useBackButton } from "../lib/hooks";
+import { Empty } from "../components/ui";
 
 const TONE: Record<AttendanceStatusName, string> = {
   PRESENT: "bg-success/15 text-success",
@@ -55,7 +56,7 @@ export function MyAttendancePage() {
             </p>
           )}
           {total === 0 ? (
-            <p className="card text-center text-sm text-hint">Hali davomat olinmagan</p>
+            <Empty Icon={CalendarCheck} title="Hali davomat olinmagan" hint="Darsdan keyin ustoz belgilagan kunlar shu yerda ko'rinadi." />
           ) : (
             <ul className="card divide-y divide-hint/10 py-1">
               {d.records.map((r) => (

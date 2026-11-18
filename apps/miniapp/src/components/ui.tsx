@@ -37,3 +37,21 @@ export function ComingSoon({ title }: { title: string }) {
     </div>
   );
 }
+
+/** Bo'sh holat: ikonka, nima uchun bo'shligi va (bo'lsa) keyingi qadam */
+export function Empty({ Icon, title, hint, action, onAction }: { Icon: LucideIcon; title: string; hint?: string; action?: string; onAction?: () => void }) {
+  return (
+    <div className="card flex flex-col items-center px-6 py-8 text-center">
+      <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-brand-soft text-brand">
+        <Icon size={24} />
+      </span>
+      <p className="mt-3 text-[15px] font-bold">{title}</p>
+      {hint && <p className="mt-1 max-w-xs text-sm text-hint">{hint}</p>}
+      {action && onAction && (
+        <button className="tap mt-4 rounded-full bg-brand-soft px-4 py-2 text-sm font-bold text-brand" onClick={onAction}>
+          {action}
+        </button>
+      )}
+    </div>
+  );
+}

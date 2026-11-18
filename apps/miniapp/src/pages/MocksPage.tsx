@@ -1,11 +1,13 @@
 import { MILLIY_LEVELS } from "@onatili/shared";
 import { useQuery } from "@tanstack/react-query";
+import { Trophy } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { FullPage } from "../components/FullPage";
 import { TestCard } from "../components/TestCard";
 import { api } from "../lib/api";
 import { useBackButton } from "../lib/hooks";
 import { ListSkeleton } from "./LessonsPage";
+import { Empty } from "../components/ui";
 
 export function MocksPage() {
   const navigate = useNavigate();
@@ -30,7 +32,7 @@ export function MocksPage() {
         </p>
       </div>
       {mocks.isPending && <ListSkeleton />}
-      {mocks.data?.length === 0 && <p className="card text-center text-sm text-hint">Hozircha mock testlar yo'q</p>}
+      {mocks.data?.length === 0 && <Empty Icon={Trophy} title="Hozircha mock test yo'q" hint="Ustoz mock test qo'shgach shu yerda chiqadi." />}
       <div className="space-y-2">
         {mocks.data?.map((t) => (
           <TestCard key={t.id} test={t} />

@@ -44,7 +44,7 @@ export function ProfilePage() {
           {ROLE_LABELS[user.role]}
         </p>
         <span className={`mt-2 rounded-full px-3 py-1 text-xs font-bold ${sub ? "bg-brand-soft text-brand" : "bg-hint/15 text-hint"}`}>
-          {sub ? `Obuna faol: ${sub.planName}` : "Bepul foydalanuvchi"}
+          {sub ? `Obuna faol: ${sub.planName}` : "Obuna olinmagan"}
         </span>
       </div>
       <ul className="card mt-4 divide-y divide-hint/15 p-0">

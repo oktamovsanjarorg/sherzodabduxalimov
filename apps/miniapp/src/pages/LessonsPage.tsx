@@ -6,6 +6,7 @@ import { useNavigate } from "react-router-dom";
 import { api } from "../lib/api";
 import { formatDuration } from "../lib/hooks";
 import { haptic } from "../lib/telegram";
+import { Empty } from "../components/ui";
 
 export function LessonsPage() {
   const courses = useQuery({ queryKey: ["courses"], queryFn: api.courses });
@@ -18,7 +19,7 @@ export function LessonsPage() {
 
       {courses.isPending && <ListSkeleton />}
       {courses.isError && <p className="card text-sm text-danger">Yuklab bo'lmadi: {courses.error.message}</p>}
-      {courses.data && !courses.data.some((c) => c.topics.some((t) => t.lessons.length)) && <p className="card text-center text-sm text-hint">Hozircha darslar yo'q</p>}
+      {courses.data && !courses.data.some((c) => c.topics.some((t) => t.lessons.length)) && <Empty Icon={PlayCircle} title="Hozircha dars yo'q" hint="Ustoz dars qo'shgach shu yerda chiqadi." />}
       {courses.data?.map((c) => <CourseBlock key={c.id} course={c} showTitle={courses.data.length > 1} />)}
     </div>
   );

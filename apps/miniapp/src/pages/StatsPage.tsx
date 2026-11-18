@@ -6,6 +6,7 @@ import { ScoreBadge } from "../components/TestCard";
 import { api } from "../lib/api";
 import { formatDate, useBackButton } from "../lib/hooks";
 import { fmtPoints } from "./AttemptPage";
+import { Empty } from "../components/ui";
 
 export function StatsPage() {
   const navigate = useNavigate();
@@ -51,7 +52,7 @@ export function StatsPage() {
 
       <h2 className="mb-2 mt-6 px-1 text-[15px] font-bold">Natijalar tarixi</h2>
       {attempts.isPending && <div className="skeleton h-40" />}
-      {attempts.data?.length === 0 && <p className="card text-center text-sm text-hint">Hali test topshirilmagan</p>}
+      {attempts.data?.length === 0 && <Empty Icon={ListChecks} title="Hali test topshirilmagan" hint="Birinchi testdan keyin natija va o'sish shu yerda ko'rinadi." action="Testlarni ochish" onAction={() => navigate("/tests")} />}
       <ul className="space-y-2">
         {attempts.data?.map((a) => (
           <li key={a.id}>

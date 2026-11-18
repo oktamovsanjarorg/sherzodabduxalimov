@@ -1,6 +1,6 @@
 import { ESSAY_PROMPT_MAX, ESSAY_REQUIREMENTS, ESSAY_STATUS_LABELS, MAX_ESSAY_PAGES, formatSum, type EssayModeName, type MyEssaySummary, formatScore } from "@onatili/shared";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Bot, ChevronRight, GraduationCap, Info, Loader2, Plus } from "lucide-react";
+import { Bot, ChevronRight, GraduationCap, Info, Loader2, PenLine, Plus } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { FullPage } from "../components/FullPage";
@@ -9,6 +9,7 @@ import { api, ApiError } from "../lib/api";
 import { formatDate, useBackButton } from "../lib/hooks";
 import { compressImage } from "../lib/image";
 import { haptic, hapticResult } from "../lib/telegram";
+import { Empty } from "../components/ui";
 
 const words = (t: string) => (t.trim().match(/\S+/g) ?? []).length;
 
@@ -36,7 +37,7 @@ export function EssaysPage() {
         <Plus size={18} /> Yangi esse
       </button>
       {list.isPending && <div className="skeleton mt-4 h-40" />}
-      {list.data?.length === 0 && <p className="card mt-4 text-center text-sm text-hint">Hali esse yubormagansiz</p>}
+      {list.data?.length === 0 && <div className="mt-4"><Empty Icon={PenLine} title="Hali esse yozmagansiz" hint="Mavzu tanlang, qog'ozga yozib suratga oling: AI bir necha daqiqada baholaydi." /></div>}
       <div className="mt-4 space-y-2">
         {list.data?.map((e) => (
           <EssayRow key={e.id} e={e} />
