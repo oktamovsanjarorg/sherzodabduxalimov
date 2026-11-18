@@ -44,7 +44,7 @@ export function useNavGroups(): NavGroup[] {
         { to: "/questions", label: "Savollar", match: /^\/questions/ },
         { to: "/tests", label: "Testlar", match: /^\/tests/ },
         { to: "/essays", label: "Esselar", match: /^\/essays/, badge: dash.data?.pendingEssays },
-        { to: "/external", label: "Testlar", match: /^\/external/ },
+        { to: "/external", label: "Test natijalari", match: /^\/external/ },
       ],
     },
     {
@@ -84,7 +84,7 @@ export function useNavGroups(): NavGroup[] {
 function Badge({ n }: { n?: number }) {
   if (!n) return null;
   return (
-    <span className="absolute -right-2 -top-1 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-gold px-1 text-[10px] font-extrabold text-navy">
+    <span className="absolute -right-2 -top-1 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-red-600 px-1 text-[10px] font-extrabold text-white ring-2 ring-surface">
       {n > 99 ? "99+" : n}
     </span>
   );
@@ -128,7 +128,7 @@ export function Layout() {
                         <NavLink
                           to={t.to}
                           className={`relative flex h-9 items-center gap-2.5 rounded-lg px-3 text-sm font-semibold transition ${
-                            active ? "bg-gold-hi text-navy" : "text-mist/90 hover:bg-navy-light hover:text-white"
+                            active ? "bg-white/15 text-white" : "text-mist/80 hover:bg-navy-light hover:text-white"
                           }`}
                         >
                           {!g.sub && <g.Icon size={16} />}
@@ -176,11 +176,11 @@ export function Layout() {
                   key={t.to}
                   to={t.to}
                   className={`h-9 shrink-0 rounded-full px-4 text-sm font-bold leading-9 transition ${
-                    active ? "bg-gold-hi text-navy" : "bg-navy-light text-mist hover:bg-navy-line"
+                    active ? "bg-white text-navy" : "bg-navy-light text-mist hover:bg-navy-line"
                   }`}
                 >
                   {t.label}
-                  {t.badge ? <span className={`ml-1.5 ${active ? "text-red-600" : "text-red-300"}`}>{t.badge}</span> : null}
+                  {t.badge ? <span className="ml-1.5 inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-red-600 px-1.5 align-middle text-[11px] font-extrabold leading-none text-white">{t.badge}</span> : null}
                 </NavLink>
               );
             })}

@@ -238,7 +238,7 @@ function PaymentCard({ p }: { p: AdminPayment }) {
               {p.subscription ? ` · ${date(p.subscription.endsAt)} gacha` : ""}
               {p.reviewedBy ? ` · ${p.reviewedBy}` : ""}
             </Badge>
-            <button className="btn-ghost btn-sm text-red-400" onClick={() => setRevoking(true)}>
+            <button className="btn-ghost btn-sm text-red-600" onClick={() => setRevoking(true)}>
               <RotateCcw size={14} /> Bekor qilish
             </button>
           </>

@@ -34,7 +34,7 @@ export function ContentPage() {
         }
       />
       {courses.isPending && <Spinner className="text-ink-4" />}
-      {courses.isError && <p className="text-sm text-red-400">{errMsg(courses.error)}</p>}
+      {courses.isError && <p className="text-sm text-red-600">{errMsg(courses.error)}</p>}
       {courses.data?.length === 0 && <Empty title="Hali kurs yo'q" hint="Birinchi kursni yarating, keyin unga mavzu va darslar qo'shing." />}
       <div className="space-y-6">
         {courses.data?.map((c) => <CourseCard key={c.id} course={c} />)}
@@ -150,7 +150,7 @@ function TopicBlock({ topic, index, topicIds }: { topic: AdminTopic; index: numb
         <span className="flex-1" />
         <button className="btn-ghost h-9 w-9 shrink-0 p-0" disabled={index === 0} onClick={() => reorder.mutate({ kind: "topic", ids: move(topicIds, index, -1) })} aria-label="Yuqoriga"><ArrowUp size={15} /></button>
         <button className="btn-ghost h-9 w-9 shrink-0 p-0" disabled={index === topicIds.length - 1} onClick={() => reorder.mutate({ kind: "topic", ids: move(topicIds, index, 1) })} aria-label="Pastga"><ArrowDown size={15} /></button>
-        <ConfirmButton onConfirm={() => del.mutate()} className="btn-ghost h-9 w-9 shrink-0 p-0 text-ink-4 hover:text-red-400"><Trash2 size={15} /></ConfirmButton>
+        <ConfirmButton onConfirm={() => del.mutate()} className="btn-ghost h-9 w-9 shrink-0 p-0 text-ink-4 hover:text-red-600"><Trash2 size={15} /></ConfirmButton>
       </div>
 
       <ul className="space-y-0.5 sm:ml-9">
@@ -166,7 +166,7 @@ function TopicBlock({ topic, index, topicIds }: { topic: AdminTopic; index: numb
         {topic.tests.map((t) => (
           <li key={t.id}>
             <Link to={`/tests/${t.id}`} className="flex flex-wrap items-center gap-x-2 gap-y-1.5 rounded-lg px-2 py-2 text-sm hover:bg-surface-2 sm:px-3">
-              <FileText size={16} className="shrink-0 text-sky-400" />
+              <FileText size={16} className="shrink-0 text-sky-600" />
               <span className="min-w-0 flex-1 font-semibold sm:truncate">{t.title}</span>
               <span className="order-last flex w-full flex-wrap gap-1 pl-6 sm:order-none sm:w-auto sm:pl-0">
                 <Badge tone="blue">Test · {t.questionCount} savol</Badge>
@@ -181,7 +181,7 @@ function TopicBlock({ topic, index, topicIds }: { topic: AdminTopic; index: numb
         <button className="btn-ghost btn-sm text-brand" onClick={() => addLesson.mutate()} disabled={addLesson.isPending}>
           <Plus size={14} /> Dars qo'shish
         </button>
-        <Link to={`/tests/new?topicId=${topic.id}`} className="btn-ghost btn-sm text-sky-300">
+        <Link to={`/tests/new?topicId=${topic.id}`} className="btn-ghost btn-sm text-sky-700">
           <Plus size={14} /> Mavzu testi
         </Link>
       </div>

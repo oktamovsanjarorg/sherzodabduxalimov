@@ -17,7 +17,7 @@ export function StudentDetailPage() {
   const { id = "" } = useParams();
   const q = useQuery({ queryKey: ["student", id], queryFn: () => api.student(id) });
   if (q.isPending) return <Spinner className="text-ink-4" />;
-  if (q.isError) return <p className="text-sm text-red-400">{errMsg(q.error)}</p>;
+  if (q.isError) return <p className="text-sm text-red-600">{errMsg(q.error)}</p>;
   const s = q.data;
   return (
     <div className="mx-auto max-w-5xl space-y-4">
@@ -381,7 +381,7 @@ function Manage({ s }: { s: StudentDetail }) {
                 </button>
               ))}
             </div>
-            <p className="mt-2 text-xs text-ink-3">Hozir: {s.hasAccess ? <b className="text-emerald-300">darslar ochiq</b> : <b className="text-red-400">darslar yopiq</b>}</p>
+            <p className="mt-2 text-xs text-ink-3">Hozir: {s.hasAccess ? <b className="text-emerald-700">darslar ochiq</b> : <b className="text-red-600">darslar yopiq</b>}</p>
           </div>
         )}
         {isTeacher && (

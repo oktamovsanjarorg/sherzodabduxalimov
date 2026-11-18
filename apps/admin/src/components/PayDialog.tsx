@@ -19,7 +19,7 @@ export function PayDialog({ studentId, onClose, onDone }: { studentId: string; o
       {info.isPending ? (
         <Spinner className="text-ink-4" />
       ) : info.isError ? (
-        <p className="text-sm font-semibold text-red-400">{errMsg(info.error)}</p>
+        <p className="text-sm font-semibold text-red-600">{errMsg(info.error)}</p>
       ) : (
         <Form studentId={studentId} info={info.data} onClose={onClose} onDone={onDone} />
       )}

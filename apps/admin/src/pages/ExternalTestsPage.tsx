@@ -124,8 +124,8 @@ function ImportModal({ onClose, onDone }: { onClose: () => void; onDone: (id: st
           <div className="rounded-lg bg-surface-2 p-3 text-sm">
             <p className="font-bold">{preview.test.title}</p>
             <p className="text-ink-3">
-              {preview.test.questionCount} savol · {preview.test.participants} qatnashchi · <b className="text-emerald-300">{found} tasi topildi</b>
-              {preview.rows.length - found > 0 && <b className="text-amber-300"> · {preview.rows.length - found} tasi topilmadi</b>}
+              {preview.test.questionCount} savol · {preview.test.participants} qatnashchi · <b className="text-emerald-700">{found} tasi topildi</b>
+              {preview.rows.length - found > 0 && <b className="text-amber-700"> · {preview.rows.length - found} tasi topilmadi</b>}
             </p>
             {preview.test.alreadyImported && <p className="mt-1 text-ink-3">Bu test oldin import qilingan: natijalar yangilanadi, qo'lda bog'laganlaringiz saqlanadi.</p>}
           </div>
@@ -136,7 +136,7 @@ function ImportModal({ onClose, onDone }: { onClose: () => void; onDone: (id: st
                   {r.name}
                   {r.username && <span className="text-ink-4"> @{r.username}</span>}
                 </span>
-                {r.match ? <span className="truncate text-xs text-emerald-300">→ {r.match.name} ({HOW[r.match.how]})</span> : <span className="text-xs text-amber-300">topilmadi</span>}
+                {r.match ? <span className="truncate text-xs text-emerald-700">→ {r.match.name} ({HOW[r.match.how]})</span> : <span className="text-xs text-amber-700">topilmadi</span>}
                 <b className="w-12 text-right">{formatScore(r.percent)}%</b>
               </li>
             ))}
@@ -159,7 +159,7 @@ function Ranking() {
         <div className="card divide-y divide-line">
           {q.data.map((r, i) => (
             <Link key={r.studentId} to={`/students/${r.studentId}`} className="flex items-center gap-3 px-4 py-3 hover:bg-surface-2">
-              <span className={`w-7 text-center font-extrabold ${i < 3 ? "text-amber-300" : "text-ink-3"}`}>{i < 3 ? <Trophy size={16} className="mx-auto" /> : i + 1}</span>
+              <span className={`w-7 text-center font-extrabold ${i < 3 ? "text-amber-700" : "text-ink-3"}`}>{i < 3 ? <Trophy size={16} className="mx-auto" /> : i + 1}</span>
               <div className="min-w-0 flex-1">
                 <p className="truncate font-semibold">{r.name}</p>
                 <p className="text-xs text-ink-3">
@@ -191,7 +191,7 @@ export function ExternalTestPage() {
   });
   const remove = useMutation({ mutationFn: () => api.externalDelete(id), onSuccess: () => (refresh(), navigate("/external")) });
   if (q.isPending) return <Spinner className="text-ink-4" />;
-  if (q.isError) return <p className="text-sm text-red-400">{errMsg(q.error)}</p>;
+  if (q.isError) return <p className="text-sm text-red-600">{errMsg(q.error)}</p>;
   const t = q.data;
   const waiting = t.rows.filter((r) => r.student && !r.notifiedAt).length;
   return (
@@ -301,7 +301,7 @@ function Results({ t, onChanged }: { t: ExternalTestDetail; onChanged: () => voi
               <p className="truncate text-xs text-ink-3">
                 {r.correct} to'g'ri · {r.wrong} xato · {r.blank} bo'sh{r.scaledScore != null ? ` · ${formatScore(r.scaledScore)} ball` : ""}
                 {r.grade ? ` · ${r.grade}` : ""}
-                {!r.student && <span className="text-amber-300"> · platformada topilmadi</span>}
+                {!r.student && <span className="text-amber-700"> · platformada topilmadi</span>}
               </p>
             </div>
             <button className="btn-ghost btn-sm" onClick={() => setLinking(r)} title="O'quvchiga bog'lash">

@@ -165,7 +165,7 @@ export function PageAnnotator({ src, value, onChange }: { src: string; value: Pa
         <button type="button" className="btn-ghost h-9 w-9 p-0" onClick={() => setZoom((z) => Math.min(3, z + 0.5))} aria-label="Kattalashtirish">
           <ZoomIn size={16} />
         </button>
-        <button type="button" className="ml-auto text-xs font-semibold text-red-400 hover:underline" onClick={() => commit({ strokes: [], marks: [] })}>
+        <button type="button" className="ml-auto text-xs font-semibold text-red-600 hover:underline" onClick={() => commit({ strokes: [], marks: [] })}>
           Varoqni tozalash
         </button>
       </div>

@@ -148,7 +148,7 @@ function DayView({ groupId, date }: { groupId: string; date: string }) {
   });
 
   if (day.isPending) return <Spinner className="text-ink-4" />;
-  if (day.isError) return <p className="text-sm text-red-400">{errMsg(day.error)}</p>;
+  if (day.isError) return <p className="text-sm text-red-600">{errMsg(day.error)}</p>;
   if (day.data.rows.length === 0) return <Empty title="Guruhda o'quvchi yo'q" hint="«Guruhlar» tugmasi orqali o'quvchilarni qo'shing." />;
 
   return (

@@ -16,7 +16,7 @@ const sum = (n: number) => `${formatSum(n)} so'm`;
 export function PaymentInsightsView({ month }: { month: string }) {
   const q = useQuery({ queryKey: ["payment-insights", month], queryFn: () => api.paymentInsights(month) });
   if (q.isPending) return <Spinner className="text-ink-4" />;
-  if (q.isError) return <p className="text-sm text-red-400">{errMsg(q.error)}</p>;
+  if (q.isError) return <p className="text-sm text-red-600">{errMsg(q.error)}</p>;
   const d = q.data;
   return (
     <div className="space-y-5">
@@ -43,7 +43,7 @@ export function PaymentInsightsView({ month }: { month: string }) {
         <Kpi label="Prognoz: oy oxiriga" value={sum(d.forecast.endOfMonthUzs)} hint={`Keyingi oy kutilmoqda: ${sum(d.forecast.nextMonthExpectedUzs)}`} />
       </div>
       {d.offline.paidNoAmount > 0 && (
-        <p className="-mt-2 flex items-start gap-1.5 text-xs text-amber-300">
+        <p className="-mt-2 flex items-start gap-1.5 text-xs text-amber-700">
           <AlertTriangle size={14} className="mt-px shrink-0" /> {d.offline.paidNoAmount} ta to'lov summasi yozilmay belgilangan (0 so'm). O'quvchi sahifasida «Qaytarish» qilib, summa bilan qayta belgilang.
         </p>
       )}
@@ -66,7 +66,7 @@ export function PaymentInsightsView({ month }: { month: string }) {
             </ul>
           )}
           {d.offline.feeMissing > 0 && (
-            <p className="mt-3 flex items-start gap-1.5 text-xs text-amber-300">
+            <p className="mt-3 flex items-start gap-1.5 text-xs text-amber-700">
               <AlertTriangle size={14} className="mt-px shrink-0" /> {d.offline.feeMissing} o'quvchining guruhida oylik summa kiritilmagan — kutilgan tushumga qo'shilmadi.{" "}
               <Link to="/payments?tab=OFFLINE" className="font-bold underline">
                 Kiritish
@@ -78,10 +78,10 @@ export function PaymentInsightsView({ month }: { month: string }) {
           <div className="grid grid-cols-3 gap-2 text-center">
             <Mini label="Muddati tugaydi" value={d.online.due} />
             <Mini label="Uzaytirdi" value={d.online.renewed} />
-            <Mini label="Uzaytirmadi" value={d.online.lapsed} tone={d.online.lapsed ? "text-red-300" : undefined} />
+            <Mini label="Uzaytirmadi" value={d.online.lapsed} tone={d.online.lapsed ? "text-red-700" : undefined} />
           </div>
           {d.online.pendingReceipts > 0 && (
-            <Link to="/payments" className="mt-3 inline-flex items-center gap-1 text-sm font-bold text-amber-300 hover:underline">
+            <Link to="/payments" className="mt-3 inline-flex items-center gap-1 text-sm font-bold text-amber-700 hover:underline">
               <AlertTriangle size={15} /> {d.online.pendingReceipts} ta chek tasdiqlanishini kutmoqda ({sum(d.online.pendingUzs)})
             </Link>
           )}
@@ -297,7 +297,7 @@ function Debtor({ x, month }: { x: DebtorRow; month: string }) {
             )}
           </span>
         ) : (
-          <span className="text-amber-300">Ota-ona ulanmagan</span>
+          <span className="text-amber-700">Ota-ona ulanmagan</span>
         )}
         {x.phone && (
           <a href={`tel:${x.phone}`} className="inline-flex items-center gap-0.5 font-bold text-ink-2">
@@ -317,7 +317,7 @@ function Debtor({ x, month }: { x: DebtorRow; month: string }) {
                 {f.note ? `: ${f.note}` : ""} <span className="text-ink-4">· {fmtShortDateTime(f.createdAt)}{f.by ? ` · ${f.by}` : ""}</span>
               </span>
               {f.kind !== "BOT" && (
-                <button className="text-ink-5 hover:text-red-400" aria-label="O'chirish" onClick={() => del.mutate(f.id)}>
+                <button className="text-ink-5 hover:text-red-600" aria-label="O'chirish" onClick={() => del.mutate(f.id)}>
                   <X size={13} />
                 </button>
               )}
@@ -378,10 +378,10 @@ function AiReport({ month }: { month: string }) {
   const [report, setReport] = useState<{ text: string; generatedAt: string } | null>(null);
   const gen = useMutation({ mutationFn: () => api.paymentAi(month), onSuccess: setReport, onError: (e) => toast(errMsg(e), "error") });
   return (
-    <section className="rounded-2xl border border-violet-400/30 bg-violet-400/10 p-4 sm:p-5">
+    <section className="rounded-2xl border border-violet-200 bg-violet-50 p-4 sm:p-5">
       <div className="flex flex-wrap items-center gap-3">
         <h2 className="flex flex-1 items-center gap-2 font-extrabold">
-          <Sparkles size={17} className="text-violet-300" /> AI xulosa
+          <Sparkles size={17} className="text-violet-700" /> AI xulosa
         </h2>
         <button className="btn-secondary btn-sm" disabled={gen.isPending} onClick={() => gen.mutate()}>
           {gen.isPending ? <Spinner /> : <Sparkles size={14} />} {report ? "Yangilash" : "Xulosa tayyorlash"}
@@ -425,7 +425,7 @@ function Kpi({ label, value, hint, strong, warn }: { label: string; value: strin
       <p className="flex items-center gap-1.5 text-xs font-bold text-ink-3">
         <Wallet size={13} /> {label}
       </p>
-      <p className={`mt-1 text-2xl font-extrabold tracking-tight ${strong ? "text-brand-light" : warn ? "text-red-300" : ""}`}>{value}</p>
+      <p className={`mt-1 text-2xl font-extrabold tracking-tight ${strong ? "text-brand-light" : warn ? "text-red-700" : ""}`}>{value}</p>
       <p className="mt-0.5 text-xs text-ink-3">{hint}</p>
     </div>
   );

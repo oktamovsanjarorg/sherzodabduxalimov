@@ -83,7 +83,8 @@ export function Badge({ tone = "gray", children }: { tone?: keyof typeof tones; 
 }
 
 /** Ikki bosqichli o'chirish tugmasi: birinchi bosishda tasdiq so'raydi */
-export function ConfirmButton({ onConfirm, children, label = "O'chirilsinmi?", className = "btn-danger btn-sm" }: { onConfirm: () => void; children: ReactNode; label?: string; className?: string }) {
+/** title: faqat ikonkali tugma uchun ekran o'quvchiga nom (standart "O'chirish") */
+export function ConfirmButton({ onConfirm, children, label = "O'chirilsinmi?", className = "btn-danger btn-sm", title = "O'chirish" }: { onConfirm: () => void; children: ReactNode; label?: string; className?: string; title?: string }) {
   const [ask, setAsk] = useState(false);
   useEffect(() => {
     if (!ask) return;
@@ -101,7 +102,7 @@ export function ConfirmButton({ onConfirm, children, label = "O'chirilsinmi?", c
       </button>
     </span>
   ) : (
-    <button className={className} onClick={() => setAsk(true)}>
+    <button className={className} onClick={() => setAsk(true)} title={title} aria-label={typeof children === "string" ? undefined : title}>
       {children}
     </button>
   );

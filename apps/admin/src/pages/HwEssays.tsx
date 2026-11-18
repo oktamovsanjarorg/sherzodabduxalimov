@@ -113,7 +113,7 @@ function AiHint({ r }: { r: EssayReviewView }) {
       <ul className="mt-2 space-y-1 text-sky-800">
         {r.criteria.map((c) => (
           <li key={c.key}>
-            <b>{c.label}:</b> {formatScore(c.score)}/{c.max} {c.comment && <span className="text-sky-300/80">— {c.comment}</span>}
+            <b>{c.label}:</b> {formatScore(c.score)}/{c.max} {c.comment && <span className="text-sky-700">— {c.comment}</span>}
           </li>
         ))}
       </ul>

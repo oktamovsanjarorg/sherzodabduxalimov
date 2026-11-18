@@ -133,7 +133,7 @@ export function GroupManager({ groups, onClose }: { groups: AdminGroup[]; onClos
                       <p className="truncate text-sm font-semibold">{s.name}</p>
                       <ParentState s={s} />
                     </div>
-                    <button className="btn-ghost h-9 w-9 p-0 text-ink-4 hover:text-red-400" onClick={() => remove.mutate(s.studentId)} aria-label="Guruhdan chiqarish">
+                    <button className="btn-ghost h-9 w-9 p-0 text-ink-4 hover:text-red-600" onClick={() => remove.mutate(s.studentId)} aria-label="Guruhdan chiqarish">
                       <X size={16} />
                     </button>
                   </li>
@@ -150,7 +150,7 @@ export function GroupManager({ groups, onClose }: { groups: AdminGroup[]; onClos
 /** O'quvchining ota-onasi holati (qisqa belgi) */
 export function ParentState({ s }: { s: AdminStudent }) {
   const approved = s.parents.filter((p) => p.status === "APPROVED");
-  if (approved.length) return <span title={approved.map((p) => p.name).join(", ")} className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-300"><ShieldCheck size={13} /> Ota-ona</span>;
-  if (s.parents.length) return <span className="inline-flex items-center gap-1 text-xs font-semibold text-amber-300"><Clock size={13} /> Tekshirilmoqda</span>;
-  return <span className="inline-flex items-center gap-1 text-xs font-semibold text-red-400"><ShieldAlert size={13} /> Ota-ona yo'q</span>;
+  if (approved.length) return <span title={approved.map((p) => p.name).join(", ")} className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-700"><ShieldCheck size={13} /> Ota-ona</span>;
+  if (s.parents.length) return <span className="inline-flex items-center gap-1 text-xs font-semibold text-amber-700"><Clock size={13} /> Tekshirilmoqda</span>;
+  return <span className="inline-flex items-center gap-1 text-xs font-semibold text-red-600"><ShieldAlert size={13} /> Ota-ona yo'q</span>;
 }

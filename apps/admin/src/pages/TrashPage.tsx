@@ -47,7 +47,7 @@ export function TrashPage() {
         subtitle="O'chirilgan o'quvchilar, darslar, savollar, testlar va guruhlar 30 kun shu yerda turadi. «Tiklash» — barcha ma'lumotlari bilan (natijalar, davomat, to'lovlar, video) joyiga qaytadi. 30 kundan keyin o'zi butunlay o'chadi."
       />
       {list.isPending && <Spinner className="text-ink-4" />}
-      {list.isError && <p className="text-sm text-red-400">{errMsg(list.error)}</p>}
+      {list.isError && <p className="text-sm text-red-600">{errMsg(list.error)}</p>}
       {list.data?.length === 0 && <Empty title="Korzinka bo'sh" hint="O'chirilgan narsalar shu yerga tushadi." />}
       {!!list.data?.length && (
         <div className="card divide-y divide-line">
@@ -64,14 +64,14 @@ export function TrashPage() {
                   <p className="text-xs text-ink-3">
                     {k.label} · o'chirildi {fmtShortDateTime(r.createdAt)}
                     {r.deletedBy ? ` · ${r.deletedBy}` : ""} · {r.rows} ta yozuv bilan ·{" "}
-                    <span className={left <= 3 ? "font-bold text-red-400" : ""}>{left} kundan keyin butunlay o'chadi</span>
+                    <span className={left <= 3 ? "font-bold text-red-600" : ""}>{left} kundan keyin butunlay o'chadi</span>
                   </p>
                 </div>
                 <div className="flex items-center gap-2">
                   <button className="btn-primary btn-sm" disabled={restore.isPending} onClick={() => restore.mutate(r)}>
                     <RotateCcw size={14} /> Tiklash
                   </button>
-                  <ConfirmButton label="Qaytarib bo'lmaydi. O'chirilsinmi?" className="btn-ghost btn-sm text-red-400" onConfirm={() => purge.mutate(r)}>
+                  <ConfirmButton label="Qaytarib bo'lmaydi. O'chirilsinmi?" className="btn-ghost btn-sm text-red-600" onConfirm={() => purge.mutate(r)}>
                     <Trash2 size={14} /> Butunlay
                   </ConfirmButton>
                 </div>

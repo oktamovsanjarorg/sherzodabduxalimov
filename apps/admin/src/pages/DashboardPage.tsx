@@ -13,7 +13,7 @@ export function DashboardPage() {
   const isTeacher = loadSession()?.user.role === "TEACHER";
 
   if (d.isPending) return <Spinner className="text-ink-4" />;
-  if (d.isError) return <p className="text-sm text-red-400">{errMsg(d.error)}</p>;
+  if (d.isError) return <p className="text-sm text-red-600">{errMsg(d.error)}</p>;
   const x = d.data;
   const unmarked = x.attendanceToday.groups.filter((g) => g.total > 0 && g.marked < g.total);
   const payments = isTeacher ? x.pendingPayments : 0;

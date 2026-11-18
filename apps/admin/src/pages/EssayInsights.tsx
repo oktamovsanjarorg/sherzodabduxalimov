@@ -204,8 +204,8 @@ function CriteriaCard({ title, stats }: { title: string; stats: EssayScoreStats 
             return (
               <li key={c.key} className="text-sm">
                 <div className="mb-1 flex justify-between gap-3">
-                  <span className={weak ? "font-bold text-amber-300" : "text-ink-2"}>{c.label}</span>
-                  <b className={weak ? "text-amber-300" : ""}>
+                  <span className={weak ? "font-bold text-amber-700" : "text-ink-2"}>{c.label}</span>
+                  <b className={weak ? "text-amber-700" : ""}>
                     {formatScore(c.avg)} / {c.max}
                   </b>
                 </div>
@@ -447,7 +447,7 @@ function ReviewBlock({ r }: { r: EssayReviewView }) {
           <ul className="space-y-1.5 text-sm">
             {r.mistakes.map((m, i) => (
               <li key={i} className="rounded-lg bg-surface-2 px-3 py-2">
-                <span className="text-red-400 line-through">{m.wrong}</span> → <span className="font-semibold text-emerald-300">{m.right}</span>
+                <span className="text-red-600 line-through">{m.wrong}</span> → <span className="font-semibold text-emerald-700">{m.right}</span>
                 {m.note && <p className="mt-0.5 text-xs text-ink-3">{m.note}</p>}
               </li>
             ))}

@@ -14,7 +14,7 @@ export function TestEditorPage() {
   const isNew = id === "new";
   const test = useQuery({ queryKey: ["test", id], queryFn: () => api.test(id), enabled: !isNew });
   if (!isNew && test.isPending) return <Spinner className="text-ink-4" />;
-  if (!isNew && test.isError) return <p className="text-sm text-red-400">{errMsg(test.error)}</p>;
+  if (!isNew && test.isError) return <p className="text-sm text-red-600">{errMsg(test.error)}</p>;
   return <Editor key={id} initial={isNew ? null : test.data!} />;
 }
 
@@ -177,7 +177,7 @@ function Editor({ initial }: { initial: AdminTestDetail | null }) {
                 </label>}
                 <button className="btn-ghost h-9 w-9 p-0" disabled={i === 0} onClick={() => moveItem(i, -1)} aria-label="Yuqoriga"><ArrowUp size={14} /></button>
                 <button className="btn-ghost h-9 w-9 p-0" disabled={i === items.length - 1} onClick={() => moveItem(i, 1)} aria-label="Pastga"><ArrowDown size={14} /></button>
-                <button className="btn-ghost h-9 w-9 p-0 text-ink-4 hover:text-red-400" onClick={() => setItems((cur) => cur.filter((_, j) => j !== i))} aria-label="Olib tashlash"><X size={16} /></button>
+                <button className="btn-ghost h-9 w-9 p-0 text-ink-4 hover:text-red-600" onClick={() => setItems((cur) => cur.filter((_, j) => j !== i))} aria-label="Olib tashlash"><X size={16} /></button>
                 </div>
               </li>
             ))}

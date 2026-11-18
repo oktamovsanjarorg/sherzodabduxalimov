@@ -83,7 +83,7 @@ export function LinkCard({ link }: { link: AdminParentLink }) {
   });
 
   return (
-    <div className={`card p-4 ${link.flags.length && link.status === "PENDING" ? "border-red-400/40" : ""}`}>
+    <div className={`card p-4 ${link.flags.length && link.status === "PENDING" ? "border-red-200" : ""}`}>
       <div className="flex flex-wrap gap-4">
         <Person label="O'quvchi" name={link.student.name} username={link.student.username} phone={link.student.phone} />
         <Person label={`Ota-ona${link.relation ? ` (${link.relation})` : ""}`} name={link.parent.name} username={link.parent.username} phone={link.phone} />

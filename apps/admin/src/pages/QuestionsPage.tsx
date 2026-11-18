@@ -48,7 +48,7 @@ export function QuestionsPage() {
         actions={<button className="btn-primary" onClick={() => setEditing("new")}><Plus size={16} /> Savol qo'shish</button>}
       />
       <div className="mb-4 flex flex-wrap gap-2">
-        <select className="input w-full sm:w-auto sm:min-w-[220px]" value={topicId} onChange={(e) => { setTopicId(e.target.value); setPage(1); }}>
+        <select aria-label="Mavzu bo'yicha saralash" className="input w-full sm:w-auto sm:min-w-[220px]" value={topicId} onChange={(e) => { setTopicId(e.target.value); setPage(1); }}>
           <option value="">Barcha mavzular</option>
           {topics.map((t) => <option key={t.id} value={t.id}>{t.title}</option>)}
           <option value="none">Mavzusiz</option>

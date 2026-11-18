@@ -198,7 +198,7 @@ function Newcomer({ s, groups }: { s: NewcomerRow; groups: AdminGroup[] }) {
             <ConfirmButton label="Bloklansinmi?" className="btn-ghost btn-sm h-9 text-ink-2" onConfirm={() => block.mutate()}>
               <Ban size={14} /> Bloklash
             </ConfirmButton>
-            <ConfirmButton label="Korzinkaga o'tsinmi?" className="btn-ghost btn-sm h-9 text-red-400" onConfirm={() => del.mutate()}>
+            <ConfirmButton label="Korzinkaga o'tsinmi?" className="btn-ghost btn-sm h-9 text-red-600" onConfirm={() => del.mutate()}>
               <Trash2 size={14} /> O'chirish
             </ConfirmButton>
           </>
@@ -236,7 +236,7 @@ function Duplicate({ r }: { r: DuplicateRow }) {
         <p className="truncate text-xs text-ink-3">
           {[ph.groupName ?? "guruhsiz", "botga kirmagan", `davomat: ${ph.attendance}`].join(" · ")}
         </p>
-        {moves && <p className="mt-0.5 text-[11px] font-semibold text-amber-300">Guruhi boshqa: birlashtirilsa {ph.groupName} guruhiga o'tadi</p>}
+        {moves && <p className="mt-0.5 text-[11px] font-semibold text-amber-700">Guruhi boshqa: birlashtirilsa {ph.groupName} guruhiga o'tadi</p>}
       </Link>
       <ConfirmButton label="Bitta odammi? Birlashtirilsinmi?" className="btn-primary btn-sm h-9" onConfirm={() => !link.isPending && link.mutate()}>
         <Link2 size={14} /> Birlashtirish

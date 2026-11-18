@@ -32,7 +32,7 @@ export function StaffPage() {
       <PageHeader title="Xodimlar" subtitle="Yangi yordamchini Telegram username orqali taklif qiling." />
       <div className="card mb-5 grid grid-cols-1 gap-4 p-4 text-sm sm:grid-cols-2 sm:p-5">
         <div>
-          <p className="mb-1 flex items-center gap-1.5 font-bold text-emerald-300">
+          <p className="mb-1 flex items-center gap-1.5 font-bold text-emerald-700">
             <Check size={16} /> Yordamchi qila oladi
           </p>
           <ul className="list-disc space-y-0.5 pl-5 text-ink-2">
@@ -43,7 +43,7 @@ export function StaffPage() {
           </ul>
         </div>
         <div>
-          <p className="mb-1 flex items-center gap-1.5 font-bold text-red-300">
+          <p className="mb-1 flex items-center gap-1.5 font-bold text-red-700">
             <X size={16} /> Faqat ega (ustoz)
           </p>
           <ul className="list-disc space-y-0.5 pl-5 text-ink-2">

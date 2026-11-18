@@ -18,7 +18,7 @@ export function LessonEditorPage() {
   });
 
   if (lesson.isPending) return <Spinner className="text-ink-4" />;
-  if (lesson.isError) return <p className="text-sm text-red-400">{errMsg(lesson.error)}</p>;
+  if (lesson.isError) return <p className="text-sm text-red-600">{errMsg(lesson.error)}</p>;
   return <Editor key={lesson.data.id} lesson={lesson.data} onChanged={() => { qc.invalidateQueries({ queryKey: ["lesson", id] }); qc.invalidateQueries({ queryKey: ["courses"] }); }} />;
 }
 

@@ -75,7 +75,7 @@ function CardForm() {
             <input className="input" placeholder="Ism Familiya" value={holder} maxLength={80} onChange={(e) => setHolder(e.target.value)} />
           </Field>
           <Field label="O'quvchiga ko'rsatma" hint="Ixtiyoriy. Masalan: “O'tkazmaga izoh sifatida ismingizni yozing”">
-            <textarea className="input min-h-[70px] py-2" value={note} maxLength={300} onChange={(e) => setNote(e.target.value)} />
+            <textarea aria-label="O'quvchiga ko'rsatma" className="input min-h-[70px] py-2" value={note} maxLength={300} onChange={(e) => setNote(e.target.value)} />
           </Field>
           <button className="btn-primary" disabled={digits.length !== 16 || holder.trim().length < 3 || save.isPending}>
             <Save size={16} /> Saqlash

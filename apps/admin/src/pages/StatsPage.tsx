@@ -62,7 +62,7 @@ export function StatsPage() {
       ) : q.isPending ? (
         <Spinner className="text-ink-4" />
       ) : q.isError ? (
-        <p className="text-sm text-red-400">{errMsg(q.error)}</p>
+        <p className="text-sm text-red-600">{errMsg(q.error)}</p>
       ) : (
         <Body s={q.data} />
       )}
@@ -174,7 +174,7 @@ function Body({ s }: { s: TeacherStats }) {
             <Mini label="O'rtacha ball" value={s.essays.avgScore === null ? "—" : `${formatScore(s.essays.avgScore)}/24`} />
           </div>
           {s.essays.waiting > 0 && (
-            <Link to="/essays" className="mt-3 inline-flex items-center gap-1 text-sm font-bold text-amber-300 hover:underline">
+            <Link to="/essays" className="mt-3 inline-flex items-center gap-1 text-sm font-bold text-amber-700 hover:underline">
               <AlertTriangle size={15} /> Hozir {s.essays.waiting} ta esse tekshiruv kutmoqda
             </Link>
           )}
@@ -230,12 +230,12 @@ function Body({ s }: { s: TeacherStats }) {
             To'lovlar tahlili: kim to'lamadi, prognoz, AI xulosa <ChevronRight size={15} />
           </Link>
           {s.income.feeMissing > 0 && (
-            <p className="mt-3 flex items-start gap-1.5 text-xs text-amber-300">
+            <p className="mt-3 flex items-start gap-1.5 text-xs text-amber-700">
               <AlertTriangle size={14} className="mt-px shrink-0" /> {s.income.feeMissing} ta offline o'quvchining guruhida oylik summa kiritilmagan — offline daromad to'liq ko'rinmaydi.
             </p>
           )}
           {s.income.offlineDebtors > 0 && (
-            <Link to="/payments?tab=OFFLINE" className="mt-3 inline-flex items-center gap-1 text-sm font-bold text-amber-300 hover:underline">
+            <Link to="/payments?tab=OFFLINE" className="mt-3 inline-flex items-center gap-1 text-sm font-bold text-amber-700 hover:underline">
               <AlertTriangle size={15} /> <span className="capitalize">{monthLabel(s.month)}</span>: {s.income.offlineDebtors} ta offline o'quvchi hali to'lamagan
             </Link>
           )}
@@ -286,7 +286,7 @@ function Mini({ label, value }: { label: string; value: number | string }) {
 
 /** Foiz chizig'i. Holat matn bilan ham yoziladi (faqat rangga tayanmaydi) */
 function Meter({ label, value, note }: { label: string; value: number | null; note: string }) {
-  const state = value === null ? null : value >= 85 ? { t: "yaxshi", c: "text-emerald-300" } : value >= 65 ? { t: "o'rtacha", c: "text-amber-300" } : { t: "past", c: "text-red-300" };
+  const state = value === null ? null : value >= 85 ? { t: "yaxshi", c: "text-emerald-700" } : value >= 65 ? { t: "o'rtacha", c: "text-amber-700" } : { t: "past", c: "text-red-700" };
   return (
     <div>
       <div className="mb-1 flex items-baseline gap-2 text-sm">

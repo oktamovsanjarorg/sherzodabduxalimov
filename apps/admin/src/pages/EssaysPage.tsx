@@ -175,7 +175,7 @@ function ReviewModal({ essay, onClose }: { essay: AdminEssay; onClose: () => voi
           </Field>
         </div>
         )}
-        {!essay.milliy && points.trim() !== "" && !valid && <p className="text-sm font-semibold text-red-400">Ball 0 dan {formatScore(essay.maxPoints)} gacha bo'lishi kerak</p>}
+        {!essay.milliy && points.trim() !== "" && !valid && <p className="text-sm font-semibold text-red-600">Ball 0 dan {formatScore(essay.maxPoints)} gacha bo'lishi kerak</p>}
       </div>
     </Modal>
   );
