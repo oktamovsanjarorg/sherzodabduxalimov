@@ -15,7 +15,7 @@ const CELL: Record<string, string> = {
   "-": "bg-hint/10 text-hint",
 };
 
-/** utest'da topshirilgan test natijasi: bo'limlar, har savol, guruhdagi o'rin */
+/** Offline testda topshirilgan test natijasi: bo'limlar, har savol, guruhdagi o'rin */
 export function ExternalResultPage() {
   const { id = "" } = useParams();
   const navigate = useNavigate();

@@ -1,9 +1,9 @@
-import { BadRequestException, BadGatewayException, Inject, Injectable, NotFoundException, ServiceUnavailableException } from "@nestjs/common";
+import { BadRequestException, Inject, Injectable, NotFoundException } from "@nestjs/common";
 import { Prisma } from "@onatili/db";
 import {
   NAME_MATCH_THRESHOLD,
   nameMatchScore,
-  parseUtestMatrix,
+  parseTestMatrix,
   type ExternalPreview,
   type ExternalRankingRow,
   type ExternalRowInput,
@@ -24,34 +24,11 @@ const fullName = (u: { firstName: string; lastName: string | null }) => [u.first
 const round1 = (x: number) => Math.round(x * 10) / 10;
 const avg = (xs: number[]) => (xs.length ? round1(xs.reduce((s, x) => s + x, 0) / xs.length) : null);
 
-/** utest partner API javobi (utest `ADR-099`, versiya 1) */
-interface UtestResults {
-  version: number;
-  test: { code: string; title: string; questionCount: number; subject: string | null; resultsVisible: boolean; sections: ExternalSection[] };
-  attempts: {
-    telegramId: number;
-    name: string;
-    username: string | null;
-    submittedAt: string | null;
-    durationSec: number | null;
-    correct: number;
-    wrong: number;
-    blank: number;
-    rawScore: number;
-    maxScore: number;
-    percent: number;
-    scaledScore: number | null;
-    grade: string | null;
-    sections: ExternalSectionScore[];
-    answers: string;
-  }[];
-}
-
-type Match = { studentId: string; name: string; how: "telegram" | "username" | "name" };
+type Match = { studentId: string; name: string; how: "username" | "name" };
 
 /**
- * Tashqi testlar: utest'da o'tkazilgan test natijalari shu yerga import qilinadi.
- * O'quvchi Telegram ID bo'yicha aniq topiladi (CSV da: username, keyin ism).
+ * Offline test natijalari: CSV matritsa fayli orqali import qilinadi.
+ * O'quvchi username, keyin ism bo'yicha topiladi.
  */
 @Injectable()
 export class ExternalService {
@@ -61,64 +38,18 @@ export class ExternalService {
     @Inject(ENV) private readonly env: Env,
   ) {}
 
-  get utestEnabled() {
-    return Boolean(this.env.UTEST_API_KEY);
-  }
-
-  // ---------------- Manbalar ----------------
-
-  async fetchUtest(code: string): Promise<ExternalTestInput> {
-    if (!this.env.UTEST_API_KEY) throw new ServiceUnavailableException("utest bilan bog'lanish sozlanmagan (UTEST_API_KEY)");
-    const c = code.trim().toUpperCase();
-    if (!/^[A-Z0-9]{4,12}$/.test(c)) throw new BadRequestException("Test kodi noto'g'ri");
-    const res = await fetch(`${this.env.UTEST_API_URL.replace(/\/$/, "")}/partner/v1/tests/${c}/results`, {
-      headers: { Authorization: `Bearer ${this.env.UTEST_API_KEY}` },
-      signal: AbortSignal.timeout(20_000),
-    }).catch(() => null);
-    if (!res) throw new BadGatewayException("utest javob bermadi. Birozdan keyin qayta urinib ko'ring");
-    if (res.status === 404) throw new NotFoundException("Bunday test topilmadi yoki u sizning utest hisobingizniki emas");
-    if (!res.ok) throw new BadGatewayException(`utest xatosi (${res.status})`);
-    const d = (await res.json()) as UtestResults;
-    if (d.version !== 1) throw new BadGatewayException("utest javobi formati o'zgargan: platformani yangilash kerak");
-    return {
-      source: "UTEST",
-      code: d.test.code,
-      title: d.test.title,
-      subject: d.test.subject,
-      questionCount: d.test.questionCount,
-      sections: d.test.sections,
-      resultsVisible: d.test.resultsVisible,
-      rows: d.attempts.map((a) => ({
-        key: `tg:${a.telegramId}`,
-        telegramId: String(a.telegramId),
-        name: a.name,
-        username: a.username,
-        correct: a.correct,
-        wrong: a.wrong,
-        blank: a.blank,
-        score: a.rawScore,
-        maxScore: a.maxScore,
-        percent: a.percent,
-        scaledScore: a.scaledScore,
-        grade: a.grade,
-        sections: a.sections,
-        answers: a.answers,
-        submittedAt: a.submittedAt,
-        durationSec: a.durationSec,
-      })),
-    };
-  }
+  // ---------------- CSV import ----------------
 
   fromCsv(d: { fileName: string; title: string | null; content: string }): ExternalTestInput {
     let parsed;
     try {
-      parsed = parseUtestMatrix(d.content);
+      parsed = parseTestMatrix(d.content);
     } catch (e) {
       throw new BadRequestException(e instanceof Error ? e.message : "Faylni o'qib bo'lmadi");
     }
-    // "utest-K7P2QX-matritsa.csv" -> K7P2QX; bo'lmasa fayl nomi
-    const code = /utest-([A-Z0-9]{4,12})/i.exec(d.fileName)?.[1]?.toUpperCase() ?? d.fileName.replace(/\.[^.]+$/, "").slice(0, 60);
-    return { source: "CSV", code, title: d.title?.trim() || `utest ${code}`, subject: null, questionCount: parsed.questionCount, sections: [], resultsVisible: true, rows: parsed.rows };
+    // "test-K7P2QX-matritsa.csv" -> K7P2QX; bo'lmasa fayl nomi
+    const code = /test-([A-Z0-9]{4,12})/i.exec(d.fileName)?.[1]?.toUpperCase() ?? d.fileName.replace(/\.[^.]+$/, "").slice(0, 60);
+    return { source: "CSV", code, title: d.title?.trim() || `Test ${code}`, subject: null, questionCount: parsed.questionCount, sections: [], rows: parsed.rows };
   }
 
   // ---------------- O'quvchini topish ----------------
@@ -126,14 +57,10 @@ export class ExternalService {
   private async matcher() {
     const students = await this.prisma.studentProfile.findMany({
       where: { user: { role: "STUDENT" } },
-      select: { id: true, user: { select: { firstName: true, lastName: true, username: true, telegramId: true } } },
+      select: { id: true, user: { select: { firstName: true, lastName: true, username: true } } },
     });
-    const byTg = new Map(students.filter((s) => s.user.telegramId !== null).map((s) => [String(s.user.telegramId), s]));
     const byUser = new Map(students.filter((s) => s.user.username).map((s) => [s.user.username!.toLowerCase(), s]));
-    return (r: Pick<ExternalRowInput, "telegramId" | "username" | "name">): Match | null => {
-      const tg = r.telegramId ? byTg.get(r.telegramId) : undefined;
-      if (tg) return { studentId: tg.id, name: fullName(tg.user), how: "telegram" };
-      if (r.telegramId) return null; // Telegram ID bor, lekin bu platformada yo'q: ism bo'yicha taxmin qilinmaydi
+    return (r: Pick<ExternalRowInput, "username" | "name">): Match | null => {
       const u = r.username ? byUser.get(r.username.toLowerCase()) : undefined;
       if (u) return { studentId: u.id, name: fullName(u.user), how: "username" };
       let best: { s: (typeof students)[number]; score: number } | null = null;
@@ -162,7 +89,7 @@ export class ExternalService {
     const takenAt = input.rows.map((r) => r.submittedAt).filter((x): x is string => !!x).sort()[0];
     const test = await this.prisma.externalTest.upsert({
       where: { source_code: { source: input.source, code: input.code } },
-      update: { title: input.title, subject: input.subject, questionCount: input.questionCount, sections: input.sections as unknown as Prisma.InputJsonValue, resultsVisible: input.resultsVisible },
+      update: { title: input.title, subject: input.subject, questionCount: input.questionCount, sections: input.sections as unknown as Prisma.InputJsonValue },
       create: {
         source: input.source,
         code: input.code,
@@ -170,7 +97,6 @@ export class ExternalService {
         subject: input.subject,
         questionCount: input.questionCount,
         sections: input.sections as unknown as Prisma.InputJsonValue,
-        resultsVisible: input.resultsVisible,
         takenAt: takenAt ? new Date(takenAt) : new Date(),
         importedById: actorId,
       },
@@ -185,7 +111,6 @@ export class ExternalService {
         if (studentId) matched++;
         if (!prev) created++;
         const data = {
-          telegramId: r.telegramId ? BigInt(r.telegramId) : null,
           name: r.name,
           username: r.username,
           studentId,
@@ -227,7 +152,6 @@ export class ExternalService {
       participants: t.results.length,
       matched: t.results.filter((r) => r.studentId).length,
       avgPercent: avg(t.results.map((r) => r.percent)),
-      resultsVisible: t.resultsVisible,
       takenAt: t.takenAt?.toISOString() ?? null,
       importedAt: t.createdAt.toISOString(),
       notifiedAt: t.notifiedAt?.toISOString() ?? null,
@@ -308,9 +232,8 @@ export class ExternalService {
    * ko'rish uchun ilovani ochishga undaydi. Avval xabar olganlarga qayta yuborilmaydi.
    */
   async sendNotices(actorId: string, id: string) {
-    const t = await this.prisma.externalTest.findUnique({ where: { id }, select: { title: true, resultsVisible: true } });
+    const t = await this.prisma.externalTest.findUnique({ where: { id }, select: { title: true } });
     if (!t) throw new NotFoundException("Test topilmadi");
-    if (!t.resultsVisible) throw new BadRequestException("utest'da natija hali o'quvchilarga yopiq. Test yopilgach qayta import qiling");
     const rows = await this.prisma.externalResult.findMany({
       where: { testId: id, studentId: { not: null }, notifiedAt: null },
       select: {
@@ -376,7 +299,7 @@ export class ExternalService {
 
   async forStudent(studentId: string, take = 30): Promise<MyExternalResult[]> {
     const rs = await this.prisma.externalResult.findMany({
-      where: { studentId, test: { resultsVisible: true } },
+      where: { studentId },
       orderBy: { test: { takenAt: "desc" } },
       take,
       include: { test: { select: { title: true, subject: true, takenAt: true, questionCount: true } } },
@@ -404,7 +327,7 @@ export class ExternalService {
 
   async myDetail(userId: string, resultId: string): Promise<MyExternalResultDetail> {
     const r = await this.prisma.externalResult.findFirst({
-      where: { id: resultId, test: { resultsVisible: true }, student: { userId } },
+      where: { id: resultId, student: { userId } },
       include: { test: { select: { title: true, subject: true, takenAt: true, questionCount: true } } },
     });
     if (!r) throw new NotFoundException("Natija topilmadi");

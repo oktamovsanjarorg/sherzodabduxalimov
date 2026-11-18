@@ -29,7 +29,7 @@ export function StatsPage() {
 
       {externals.data && externals.data.length > 0 && (
         <>
-          <h2 className="mb-2 mt-6 px-1 text-[15px] font-bold">utest natijalari</h2>
+          <h2 className="mb-2 mt-6 px-1 text-[15px] font-bold">Test natijalari</h2>
           <ul className="space-y-2">
             {externals.data.map((x) => (
               <li key={x.id}>

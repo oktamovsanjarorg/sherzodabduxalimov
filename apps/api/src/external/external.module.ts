@@ -4,31 +4,22 @@ import { parse } from "../admin/zod";
 import { CurrentUser, Roles, type JwtUser } from "../auth/decorators";
 import { ExternalService } from "./external.service";
 
-const utestBody = z.object({ code: z.string().trim().min(4).max(12) });
-// utest matrix.csv: 300 o'quvchi x 200 savol ham 200 KB dan oshmaydi
+// CSV: 300 o'quvchi x 200 savol ham 200 KB dan oshmaydi
 const csvBody = z.object({ fileName: z.string().max(200), title: z.string().max(200).nullish().default(null), content: z.string().min(1).max(2_000_000) });
 
-/** utest natijalarini import qilish va tahlil: ustoz va yordamchi */
+/** Offline test natijalarini import qilish va tahlil: ustoz va yordamchi */
 @Roles("TEACHER", "ASSISTANT")
 @Controller("admin/external-tests")
 export class AdminExternalController {
   constructor(private readonly svc: ExternalService) {}
 
   @Get() async list() {
-    return { utestEnabled: this.svc.utestEnabled, tests: await this.svc.list() };
+    return { tests: await this.svc.list() };
   }
 
   @Get("ranking") ranking(@Query("days") days?: string) {
     const n = Number(days);
     return this.svc.ranking([30, 90, 365].includes(n) ? n : 0);
-  }
-
-  @Post("utest/preview") @HttpCode(200) async utestPreview(@Body() b: unknown) {
-    return this.svc.preview(await this.svc.fetchUtest(parse(utestBody, b).code));
-  }
-
-  @Post("utest/import") @HttpCode(200) async utestImport(@CurrentUser() u: JwtUser, @Body() b: unknown) {
-    return this.svc.save(u.sub, await this.svc.fetchUtest(parse(utestBody, b).code));
   }
 
   @Post("csv/preview") @HttpCode(200) csvPreview(@Body() b: unknown) {
@@ -56,7 +47,7 @@ export class AdminExternalController {
   }
 }
 
-/** O'quvchi: o'z utest natijalari */
+/** O'quvchi: o'z offline test natijalari */
 @Controller("me/external")
 export class MyExternalController {
   constructor(private readonly svc: ExternalService) {}

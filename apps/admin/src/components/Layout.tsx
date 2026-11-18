@@ -44,7 +44,7 @@ export function useNavGroups(): NavGroup[] {
         { to: "/questions", label: "Savollar", match: /^\/questions/ },
         { to: "/tests", label: "Testlar", match: /^\/tests/ },
         { to: "/essays", label: "Esselar", match: /^\/essays/, badge: dash.data?.pendingEssays },
-        { to: "/external", label: "utest", match: /^\/external/ },
+        { to: "/external", label: "Testlar", match: /^\/external/ },
       ],
     },
     {

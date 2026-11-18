@@ -707,26 +707,23 @@ model TrashItem {
   @@index([purgeAt])
 }
 
-// ===================== Tashqi testlar (utest) =====================
+// ===================== Offline test natijalari =====================
 
 enum ExternalSource {
-  UTEST // test kodi bilan API orqali
-  CSV // utest matrix.csv fayli
+  CSV // CSV matrix fayli
 }
 
-/// Boshqa platformada (utest) o'tkazilgan test: natijalari shu yerga import qilinadi
+/// CSV orqali import qilingan test: natijalari tahlil qilinadi
 model ExternalTest {
   id             String           @id @default(cuid())
   source         ExternalSource
-  /// utest test kodi; CSV da fayl nomidan olingan kod
+  /// CSV fayldan olingan kod
   code           String
   title          String
   subject        String?
   questionCount  Int
   /// Bo'limlar: [{title, fromQ, toQ}]
   sections       Json             @default("[]")
-  /// utest'da natija o'quvchiga ochiqmi. Yopiq bo'lsa ilovada ko'rinmaydi va xabar ketmaydi
-  resultsVisible Boolean          @default(true)
   /// Test o'tkazilgan payt (birinchi topshirish)
   takenAt        DateTime?
   importedById   String?
@@ -747,9 +744,8 @@ model ExternalResult {
   /// Bu platformadagi o'quvchi. Topilmasa null: ustoz qo'lda bog'laydi
   studentId   String?
   student     StudentProfile? @relation(fields: [studentId], references: [id], onDelete: SetNull)
-  /// Qatorni qayta importda topish kaliti: "tg:<telegramId>" yoki CSV da "name:<ism>"
+  /// Qatorni qayta importda topish kaliti: "name:<ism>"
   key         String
-  telegramId  BigInt?
   name        String
   username    String?
   /// Qo'lda bog'langan: qayta importda avtomatik moslash uni almashtirmaydi

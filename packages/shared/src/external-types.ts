@@ -1,6 +1,6 @@
-// ===================== Tashqi testlar (utest) =====================
+// ===================== Offline test natijalari =====================
 
-export type ExternalSourceName = "UTEST" | "CSV";
+export type ExternalSourceName = "CSV";
 
 export interface ExternalSection {
   title: string | null;
@@ -16,7 +16,7 @@ export interface ExternalSectionScore extends ExternalSection {
   percent: number;
 }
 
-/** Import qilinadigan bitta natija (utest API yoki CSV dan) */
+/** Import qilinadigan bitta natija (CSV dan) */
 export interface ExternalRowInput {
   key: string;
   telegramId: string | null;
@@ -44,14 +44,13 @@ export interface ExternalTestInput {
   subject: string | null;
   questionCount: number;
   sections: ExternalSection[];
-  resultsVisible: boolean;
   rows: ExternalRowInput[];
 }
 
 /** Import oldidan ko'rinish: kim topildi, kim yo'q */
 export interface ExternalPreview {
   test: Omit<ExternalTestInput, "rows"> & { participants: number; alreadyImported: boolean };
-  rows: { key: string; name: string; username: string | null; percent: number; match: { studentId: string; name: string; how: "telegram" | "username" | "name" } | null }[];
+  rows: { key: string; name: string; username: string | null; percent: number; match: { studentId: string; name: string; how: "username" | "name" } | null }[];
 }
 
 export interface ExternalTestSummary {
@@ -64,7 +63,6 @@ export interface ExternalTestSummary {
   participants: number;
   matched: number;
   avgPercent: number | null;
-  resultsVisible: boolean;
   takenAt: string | null;
   importedAt: string;
   notifiedAt: string | null;
@@ -137,16 +135,16 @@ export interface MyExternalResultDetail extends MyExternalResult {
 }
 
 /**
- * utest matrix.csv: "Ism;Username;Q1..Qn;Jami" (ajratgich ";", BOM bo'lishi mumkin).
- * Kataklar: 1 to'g'ri, 0 xato yoki bo'sh (utest ularni ajratmaydi), bo'sh katak: savol yo'q.
+ * Test matrix.csv: "Ism;Username;Q1..Qn;Jami" (ajratgich ";", BOM bo'lishi mumkin).
+ * Kataklar: 1 to'g'ri, 0 xato yoki bo'sh, bo'sh katak: savol yo'q.
  */
-export function parseUtestMatrix(text: string): { questionCount: number; rows: ExternalRowInput[] } {
+export function parseTestMatrix(text: string): { questionCount: number; rows: ExternalRowInput[] } {
   const lines = text.replace(/^﻿/, "").split(/\r?\n/).filter((l) => l.trim());
   if (lines.length < 2) throw new Error("Faylda natija yo'q");
   const sep = lines[0].includes(";") ? ";" : lines[0].includes("\t") ? "\t" : ",";
   const head = splitCsv(lines[0], sep);
   const qCols = head.map((h, i) => [h.trim(), i] as const).filter(([h]) => /^Q\d+$/i.test(h));
-  if (!qCols.length) throw new Error("Bu utest matritsa fayli emas: Q1, Q2 ... ustunlari topilmadi");
+  if (!qCols.length) throw new Error("Bu test matritsa fayli emas: Q1, Q2 ... ustunlari topilmadi");
   const nameCol = head.findIndex((h) => /ism|name/i.test(h));
   const userCol = head.findIndex((h) => /username/i.test(h));
   const seen = new Map<string, number>();

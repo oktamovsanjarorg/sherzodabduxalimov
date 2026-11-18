@@ -42,7 +42,7 @@ export function StudentDetailPage() {
         <Section title="O'qish natijalari">
           <Stats s={s} />
         </Section>
-        <Section title="utest natijalari">
+        <Section title="Test natijalari">
           <ExternalResults s={s} />
         </Section>
         <Section title="Faollik: bot va darslar">
@@ -548,7 +548,7 @@ function Billing({ s }: { s: StudentDetail }) {
 
 function ExternalResults({ s }: { s: StudentDetail }) {
   const r = s.externalResults;
-  if (!r.length) return <p className="text-sm text-ink-4">utest'dan import qilingan natija yo'q</p>;
+  if (!r.length) return <p className="text-sm text-ink-4">Import qilingan natija yo'q</p>;
   // Eskidan yangiga: o'sish chizig'i
   const trend = [...r].reverse();
   return (

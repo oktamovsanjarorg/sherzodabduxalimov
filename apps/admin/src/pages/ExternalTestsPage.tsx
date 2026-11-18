@@ -1,6 +1,6 @@
 import { type ExternalPreview, type ExternalTestDetail, formatScore } from "@onatili/shared";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ChevronRight, FileUp, Link2, RefreshCw, Send, Trash2, Trophy, Upload } from "lucide-react";
+import { ChevronRight, FileUp, Link2, Send, Trash2, Trophy, Upload } from "lucide-react";
 import { useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { Badge, Chips, ConfirmButton, Empty, Field, Modal, PageHeader, Segmented, Spinner } from "../components/ui";
@@ -9,9 +9,9 @@ import { fmtDate } from "../lib/format";
 import { useToast } from "../lib/toast";
 
 const tone = (p: number) => (p >= 80 ? "green" : p >= 60 ? "blue" : p >= 40 ? "amber" : "red");
-const HOW = { telegram: "Telegram ID", username: "username", name: "ism bo'yicha" } as const;
+const HOW = { username: "username", name: "ism bo'yicha" } as const;
 
-/** utest natijalari: import, tahlil, reyting */
+/** Test natijalari: import, tahlil, reyting */
 export function ExternalTestsPage() {
   const [tab, setTab] = useState<"tests" | "ranking">("tests");
   const [importing, setImporting] = useState(false);
@@ -20,8 +20,8 @@ export function ExternalTestsPage() {
   return (
     <>
       <PageHeader
-        title="utest natijalari"
-        subtitle="utest'da o'tkazilgan testlar natijasini shu yerga olib keling: tahlil, reyting, o'quvchi va ota-ona ilovasida ko'rinadi."
+        title="Test natijalari"
+        subtitle="Test natijalari CSV fayl orqali import qiling: tahlil, reyting, o'quvchi va ota-ona ilovasida ko'rinadi."
         actions={
           <button className="btn-primary" onClick={() => setImporting(true)}>
             <Upload size={16} /> Import qilish
@@ -34,17 +34,16 @@ export function ExternalTestsPage() {
       ) : (
         <>
           {q.isPending && <Spinner className="text-ink-4" />}
-          {q.data?.tests.length === 0 && <Empty title="Hali import qilinmagan" hint="«Import qilish» tugmasini bosing: utest test kodi yoki matrix.csv fayli bilan." />}
+          {q.data?.tests.length === 0 && <Empty title="Hali import qilinmagan" hint="«Import qilish» tugmasini bosing: matrix.csv fayli bilan." />}
           <div className="space-y-2">
             {q.data?.tests.map((t) => (
               <button key={t.id} onClick={() => navigate(`/external/${t.id}`)} className="card flex w-full items-center gap-3 p-4 text-left transition hover:border-brand">
                 <div className="min-w-0 flex-1">
                   <p className="truncate font-bold">{t.title}</p>
                   <p className="truncate text-xs text-ink-3">
-                    {t.source === "UTEST" ? `kod ${t.code}` : "CSV"} · {t.questionCount} savol · {t.takenAt ? fmtDate(t.takenAt) : ""} · {t.matched}/{t.participants} o'quvchi topilgan
+                    kod {t.code} · {t.questionCount} savol · {t.takenAt ? fmtDate(t.takenAt) : ""} · {t.matched}/{t.participants} o'quvchi topilgan
                   </p>
                 </div>
-                {!t.resultsVisible && <Badge tone="amber">utest'da yopiq</Badge>}
                 {t.avgPercent != null && <Badge tone={tone(t.avgPercent)}>o'rtacha {formatScore(t.avgPercent)}%</Badge>}
                 <ChevronRight size={16} className="text-ink-4" />
               </button>
@@ -52,27 +51,25 @@ export function ExternalTestsPage() {
           </div>
         </>
       )}
-      {importing && <ImportModal utestEnabled={q.data?.utestEnabled ?? false} onClose={() => setImporting(false)} onDone={(id) => navigate(`/external/${id}`)} />}
+      {importing && <ImportModal onClose={() => setImporting(false)} onDone={(id) => navigate(`/external/${id}`)} />}
     </>
   );
 }
 
-function ImportModal({ utestEnabled, onClose, onDone }: { utestEnabled: boolean; onClose: () => void; onDone: (id: string) => void }) {
+function ImportModal({ onClose, onDone }: { onClose: () => void; onDone: (id: string) => void }) {
   const toast = useToast();
   const qc = useQueryClient();
-  const [mode, setMode] = useState<"code" | "csv">(utestEnabled ? "code" : "csv");
-  const [code, setCode] = useState("");
   const [file, setFile] = useState<{ fileName: string; content: string } | null>(null);
   const [title, setTitle] = useState("");
   const [preview, setPreview] = useState<ExternalPreview | null>(null);
   const input = useRef<HTMLInputElement>(null);
   const check = useMutation({
-    mutationFn: () => (mode === "code" ? api.externalUtestPreview(code) : api.externalCsvPreview({ ...file!, title: title || null })),
+    mutationFn: () => api.externalCsvPreview({ ...file!, title: title || null }),
     onSuccess: setPreview,
     onError: (e) => toast(errMsg(e), "error"),
   });
   const save = useMutation({
-    mutationFn: () => (mode === "code" ? api.externalUtestImport(code) : api.externalCsvImport({ ...file!, title: title || null })),
+    mutationFn: () => api.externalCsvImport({ ...file!, title: title || null }),
     onSuccess: (r) => {
       toast(`Import qilindi: ${r.matched} ta o'quvchi topildi`);
       qc.invalidateQueries({ queryKey: ["external"] });
@@ -85,7 +82,7 @@ function ImportModal({ utestEnabled, onClose, onDone }: { utestEnabled: boolean;
   return (
     <Modal
       wide
-      title="utest natijalarini import qilish"
+      title="Test natijalarini import qilish"
       onClose={onClose}
       footer={
         <>
@@ -97,47 +94,31 @@ function ImportModal({ utestEnabled, onClose, onDone }: { utestEnabled: boolean;
               {preview.test.alreadyImported ? "Yangilash" : "Import qilish"} ({preview.rows.length})
             </button>
           ) : (
-            <button className="btn-primary" disabled={check.isPending || (mode === "code" ? code.trim().length < 4 : !file)} onClick={() => check.mutate()}>
+            <button className="btn-primary" disabled={check.isPending || !file} onClick={() => check.mutate()}>
               {check.isPending ? <Spinner /> : null} Tekshirish
             </button>
           )}
         </>
       }
     >
-      <Segmented
-        className="mb-4"
-        value={mode}
-        onChange={(m) => (setMode(m), setPreview(null))}
-        options={[["code", "Test kodi bilan"], ["csv", "CSV fayl"]] as const}
-      />
-      {mode === "code" ? (
-        utestEnabled ? (
-          <Field label="utest test kodi" hint="utest'da testingiz sahifasidagi 6 belgili kod. Natijalar o'zi olinadi, o'quvchilar Telegram orqali aniq topiladi">
-            <input className="input font-mono uppercase" autoFocus maxLength={12} value={code} onChange={(e) => (setCode(e.target.value.toUpperCase()), setPreview(null))} placeholder="K7P2QX" />
-          </Field>
-        ) : (
-          <p className="rounded-lg bg-amber-400/10 p-3 text-sm text-amber-200">utest bilan bog'lanish hali sozlanmagan. Hozircha CSV fayl orqali import qiling.</p>
-        )
-      ) : (
-        <div className="space-y-3">
-          <input
-            ref={input}
-            type="file"
-            accept=".csv,text/csv"
-            className="hidden"
-            onChange={async (e) => {
-              const f = e.target.files?.[0];
-              if (f) setFile({ fileName: f.name, content: await f.text() }), setPreview(null);
-            }}
-          />
-          <button className="btn-secondary w-full" onClick={() => input.current?.click()}>
-            <FileUp size={16} /> {file ? file.fileName : "matrix.csv faylini tanlang"}
-          </button>
-          <Field label="Test nomi" hint="utest'da natijalar sahifasi → «Matritsa (CSV)». Faylda faqat to'g'ri/xato bor: ball va bo'limlar kelmaydi">
-            <input className="input" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Masalan: Mock #3, 15-noyabr" />
-          </Field>
-        </div>
-      )}
+      <div className="space-y-3">
+        <input
+          ref={input}
+          type="file"
+          accept=".csv,text/csv"
+          className="hidden"
+          onChange={async (e) => {
+            const f = e.target.files?.[0];
+            if (f) setFile({ fileName: f.name, content: await f.text() }), setPreview(null);
+          }}
+        />
+        <button className="btn-secondary w-full" onClick={() => input.current?.click()}>
+          <FileUp size={16} /> {file ? file.fileName : "matrix.csv faylini tanlang"}
+        </button>
+        <Field label="Test nomi" hint="Natijalar saytidan → «Matritsa (CSV)». Faylda faqat to'g'ri/xato bor: ball va bo'limlar kelmaydi">
+          <input className="input" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Masalan: Mock #3, 15-noyabr" />
+        </Field>
+      </div>
       {preview && (
         <div className="mt-4 space-y-3">
           <div className="rounded-lg bg-surface-2 p-3 text-sm">
@@ -146,7 +127,6 @@ function ImportModal({ utestEnabled, onClose, onDone }: { utestEnabled: boolean;
               {preview.test.questionCount} savol · {preview.test.participants} qatnashchi · <b className="text-emerald-300">{found} tasi topildi</b>
               {preview.rows.length - found > 0 && <b className="text-amber-300"> · {preview.rows.length - found} tasi topilmadi</b>}
             </p>
-            {!preview.test.resultsVisible && <p className="mt-1 text-amber-300">utest'da natija hali o'quvchilarga yopiq: import qilinadi, lekin ilovada ko'rinmaydi va xabar ketmaydi.</p>}
             {preview.test.alreadyImported && <p className="mt-1 text-ink-3">Bu test oldin import qilingan: natijalar yangilanadi, qo'lda bog'laganlaringiz saqlanadi.</p>}
           </div>
           <ul className="max-h-72 divide-y divide-line overflow-y-auto rounded-lg border border-line text-sm">
@@ -204,11 +184,6 @@ export function ExternalTestPage() {
   const navigate = useNavigate();
   const q = useQuery({ queryKey: ["external", id], queryFn: () => api.externalTest(id) });
   const refresh = () => (qc.invalidateQueries({ queryKey: ["external"] }), qc.invalidateQueries({ queryKey: ["external", id] }));
-  const reimport = useMutation({
-    mutationFn: () => api.externalUtestImport(q.data!.code),
-    onSuccess: (r) => (toast(`Yangilandi: ${r.matched} ta o'quvchi topilgan`), refresh()),
-    onError: (e) => toast(errMsg(e), "error"),
-  });
   const notify = useMutation({
     mutationFn: () => api.externalNotify(id),
     onSuccess: (r) => (toast(r.students + r.parents ? `Xabar yuborildi: ${r.students} o'quvchi, ${r.parents} ota-ona` : "Hammaga allaqachon yuborilgan"), refresh()),
@@ -222,19 +197,14 @@ export function ExternalTestPage() {
   return (
     <div className="space-y-4">
       <Link to="/external" className="tap inline-flex items-center gap-1 text-sm font-semibold text-ink-3 hover:text-ink">
-        ← utest natijalari
+        ← Test natijalari
       </Link>
       <PageHeader
         title={t.title}
-        subtitle={`${t.source === "UTEST" ? `utest kodi ${t.code}` : "CSV fayldan"} · ${t.questionCount} savol${t.subject ? ` · ${t.subject}` : ""}${t.takenAt ? ` · ${fmtDate(t.takenAt)}` : ""}`}
+        subtitle={`CSV fayldan · ${t.questionCount} savol${t.subject ? ` · ${t.subject}` : ""}${t.takenAt ? ` · ${fmtDate(t.takenAt)}` : ""}`}
         actions={
           <>
-            {t.source === "UTEST" && (
-              <button className="btn-secondary" disabled={reimport.isPending} onClick={() => reimport.mutate()}>
-                <RefreshCw size={15} /> utest'dan yangilash
-              </button>
-            )}
-            <button className="btn-primary" disabled={!t.resultsVisible || !waiting || notify.isPending} onClick={() => notify.mutate()} title="Natija matnda bo'lmaydi: ilovani ochishga chaqiradi">
+            <button className="btn-primary" disabled={!waiting || notify.isPending} onClick={() => notify.mutate()} title="Natija matnda bo'lmaydi: ilovani ochishga chaqiradi">
               <Send size={15} /> Xabar yuborish{waiting ? ` (${waiting})` : ""}
             </button>
             <ConfirmButton label="O'chirilsinmi?" onConfirm={() => remove.mutate()}>
@@ -243,11 +213,6 @@ export function ExternalTestPage() {
           </>
         }
       />
-      {!t.resultsVisible && (
-        <p className="rounded-xl border border-amber-400/30 bg-amber-400/10 p-3 text-sm text-amber-200">
-          utest'da natija hali o'quvchilarga yopiq. O'quvchi va ota-ona ilovasida ko'rinmaydi, xabar yuborilmaydi. Test yopilgach «utest'dan yangilash» ni bosing.
-        </p>
-      )}
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <Tile label="Qatnashchi" value={t.participants} hint={`${t.matched} tasi platformada topilgan`} />
         <Tile label="O'rtacha" value={t.avgPercent != null ? `${formatScore(t.avgPercent)}%` : "—"} hint={t.stats.median != null ? `mediana ${formatScore(t.stats.median)}%` : undefined} />
@@ -288,7 +253,7 @@ export function ExternalTestPage() {
         <p className="mb-3 text-xs text-ink-3">Qizil: yarmidan kami to'g'ri yechgan. Shu savollar mavzusini darsda qayta ko'ring</p>
         <div className="grid grid-cols-[repeat(auto-fill,minmax(52px,1fr))] gap-1.5">
           {t.stats.questions.map((x) => (
-            <div key={x.q} title={`${x.q}-savol: ${x.correctPct}% to'g'ri, ${x.blankPct}% bo'sh`} className={`rounded-md px-1 py-1.5 text-center text-xs ${x.correctPct < 50 ? "bg-red-500/15 text-red-300" : x.correctPct < 75 ? "bg-amber-400/15 text-amber-200" : "bg-emerald-400/15 text-emerald-300"}`}>
+            <div key={x.q} title={`${x.q}-savol: ${x.correctPct}% to'g'ri, ${x.blankPct}% bo'sh`} className={`rounded-md px-1 py-1.5 text-center text-xs ${x.correctPct < 50 ? "bg-red-100 text-red-700" : x.correctPct < 75 ? "bg-amber-100 text-amber-800" : "bg-emerald-100 text-emerald-800"}`}>
               <p className="text-[10px] text-ink-4">{x.q}</p>
               <b>{Math.round(x.correctPct)}%</b>
             </div>
@@ -319,7 +284,7 @@ function Results({ t, onChanged }: { t: ExternalTestDetail; onChanged: () => voi
       <div className="flex flex-wrap items-center gap-2 px-4 pt-4 sm:px-5">
         <h2 className="flex-1 font-extrabold">Natijalar</h2>
         {t.participants > t.matched && (
-          <button className={`btn-sm btn ${showUnmatched ? "bg-amber-400/20 text-amber-200" : "btn-secondary"}`} onClick={() => setShowUnmatched(!showUnmatched)}>
+          <button className={`btn-sm btn ${showUnmatched ? "border border-amber-300 bg-amber-100 text-amber-800" : "btn-secondary"}`} onClick={() => setShowUnmatched(!showUnmatched)}>
             Topilmaganlar ({t.participants - t.matched})
           </button>
         )}
@@ -331,7 +296,7 @@ function Results({ t, onChanged }: { t: ExternalTestDetail; onChanged: () => voi
             <div className="min-w-0 flex-1">
               <p className="truncate font-semibold">
                 {r.student ? <Link to={`/students/${r.student.id}`} className="hover:underline">{r.student.name}</Link> : r.name}
-                {r.student && r.student.name !== r.name && <span className="ml-1.5 text-xs font-normal text-ink-4">utest: {r.name}</span>}
+                {r.student && r.student.name !== r.name && <span className="ml-1.5 text-xs font-normal text-ink-4">testda: {r.name}</span>}
               </p>
               <p className="truncate text-xs text-ink-3">
                 {r.correct} to'g'ri · {r.wrong} xato · {r.blank} bo'sh{r.scaledScore != null ? ` · ${formatScore(r.scaledScore)} ball` : ""}

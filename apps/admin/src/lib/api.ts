@@ -143,11 +143,9 @@ export const api = {
     return name;
   },
   backups: () => request<BackupList>("/admin/backups"),
-  externalTests: () => request<{ utestEnabled: boolean; tests: ExternalTestSummary[] }>("/admin/external-tests"),
+  externalTests: () => request<{ tests: ExternalTestSummary[] }>("/admin/external-tests"),
   externalTest: (id: string) => request<ExternalTestDetail>(`/admin/external-tests/${id}`),
   externalRanking: (days: number) => request<ExternalRankingRow[]>(`/admin/external-tests/ranking?days=${days}`),
-  externalUtestPreview: (code: string) => request<ExternalPreview>("/admin/external-tests/utest/preview", json("POST", { code })),
-  externalUtestImport: (code: string) => request<{ id: string; created: number; updated: number; matched: number }>("/admin/external-tests/utest/import", json("POST", { code })),
   externalCsvPreview: (d: { fileName: string; content: string; title: string | null }) => request<ExternalPreview>("/admin/external-tests/csv/preview", json("POST", d)),
   externalCsvImport: (d: { fileName: string; content: string; title: string | null }) =>
     request<{ id: string; created: number; updated: number; matched: number }>("/admin/external-tests/csv/import", json("POST", d)),

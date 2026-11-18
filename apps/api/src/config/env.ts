@@ -19,14 +19,10 @@ const schema = z.object({
   MEDIA_DIR: z.string().default("./.media"),
   // Kechalik zaxira nusxalari papkasi (read-only ulangan). Bo'lmasa admin paneldagi "Zaxira" bo'limi o'chiq
   BACKUP_DIR: z.string().optional(),
-  // utest (universaltest) bilan bog'lanish: test natijalarini import qilish. Kalit bo'lmasa faqat CSV import ishlaydi
-  UTEST_API_URL: z.string().url().default("https://universaltest.uzbek-talim.uz/api"),
-  UTEST_API_KEY: z.preprocess((v) => (typeof v === "string" ? v.trim() || undefined : v), z.string().min(32).optional()),
   REDIS_URL: z.string().default("redis://localhost:6381"),
   QUEUE_PREFIX: z.string().default("onatili"),
   // HLS segmentlari qayerdan beriladi: dev'da API'ning o'zi, prod'da nginx (/media-files/v)
   MEDIA_SEGMENT_BASE: z.string().default("/api/media-seg"),
-  // Mini App manzili: bot xabaridagi "Obunani uzaytirish" tugmasi uchun (bo'lmasa tugmasiz yuboriladi)
   // AI esse tekshiruvi. Qiymatdagi "# izoh" qismi olib tashlanadi (.env da shunday yozilgan bo'lishi mumkin)
   AI_PROVIDER: z.preprocess((v) => (typeof v === "string" ? v.split("#")[0].trim() : v), z.enum(["deepseek", "none"]).catch("none")).default("none"),
   DEEPSEEK_API_KEY: z.preprocess((v) => (typeof v === "string" ? v.split("#")[0].trim() || undefined : v), z.string().optional()),
@@ -34,6 +30,7 @@ const schema = z.object({
   // Qo'lyozma esseni o'qish (rasm -> matn). Bo'lmasa AI faqat yozilgan matnni tekshiradi
   GEMINI_API_KEY: z.preprocess((v) => (typeof v === "string" ? v.split("#")[0].trim() || undefined : v), z.string().optional()),
   GEMINI_MODEL: z.string().default("gemini-3.8-flash"),
+  // Mini App manzili: bot xabaridagi "Obunani uzaytirish" tugmasi uchun (bo'lmasa tugmasiz yuboriladi)
   MINIAPP_URL: z.string().url().startsWith("https://").optional().catch(undefined),
 });
 
