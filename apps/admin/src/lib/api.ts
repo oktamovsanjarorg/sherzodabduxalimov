@@ -152,6 +152,8 @@ export const api = {
     request<{ id: string; created: number; updated: number; matched: number }>("/admin/external-tests/csv/import", json("POST", d)),
   externalLink: (testId: string, resultId: string, studentId: string | null) => request(`/admin/external-tests/${testId}/results/${resultId}`, json("PATCH", { studentId })),
   externalEssays: (id: string, items: { resultId: string; score: number | null }[]) => request<{ updated: number }>(`/admin/external-tests/${id}/essays`, json("POST", { items })),
+  externalEssayFile: (id: string, d: { fileName: string; base64: string }) =>
+    request<{ items: { resultId: string; name: string; fileName: string; score24: number }[]; unmatched: string[]; missing: number; bad: string[] }>(`/admin/external-tests/${id}/essays/file`, json("POST", d)),
   externalNotify: (id: string) => request<{ students: number; parents: number }>(`/admin/external-tests/${id}/notify`, json("POST")),
   externalDelete: (id: string) => request(`/admin/external-tests/${id}`, { method: "DELETE" }),
   /** Zaxira faylini yuklab olish: avtorizatsiya sarlavhasi kerak, shuning uchun havola emas; foiz onProgress ga */

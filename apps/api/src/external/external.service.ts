@@ -6,6 +6,8 @@ import {
   gradeMilliy,
   isOmrExport,
   milliyTotal,
+  questionPoints,
+  sectionQuestions,
   parseOmrExport,
   parseTestMatrix,
   type ExternalPreview,
@@ -361,7 +363,7 @@ export class ExternalService {
   async myDetail(userId: string, resultId: string): Promise<MyExternalResultDetail> {
     const r = await this.prisma.externalResult.findFirst({
       where: { id: resultId, student: { userId } },
-      include: { test: { select: { title: true, subject: true, takenAt: true, questionCount: true } } },
+      include: { test: { select: { title: true, subject: true, takenAt: true, questionCount: true, rasch: true, sections: true } } },
     });
     if (!r) throw new NotFoundException("Natija topilmadi");
     const k = (await this.ranks([r.testId]))(r.testId, r.percent);
@@ -381,12 +383,19 @@ export class ExternalService {
       participants: k.participants,
       testScore: r.testScore,
       essayScore: r.essayScore,
+      questions: this.questionsOf(r.answers, r.testScore, r.test.rasch as unknown as ExternalRasch | null, r.test.sections as unknown as ExternalSection[]),
       wrong: r.wrong,
       blank: r.blank,
       sections: (r.sections as unknown as ExternalSectionScore[]) ?? [],
       answers: r.answers,
       avgPercent: k.avg,
     };
+  }
+
+  private questionsOf(answers: string, testScore: number | null, rasch: ExternalRasch | null, sections: ExternalSection[]) {
+    if (testScore == null || !rasch) return null;
+    const pts = questionPoints(answers, rasch.items.map((i) => i.w), testScore);
+    return pts.map((points, j) => ({ points, section: sections.find((s) => sectionQuestions(s).includes(j + 1))?.title ?? null }));
   }
 
   async mine(userId: string) {

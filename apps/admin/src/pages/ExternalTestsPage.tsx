@@ -7,7 +7,8 @@ import { Badge, Chips, ConfirmButton, Empty, Field, Modal, PageHeader, Segmented
 import { api, errMsg } from "../lib/api";
 import { fmtDate } from "../lib/format";
 import { useToast } from "../lib/toast";
-import { EssayModal, RaschCard, ResultCardModal, questionsLabel } from "./ExternalMilliy";
+import { EssayModal } from "./ExternalEssayModal";
+import { RaschCard, ResultCardModal, questionsLabel } from "./ExternalMilliy";
 
 const tone = (p: number) => (p >= 80 ? "green" : p >= 60 ? "blue" : p >= 40 ? "amber" : "red");
 const HOW = { username: "username", name: "ism bo'yicha" } as const;

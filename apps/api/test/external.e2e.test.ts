@@ -113,6 +113,14 @@ describe("Offline test natijalari: CSV import (e2e)", () => {
     const total = Math.round(((az.testScore + 62) / 2) * 100) / 100;
     const mine = (await req("GET", `/me/external/${az.id}`, undefined, A)).json();
     expect(mine).toMatchObject({ essayScore: 17.5, testScore: az.testScore, scaledScore: total });
+    expect(mine.questions).toHaveLength(49);
+    expect(mine.questions.reduce((s: number, q: { points: number }) => s + q.points, 0)).toBeCloseTo(az.testScore, 1);
+    expect(mine.questions[0].section).toBe("Tilshunoslik nazariyasi");
+
+    // Esse fayli: moslab qaytaradi (saqlamaydi); 75 lik ball 24 likka, boshqa guruhdagi ism alohida
+    const file = Buffer.from("Ism;Ball\nBobur;62\nBegona Odam;40\n").toString("base64");
+    const ef = (await req("POST", `/admin/external-tests/${im.id}/essays/file`, { fileName: "esse.csv", base64: file })).json();
+    expect(ef).toMatchObject({ items: [{ name: "Bobur", score24: 17.5 }], unmatched: ["Begona Odam"], missing: 1, bad: [] });
 
     await req("POST", "/admin/external-tests/csv/import", body);
     const again = (await req("GET", `/admin/external-tests/${im.id}`)).json().rows.find((r: { name: string }) => r.name === "Aziza");

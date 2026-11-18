@@ -17,6 +17,11 @@ export class AdminExternalController {
     private readonly essays: ExternalEssayService,
   ) {}
 
+  /** Esse fayli (Excel/CSV): moslab qaytaradi, saqlamaydi */
+  @Post(":id/essays/file") @HttpCode(200) essayFile(@Param("id") id: string, @Body() b: unknown) {
+    return this.essays.fromFile(id, parse(z.object({ fileName: z.string().max(200), base64: z.string().min(1).max(1_000_000) }), b));
+  }
+
   /** Yozma ish ballari (24 ballik mezon): bitta yoki bir yo'la */
   @Post(":id/essays") @HttpCode(200) setEssays(@CurrentUser() u: JwtUser, @Param("id") id: string, @Body() b: unknown) {
     const body = parse(z.object({ items: z.array(z.object({ resultId: z.string().max(40), score: z.number().nullable() })).max(1000) }), b);

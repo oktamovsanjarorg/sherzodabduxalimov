@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { gradeMilliy, milliyTotal } from "./external-milliy";
+import { gradeMilliy, milliyTotal, parseEssayTable, questionPoints } from "./external-milliy";
 import { isOmrExport, parseOmrExport } from "./external-omr";
 
 /** Skaner eksporti: 4 savol, oxirgi bo'lim "3-3" deb yozilgan, lekin 2 katak (ikki qismli yozma savol) */
@@ -77,5 +77,28 @@ describe("Ona tili formati (49 katak)", () => {
     const p = parseOmrExport([head.join(","), row.join(",")].join("\n"), null);
     expect(p.sections.map((s) => s.title)).toEqual(["Tilshunoslik nazariyasi", "Adabiyot nazariyasi va adabiyot tarixi", "O'qish savodxonligi", "Lingvistik va badiiy tahlil"]);
     expect(p.rows[0].sections.map((s) => [s.max, s.correct])).toEqual([[15, 1], [5, 1], [15, 0], [14, 0]]);
+  });
+});
+
+describe("parseEssayTable", () => {
+  it("sarlavhasiz va sarlavhali; 75 lik ball 24 likka qaytadi, 24 lik o'zgarmaydi", () => {
+    expect(parseEssayTable([["Aliyev Vali", "62"], ["Karimova Aziza", "17,5"], ["Bo'sh", ""]])).toEqual({
+      rows: [{ name: "Aliyev Vali", score24: 17.5 }, { name: "Karimova Aziza", score24: 17.5 }],
+      bad: [],
+    });
+    expect(parseEssayTable([["F.I.SH", "Ball"], ["Ali", "31"]]).rows).toEqual([{ name: "Ali", score24: 2 }]);
+  });
+  it("25–27 va yarim qadamga tushmaydigan qiymat xato", () => {
+    expect(parseEssayTable([["Ali", "26"], ["Vali", "10.3"], ["Soli", "20"]])).toEqual({ rows: [{ name: "Soli", score24: 20 }], bad: ["Ali", "Vali"] });
+  });
+});
+
+describe("questionPoints", () => {
+  it("to'g'ri savollar ballari yig'indisi test baliga teng, xato 0", () => {
+    const p = questionPoints("cwcb", [1, 1.2, 0.8, 1], 50);
+    expect(p[1]).toBe(0);
+    expect(p[3]).toBe(0);
+    expect(p[0] + p[2]).toBeCloseTo(50, 2);
+    expect(p[0]).toBeGreaterThan(p[2]);
   });
 });

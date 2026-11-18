@@ -1,9 +1,6 @@
-import { ESSAY_MAX_SCORE, essayTo75, formatScore, milliyTotal, sectionQuestions, type ExternalSection, type ExternalTestDetail } from "@onatili/shared";
-import { useMutation } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
-import { Modal, Spinner } from "../components/ui";
-import { api, errMsg } from "../lib/api";
-import { useToast } from "../lib/toast";
+import { formatScore, milliyTotal, questionPoints, sectionQuestions, type ExternalSection, type ExternalTestDetail } from "@onatili/shared";
+import { useState } from "react";
+import { Modal } from "../components/ui";
 
 type Row = ExternalTestDetail["rows"][number];
 
@@ -127,6 +124,7 @@ export function ResultCardModal({ t, row, onClose }: { t: ExternalTestDetail; ro
         </div>
         {f.essay75 == null && <p className="mt-2 text-xs text-amber-700">Esse kiritilmaguncha umumiy ball faqat test qismidan: sertifikatda (test + yozma) / 2.</p>}
       </div>
+      {row.testScore != null && <QuestionBreakdown t={t} row={row} />}
       {t.rasch && (
         <p className="mt-3 text-xs text-ink-3">
           Hisob: {row.correct}/{t.questionCount} to'g'ri, og'irlangan ulush {got.toFixed(2)} / {all.toFixed(2)} → test bali{" "}
@@ -137,79 +135,44 @@ export function ResultCardModal({ t, row, onClose }: { t: ExternalTestDetail; ro
   );
 }
 
-/** Yozma ish ballari: har o'quvchiga 0–24 (0,5 qadam) yoki ro'yxatni joylash ("Ism Familiya 17,5") */
-export function EssayModal({ t, onClose, onDone }: { t: ExternalTestDetail; onClose: () => void; onDone: () => void }) {
-  const toast = useToast();
-  const [v, setV] = useState<Record<string, string>>(() => Object.fromEntries(t.rows.map((r) => [r.id, r.essayScore != null ? formatScore(r.essayScore) : ""])));
-  const [paste, setPaste] = useState("");
-  const byName = useMemo(() => new Map(t.rows.flatMap((r) => [[norm(r.name), r.id], ...(r.student ? [[norm(r.student.name), r.id] as const] : [])])), [t.rows]);
-  const num = (s: string) => (s.trim() === "" ? null : Number(s.replace(",", ".")));
-  const bad = t.rows.filter((r) => {
-    const x = num(v[r.id] ?? "");
-    return x != null && (!Number.isFinite(x) || x < 0 || x > ESSAY_MAX_SCORE || Math.round(x * 2) !== x * 2);
-  });
-  const changed = t.rows.filter((r) => num(v[r.id] ?? "") !== r.essayScore);
-  const save = useMutation({
-    mutationFn: () => api.externalEssays(t.id, changed.map((r) => ({ resultId: r.id, score: num(v[r.id] ?? "") }))),
-    onSuccess: (r) => (toast(`Saqlandi: ${r.updated} ta`), onDone(), onClose()),
-    onError: (e) => toast(errMsg(e), "error"),
-  });
-  const applyPaste = () => {
-    let ok = 0;
-    const miss: string[] = [];
-    for (const l of paste.split(/\r?\n/).map((x) => x.trim()).filter(Boolean)) {
-      const m = /^(.*?)[\s;,\t]+(\d+(?:[.,]\d)?)$/.exec(l);
-      const id = m && byName.get(norm(m[1]));
-      if (m && id) (ok++, setV((p) => ({ ...p, [id]: m[2] })));
-      else miss.push(m?.[1] ?? l);
-    }
-    toast(miss.length ? `${ok} ta qo'yildi, topilmadi: ${miss.slice(0, 3).join(", ")}${miss.length > 3 ? "…" : ""}` : `${ok} ta qo'yildi`, miss.length ? "error" : undefined);
-  };
+const CELL = { c: "bg-emerald-100 text-emerald-800", w: "bg-red-100 text-red-700", b: "bg-surface-3 text-ink-4" } as const;
+
+/** Har savol: to'g'ri/xato/bo'sh va undan olingan ball; eng zaif bo'lim va xato savollar ro'yxati */
+function QuestionBreakdown({ t, row }: { t: ExternalTestDetail; row: Row }) {
+  const pts = questionPoints(row.answers, t.rasch?.items.map((i) => i.w) ?? [], row.testScore!);
+  const weak = [...row.sectionScores].sort((a, b) => a.percent - b.percent)[0];
+  const wrong = [...row.answers].flatMap((x, j) => (x === "c" ? [] : [j + 1]));
   return (
-    <Modal
-      wide
-      title="Yozma ish (esse) ballari"
-      onClose={onClose}
-      footer={
-        <>
-          <button className="btn-secondary" onClick={onClose}>Bekor qilish</button>
-          <button className="btn-primary" disabled={!changed.length || bad.length > 0 || save.isPending} onClick={() => save.mutate()}>
-            {save.isPending && <Spinner />} Saqlash{changed.length ? ` (${changed.length})` : ""}
-          </button>
-        </>
-      }
-    >
-      <p className="mb-3 text-sm text-ink-3">
-        24 ballik rasmiy mezon bo'yicha, 0,5 qadam bilan. 75 ballik shkalaga o'zi o'tkaziladi (17,5 → 62) va umumiy ball (test + yozma) / 2 bo'ladi.
+    <div className="mt-4 text-sm">
+      {weak && (
+        <p className="mb-2 rounded-lg bg-amber-50 px-3 py-2 text-amber-800">
+          Eng zaif bo'lim: <b>{weak.title}</b> — {weak.correct}/{weak.max} ({formatScore(weak.percent)}%)
+        </p>
+      )}
+      <p className="mb-1 font-bold">Har savol va olingan ball</p>
+      {t.sections.map((s) => (
+        <div key={s.title} className="mb-2">
+          <p className="mb-1 text-xs text-ink-3">{s.title}</p>
+          <div className="grid grid-cols-[repeat(auto-fill,minmax(46px,1fr))] gap-1">
+            {sectionQuestions(s).map((q) => {
+              const a = (row.answers[q - 1] ?? "b") as keyof typeof CELL;
+              return (
+                <div key={q} title={`${q}-savol: ${a === "c" ? "to'g'ri" : a === "w" ? "xato" : "bo'sh"}`} className={`rounded px-1 py-1 text-center ${CELL[a] ?? CELL.b}`}>
+                  <p className="text-[10px] opacity-70">{q}</p>
+                  <p className="text-[11px] font-bold tabular-nums">{a === "c" ? pts[q - 1].toFixed(2).replace(".", ",") : a === "w" ? "✕" : "–"}</p>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      ))}
+      <p className="text-xs text-ink-3">
+        Xato yoki bo'sh ({wrong.length} ta): {wrong.join(", ") || "yo'q"}
       </p>
-      <details className="mb-3 rounded-lg border border-line p-3 text-sm">
-        <summary className="cursor-pointer font-semibold">Ro'yxatni joylash</summary>
-        <textarea className="input mt-2 h-28" aria-label="Esse ballari ro'yxati" placeholder={"Har qatorda ism va ball:\nAliyev Vali 17,5\nKarimova Aziza 20"} value={paste} onChange={(e) => setPaste(e.target.value)} />
-        <button className="btn-secondary btn-sm mt-2" disabled={!paste.trim()} onClick={applyPaste}>Ismlar bo'yicha qo'yish</button>
-      </details>
-      <ul className="max-h-[50vh] divide-y divide-line overflow-y-auto rounded-lg border border-line text-sm">
-        {t.rows.map((r) => {
-          const x = num(v[r.id] ?? "");
-          const wrong = bad.includes(r);
-          return (
-            <li key={r.id} className="flex items-center gap-3 px-3 py-1.5">
-              <span className="min-w-0 flex-1 truncate">{r.student?.name ?? r.name}</span>
-              <span className="w-16 text-right text-xs text-ink-3">{x != null && !wrong ? `→ ${essayTo75(x)}` : ""}</span>
-              <input
-                className={`input h-8 w-20 text-right ${wrong ? "border-red-500" : ""}`}
-                inputMode="decimal"
-                aria-label={`${r.name}: esse bali`}
-                value={v[r.id] ?? ""}
-                onChange={(e) => setV((p) => ({ ...p, [r.id]: e.target.value }))}
-              />
-            </li>
-          );
-        })}
-      </ul>
-    </Modal>
+    </div>
   );
 }
 
-function norm(s: string) {
+export function norm(s: string) {
   return s.toLowerCase().replace(/[ʻʼ'`‘’]/g, "").replace(/\s+/g, " ").trim();
 }

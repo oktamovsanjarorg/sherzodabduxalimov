@@ -153,6 +153,8 @@ export interface MyExternalResultDetail extends MyExternalResult {
   testScore: number | null;
   /** Yozma ish 24 ballik mezon bo'yicha (kiritilmagan bo'lsa null) */
   essayScore: number | null;
+  /** Milliy sertifikat: har savoldan olingan ball (test bali taqsimoti) va bo'lim nomi */
+  questions: { points: number; section: string | null }[] | null;
   wrong: number;
   blank: number;
   sections: ExternalSectionScore[];

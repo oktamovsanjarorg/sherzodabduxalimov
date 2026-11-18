@@ -78,8 +78,10 @@ export function ExternalResultPage() {
           <div className="card">
             <div className="grid grid-cols-6 gap-1.5">
               {[...r.answers].map((a, i) => (
-                <span key={i} className={`rounded-lg py-2 text-center text-xs font-bold tabular-nums ${CELL[a] ?? CELL["-"]}`}>
+                <span key={i} className={`rounded-lg py-1.5 text-center text-xs font-bold tabular-nums ${CELL[a] ?? CELL["-"]}`}>
                   {i + 1}
+                  {/* Milliy sertifikat: shu savoldan olingan ball */}
+                  {r.questions && <span className="block text-[10px] font-semibold opacity-80">{a === "c" ? r.questions[i].points.toFixed(2).replace(".", ",") : "0"}</span>}
                 </span>
               ))}
             </div>
@@ -98,6 +100,7 @@ export function ExternalResultPage() {
 /** Milliy sertifikat: sertifikatdagi tartibda — bo'limlar, test, yozma ish, umumiy ball, foiz, daraja */
 function MilliyCard({ r }: { r: MyExternalResultDetail }) {
   const f = milliyTotal(r.testScore, r.essayScore);
+  const weak = [...r.sections].sort((a, b) => a.percent - b.percent)[0];
   const row = (label: string, value: string, strong = false) => (
     <div key={label} className={`flex justify-between gap-4 py-2 text-sm ${strong ? "font-extrabold" : ""}`}>
       <span className={strong ? "" : "text-hint"}>{label}</span>
@@ -126,6 +129,11 @@ function MilliyCard({ r }: { r: MyExternalResultDetail }) {
         {row("Test natijasi", r.testScore != null ? formatScore(r.testScore) : "—", true)}
         {row("Yozma savodxonlik", f.essay75 != null ? formatScore(f.essay75) : "tekshirilmoqda", true)}
       </div>
+      {weak && (
+        <p className="mt-3 rounded-xl bg-danger/10 px-3 py-2 text-sm text-danger">
+          Eng zaif bo'lim: <b>{weak.title}</b> · {weak.correct}/{weak.max}
+        </p>
+      )}
       {f.essay75 == null && <p className="mt-2 text-xs text-hint">Esse bahosi qo'shilgach umumiy ball (test + yozma) / 2 bo'ladi.</p>}
       {!f.grade && f.scaledScore != null && <p className="mt-2 text-xs text-hint">Sertifikat 46 balldan boshlab beriladi.</p>}
     </div>
