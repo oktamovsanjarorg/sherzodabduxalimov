@@ -5,9 +5,11 @@ import {
   nameMatchScore,
   gradeMilliy,
   isOmrExport,
+  milliyTotal,
   parseOmrExport,
   parseTestMatrix,
   type ExternalPreview,
+  type ExternalRasch,
   type ExternalRankingRow,
   type ExternalRowInput,
   type ExternalSection,
@@ -23,6 +25,7 @@ import { NotifyService } from "../notify/notify.service";
 import { esc } from "../notify/telegram";
 import { PrismaService } from "../prisma/prisma.service";
 
+const rasch = (i: ExternalTestInput) => (i.rasch ?? Prisma.DbNull) as Prisma.InputJsonValue | typeof Prisma.DbNull;
 const fullName = (u: { firstName: string; lastName: string | null }) => [u.firstName, u.lastName].filter(Boolean).join(" ");
 const round1 = (x: number) => Math.round(x * 10) / 10;
 const avg = (xs: number[]) => (xs.length ? round1(xs.reduce((s, x) => s + x, 0) / xs.length) : null);
@@ -53,7 +56,7 @@ export class ExternalService {
     }
     // "test-K7P2QX-matritsa.csv" -> K7P2QX; bo'lmasa fayl nomi
     const code = /test-([A-Z0-9]{4,12})/i.exec(d.fileName)?.[1]?.toUpperCase() ?? d.fileName.replace(/\.[^.]+$/, "").slice(0, 60);
-    return { source: "CSV", code, title: d.title?.trim() || `Test ${code}`, subject: null, questionCount: parsed.questionCount, sections: [], rows: parsed.rows };
+    return { source: "CSV", code, title: d.title?.trim() || `Test ${code}`, subject: null, questionCount: parsed.questionCount, sections: [], rasch: null, rows: parsed.rows };
   }
 
   /** Skaner eksporti (Mock22_2026-09-01.csv): bo'limlar va Milliy sertifikat bahosi bilan */
@@ -65,11 +68,11 @@ export class ExternalService {
     } catch (e) {
       throw new BadRequestException(e instanceof Error ? e.message : "Faylni o'qib bo'lmadi");
     }
-    if (p.milliy) gradeMilliy(p.rows);
+    const rasch = p.milliy ? gradeMilliy(p.rows) : null;
     const code = d.fileName.replace(/\.[^.]+$/, "").slice(0, 60);
     const when = date ? ` · ${date.split("-").reverse().join(".")}` : "";
     const title = d.title?.trim() || `${p.exam ?? code}${when}`;
-    return { source: "CSV", code, title, subject: null, questionCount: p.questionCount, sections: p.sections, rows: p.rows };
+    return { source: "CSV", code, title, subject: null, questionCount: p.questionCount, sections: p.sections, rasch, rows: p.rows };
   }
 
   // ---------------- O'quvchini topish ----------------
@@ -109,7 +112,7 @@ export class ExternalService {
     const takenAt = input.rows.map((r) => r.submittedAt).filter((x): x is string => !!x).sort()[0];
     const test = await this.prisma.externalTest.upsert({
       where: { source_code: { source: input.source, code: input.code } },
-      update: { title: input.title, subject: input.subject, questionCount: input.questionCount, sections: input.sections as unknown as Prisma.InputJsonValue },
+      update: { title: input.title, subject: input.subject, questionCount: input.questionCount, sections: input.sections as unknown as Prisma.InputJsonValue, rasch: rasch(input) },
       create: {
         source: input.source,
         code: input.code,
@@ -117,11 +120,12 @@ export class ExternalService {
         subject: input.subject,
         questionCount: input.questionCount,
         sections: input.sections as unknown as Prisma.InputJsonValue,
+        rasch: rasch(input),
         takenAt: takenAt ? new Date(takenAt) : new Date(),
         importedById: actorId,
       },
     });
-    const old = new Map((await this.prisma.externalResult.findMany({ where: { testId: test.id }, select: { key: true, manualMatch: true, studentId: true } })).map((r) => [r.key, r]));
+    const old = new Map((await this.prisma.externalResult.findMany({ where: { testId: test.id }, select: { key: true, manualMatch: true, studentId: true, essayScore: true } })).map((r) => [r.key, r]));
     let created = 0;
     let matched = 0;
     await this.prisma.$transaction(
@@ -130,6 +134,9 @@ export class ExternalService {
         const studentId = prev?.manualMatch ? prev.studentId : (match(r)?.studentId ?? null);
         if (studentId) matched++;
         if (!prev) created++;
+        // Ustoz kiritgan esse qayta importda saqlanadi, umumiy ball shu bilan qayta hisoblanadi
+        const essayScore = r.testScore != null ? (prev?.essayScore ?? null) : null;
+        const total = r.testScore != null ? milliyTotal(r.testScore, essayScore) : { scaledScore: r.scaledScore, grade: r.grade };
         const data = {
           name: r.name,
           username: r.username,
@@ -140,8 +147,10 @@ export class ExternalService {
           score: r.score,
           maxScore: r.maxScore,
           percent: r.percent,
-          scaledScore: r.scaledScore,
-          grade: r.grade,
+          scaledScore: total.scaledScore,
+          grade: total.grade,
+          testScore: r.testScore,
+          essayScore,
           sections: r.sections as unknown as Prisma.InputJsonValue,
           answers: r.answers,
           submittedAt: r.submittedAt ? new Date(r.submittedAt) : null,
@@ -204,6 +213,7 @@ export class ExternalService {
     return {
       ...this.summary(t),
       sections: secMeta,
+      rasch: (t.rasch as unknown as ExternalRasch | null) ?? null,
       stats: { median, buckets, questions, sections },
       rows: rs.map((r, i) => {
         if (r.percent !== prev) (rank = i + 1), (prev = r.percent);
@@ -222,6 +232,9 @@ export class ExternalService {
           percent: r.percent,
           scaledScore: r.scaledScore,
           grade: r.grade,
+          testScore: r.testScore,
+          essayScore: r.essayScore,
+          sectionScores: (r.sections as unknown as ExternalSectionScore[]) ?? [],
           answers: r.answers,
           submittedAt: r.submittedAt?.toISOString() ?? null,
           notifiedAt: r.notifiedAt?.toISOString() ?? null,
@@ -366,6 +379,8 @@ export class ExternalService {
       grade: r.grade,
       rank: k.rank,
       participants: k.participants,
+      testScore: r.testScore,
+      essayScore: r.essayScore,
       wrong: r.wrong,
       blank: r.blank,
       sections: (r.sections as unknown as ExternalSectionScore[]) ?? [],

@@ -722,8 +722,10 @@ model ExternalTest {
   title          String
   subject        String?
   questionCount  Int
-  /// Bo'limlar: [{title, fromQ, toQ}]
+  /// Bo'limlar: [{title, fromQ, toQ, questions?}]; questions bo'lsa oraliq o'rniga shu savollar
   sections       Json             @default("[]")
+  /// Milliy sertifikat: Rasch tahlili {calibrated, n, items: [{q, b, w, correctPct}]}; boshqa testlarda null
+  rasch          Json?
   /// Test o'tkazilgan payt (birinchi topshirish)
   takenAt        DateTime?
   importedById   String?
@@ -756,9 +758,14 @@ model ExternalResult {
   score       Float
   maxScore    Float
   percent     Float
+  /// Umumiy ball: esse bo'lsa (test + esse75)/2, bo'lmasa test qismi
   scaledScore Float?
   grade       String?
-  /// Bo'limlar: [{title, fromQ, toQ, correct, wrong, blank, raw, max, percent}]
+  /// Milliy sertifikat: test qismi T-ball (0..75)
+  testScore   Float?
+  /// Yozma ish 24 ballik mezon bo'yicha (ustoz kiritadi; qayta importda saqlanadi)
+  essayScore  Float?
+  /// Bo'limlar: [{title, fromQ, toQ, questions?, correct, wrong, blank, raw, max, percent, points?}]
   sections    Json            @default("[]")
   /// Har savol bitta harf: c to'g'ri, w xato, b bo'sh, v bekor, p qisman, - yo'q
   answers     String

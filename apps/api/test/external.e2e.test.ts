@@ -11,7 +11,7 @@ const TG = { owner: 900001001, a: 900001002, b: 900001003 };
 const queue = new Queue<NotifyJob>(NOTIFY_QUEUE, { prefix: "onatili-e2e", connection: redisConnection(process.env.REDIS_URL ?? "redis://localhost:6381") });
 
 async function cleanup() {
-  await prisma.externalTest.deleteMany({ where: { code: { in: ["E2ECSV1", "E2ECSV2"] } } });
+  await prisma.externalTest.deleteMany({ where: { code: { in: ["E2ECSV1", "E2ECSV2", "E2EOMR_2026-09-01"] } } });
   const tg = Object.values(TG).map(BigInt);
   await prisma.user.deleteMany({ where: { telegramId: { in: [...tg, ...Object.values(TG).map(parentTgId)] } } });
 }
@@ -88,5 +88,34 @@ describe("Offline test natijalari: CSV import (e2e)", () => {
     expect((await req("GET", "/admin/external-tests", undefined, A)).statusCode).toBe(403);
     const other = await prisma.externalResult.findFirst({ where: { name: "Bobur" } });
     expect((await req("GET", `/me/external/${other!.id}`, undefined, A)).statusCode).toBe(404);
+  });
+
+  it("skaner eksporti: bo'limlar, Rasch tahlili; esse umumiy ballni sertifikatdagidek o'zgartiradi va qayta importda saqlanadi", async () => {
+    // Ona tili formati: 49 katak. Aziza 30 ta to'g'ri, Bobur 10 ta
+    const head = ["Экзамен", "Имя", "Sertifikat -1-32"];
+    for (let q = 1; q <= 49; q++) head.push(`Q ${q} Options`, `Q ${q} Key`, `Q ${q} Marks`);
+    const line = (name: string, k: number) => ["E2E", name, "0", ...Array.from({ length: 49 }, (_, q) => ["A", "A", q < k ? "1" : "0"]).flat()].join(",");
+    const content = [head.join(","), line("Aziza", 30), line("Bobur", 10)].join("\n");
+    const body = { fileName: "E2EOMR_2026-09-01.csv", title: null, content };
+    const im = (await req("POST", "/admin/external-tests/csv/import", body)).json();
+    const d = (await req("GET", `/admin/external-tests/${im.id}`)).json();
+    expect(d.title).toBe("E2E · 01.09.2026");
+    expect(d.sections.map((s: { title: string }) => s.title)).toContain("O'qish savodxonligi");
+    expect(d.rasch).toMatchObject({ calibrated: false, n: 2 });
+    expect(d.rasch.items).toHaveLength(49);
+    const az = d.rows.find((r: { name: string }) => r.name === "Aziza");
+    expect(az.sectionScores.reduce((s: number, x: { points: number }) => s + x.points, 0)).toBeCloseTo(az.testScore, 2);
+    expect(az.scaledScore).toBe(az.testScore);
+
+    // Esse: 24 ballik 17,5 → 62; umumiy = (test + 62) / 2
+    expect((await req("POST", `/admin/external-tests/${im.id}/essays`, { items: [{ resultId: az.id, score: 25 }] })).statusCode).toBe(400);
+    expect((await req("POST", `/admin/external-tests/${im.id}/essays`, { items: [{ resultId: az.id, score: 17.5 }] })).statusCode).toBe(200);
+    const total = Math.round(((az.testScore + 62) / 2) * 100) / 100;
+    const mine = (await req("GET", `/me/external/${az.id}`, undefined, A)).json();
+    expect(mine).toMatchObject({ essayScore: 17.5, testScore: az.testScore, scaledScore: total });
+
+    await req("POST", "/admin/external-tests/csv/import", body);
+    const again = (await req("GET", `/admin/external-tests/${im.id}`)).json().rows.find((r: { name: string }) => r.name === "Aziza");
+    expect(again).toMatchObject({ essayScore: 17.5, scaledScore: total });
   });
 });

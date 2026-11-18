@@ -1,12 +1,13 @@
 import { MILLIY_LEVELS, RASCH_MIN_SAMPLE, type ExternalPreview, type ExternalTestDetail, formatScore } from "@onatili/shared";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ChevronRight, FileSpreadsheet, FileUp, Link2, Send, Trash2, Trophy, Upload } from "lucide-react";
+import { ChevronRight, FileSpreadsheet, FileText, FileUp, Link2, PenLine, Send, Trash2, Trophy, Upload } from "lucide-react";
 import { useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { Badge, Chips, ConfirmButton, Empty, Field, Modal, PageHeader, Segmented, Spinner } from "../components/ui";
 import { api, errMsg } from "../lib/api";
 import { fmtDate } from "../lib/format";
 import { useToast } from "../lib/toast";
+import { EssayModal, RaschCard, ResultCardModal, questionsLabel } from "./ExternalMilliy";
 
 const tone = (p: number) => (p >= 80 ? "green" : p >= 60 ? "blue" : p >= 40 ? "amber" : "red");
 const HOW = { username: "username", name: "ism bo'yicha" } as const;
@@ -201,10 +202,12 @@ export function ExternalTestPage() {
     onError: (e) => toast(errMsg(e), "error"),
   });
   const remove = useMutation({ mutationFn: () => api.externalDelete(id), onSuccess: () => (refresh(), navigate("/external")) });
+  const [essayOpen, setEssayOpen] = useState(false);
   if (q.isPending) return <Spinner className="text-ink-4" />;
   if (q.isError) return <p className="text-sm text-red-600">{errMsg(q.error)}</p>;
   const t = q.data;
   const waiting = t.rows.filter((r) => r.student && !r.notifiedAt).length;
+  const essays = t.rows.filter((r) => r.essayScore != null).length;
   // Milliy sertifikat bahosi bor (skaner eksporti): daraja taqsimoti foizdan muhimroq
   const scaled = t.rows.map((r) => r.scaledScore).filter((x): x is number => x != null);
   const milliy = scaled.length > 0;
@@ -219,6 +222,11 @@ export function ExternalTestPage() {
         subtitle={`CSV fayldan · ${t.questionCount} savol${t.subject ? ` · ${t.subject}` : ""}${t.takenAt ? ` · ${fmtDate(t.takenAt)}` : ""}`}
         actions={
           <>
+            {t.rasch && (
+              <button className="btn-secondary" onClick={() => setEssayOpen(true)}>
+                <PenLine size={15} /> Esse ballari{essays ? ` (${essays}/${t.participants})` : ""}
+              </button>
+            )}
             <button className="btn-primary" disabled={!waiting || notify.isPending} onClick={() => notify.mutate()} title="Natija matnda bo'lmaydi: ilovani ochishga chaqiradi">
               <Send size={15} /> Xabar yuborish{waiting ? ` (${waiting})` : ""}
             </button>
@@ -262,7 +270,7 @@ export function ExternalTestPage() {
                   <div className="mb-1 flex justify-between gap-3">
                     <span className="text-ink-2">
                       {s.title ?? `${i + 1}-bo'lim`}
-                      {s.title !== `${s.fromQ}–${s.toQ}` && <span className="text-ink-4"> (fayldagi {s.fromQ}–{s.toQ}-kataklar)</span>}
+                      {s.title !== questionsLabel(s) && <span className="text-ink-4"> ({questionsLabel(s)})</span>}
                     </span>
                     <b>{formatScore(s.avgPercent)}%</b>
                   </div>
@@ -290,7 +298,9 @@ export function ExternalTestPage() {
           ))}
         </div>
       </section>
+      <RaschCard t={t} />
       <Results t={t} onChanged={refresh} />
+      {essayOpen && <EssayModal t={t} onClose={() => setEssayOpen(false)} onDone={refresh} />}
     </div>
   );
 }
@@ -308,6 +318,7 @@ function Hardest({ t }: { t: ExternalTestDetail }) {
 function Results({ t, onChanged }: { t: ExternalTestDetail; onChanged: () => void }) {
   const [linking, setLinking] = useState<ExternalTestDetail["rows"][number] | null>(null);
   const [showUnmatched, setShowUnmatched] = useState(false);
+  const [card, setCard] = useState<ExternalTestDetail["rows"][number] | null>(null);
   const rows = showUnmatched ? t.rows.filter((r) => !r.student) : t.rows;
   return (
     <section className="card overflow-hidden">
@@ -329,11 +340,18 @@ function Results({ t, onChanged }: { t: ExternalTestDetail; onChanged: () => voi
                 {r.student && r.student.name !== r.name && <span className="ml-1.5 text-xs font-normal text-ink-4">testda: {r.name}</span>}
               </p>
               <p className="truncate text-xs text-ink-3">
-                {r.correct} to'g'ri · {r.wrong} xato · {r.blank} bo'sh{r.scaledScore != null ? ` · ${formatScore(r.scaledScore)} ball` : ""}
+                {r.correct} to'g'ri · {r.wrong} xato · {r.blank} bo'sh
+                {r.testScore != null ? ` · test ${formatScore(r.testScore)}${r.essayScore != null ? ` · esse ${formatScore(r.essayScore)}/24` : ""}` : ""}
+                {r.scaledScore != null ? ` · ${formatScore(r.scaledScore)} ball` : ""}
                 {r.grade ? ` · ${r.grade}` : ""}
                 {!r.student && <span className="text-amber-700"> · platformada topilmadi</span>}
               </p>
             </div>
+            {t.rasch && (
+              <button className="btn-ghost btn-sm" onClick={() => setCard(r)} title="Natija kartasi">
+                <FileText size={14} />
+              </button>
+            )}
             <button className="btn-ghost btn-sm" onClick={() => setLinking(r)} title="O'quvchiga bog'lash">
               <Link2 size={14} />
             </button>
@@ -341,6 +359,7 @@ function Results({ t, onChanged }: { t: ExternalTestDetail; onChanged: () => voi
           </li>
         ))}
       </ul>
+      {card && <ResultCardModal t={t} row={card} onClose={() => setCard(null)} />}
       {linking && <LinkModal testId={t.id} row={linking} onClose={() => setLinking(null)} onDone={onChanged} />}
     </section>
   );

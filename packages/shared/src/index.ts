@@ -8,6 +8,7 @@ export * from "./billing-types";
 export * from "./essay-types";
 export * from "./external-types";
 export * from "./external-omr";
+export * from "./external-milliy";
 export * from "./students-types";
 export * from "./name-match";
 export * from "./rasch";

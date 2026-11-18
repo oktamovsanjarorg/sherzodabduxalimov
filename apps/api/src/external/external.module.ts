@@ -2,6 +2,7 @@ import { Body, Controller, Delete, Get, Global, HttpCode, Module, Param, Patch, 
 import { z } from "zod";
 import { parse } from "../admin/zod";
 import { CurrentUser, Roles, type JwtUser } from "../auth/decorators";
+import { ExternalEssayService } from "./external-essay.service";
 import { ExternalService } from "./external.service";
 
 // CSV: 300 o'quvchi x 200 savol ham 200 KB dan oshmaydi
@@ -11,7 +12,16 @@ const csvBody = z.object({ fileName: z.string().max(200), title: z.string().max(
 @Roles("TEACHER", "ASSISTANT")
 @Controller("admin/external-tests")
 export class AdminExternalController {
-  constructor(private readonly svc: ExternalService) {}
+  constructor(
+    private readonly svc: ExternalService,
+    private readonly essays: ExternalEssayService,
+  ) {}
+
+  /** Yozma ish ballari (24 ballik mezon): bitta yoki bir yo'la */
+  @Post(":id/essays") @HttpCode(200) setEssays(@CurrentUser() u: JwtUser, @Param("id") id: string, @Body() b: unknown) {
+    const body = parse(z.object({ items: z.array(z.object({ resultId: z.string().max(40), score: z.number().nullable() })).max(1000) }), b);
+    return this.essays.set(u.sub, id, body.items);
+  }
 
   @Get() async list() {
     return { tests: await this.svc.list() };
@@ -63,5 +73,5 @@ export class MyExternalController {
 
 // Global: o'quvchi sahifasi va ota-ona ko'rinishi ham natijalarni oladi
 @Global()
-@Module({ controllers: [AdminExternalController, MyExternalController], providers: [ExternalService], exports: [ExternalService] })
+@Module({ controllers: [AdminExternalController, MyExternalController], providers: [ExternalService, ExternalEssayService], exports: [ExternalService] })
 export class ExternalModule {}

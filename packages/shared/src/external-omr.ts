@@ -1,13 +1,12 @@
-import { milliyLevel } from "./content-types";
-import { splitCsv, type ExternalRowInput, type ExternalSection, type ExternalSectionScore } from "./external-types";
-import { RASCH_MIN_SAMPLE, abilityT, calibrate, difficultyWeights } from "./rasch";
+import { ONA_TILI_MILLIY_CELLS, ONA_TILI_MILLIY_SECTIONS, sectionScore } from "./external-milliy";
+import { splitCsv, type ExternalRowInput, type ExternalSection } from "./external-types";
 
 /**
  * Skaner (OMR) eksporti: "Экзамен, …, Имя, Общая оценка, …, Sertifikat -1-32, …, Q 1 Options, Q 1 Key, Q 1 Marks, …".
  * Har savol uchun Marks: 1 to'g'ri, 0 xato; Options bo'sh bo'lsa javob berilmagan.
- * "Sertifikat -a-b" ustunlari bo'limlar: rasmiy savol raqamlari bilan, shuning uchun yozma savollar
- * ikki qismli bo'lsa (40–44 → 10 katak) oxirgi bo'lim fayldagi oxirgi savolgacha cho'ziladi —
- * qaysi oraliq to'g'riligi fayldagi bo'lim yig'indisi bilan tekshiriladi.
+ * "Sertifikat -a-b" ustunlari savol turlari bo'yicha bo'limlar (yozma savollar ikki qismli bo'lsa
+ * oxirgisi fayldagi yig'indi bilan tekshirilib oxirgi katakkacha cho'ziladi). Ona tili formati (49 katak)
+ * bo'lsa ular o'rniga sertifikatdagi mazmun bo'limlari olinadi (ONA_TILI_MILLIY_SECTIONS).
  */
 export interface OmrParsed {
   /** "Экзамен" ustuni (masalan Mock22) */
@@ -50,13 +49,15 @@ export function parseOmrExport(text: string, takenAt: string | null): OmrParsed 
 
   // Bo'limlar: oraliqni fayldagi yig'indi bilan tasdiqlaymiz, mos kelmasa oxirgisini cho'zamiz
   const correctIn = (a: string, from: number, to: number) => [...a.slice(from - 1, to)].filter((x) => x === "c").length;
-  const sections: ExternalSection[] = secCols.map(([m, i], k) => {
+  const typeSections: ExternalSection[] = secCols.map(([m, i], k) => {
     const from = Number(m[1]);
     const to = Number(m[2]);
     const fits = (t: number) => all.every(({ c, answers }) => !c[i]?.trim() || Number(c[i]) === correctIn(answers, from, t));
     const toQ = !fits(to) && k === secCols.length - 1 && fits(N) ? N : to;
     return { title: `${from}–${to}`, fromQ: from, toQ: Math.min(toQ, N) };
   });
+  // Ona tili Milliy sertifikati: sertifikatdagi mazmun bo'limlari (skaner ustunlari faqat savol turlari)
+  const sections = typeSections.length && N === ONA_TILI_MILLIY_CELLS ? ONA_TILI_MILLIY_SECTIONS : typeSections;
 
   const seen = new Map<string, number>();
   const rows: ExternalRowInput[] = all.map(({ c, answers }) => {
@@ -79,6 +80,7 @@ export function parseOmrExport(text: string, takenAt: string | null): OmrParsed 
       percent: Math.round((correct / N) * 1000) / 10,
       scaledScore: null,
       grade: null,
+      testScore: null,
       sections: sections.map((s) => sectionScore(s, answers)),
       answers,
       submittedAt: takenAt,
@@ -87,32 +89,4 @@ export function parseOmrExport(text: string, takenAt: string | null): OmrParsed 
   });
   const exam = examCol >= 0 ? cells.find((c) => c[examCol]?.trim())?.[examCol].trim() ?? null : null;
   return { exam, questionCount: N, sections, milliy: sections.length > 0, rows };
-}
-
-function sectionScore(s: ExternalSection, answers: string): ExternalSectionScore {
-  const part = [...answers.slice(s.fromQ - 1, s.toQ)];
-  const correct = part.filter((x) => x === "c").length;
-  const blank = part.filter((x) => x === "b").length;
-  const max = part.length;
-  return { ...s, correct, wrong: max - correct - blank, blank, raw: correct, max, percent: max ? Math.round((correct / max) * 1000) / 10 : 0 };
-}
-
-/**
- * Milliy sertifikat bahosi (ilova ichidagi mock testlar bilan bir xil, rasch.ts → abilityT):
- * guruh yetarli bo'lsa (≥ RASCH_MIN_SAMPLE) savol qiyinliklari shu natijalardan kalibrlanadi va
- * og'irlik bo'ladi; kam bo'lsa barcha savollar teng. Ball guruh o'rtachasiga bog'liq emas.
- * Faqat test qismi: esse bu faylda yo'q. Daraja 46 balldan past bo'lsa null.
- */
-export function gradeMilliy(rows: ExternalRowInput[]): { calibrated: boolean } {
-  if (!rows.length) return { calibrated: false };
-  const matrix = rows.map((r) => [...r.answers].map((x) => (x === "c" ? 1 : 0)) as (0 | 1)[]);
-  const calibrated = rows.length >= RASCH_MIN_SAMPLE;
-  const weights = calibrated ? difficultyWeights(calibrate(matrix).b) : matrix[0].map(() => 1);
-  rows.forEach((r, i) => {
-    const scaled = abilityT(matrix[i], weights);
-    const level = milliyLevel(scaled).code;
-    r.scaledScore = scaled;
-    r.grade = level === "—" ? null : level;
-  });
-  return { calibrated };
 }

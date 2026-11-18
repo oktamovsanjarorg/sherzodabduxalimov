@@ -6,6 +6,20 @@ export interface ExternalSection {
   title: string | null;
   fromQ: number;
   toQ: number;
+  /** Bo'lim savollari ketma-ket bo'lmasa (masalan 1–12 va 33–35): oraliq o'rniga shular */
+  questions?: number[];
+}
+
+/** Bo'limdagi savol raqamlari (1 dan) */
+export const sectionQuestions = (s: ExternalSection) => s.questions ?? Array.from({ length: s.toQ - s.fromQ + 1 }, (_, i) => s.fromQ + i);
+
+/** Milliy sertifikat: Rasch tahlili (har savol qiyinligi va og'irligi) */
+export interface ExternalRasch {
+  /** Savol qiyinliklari shu natijalardan hisoblandimi (kamida RASCH_MIN_SAMPLE qatnashchi) */
+  calibrated: boolean;
+  n: number;
+  /** q: savol, b: qiyinlik (logit, o'rtachasi 0; katta = qiyin), w: ball og'irligi, correctPct: to'g'ri yechganlar % */
+  items: { q: number; b: number; w: number; correctPct: number }[];
 }
 export interface ExternalSectionScore extends ExternalSection {
   correct: number;
@@ -14,6 +28,8 @@ export interface ExternalSectionScore extends ExternalSection {
   raw: number;
   max: number;
   percent: number;
+  /** Milliy sertifikat: test balidan shu bo'limga to'g'ri keladigan qism (bo'limlar yig'indisi = test bali) */
+  points?: number | null;
 }
 
 /** Import qilinadigan bitta natija (CSV dan) */
@@ -30,6 +46,8 @@ export interface ExternalRowInput {
   percent: number;
   scaledScore: number | null;
   grade: string | null;
+  /** Milliy sertifikat: test qismi T-ball (0..75) */
+  testScore: number | null;
   sections: ExternalSectionScore[];
   /** Har savol bitta harf: c to'g'ri, w xato, b bo'sh, v bekor, p qisman, - yo'q */
   answers: string;
@@ -44,6 +62,7 @@ export interface ExternalTestInput {
   subject: string | null;
   questionCount: number;
   sections: ExternalSection[];
+  rasch: ExternalRasch | null;
   rows: ExternalRowInput[];
 }
 
@@ -70,6 +89,7 @@ export interface ExternalTestSummary {
 
 export interface ExternalTestDetail extends ExternalTestSummary {
   sections: ExternalSection[];
+  rasch: ExternalRasch | null;
   stats: {
     median: number | null;
     /** 0–9, 10–19, ... 90–100 foiz */
@@ -93,6 +113,9 @@ export interface ExternalTestDetail extends ExternalTestSummary {
     percent: number;
     scaledScore: number | null;
     grade: string | null;
+    testScore: number | null;
+    essayScore: number | null;
+    sectionScores: ExternalSectionScore[];
     answers: string;
     submittedAt: string | null;
     notifiedAt: string | null;
@@ -127,6 +150,9 @@ export interface MyExternalResult {
   participants: number;
 }
 export interface MyExternalResultDetail extends MyExternalResult {
+  testScore: number | null;
+  /** Yozma ish 24 ballik mezon bo'yicha (kiritilmagan bo'lsa null) */
+  essayScore: number | null;
   wrong: number;
   blank: number;
   sections: ExternalSectionScore[];
@@ -172,6 +198,7 @@ export function parseTestMatrix(text: string): { questionCount: number; rows: Ex
       percent: Math.round((correct / qCols.length) * 1000) / 10,
       scaledScore: null,
       grade: null,
+      testScore: null,
       sections: [],
       answers,
       submittedAt: null,

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { gradeMilliy, isOmrExport, parseOmrExport } from "./external-omr";
+import { gradeMilliy, milliyTotal } from "./external-milliy";
+import { isOmrExport, parseOmrExport } from "./external-omr";
 
 /** Skaner eksporti: 4 savol, oxirgi bo'lim "3-3" deb yozilgan, lekin 2 katak (ikki qismli yozma savol) */
 function csv(rows: [string, string[], string[]][]) {
@@ -45,8 +46,36 @@ describe("parseOmrExport", () => {
 
   it("Milliy baho: ko'proq to'g'ri — yuqori ball; kam qatnashchida savollar teng", () => {
     const p = parseOmrExport(file, null);
-    expect(gradeMilliy(p.rows)).toEqual({ calibrated: false });
+    expect(gradeMilliy(p.rows)).toMatchObject({ calibrated: false, n: 2 });
     expect(p.rows[1].scaledScore!).toBeGreaterThan(p.rows[0].scaledScore!);
     for (const r of p.rows) expect(r.scaledScore).toBeGreaterThanOrEqual(0), expect(r.scaledScore).toBeLessThanOrEqual(75);
+  });
+
+  it("bo'lim ballari yig'indisi test baliga teng", () => {
+    const p = parseOmrExport(file, null);
+    gradeMilliy(p.rows);
+    for (const r of p.rows) expect(r.sections.reduce((s, x) => s + (x.points ?? 0), 0)).toBeCloseTo(r.testScore!, 2);
+  });
+});
+
+describe("milliyTotal", () => {
+  it("sertifikatdagidek: (49,9 + esse 62) / 2 = 55,95 → 86,08%, B", () => {
+    // Esse 24 ballik mezonda 17,5 → 75 ballik shkalada 62
+    expect(milliyTotal(49.9, 17.5)).toEqual({ scaledScore: 55.95, grade: "B", essay75: 62, certPercent: 86.08 });
+  });
+  it("esse kiritilmagan: umumiy = test qismi", () => {
+    expect(milliyTotal(45, null)).toMatchObject({ scaledScore: 45, grade: null, essay75: null });
+  });
+});
+
+describe("Ona tili formati (49 katak)", () => {
+  it("sertifikatdagi 4 bo'lim: 1–12 va 33–35, 13–17, 18–32, 36–49", () => {
+    const head = ["Имя", "Sertifikat -1-32"];
+    for (let q = 1; q <= 49; q++) head.push(`Q ${q} Options`, `Q ${q} Key`, `Q ${q} Marks`);
+    const row = ["Aziz", "0"];
+    for (let q = 1; q <= 49; q++) row.push("A", "A", q === 33 || q === 13 ? "1" : "0");
+    const p = parseOmrExport([head.join(","), row.join(",")].join("\n"), null);
+    expect(p.sections.map((s) => s.title)).toEqual(["Tilshunoslik nazariyasi", "Adabiyot nazariyasi va adabiyot tarixi", "O'qish savodxonligi", "Lingvistik va badiiy tahlil"]);
+    expect(p.rows[0].sections.map((s) => [s.max, s.correct])).toEqual([[15, 1], [5, 1], [15, 0], [14, 0]]);
   });
 });
