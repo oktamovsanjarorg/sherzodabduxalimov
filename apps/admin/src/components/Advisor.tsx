@@ -1,13 +1,7 @@
-import { ADVICE_AREA_LABELS, type Advice, type AdvisorAiNote } from "@onatili/shared";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { AlertCircle, ChevronRight, Lightbulb, Sparkles, TriangleAlert, X } from "lucide-react";
+import { ADVICE_AREA_LABELS, type Advice } from "@onatili/shared";
+import { AlertCircle, ChevronRight, Lightbulb, TriangleAlert, X } from "lucide-react";
 import { Link } from "react-router-dom";
-import { errMsg } from "../lib/api";
 import { useDismissed } from "../lib/dismiss";
-import { fmtShortDateTime } from "../lib/format";
-import { useToast } from "../lib/toast";
-import { AiText } from "./AiText";
-import { Spinner } from "./ui";
 
 const LEVEL = {
   urgent: { Icon: TriangleAlert, cls: "border-red-200 bg-red-50 text-red-900", tag: "Shoshilinch" },
@@ -54,36 +48,5 @@ export function AdviceList({ items, scope, limit }: { items: Advice[]; scope: st
         </button>
       )}
     </div>
-  );
-}
-
-/** AI xulosa: saqlangan oxirgisi ko'rinadi, «Yangilash» yangisini tayyorlaydi (pullik, ismlar yuborilmaydi) */
-export function AiNote({ note, queryKey, generate, intro }: { note: AdvisorAiNote | null; queryKey: unknown[]; generate: () => Promise<AdvisorAiNote>; intro: string }) {
-  const toast = useToast();
-  const qc = useQueryClient();
-  const gen = useMutation({ mutationFn: generate, onSuccess: () => qc.invalidateQueries({ queryKey }), onError: (e) => toast(errMsg(e), "error") });
-  return (
-    <section className="rounded-2xl border border-violet-200 bg-violet-50 p-4 sm:p-5">
-      <div className="flex flex-wrap items-center gap-3">
-        <h2 className="flex flex-1 items-center gap-2 font-extrabold">
-          <Sparkles size={17} className="text-violet-700" /> AI tavsiyasi
-        </h2>
-        <button className="btn-secondary btn-sm" disabled={gen.isPending} onClick={() => gen.mutate()}>
-          {gen.isPending ? <Spinner /> : <Sparkles size={14} />} {note ? "Yangilash" : "Tavsiya tayyorlash"}
-        </button>
-      </div>
-      {gen.isPending ? (
-        <p className="mt-2 text-sm text-ink-3">Tahlil qilinmoqda… (10–30 soniya)</p>
-      ) : note ? (
-        <>
-          <div className="mt-3">
-            <AiText text={note.text} />
-          </div>
-          <p className="mt-3 text-[11px] text-ink-4">AI tayyorladi: {fmtShortDateTime(note.createdAt)} · faqat platformadagi raqamlar asosida</p>
-        </>
-      ) : (
-        <p className="mt-2 text-sm text-ink-2">{intro}</p>
-      )}
-    </section>
   );
 }

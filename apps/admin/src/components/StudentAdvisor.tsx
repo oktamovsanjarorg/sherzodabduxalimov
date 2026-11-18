@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { ArrowRight } from "lucide-react";
 import { Link } from "react-router-dom";
 import { api, errMsg } from "../lib/api";
-import { AdviceList, AiNote } from "./Advisor";
+import { AdviceList } from "./Advisor";
 import { Spinner } from "./ui";
 
 const bar = (p: number) => (p >= 75 ? "bg-emerald-500" : p >= 55 ? "bg-amber-400" : "bg-red-500");
@@ -50,12 +50,6 @@ export function StudentAdvisor({ id }: { id: string }) {
           </ul>
         </div>
       )}
-      <AiNote
-        note={d.ai}
-        queryKey={["student-advisor", id]}
-        generate={() => api.studentAdvisorAi(id)}
-        intro="AI shu o'quvchining natijalari, esselari va davomatidan 2 haftalik shaxsiy reja va ota-onaga aytish uchun qisqa xulosa tuzadi. Ism AI'ga yuborilmaydi."
-      />
     </div>
   );
 }

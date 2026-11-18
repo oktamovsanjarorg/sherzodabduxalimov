@@ -7,7 +7,7 @@ import { Prisma } from "@onatili/db";
 import type { PrismaService } from "../prisma/prisma.service";
 import { dateDaysAgo, daysAgo, essayFacts, fullName, names, pct, topicAccuracy } from "./facts";
 
-export async function platformAdvice(prisma: PrismaService): Promise<Omit<PlatformAdvice, "ai">> {
+export async function platformAdvice(prisma: PrismaService): Promise<PlatformAdvice> {
   const advice: Advice[] = [];
   const add = (a: Advice) => advice.push(a);
   const pulse: PlatformAdvice["pulse"] = [];
@@ -55,7 +55,6 @@ export async function platformAdvice(prisma: PrismaService): Promise<Omit<Platfo
       key: "activity:never-opened", level: "important", area: "activity", count: neverOpened.length,
       title: `${neverOpened.length} o'quvchi botga kirgan, lekin ilovani bir marta ham ochmagan`,
       why: `Masalan: ${names(neverOpened.map(fullName))}. Ko'pincha «ilova qayerda» ekanini bilmaydi: darsda bir marta ko'rsatib qo'yish yetarli.`,
-      aiWhy: "Ko'pincha ilova qayerdaligini bilmaydi.",
       action: { label: "O'quvchilar", to: "/students" },
     });
   const idleOnline = students.filter((s) => !(s.student?.groupId && s.student.group?.isActive) && s.createdAt < daysAgo(14) && (!s.lastAppAt || s.lastAppAt < daysAgo(14)));
@@ -64,7 +63,6 @@ export async function platformAdvice(prisma: PrismaService): Promise<Omit<Platfo
       key: "activity:idle-online", level: "important", area: "activity", count: idleOnline.length,
       title: `${idleOnline.length} online o'quvchi 14 kundan beri ilovaga kirmagan`,
       why: `${names(idleOnline.map(fullName))}. Online o'quvchi uchun ilova yagona dars joyi: uzoq jimlik ketib qolishdan oldingi belgi.`,
-      aiWhy: "Online o'quvchi uchun ilova yagona dars joyi.",
       action: { label: "Online o'quvchilar", to: "/students?group=none" },
     });
 
@@ -83,7 +81,6 @@ export async function platformAdvice(prisma: PrismaService): Promise<Omit<Platfo
       key: "attendance:chronic", level: "urgent", area: "attendance", count: chronic.length,
       title: `${chronic.length} o'quvchi oxirgi 30 kunda 3 va undan ko'p dars qoldirgan`,
       why: names(chronic.map((c) => `${c.name} (${c.n})`), 5) + ". Ota-onasi bilan gaplashish kerak: qoldirilgan mavzular keyingi testlarda chiqadi.",
-      aiWhy: `Qoldirishlar soni: ${chronic.map((c) => c.n).join(", ")}.`,
       action: { label: "Davomat", to: "/attendance" },
     });
   const groups = new Map<string, { name: string; ok: number; n: number }>();

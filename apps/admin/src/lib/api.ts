@@ -1,5 +1,4 @@
 import type {
-  AdvisorAiNote,
   PlatformAdvice,
   StudentAdvice,
   PaymentInsights,
@@ -306,9 +305,7 @@ export const api = {
   stats: (month: string) => request<TeacherStats>(`/admin/stats?month=${month}`),
   paymentInsights: (month: string) => request<PaymentInsights>(`/admin/stats/payments?month=${month}`),
   advisor: () => request<PlatformAdvice>("/admin/advisor"),
-  advisorAi: () => request<AdvisorAiNote>("/admin/advisor/ai", json("POST")),
   studentAdvisor: (id: string) => request<StudentAdvice>(`/admin/students/${id}/advisor`),
-  studentAdvisorAi: (id: string) => request<AdvisorAiNote>(`/admin/students/${id}/advisor/ai`, json("POST")),
   paymentAi: (month: string) => request<{ text: string; generatedAt: string }>(`/admin/stats/payments/ai?month=${month}`, json("POST")),
   addFollowUp: (d: { studentId: string; month: string; kind: "CALL" | "MESSAGE" | "PROMISE" | "REASON"; note?: string | null; promisedAt?: string | null }) =>
     request<{ id: string }>("/admin/payment-followups", json("POST", d)),

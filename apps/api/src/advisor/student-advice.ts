@@ -5,11 +5,11 @@
 import { NotFoundException } from "@nestjs/common";
 import { MILLIY_LEVELS, formatScore, sectionScore, sortAdvice, type Advice, type ExternalSection, type StudentAdvice } from "@onatili/shared";
 import type { PrismaService } from "../prisma/prisma.service";
-import { dateDaysAgo, daysAgo, essayFacts, fullName, pct, topicAccuracy, DAY } from "./facts";
+import { dateDaysAgo, daysAgo, essayFacts, pct, topicAccuracy, DAY } from "./facts";
 
 type Item = { label: string; percent: number; source: string };
 
-export async function studentAdvice(prisma: PrismaService, studentId: string): Promise<Omit<StudentAdvice, "ai"> & { facts: Record<string, unknown> }> {
+export async function studentAdvice(prisma: PrismaService, studentId: string): Promise<StudentAdvice> {
   const sp = await prisma.studentProfile.findUnique({
     where: { id: studentId },
     select: {
@@ -26,7 +26,6 @@ export async function studentAdvice(prisma: PrismaService, studentId: string): P
   });
   if (!sp?.user) throw new NotFoundException("O'quvchi topilmadi");
   const userId = sp.user.id;
-  const name = fullName(sp.user);
   const advice: Advice[] = [];
   const add = (a: Omit<Advice, "count"> & { count?: number }) => advice.push({ count: 1, ...a });
   const strengths: Item[] = [];
@@ -35,12 +34,10 @@ export async function studentAdvice(prisma: PrismaService, studentId: string): P
 
   // ---- Offline (milliy) test: bo'limlar va keyingi darajagacha qancha ----
   const ext = sp.externalResults[0];
-  let milliy: Record<string, unknown> | null = null;
   if (ext) {
     for (const s of ext.test.sections as unknown as ExternalSection[]) place({ label: s.title ?? "Bo'lim", percent: Math.round(sectionScore(s, ext.answers).percent), source: ext.test.title });
     const score = ext.scaledScore ?? 0;
     const next = [...MILLIY_LEVELS].reverse().find((l) => l.min > score);
-    milliy = { test: ext.test.title, ball: score, daraja: ext.grade, esse: ext.essayScore, oldingi: sp.externalResults.slice(1).map((r) => r.scaledScore) };
     if (next)
       add({
         key: `s:milliy-next`, level: "important", area: "learning",
@@ -99,17 +96,5 @@ export async function studentAdvice(prisma: PrismaService, studentId: string): P
 
   strengths.sort((a, b) => b.percent - a.percent);
   weaknesses.sort((a, b) => a.percent - b.percent);
-  const facts = {
-    o_quvchi: "S1",
-    guruh: sp.group?.isActive ? sp.group.name : "online",
-    milliy,
-    kuchli: strengths.slice(0, 5),
-    zaif: weaknesses.slice(0, 6),
-    ilova_testlari_oxirgi_foizlar: recent,
-    esse: { soni: reviews.length, mezonlar: ef.criteria, xatolar: ef.mistakes.slice(0, 4) },
-    davomat_30_kun: { jami: sp.attendance.length, kelmagan: absent },
-    ilovaga_kirmagan_kun: idle,
-    ota_ona_ulangan: sp.parents.length > 0,
-  };
-  return { generatedAt: new Date().toISOString(), strengths: strengths.slice(0, 6), weaknesses: weaknesses.slice(0, 6), advice: sortAdvice(advice), next, facts: { ...facts, _name: name } };
+  return { generatedAt: new Date().toISOString(), strengths: strengths.slice(0, 6), weaknesses: weaknesses.slice(0, 6), advice: sortAdvice(advice), next };
 }

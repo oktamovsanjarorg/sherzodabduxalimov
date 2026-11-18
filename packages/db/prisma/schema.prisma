@@ -779,14 +779,3 @@ model ExternalResult {
   @@unique([testId, key])
   @@index([studentId])
 }
-
-/// Ustoz yordamchisining AI xulosasi: "platform" yoki "student:<studentId>". Har so'rov narxi bor, shuning uchun saqlanadi.
-model AdvisorNote {
-  id          String   @id @default(cuid())
-  scope       String
-  text        String
-  createdById String?
-  createdAt   DateTime @default(now())
-
-  @@index([scope, createdAt])
-}

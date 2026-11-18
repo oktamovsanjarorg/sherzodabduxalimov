@@ -177,7 +177,7 @@ function AdvisorTeaser() {
       <div className="mb-2 flex items-center justify-between">
         <h2 className="label">Yordamchi tavsiyasi</h2>
         <Link to="/advisor" className="tap flex items-center gap-1 text-sm font-bold text-brand hover:underline">
-          Hammasi va AI reja <ChevronRight size={15} />
+          Hammasi <ChevronRight size={15} />
         </Link>
       </div>
       <AdviceList items={top} scope="platform" limit={3} />

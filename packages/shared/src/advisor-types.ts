@@ -26,8 +26,6 @@ export interface Advice {
   /** Yashirish uchun son (o'quvchilar, esselar...) */
   count: number;
   action?: { label: string; to: string };
-  /** Server ichida: AI ga yuboriladigan ismsiz «nega» (mijozga yuborilmaydi) */
-  aiWhy?: string;
 }
 
 export interface PlatformAdvice {
@@ -35,7 +33,6 @@ export interface PlatformAdvice {
   /** Qisqa ko'rsatkichlar: AI va ekran uchun */
   pulse: { label: string; value: string; hint?: string }[];
   advice: Advice[];
-  ai: AdvisorAiNote | null;
 }
 
 export interface StudentAdvice {
@@ -46,12 +43,6 @@ export interface StudentAdvice {
   advice: Advice[];
   /** Keyingi qadamlar: aniq dars/test */
   next: { label: string; to?: string }[];
-  ai: AdvisorAiNote | null;
-}
-
-export interface AdvisorAiNote {
-  text: string;
-  createdAt: string;
 }
 
 export const ADVICE_LEVEL_ORDER: Record<AdviceLevel, number> = { urgent: 0, important: 1, idea: 2 };

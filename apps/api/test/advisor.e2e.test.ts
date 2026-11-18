@@ -13,7 +13,6 @@ async function cleanup() {
   await prisma.user.deleteMany({ where: { telegramId: { in: [...tg, ...Object.values(TG).map(parentTgId)] } } });
   await prisma.group.deleteMany({ where: { name: { startsWith: TAG } } });
   await prisma.externalTest.deleteMany({ where: { code: CODE } });
-  await prisma.advisorNote.deleteMany({ where: { scope: { startsWith: "student:e2e" } } });
 }
 
 /** Ustoz yordamchisi: tavsiyalar faktlardan chiqadi va aniq sahifaga olib boradi */
@@ -71,8 +70,6 @@ describe("Ustoz yordamchisi (e2e)", () => {
     expect(by(`learning:external:${testId}:hard`).why).toContain("Savollar: 3 ");
     expect(by(`learning:external:${testId}:essay`)).toMatchObject({ count: 1, action: { to: `/external/${testId}` } });
     expect(by("payments:receipts")).toBeTruthy();
-    // Ismsiz matn faqat serverda (AI uchun), mijozga yuborilmaydi
-    expect(d.advice.every((a: object) => !("aiWhy" in a))).toBe(true);
     // Shoshilinchlari birinchi
     expect(d.advice[0].level).toBe("urgent");
   });
@@ -83,7 +80,7 @@ describe("Ustoz yordamchisi (e2e)", () => {
     expect(d.advice.some((a: { key: string }) => a.key === "attendance:chronic")).toBe(true);
   });
 
-  it("o'quvchi: zaif/kuchli bo'lim, keyingi darajagacha ball, davomat, ota-ona; saqlangan AI xulosa", async () => {
+  it("o'quvchi: zaif/kuchli bo'lim, keyingi darajagacha ball, davomat, ota-ona", async () => {
     const d = (await get(`/admin/students/${studentId}/advisor`)).json();
     expect(d.weaknesses[0]).toMatchObject({ label: "Tilshunoslik", percent: 0 });
     expect(d.strengths[0]).toMatchObject({ label: "O'qish savodxonligi", percent: 100 });
@@ -91,11 +88,6 @@ describe("Ustoz yordamchisi (e2e)", () => {
     expect(keys).toEqual(expect.arrayContaining(["s:milliy-next", "s:absent", "s:no-parent", "s:no-essay"]));
     expect(d.advice.find((a: { key: string }) => a.key === "s:milliy-next").title).toBe("C+ darajagacha 2 ball yetmaydi");
     expect(d.advice[0].level).toBe("urgent");
-    expect(d.ai).toBeNull();
-
-    await prisma.advisorNote.create({ data: { scope: `student:${studentId}`, text: "**Holat** sinov" } });
-    expect((await get(`/admin/students/${studentId}/advisor`)).json().ai.text).toBe("**Holat** sinov");
-    await prisma.advisorNote.deleteMany({ where: { scope: `student:${studentId}` } });
     expect((await get("/admin/students/yoq/advisor")).statusCode).toBe(404);
   });
 });

@@ -1,9 +1,9 @@
 import { useQuery } from "@tanstack/react-query";
-import { AdviceList, AiNote } from "../components/Advisor";
+import { AdviceList } from "../components/Advisor";
 import { Spinner } from "../components/ui";
 import { api, errMsg } from "../lib/api";
 
-/** Ustoz yordamchisi: platforma holati, qoidalar topgan muammolar va AI'ning haftalik rejasi */
+/** Ustoz yordamchisi: platforma holati va bazadagi faktlardan chiqqan aniq tavsiyalar */
 export function AdvisorPage() {
   const q = useQuery({ queryKey: ["advisor"], queryFn: api.advisor });
   if (q.isPending) return <Spinner className="text-ink-4" />;
@@ -14,7 +14,7 @@ export function AdvisorPage() {
       <div>
         <h1 className="text-[2rem] leading-none">Yordamchi</h1>
         <p className="mt-2 text-sm text-ink-3">
-          Platformadagi haqiqiy ma'lumotlardan: nima joyida emas, nega va nima qilish kerak. Bajarilganini ✕ bilan yashiring — muammo kattalashsa yana chiqadi.
+          Nima joyida emas va nima qilish kerak. Bajarganingizni ✕ bilan yashiring.
         </p>
       </div>
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
@@ -26,12 +26,6 @@ export function AdvisorPage() {
           </div>
         ))}
       </div>
-      <AiNote
-        note={d.ai}
-        queryKey={["advisor"]}
-        generate={api.advisorAi}
-        intro="AI pastdagi faktlarni o'qib, bu hafta uchun aniq reja tuzadi: nimadan boshlash, o'quvchilarda asosiy kamchilik va platformani qanday yaxshilash. O'quvchilar ismi AI'ga yuborilmaydi."
-      />
       <section>
         <h2 className="label mb-2">Tavsiyalar</h2>
         <AdviceList items={d.advice} scope="platform" />
