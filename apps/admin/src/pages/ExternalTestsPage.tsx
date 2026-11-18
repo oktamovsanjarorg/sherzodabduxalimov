@@ -1,6 +1,6 @@
 import { type ExternalPreview, type ExternalTestDetail, formatScore } from "@onatili/shared";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ChevronRight, FileUp, Link2, Send, Trash2, Trophy, Upload } from "lucide-react";
+import { ChevronRight, FileSpreadsheet, FileUp, Link2, Send, Trash2, Trophy, Upload } from "lucide-react";
 import { useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { Badge, Chips, ConfirmButton, Empty, Field, Modal, PageHeader, Segmented, Spinner } from "../components/ui";
@@ -34,7 +34,7 @@ export function ExternalTestsPage() {
       ) : (
         <>
           {q.isPending && <Spinner className="text-ink-4" />}
-          {q.data?.tests.length === 0 && <Empty title="Hali import qilinmagan" hint="«Import qilish» tugmasini bosing: matrix.csv fayli bilan." />}
+          {q.data?.tests.length === 0 && <Empty Icon={FileSpreadsheet} title="Hali import qilinmagan" hint="«Import qilish» tugmasini bosing: matrix.csv fayli bilan." />}
           <div className="space-y-2">
             {q.data?.tests.map((t) => (
               <button key={t.id} onClick={() => navigate(`/external/${t.id}`)} className="card flex w-full items-center gap-3 p-4 text-left transition hover:border-brand">

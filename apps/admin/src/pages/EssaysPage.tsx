@@ -3,7 +3,7 @@ import { MarkCounts, TextAnnotator } from "../components/Annotate";
 import { RubricForm, rubricComplete, rubricTotal, type RubricValue } from "../components/RubricForm";
 import { VoicePlayer, VoiceRecorder } from "../components/VoiceRecorder";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, PenLine } from "lucide-react";
 import { useState } from "react";
 import { Badge, Empty, Field, Modal, PageHeader, Spinner, Segmented, Chips } from "../components/ui";
 import { api, errMsg } from "../lib/api";
@@ -45,7 +45,7 @@ function MockEssays() {
     <>
       <Chips className="mb-4" value={tab} onChange={setTab} options={[["pending", "Tekshirilmagan"], ["reviewed", "Tekshirilgan"]] as const} />
       {list.isPending && <Spinner className="text-ink-4" />}
-      {list.data?.length === 0 && <Empty title={tab === "pending" ? "Tekshiriladigan esse yo'q" : "Hali esse tekshirilmagan"} />}
+      {list.data?.length === 0 && <Empty Icon={PenLine} title={tab === "pending" ? "Tekshiriladigan esse yo'q" : "Hali esse tekshirilmagan"} />}
       <div className="space-y-2">
         {list.data?.map((e) => (
           <button key={`${e.attemptId}-${e.questionId}`} onClick={() => setOpen(e)} className="card flex w-full items-center gap-3 p-4 text-left transition hover:border-brand">

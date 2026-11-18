@@ -1,6 +1,6 @@
 import { currentMonth, formatSum, monthLabel, periodLabel, shortDate, type OfflineLedgerRow } from "@onatili/shared";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Bell, Check, ChevronLeft, ChevronRight, Phone, Undo2 } from "lucide-react";
+import { Bell, Check, ChevronLeft, ChevronRight, Phone, Undo2, Users } from "lucide-react";
 import { useEffect, useState } from "react";
 import { PayDialog } from "../components/PayDialog";
 import { Badge, Empty, Spinner } from "../components/ui";
@@ -40,7 +40,7 @@ export function OfflineLedgerView({ q = "", onClearSearch }: { q?: string; onCle
   });
 
   if (groups.isPending) return <Spinner className="text-ink-4" />;
-  if (!active.length) return <Empty title="Faol guruh yo'q" hint="Guruhlarni Davomat bo'limida yaratib, o'quvchilarni qo'shing. Guruhdagi o'quvchiga ilova obunasiz ochiladi." />;
+  if (!active.length) return <Empty Icon={Users} title="Faol guruh yo'q" hint="Guruhlarni Davomat bo'limida yaratib, o'quvchilarni qo'shing. Guruhdagi o'quvchiga ilova obunasiz ochiladi." />;
   const l = ledger.data;
   const isCurrent = month === currentMonth();
   const needle = q.trim().toLowerCase();

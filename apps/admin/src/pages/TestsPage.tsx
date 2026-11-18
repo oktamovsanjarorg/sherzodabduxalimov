@@ -1,6 +1,6 @@
 import { formatDuration } from "@onatili/shared";
 import { useQuery } from "@tanstack/react-query";
-import { Plus } from "lucide-react";
+import { ListChecks, Plus } from "lucide-react";
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Badge, Empty, PageHeader, Spinner, Chips } from "../components/ui";
@@ -25,7 +25,7 @@ export function TestsPage() {
       />
       <Chips className="mb-4" value={tab} onChange={setTab} options={[["ALL", "Hammasi"], ["TOPIC", "Mavzu testlari"], ["MOCK", "Mock testlar"]] as const} />
       {tests.isPending && <Spinner className="text-ink-4" />}
-      {tests.data && list.length === 0 && <Empty title="Test yo'q" />}
+      {tests.data && list.length === 0 && <Empty Icon={ListChecks} title="Test yo'q" />}
       <div className="card divide-y divide-line overflow-hidden">
         {list.map((t) => (
           <Link key={t.id} to={`/tests/${t.id}`} className="flex flex-wrap items-center gap-3 px-5 py-4 hover:bg-surface-2">

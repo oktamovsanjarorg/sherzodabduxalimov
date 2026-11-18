@@ -1,4 +1,4 @@
-import { Loader2, X } from "lucide-react";
+import { Inbox, Loader2, X, type LucideIcon } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 
 export function PageHeader({ title, subtitle, actions }: { title: string; subtitle?: string; actions?: ReactNode }) {
@@ -112,9 +112,12 @@ export function Spinner({ className = "" }: { className?: string }) {
   return <Loader2 className={`animate-spin ${className}`} size={18} />;
 }
 
-export function Empty({ title, hint, action }: { title: string; hint?: string; action?: ReactNode }) {
+export function Empty({ title, hint, action, Icon = Inbox }: { title: string; hint?: string; action?: ReactNode; Icon?: LucideIcon }) {
   return (
     <div className="card flex flex-col items-center gap-2 px-6 py-12 text-center">
+      <span className="mb-1 flex h-12 w-12 items-center justify-center rounded-2xl bg-brand-soft text-brand">
+        <Icon size={22} />
+      </span>
       <p className="font-bold">{title}</p>
       {hint && <p className="max-w-md text-sm text-ink-3">{hint}</p>}
       {action && <div className="mt-2">{action}</div>}

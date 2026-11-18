@@ -1,6 +1,6 @@
 import { PARENT_FLAG_LABELS, type AdminParentLink } from "@onatili/shared";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { AlertTriangle, Check, Phone, ShieldCheck, X } from "lucide-react";
+import { AlertTriangle, Check, Phone, ShieldCheck, Users, X } from "lucide-react";
 import { useState } from "react";
 import { Badge, ConfirmButton, Empty, Modal, PageHeader, Spinner, Chips } from "../components/ui";
 import { api, errMsg } from "../lib/api";
@@ -34,7 +34,7 @@ export function ParentsPage() {
       />
       {links.isPending && <Spinner className="text-ink-4" />}
       {links.data?.length === 0 && (
-        <Empty title={tab === "PENDING" ? "Tekshiriladigan so'rov yo'q" : "Ro'yxat bo'sh"} hint={tab === "PENDING" ? "Yangi so'rovlar shu yerda paydo bo'ladi." : undefined} />
+        <Empty Icon={Users} title={tab === "PENDING" ? "Tekshiriladigan so'rov yo'q" : "Ro'yxat bo'sh"} hint={tab === "PENDING" ? "Yangi so'rovlar shu yerda paydo bo'ladi." : undefined} />
       )}
       <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
         {links.data?.map((l) => <LinkCard key={l.id} link={l} />)}

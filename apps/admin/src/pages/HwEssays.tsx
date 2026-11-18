@@ -3,7 +3,7 @@ import { AnnotationOverlay, MarkCounts, PageAnnotator } from "../components/Anno
 import { RubricForm, emptyRubric, rubricComplete, rubricTotal, type RubricValue } from "../components/RubricForm";
 import { VoicePlayer, VoiceRecorder } from "../components/VoiceRecorder";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ChevronRight, ImageOff, Pencil, Phone } from "lucide-react";
+import { ChevronRight, ImageOff, Pencil, PenLine, Phone } from "lucide-react";
 import { useState } from "react";
 import { Badge, Empty, Modal, Spinner, Chips } from "../components/ui";
 import { api, errMsg } from "../lib/api";
@@ -26,7 +26,7 @@ export function HwEssays() {
       />
       {list.isPending && <Spinner className="text-ink-4" />}
       {list.data?.length === 0 && (
-        <Empty title={tab === "pending" ? "Tekshiriladigan esse yo'q" : "Hali esse tekshirilmagan"} hint={tab === "pending" ? "To'lovi tasdiqlangan esselar shu yerga tushadi." : undefined} />
+        <Empty Icon={PenLine} title={tab === "pending" ? "Tekshiriladigan esse yo'q" : "Hali esse tekshirilmagan"} hint={tab === "pending" ? "To'lovi tasdiqlangan esselar shu yerga tushadi." : undefined} />
       )}
       <div className="space-y-2">
         {list.data?.map((e) => {

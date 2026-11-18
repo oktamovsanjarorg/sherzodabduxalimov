@@ -1,6 +1,6 @@
 import type { BackupFile } from "@onatili/shared";
 import { useQuery } from "@tanstack/react-query";
-import { Database, Download, Film, ShieldAlert } from "lucide-react";
+import { Archive, Database, Download, Film, ShieldAlert } from "lucide-react";
 import { useState } from "react";
 import { Empty, PageHeader, Spinner } from "../components/ui";
 import { api, errMsg } from "../lib/api";
@@ -34,7 +34,7 @@ export function BackupsPage() {
       {q.isPending && <Spinner className="text-ink-4" />}
       {q.isError && <Empty title="Ro'yxatni olib bo'lmadi" hint={errMsg(q.error)} />}
       {q.data && !q.data.enabled && <Empty title="Zaxira papkasi ulanmagan" hint="Serverda API'ga zaxira papkasi (BACKUP_DIR) ulanmagan. Bu odatda staging'da shunday." />}
-      {q.data?.enabled && q.data.files.length === 0 && <Empty title="Hali zaxira yo'q" />}
+      {q.data?.enabled && q.data.files.length === 0 && <Empty Icon={Archive} title="Hali zaxira yo'q" />}
       <div className="space-y-3">
         {[...days].map(([day, files]) => (
           <section key={day} className="card p-4">

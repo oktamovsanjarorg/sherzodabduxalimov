@@ -1,6 +1,6 @@
 import { tashkentToday, type RosterRow } from "@onatili/shared";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ChevronRight, Download, ListPlus, Search, Settings2, UserPlus } from "lucide-react";
+import { ChevronRight, Download, GraduationCap, ListPlus, Search, Settings2, UserPlus } from "lucide-react";
 import { useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { AllUsers } from "../components/AllUsers";
@@ -81,7 +81,7 @@ export function StudentsPage() {
       {!!groupId && roster.isPending && <Spinner className="text-ink-4" />}
       {!!groupId && roster.data?.length === 0 && (
         <Empty
-          title={q ? "Topilmadi" : "Bu yerda hali o'quvchi yo'q"}
+          Icon={GraduationCap} title={q ? "Topilmadi" : "Bu yerda hali o'quvchi yo'q"}
           hint={q ? undefined : "«O'quvchi qo'shish» yoki «Ro'yxat bilan» tugmasi orqali kiriting."}
         />
       )}

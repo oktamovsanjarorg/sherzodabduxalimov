@@ -1,6 +1,6 @@
 import { formatSum, type AdminPayment, type AdminStudent, type AdminSubscription, type PaymentStatusName } from "@onatili/shared";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Check, Gift, ImageOff, MessageSquare, Phone, RotateCcw, Search, X } from "lucide-react";
+import { Check, Gift, ImageOff, MessageSquare, Phone, Receipt, RotateCcw, Search, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { OfflineLedgerView } from "./OfflineLedger";
@@ -86,7 +86,7 @@ function PaymentList({ status, q, onClearSearch }: { status: PaymentStatusName; 
   if (!list.data?.length)
     return (
       <Empty
-        title={status === "PENDING" ? "Tekshiriladigan chek yo'q" : "Ro'yxat bo'sh"}
+        Icon={Receipt} title={status === "PENDING" ? "Tekshiriladigan chek yo'q" : "Ro'yxat bo'sh"}
         hint={status === "PENDING" ? "Yangi cheklar shu yerda paydo bo'ladi, botga ham xabar keladi." : undefined}
       />
     );

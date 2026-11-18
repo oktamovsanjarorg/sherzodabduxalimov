@@ -1,6 +1,6 @@
 import { ROLE_LABELS, type AdminGroup, type AdminUserRow } from "@onatili/shared";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Check, Trash2, Wallet } from "lucide-react";
+import { Check, Clock, GraduationCap, Trash2, Wallet } from "lucide-react";
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { PayDialog } from "./PayDialog";
@@ -9,13 +9,36 @@ import { fmtDate } from "../lib/format";
 import { useToast } from "../lib/toast";
 import { Badge, ConfirmButton, Empty, Modal, Spinner } from "./ui";
 
-const WAITING = { TEACHER: "ustoz", PARENT: "ota-ona", PAYMENT: "to'lov" } as const;
+const ONLINE = "__online";
+const STEPS = [
+  { key: "TEACHER", label: "ustoz" },
+  { key: "PARENT", label: "ota-ona" },
+  { key: "PAYMENT", label: "to'lov" },
+] as const;
+
+/** To'liq ochilish qadamlari: bajarilgani yashil, kutilayotgani kulrang */
+function Steps({ u }: { u: AdminUserRow }) {
+  // To'lov qadami faqat egaga ko'rinadi (yordamchida paid = null)
+  const steps = STEPS.filter((st) => st.key !== "PAYMENT" || u.paid !== null);
+  return (
+    <span className="inline-flex items-center gap-1" title="To'liq ochilish uchun: ustoz tasdig'i, ota-ona ulanishi, to'lov">
+      {steps.map((st) => {
+        const wait = u.waiting.includes(st.key);
+        return (
+          <span key={st.key} className={`inline-flex items-center gap-0.5 rounded-full px-2 py-0.5 text-[11px] font-bold ${wait ? "bg-surface-3 text-ink-3" : "bg-emerald-50 text-emerald-700"}`}>
+            {wait ? <Clock size={11} /> : <Check size={11} strokeWidth={3} />} {st.label}
+          </span>
+        );
+      })}
+    </span>
+  );
+}
 
 /** O'quvchilar → Hammasi: botga kirgan har bir kishi, umumiy holati va tezkor amallar. Davomat va boshqalar guruh ichida */
 export function AllUsers({ q, groups, isTeacher }: { q: string; groups: AdminGroup[]; isTeacher: boolean }) {
   const users = useQuery({ queryKey: ["users", q], queryFn: () => api.users(q), placeholderData: (p) => p });
   if (users.isPending) return <Spinner className="text-ink-4" />;
-  if (!users.data?.length) return <Empty title={q ? "Topilmadi" : "Hali hech kim kirmagan"} hint={q ? undefined : "Botda /start bosgan har bir kishi shu yerda ko'rinadi."} />;
+  if (!users.data?.length) return <Empty Icon={GraduationCap} title={q ? "Topilmadi" : "Hali hech kim kirmagan"} hint={q ? undefined : "Botda /start bosgan har bir kishi shu yerda ko'rinadi."} />;
   return (
     <>
       <p className="mb-2 text-xs text-ink-3">{users.data.length} ta foydalanuvchi</p>
@@ -52,7 +75,7 @@ function Row({ u, groups, isTeacher }: { u: AdminUserRow; groups: AdminGroup[]; 
   });
   const student = u.role === "STUDENT" && !!u.studentId;
   const busy = accept.isPending;
-  const contact = [u.phone, u.username && `@${u.username}`, `kirgan: ${fmtDate(u.firstSeenAt)}`].filter(Boolean).join(" · ");
+  const contact = [u.group?.name, u.phone, u.username && `@${u.username}`, `kirgan: ${fmtDate(u.firstSeenAt)}`].filter(Boolean).join(" · ");
 
   return (
     <div className="flex flex-wrap items-center gap-x-3 gap-y-2 px-4 py-3">
@@ -70,42 +93,36 @@ function Row({ u, groups, isTeacher }: { u: AdminUserRow; groups: AdminGroup[]; 
       <div className="flex flex-wrap items-center gap-1">
         {u.blocked && <Badge tone="red">bloklangan</Badge>}
         {!u.telegramLinked && <Badge tone="amber">botga kirmagan</Badge>}
-        {!student ? (
-          <Badge tone="blue">{ROLE_LABELS[u.role]}</Badge>
-        ) : u.full ? (
-          <Badge tone="green">to'liq</Badge>
-        ) : (
-          <Badge tone="amber">cheklangan{u.waiting.length ? `: ${u.waiting.map((w) => WAITING[w]).join(", ")}` : ""}</Badge>
-        )}
-        {student && u.paid && <Badge tone="green">to'lagan</Badge>}
+        {!student ? <Badge tone="blue">{ROLE_LABELS[u.role]}</Badge> : u.full ? <Badge tone="green">to'liq ochiq</Badge> : <Steps u={u} />}
       </div>
       {student && (
-        <div className="flex flex-wrap items-center gap-2">
-          <select
-            className="input h-9 w-auto max-w-[170px] py-0 text-sm"
-            aria-label="Guruh"
-            disabled={busy}
-            value={u.group?.id ?? ""}
-            onChange={(e) => e.target.value && accept.mutate(e.target.value)}
-          >
-            <option value="">Guruhga qo'shish</option>
-            {groups
-              .filter((g) => g.isActive || g.id === u.group?.id)
-              .map((g) => (
-                <option key={g.id} value={g.id}>
-                  {g.name}
-                </option>
-              ))}
-          </select>
-          {u.waiting.includes("TEACHER") && (
-            <button className="btn-secondary btn-sm h-9" disabled={busy} onClick={() => accept.mutate(null)}>
-              <Check size={14} /> Tasdiqlash
-            </button>
-          )}
-          {isTeacher && !u.paid && (
-            <button className="btn-secondary btn-sm h-9" disabled={busy} onClick={() => (u.group ? setPayOffline(true) : setPaying(true))}>
-              <Wallet size={14} /> Pul to'ladi
-            </button>
+        <div className="flex items-center gap-2">
+          {u.waiting.includes("TEACHER") ? (
+            // Tasdiqlash bitta tugma: online yoki darhol guruhga
+            <select
+              className="btn-primary btn-sm h-9 w-[140px] cursor-pointer appearance-none text-sm"
+              aria-label="Tasdiqlash"
+              disabled={busy}
+              value=""
+              onChange={(e) => e.target.value && accept.mutate(e.target.value === ONLINE ? null : e.target.value)}
+            >
+              <option value="">✓ Tasdiqlash…</option>
+              <option value={ONLINE}>Online o'quvchi (guruhsiz)</option>
+              {groups
+                .filter((g) => g.isActive)
+                .map((g) => (
+                  <option key={g.id} value={g.id}>
+                    Guruh: {g.name}
+                  </option>
+                ))}
+            </select>
+          ) : (
+            isTeacher &&
+            !u.paid && (
+              <button className="btn-secondary btn-sm h-9" disabled={busy} onClick={() => (u.group ? setPayOffline(true) : setPaying(true))}>
+                <Wallet size={14} /> Pul to'ladi
+              </button>
+            )
           )}
         </div>
       )}
