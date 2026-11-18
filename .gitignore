@@ -10,3 +10,6 @@ coverage
 .media
 *.tsbuildinfo
 .deploy
+
+# pnpm ui:audit natijalari
+.ui-audit/
