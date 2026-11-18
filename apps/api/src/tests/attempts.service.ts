@@ -61,7 +61,8 @@ export class AttemptsService {
   /** Testni boshlaydi. Tugallanmagan urinish bo'lsa, o'shani davom ettiradi. */
   async start(user: JwtUser, testId: string): Promise<AttemptState> {
     const test = await this.prisma.test.findFirst({
-      where: { id: testId, ...(this.access.isStaff(user.role) ? {} : { isPublished: true }) },
+      // Yashirin kursdagi mavzu testi o'quvchiga ochilmaydi (ro'yxatda ham chiqmaydi)
+      where: { id: testId, ...(this.access.isStaff(user.role) ? {} : { isPublished: true, OR: [{ type: "MOCK" }, { topic: { course: { isPublished: true } } }] }) },
     });
     if (!test) throw new NotFoundException("Test topilmadi");
     this.access.assertAccess(test.isFree, await this.access.canAccessPaid(user));

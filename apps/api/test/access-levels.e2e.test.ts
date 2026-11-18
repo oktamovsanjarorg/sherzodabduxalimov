@@ -11,7 +11,7 @@ import { BOT_TOKEN, OWNER, createApp, login, parentTgId } from "./helpers";
 
 const prisma = new PrismaClient();
 const P = "e2e-access";
-const TG = { owner: 900001001, fresh: 900001002, accepted: 900001003, parentOnly: 900001004, full: 900001005, free: 900001006, visitor: 900001007, mom: 900001008, late: 900001009, placeholderMom: 900001010, unpaid: 900001011, subscriber: 900001012 };
+const TG = { owner: 900001001, fresh: 900001002, accepted: 900001003, parentOnly: 900001004, full: 900001005, free: 900001006, visitor: 900001007, mom: 900001008, late: 900001009, placeholderMom: 900001010, unpaid: 900001011, subscriber: 900001012, hidden: 900001013 };
 const ALL = [...Object.values(TG).map(BigInt), ...Object.values(TG).map(parentTgId)];
 const queue = new Queue<NotifyJob>(NOTIFY_QUEUE, { prefix: "onatili-e2e", connection: redisConnection(process.env.REDIS_URL ?? "redis://localhost:6381") });
 const jobs = async () => (await queue.getJobs(["waiting", "delayed", "prioritized"])).map((j) => j.data);
@@ -241,5 +241,16 @@ describe("Kirish darajalari (e2e)", () => {
     });
     expect((await internal("claim-student", { code: "e2eaccess1", from: tg(TG.placeholderMom, "Rad") })).json().status).toBe("parent");
     await prisma.user.delete({ where: { id: u.id } });
+  });
+  it("qoralamadagi kursning mavzu testi to'g'ridan-to'g'ri havola bilan ham ochilmaydi; mock bunga bog'liq emas", async () => {
+    const s = await login(app, TG.hidden, "Yashirin", undefined, { withParent: false });
+    await prisma.course.update({ where: { id: `${P}-course` }, data: { isPublished: false } });
+    try {
+      expect((await start("t2", s.headers)).statusCode).toBe(404);
+      expect((await req("POST", `/lessons/${P}-l1/complete`, s.headers)).statusCode).toBe(404);
+      expect((await start("m2", s.headers)).statusCode).toBe(200);
+    } finally {
+      await prisma.course.update({ where: { id: `${P}-course` }, data: { isPublished: true } });
+    }
   });
 });

@@ -184,7 +184,7 @@ export class ContentService {
   }
 
   async completeLesson(user: JwtUser, id: string) {
-    const lesson = await this.prisma.lesson.findFirst({ where: { id, isPublished: true }, select: { isFree: true } });
+    const lesson = await this.prisma.lesson.findFirst({ where: { id, isPublished: true, topic: { course: { isPublished: true } } }, select: { isFree: true } });
     if (!lesson) throw new NotFoundException("Dars topilmadi");
     this.access.assertAccess(lesson.isFree, await this.access.canAccessPaid(user));
     await this.prisma.lessonProgress.upsert({
