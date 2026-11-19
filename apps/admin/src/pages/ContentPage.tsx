@@ -70,8 +70,9 @@ function InlineTitle({ value, onSave, className = "" }: { value: string; onSave:
     setEdit(false);
   };
   return (
-    <span className="flex flex-1 items-center gap-1">
-      <input autoFocus className="input h-9" value={v} onChange={(e) => setV(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") save(); if (e.key === "Escape") setEdit(false); }} />
+    // Telefonda tahrir maydoni butun qatorni egallaydi: nom to'liq ko'rinsin
+    <span className="flex min-w-0 flex-1 basis-full items-center gap-1 sm:basis-auto">
+      <input autoFocus className="input h-10 min-w-0 flex-1 sm:h-9" value={v} onChange={(e) => setV(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") save(); if (e.key === "Escape") setEdit(false); }} />
       <button className="btn-ghost h-9 w-9 p-0" onClick={save} aria-label="Saqlash"><Check size={16} /></button>
       <button className="btn-ghost h-9 w-9 p-0" onClick={() => setEdit(false)} aria-label="Bekor qilish"><X size={16} /></button>
     </span>
@@ -150,7 +151,7 @@ function TopicBlock({ topic, index, topicIds }: { topic: AdminTopic; index: numb
 
   return (
     <div className="px-3 py-4 sm:px-5">
-      <div className="mb-2 flex items-center gap-1 sm:gap-2">
+      <div className="mb-2 flex flex-wrap items-center gap-1 sm:flex-nowrap sm:gap-2">
         <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-surface-3 text-xs font-extrabold text-ink-3">{index + 1}</span>
         <InlineTitle value={topic.title} onSave={(t) => rename.mutate(t)} className="font-bold" />
         <span className="flex-1" />

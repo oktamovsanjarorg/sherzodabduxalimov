@@ -152,7 +152,7 @@ function DayView({ groupId, date }: { groupId: string; date: string }) {
   if (day.data.rows.length === 0) return <Empty title="Guruhda o'quvchi yo'q" hint="«Guruhlar» tugmasi orqali o'quvchilarni qo'shing." />;
 
   return (
-    <div className="pb-28">
+    <div className="pb-20 sm:pb-28">
       <div className="mb-2 flex flex-wrap items-center gap-2">
         <span className="text-sm font-semibold text-ink-3">
           {day.data.rows.length} o'quvchi{unmarked ? ` · ${unmarked} ta belgilanmagan` : ""}
@@ -241,14 +241,19 @@ function DayView({ groupId, date }: { groupId: string; date: string }) {
         // Telefonda pastki navigatsiya (64px) ustida turadi
         className="fixed inset-x-0 bottom-[calc(64px+env(safe-area-inset-bottom,0px))] z-20 border-t border-line bg-surface/95 px-4 py-3 backdrop-blur md:bottom-0"
       >
-        <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-2">
-          <span className="text-sm text-ink-3">{changed.length ? `${changed.length} ta o'zgarish saqlanmagan` : unsent ? `${unsent} ta yozuv ota-onaga yuborilmagan` : "O'zgarish yo'q"}</span>
-          <span className="flex-1" />
-          <button className="btn-secondary" disabled={!changed.length || save.isPending} onClick={() => save.mutate()}>
-            {save.isPending && <Spinner />} Saqlash
+        {/* Telefonda bitta qator: faqat hozir kerakli tugma (saqlanmagan o'zgarish bo'lsa Saqlash, bo'lmasa Yuborish) */}
+        <div className="mx-auto flex max-w-6xl items-center gap-2">
+          <span className="hidden text-sm text-ink-3 sm:inline">{changed.length ? `${changed.length} ta o'zgarish saqlanmagan` : unsent ? `${unsent} ta yozuv ota-onaga yuborilmagan` : "O'zgarish yo'q"}</span>
+          <span className="hidden flex-1 sm:block" />
+          <button
+            className={changed.length ? "btn-primary flex-1 sm:flex-none" : "btn-secondary hidden sm:inline-flex"}
+            disabled={!changed.length || save.isPending}
+            onClick={() => save.mutate()}
+          >
+            {save.isPending && <Spinner />} Saqlash{changed.length ? ` (${changed.length})` : ""}
           </button>
           <button
-            className="btn-primary"
+            className={`btn-primary ${changed.length ? "hidden sm:inline-flex" : "flex-1 sm:flex-none"}`}
             disabled={changed.length > 0 || unsent === 0 || send.isPending}
             title={changed.length ? "Avval o'zgarishlarni saqlang" : undefined}
             onClick={() => send.mutate()}

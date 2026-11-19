@@ -62,12 +62,12 @@ export function StaffPage() {
           if (username.trim()) add.mutate();
         }}
       >
-        <div className="w-full min-w-0 flex-1 sm:w-auto sm:min-w-[240px]">
+        <div className="min-w-0 flex-1 basis-full sm:basis-auto sm:min-w-[240px]">
           <label className="label">Yordamchi qo'shish</label>
           <input className="input" placeholder="@telegram_username" value={username} onChange={(e) => setUsername(e.target.value)} />
           <p className="mt-1 text-xs text-ink-3">U botga /admin deb yozib kiradi. Hali botga kirmagan bo'lsa ham qo'shsa bo'ladi.</p>
         </div>
-        <button className="btn-primary" disabled={!username.trim() || add.isPending}><UserPlus size={16} /> Qo'shish</button>
+        <button className="btn-primary w-full sm:w-auto" disabled={!username.trim() || add.isPending}><UserPlus size={16} /> Qo'shish</button>
       </form>
 
       {staff.isPending && <Spinner className="text-ink-4" />}

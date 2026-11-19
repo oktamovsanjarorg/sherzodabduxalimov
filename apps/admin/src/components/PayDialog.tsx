@@ -86,7 +86,7 @@ function Form({ studentId, info, onClose, onDone }: { studentId: string; info: A
       </div>
       <div className="mt-3 flex flex-wrap gap-2">
         {["Naqd", "Kartaga", "Chegirma"].map((n) => (
-          <button key={n} type="button" className={`rounded-full border px-3 py-1 text-xs font-semibold ${note === n ? "border-brand bg-brand-soft text-brand-dark" : "border-line text-ink-2 hover:bg-surface-2"}`} onClick={() => setNote(n)}>
+          <button key={n} type="button" className={`h-10 rounded-full border px-4 text-sm font-semibold sm:h-8 sm:px-3 sm:text-xs ${note === n ? "border-brand bg-brand-soft text-brand-dark" : "border-line text-ink-2 hover:bg-surface-2"}`} onClick={() => setNote(n)}>
             {n}
           </button>
         ))}

@@ -116,8 +116,8 @@ export function OfflineLedgerView({ q = "", onClearSearch }: { q?: string; onCle
             <div className="card divide-y divide-line">
               {rows.map((r) => (
                 <div key={r.studentId} className="flex flex-wrap items-center gap-3 px-4 py-3">
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate font-semibold">{r.name}</p>
+                  <div className="w-full min-w-0 sm:w-auto sm:flex-1">
+                    <p className="break-words font-semibold sm:truncate">{r.name}</p>
                     <p className="truncate text-xs text-ink-3">
                       {r.username ? `@${r.username}` : ""}
                       {r.phone && (
@@ -133,7 +133,7 @@ export function OfflineLedgerView({ q = "", onClearSearch }: { q?: string; onCle
                   </div>
                   {r.paid ? (
                     <>
-                      <div className="flex flex-col items-end gap-1 text-right">
+                      <div className="flex min-w-0 flex-1 flex-col items-start gap-1 sm:flex-none sm:items-end sm:text-right">
                         <Badge tone="green">
                           <Check size={11} /> {formatSum(r.paid.amountUzs)} so'm{r.paid.note ? ` · ${r.paid.note}` : ""}
                         </Badge>
@@ -148,7 +148,7 @@ export function OfflineLedgerView({ q = "", onClearSearch }: { q?: string; onCle
                     </>
                   ) : (
                     <>
-                      <div className="flex flex-col items-end gap-1 text-right">
+                      <div className="flex min-w-0 flex-1 flex-col items-start gap-1 sm:flex-none sm:items-end sm:text-right">
                         <Badge tone="red">{r.overdueDays ? `Qarzdor · ${r.overdueDays} kun o'tdi` : "Qarzdor"}</Badge>
                         <span className="text-[11px] text-ink-3">{r.coveredUntil ? `To'lov muddati ${shortDate(r.coveredUntil)} da tugagan` : "Hali to'lamagan"}</span>
                       </div>

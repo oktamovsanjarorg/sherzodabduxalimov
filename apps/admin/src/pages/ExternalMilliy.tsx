@@ -93,7 +93,7 @@ export function ResultCardModal({ t, row, onClose }: { t: ExternalTestDetail; ro
   const got = [...row.answers].reduce((s, x, j) => s + (x === "c" ? (w[j] ?? 1) : 0), 0);
   const all = w.reduce((s, x) => s + x, 0);
   const line = (label: string, value: string, strong = false) => (
-    <div className={`flex justify-between gap-4 py-1.5 ${strong ? "font-extrabold" : ""}`}>
+    <div key={label} className={`flex justify-between gap-4 py-1.5 ${strong ? "font-extrabold" : ""}`}>
       <span className={strong ? "" : "text-ink-2"}>{label}</span>
       <span className="tabular-nums">{value}</span>
     </div>

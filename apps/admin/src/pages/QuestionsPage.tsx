@@ -53,7 +53,7 @@ export function QuestionsPage() {
           {topics.map((t) => <option key={t.id} value={t.id}>{t.title}</option>)}
           <option value="none">Mavzusiz</option>
         </select>
-        <div className="relative w-full min-w-0 flex-1 sm:w-auto sm:min-w-[240px]">
+        <div className="relative min-w-0 flex-1 basis-full sm:basis-auto sm:min-w-[240px]">
           <Search size={16} className="absolute left-3 top-3.5 text-ink-4 sm:top-3" />
           <input className="input pl-9" placeholder="Savol matni bo'yicha qidirish" value={search} onChange={(e) => { setSearch(e.target.value); setPage(1); }} />
         </div>
@@ -235,12 +235,12 @@ export function QuestionModal({ question, defaultTopicId, onClose, onSaved }: { 
                 const Icon = type === "SINGLE" ? (o.isCorrect ? CheckCircle2 : Circle) : o.isCorrect ? SquareCheck : Square;
                 return (
                   <div key={o.id ?? `new-${i}`} className="flex items-center gap-2">
-                    <button type="button" onClick={() => markCorrect(i)} className={o.isCorrect ? "text-emerald-600" : "text-ink-5 hover:text-ink-3"} aria-label="To'g'ri javob">
+                    <button type="button" onClick={() => markCorrect(i)} className={`-ml-2 flex h-10 w-10 shrink-0 items-center justify-center ${o.isCorrect ? "text-emerald-600" : "text-ink-5 hover:text-ink-3"}`} aria-label="To'g'ri javob">
                       <Icon size={22} />
                     </button>
-                    <span className="w-5 text-sm font-extrabold text-ink-4">{String.fromCharCode(65 + i)}</span>
+                    <span className="-ml-1 w-4 shrink-0 text-sm font-extrabold text-ink-4">{String.fromCharCode(65 + i)}</span>
                     <input className={`input ${o.isCorrect ? "border-emerald-500" : ""}`} value={o.text} onChange={(e) => setOpt(i, { text: e.target.value })} />
-                    <button type="button" className="btn-ghost h-9 w-9 p-0 text-ink-4" disabled={options.length <= 2} onClick={() => setOptions((x) => x.filter((_, j) => j !== i))} aria-label="Variantni o'chirish">
+                    <button type="button" className="btn-ghost -mr-1 h-10 w-10 shrink-0 p-0 text-ink-4" disabled={options.length <= 2} onClick={() => setOptions((x) => x.filter((_, j) => j !== i))} aria-label="Variantni o'chirish">
                       <Trash2 size={15} />
                     </button>
                   </div>

@@ -78,7 +78,7 @@ export function EssayModal({ t, onClose, onDone }: { t: ExternalTestDetail; onCl
         Ball 24 ballik mezonda (17,5) yoki 75 ballik shkalada (62) yozilishi mumkin: 24 dan kattasi 75 lik deb olinadi. Umumiy ball = (test + yozma) / 2.
       </p>
       <input ref={input} type="file" accept=".xlsx,.csv,text/csv" className="hidden" onChange={(e) => e.target.files?.[0] && upload.mutate(e.target.files[0])} />
-      <button className="btn-secondary mb-3 w-full" disabled={upload.isPending} onClick={() => input.current?.click()}>
+      <button className="btn-secondary mb-3 h-auto min-h-11 w-full whitespace-normal py-2 text-center" disabled={upload.isPending} onClick={() => input.current?.click()}>
         {upload.isPending ? <Spinner /> : <FileUp size={16} />} Fayldan yuklash (Excel yoki CSV: ism va ball ustunlari)
       </button>
       {fromFile && (
@@ -107,10 +107,13 @@ export function EssayModal({ t, onClose, onDone }: { t: ExternalTestDetail; onCl
           const wrong = Number.isNaN(x);
           return (
             <li key={r.id} className={`flex items-center gap-3 px-3 py-1.5 ${fileIds.has(r.id) ? "bg-emerald-50" : ""}`}>
-              <span className="min-w-0 flex-1 truncate">{r.student?.name ?? r.name}</span>
-              <span className="w-24 text-right text-xs text-ink-3">{x != null && !wrong ? `${formatScore(x)}/24 → ${essayTo75(x)}` : ""}</span>
+              <div className="min-w-0 flex-1">
+                <p className="break-words sm:truncate">{r.student?.name ?? r.name}</p>
+                {x != null && !wrong && <p className="text-xs text-ink-3 sm:hidden">{`${formatScore(x)}/24 → ${essayTo75(x)}`}</p>}
+              </div>
+              <span className="hidden w-24 text-right text-xs text-ink-3 sm:block">{x != null && !wrong ? `${formatScore(x)}/24 → ${essayTo75(x)}` : ""}</span>
               <input
-                className={`input h-8 w-20 text-right ${wrong ? "border-red-500" : ""}`}
+                className={`input h-10 w-20 shrink-0 text-right sm:h-8 ${wrong ? "border-red-500" : ""}`}
                 inputMode="decimal"
                 aria-label={`${r.name}: esse bali`}
                 value={v[r.id] ?? ""}
