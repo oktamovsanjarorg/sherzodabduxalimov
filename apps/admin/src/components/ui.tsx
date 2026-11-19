@@ -1,4 +1,4 @@
-import { Inbox, Loader2, X, type LucideIcon } from "lucide-react";
+import { Inbox, Loader2, Search, X, type LucideIcon } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 
 export function PageHeader({ title, subtitle, actions }: { title: string; subtitle?: string; actions?: ReactNode }) {
@@ -187,4 +187,24 @@ export function Chips<T extends string>({ value, onChange, options, className = 
       ))}
     </div>
   );
+}
+
+/** Ro'yxat ustidagi qidiruv maydoni (tozalash tugmasi bilan) */
+export function SearchBox({ value, onChange, placeholder = "Ism, @username yoki telefon", className = "" }: { value: string; onChange: (v: string) => void; placeholder?: string; className?: string }) {
+  return (
+    <div className={`relative w-full sm:w-80 ${className}`}>
+      <Search size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-ink-4" />
+      <input type="text" role="searchbox" inputMode="search" enterKeyHint="search" autoComplete="off" className="input pl-9 pr-9" placeholder={placeholder} value={value} onChange={(e) => onChange(e.target.value)} />
+      {value && (
+        <button type="button" onClick={() => onChange("")} className="absolute right-1 top-1/2 grid h-9 w-9 -translate-y-1/2 place-items-center text-ink-4 hover:text-ink" aria-label="Tozalash">
+          <X size={15} />
+        </button>
+      )}
+    </div>
+  );
+}
+
+/** Qidiruv natijasi bo'sh bo'lganda */
+export function NoMatch({ q, onClear }: { q: string; onClear: () => void }) {
+  return <Empty title="Hech narsa topilmadi" hint={`«${q.trim()}» bo'yicha natija yo'q`} action={<button className="btn-secondary btn-sm" onClick={onClear}>Qidiruvni tozalash</button>} />;
 }

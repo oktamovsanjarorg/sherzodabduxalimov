@@ -6,7 +6,8 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ChevronRight, PenLine } from "lucide-react";
 import { useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { Badge, Empty, Field, Modal, PageHeader, Spinner, Segmented, Chips } from "../components/ui";
+import { Badge, Empty, Field, Modal, NoMatch, PageHeader, SearchBox, Spinner, Segmented, Chips } from "../components/ui";
+import { matches } from "../lib/search";
 import { api, errMsg } from "../lib/api";
 import { fmtShortDateTime } from "../lib/format";
 import { useToast } from "../lib/toast";
@@ -49,15 +50,21 @@ export function EssaysPage() {
 function MockEssays() {
   const [tab, setTab] = useState<"pending" | "reviewed">("pending");
   const [open, setOpen] = useState<AdminEssay | null>(null);
+  const [q, setQ] = useState("");
   const list = useQuery({ queryKey: ["essays", tab], queryFn: () => api.essays(tab), refetchInterval: tab === "pending" ? 30_000 : false });
+  const shown = (list.data ?? []).filter((e) => matches(q, e.student.name, e.student.username, e.testTitle));
 
   return (
     <>
-      <Chips className="mb-4" value={tab} onChange={setTab} options={[["pending", "Tekshirilmagan"], ["reviewed", "Tekshirilgan"]] as const} />
+      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <Chips value={tab} onChange={setTab} options={[["pending", "Tekshirilmagan"], ["reviewed", "Tekshirilgan"]] as const} />
+        <SearchBox value={q} onChange={setQ} placeholder="Ism, @username yoki test" />
+      </div>
       {list.isPending && <Spinner className="text-ink-4" />}
       {list.data?.length === 0 && <Empty Icon={PenLine} title={tab === "pending" ? "Tekshiriladigan esse yo'q" : "Hali esse tekshirilmagan"} />}
+      {!!list.data?.length && !shown.length && <NoMatch q={q} onClear={() => setQ("")} />}
       <div className="space-y-2">
-        {list.data?.map((e) => (
+        {shown.map((e) => (
           <button key={`${e.attemptId}-${e.questionId}`} onClick={() => setOpen(e)} className="card flex w-full items-center gap-3 p-4 text-left transition hover:border-brand">
             <div className="min-w-0 flex-1">
               <p className="truncate font-bold">{e.student.name}</p>

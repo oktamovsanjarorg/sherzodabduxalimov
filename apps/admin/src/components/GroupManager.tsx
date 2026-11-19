@@ -2,7 +2,8 @@ import type { AdminGroup, AdminStudent } from "@onatili/shared";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Clock, Plus, Search, ShieldAlert, ShieldCheck, Trash2, UserPlus, X } from "lucide-react";
 import { useState } from "react";
-import { Badge, ConfirmButton, Field, Modal, Spinner } from "./ui";
+import { Badge, ConfirmButton, Field, Modal, SearchBox, Spinner } from "./ui";
+import { matches } from "../lib/search";
 import { api, errMsg } from "../lib/api";
 import { useToast } from "../lib/toast";
 
@@ -14,6 +15,7 @@ export function GroupManager({ groups, onClose }: { groups: AdminGroup[]; onClos
   const [name, setName] = useState("");
   const [schedule, setSchedule] = useState("");
   const [search, setSearch] = useState("");
+  const [memberQ, setMemberQ] = useState("");
   const refresh = () => {
     qc.invalidateQueries({ queryKey: ["groups"] });
     qc.invalidateQueries({ queryKey: ["group-students"] });
@@ -124,10 +126,14 @@ export function GroupManager({ groups, onClose }: { groups: AdminGroup[]; onClos
                 </div>
               )}
 
-              <p className="label">Guruhdagi o'quvchilar ({students.data?.length ?? 0})</p>
+              <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+                <p className="label mb-0">Guruhdagi o'quvchilar ({students.data?.length ?? 0})</p>
+                {(students.data?.length ?? 0) > 8 && <SearchBox className="sm:w-56" value={memberQ} onChange={setMemberQ} placeholder="Guruhdan qidirish" />}
+              </div>
               <ul className="divide-y divide-line rounded-xl border border-line">
                 {students.data?.length === 0 && <li className="p-3 text-sm text-ink-3">Hali o'quvchi yo'q</li>}
-                {students.data?.map((s) => (
+                {!!students.data?.length && memberQ.trim() && !students.data.some((s) => matches(memberQ, s.name, s.username, s.phone)) && <li className="p-3 text-sm text-ink-3">«{memberQ.trim()}» bo'yicha topilmadi</li>}
+                {students.data?.filter((s) => matches(memberQ, s.name, s.username, s.phone)).map((s) => (
                   <li key={s.studentId} className="flex items-center gap-2 px-3 py-2">
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-sm font-semibold">{s.name}</p>

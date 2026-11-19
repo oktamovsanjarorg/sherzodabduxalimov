@@ -3,7 +3,8 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { CheckCheck, MessageSquare, Plus, Send } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import { Empty, PageHeader, Spinner, Segmented } from "../components/ui";
+import { Empty, NoMatch, PageHeader, SearchBox, Spinner, Segmented } from "../components/ui";
+import { matches } from "../lib/search";
 import { api, errMsg } from "../lib/api";
 import { useToast } from "../lib/toast";
 import { ParentState } from "../components/GroupManager";
@@ -35,6 +36,7 @@ export function AttendancePage() {
     return d && /^\d{4}-\d{2}-\d{2}$/.test(d) && d <= todayTashkent() ? d : todayTashkent();
   });
   const [view, setView] = useState<"day" | "month">("day");
+  const [q, setQ] = useState("");
 
   const active = (groups.data ?? []).filter((g) => g.isActive);
   useEffect(() => {
@@ -85,8 +87,9 @@ export function AttendancePage() {
               </div>
             ) : null}
             <Segmented value={view} onChange={setView} options={[["day", "Kunlik"], ["month", "Oylik"]] as const} />
+            <SearchBox className="sm:ml-auto sm:w-64" value={q} onChange={setQ} placeholder="O'quvchini qidirish" />
           </div>
-          {view === "day" ? <DayView key={`${groupId}-${date}`} groupId={groupId} date={date} /> : <MonthView groupId={groupId} />}
+          {view === "day" ? <DayView key={`${groupId}-${date}`} groupId={groupId} date={date} q={q} onClear={() => setQ("")} /> : <MonthView groupId={groupId} q={q} onClear={() => setQ("")} />}
         </>
       )}
 
@@ -98,7 +101,7 @@ type Mark = { status: AttendanceStatusName | null; grade: number | null; note: s
 const EMPTY: Mark = { status: null, grade: null, note: "" };
 const sameMark = (a: Mark, b: Mark) => a.status === b.status && a.grade === b.grade && a.note.trim() === b.note.trim();
 
-function DayView({ groupId, date }: { groupId: string; date: string }) {
+function DayView({ groupId, date, q, onClear }: { groupId: string; date: string; q: string; onClear: () => void }) {
   const toast = useToast();
   const qc = useQueryClient();
   const day = useQuery({ queryKey: ["attendance", groupId, date], queryFn: () => api.attendanceDay(groupId, date) });
@@ -166,8 +169,9 @@ function DayView({ groupId, date }: { groupId: string; date: string }) {
           <CheckCheck size={14} /> Qolganlar keldi
         </button>
       </div>
-      <ul className="card divide-y divide-line overflow-hidden">
-        {day.data.rows.map(({ student: s, notifiedAt }) => {
+      {q.trim() && !day.data.rows.some((r) => matches(q, r.student.name, r.student.username, r.student.phone)) && <NoMatch q={q} onClear={onClear} />}
+      <ul className="card divide-y divide-line overflow-hidden empty:hidden">
+        {day.data.rows.filter((r) => matches(q, r.student.name, r.student.username, r.student.phone)).map(({ student: s, notifiedAt }) => {
           const cur = get(s.studentId);
           const dirty = !sameMark(cur, initial[s.studentId] ?? EMPTY);
           const showNote = openNote[s.studentId] || cur.note.length > 0;
@@ -266,7 +270,7 @@ function DayView({ groupId, date }: { groupId: string; date: string }) {
   );
 }
 
-function MonthView({ groupId }: { groupId: string }) {
+function MonthView({ groupId, q }: { groupId: string; q: string; onClear: () => void }) {
   const [month, setMonth] = useState(todayTashkent().slice(0, 7));
   const m = useQuery({ queryKey: ["attendance-month", groupId, month], queryFn: () => api.attendanceMonth(groupId, month) });
   return (
@@ -291,7 +295,7 @@ function MonthView({ groupId }: { groupId: string }) {
               </tr>
             </thead>
             <tbody>
-              {m.data.rows.map((r) => {
+              {m.data.rows.filter((r) => matches(q, r.student.name, r.student.username, r.student.phone)).map((r) => {
                 const present = Object.values(r.marks).filter((x) => x === "PRESENT" || x === "LATE").length;
                 const gs = Object.values(r.grades);
                 const avg = gs.length ? (gs.reduce((a, b) => a + b, 0) / gs.length).toFixed(1) : "–";

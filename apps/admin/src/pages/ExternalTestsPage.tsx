@@ -3,7 +3,8 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ChevronRight, FileSpreadsheet, FileText, FileUp, Link2, PenLine, Send, Trash2, Trophy, Upload } from "lucide-react";
 import { useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { Badge, Chips, ConfirmButton, Empty, Field, Modal, PageHeader, Segmented, Spinner } from "../components/ui";
+import { Badge, Chips, ConfirmButton, Empty, Field, Modal, NoMatch, PageHeader, SearchBox, Segmented, Spinner } from "../components/ui";
+import { matches } from "../lib/search";
 import { api, errMsg } from "../lib/api";
 import { fmtDate } from "../lib/format";
 import { useToast } from "../lib/toast";
@@ -17,7 +18,9 @@ const HOW = { username: "username", name: "ism bo'yicha" } as const;
 export function ExternalTestsPage() {
   const [tab, setTab] = useState<"tests" | "ranking">("tests");
   const [importing, setImporting] = useState(false);
+  const [find, setFind] = useState("");
   const q = useQuery({ queryKey: ["external"], queryFn: api.externalTests });
+  const tests = (q.data?.tests ?? []).filter((t) => matches(find, t.title, t.code, t.subject, t.takenAt ? fmtDate(t.takenAt) : null));
   const navigate = useNavigate();
   return (
     <>
@@ -37,8 +40,10 @@ export function ExternalTestsPage() {
         <>
           {q.isPending && <Spinner className="text-ink-4" />}
           {q.data?.tests.length === 0 && <Empty Icon={FileSpreadsheet} title="Hali import qilinmagan" hint="«Import qilish» tugmasini bosing: skaner eksporti yoki matrix.csv fayli bilan." />}
+          {!!q.data?.tests.length && <SearchBox className="mb-3" value={find} onChange={setFind} placeholder="Test nomi, kodi yoki sanasi" />}
+          {!!q.data?.tests.length && !tests.length && <NoMatch q={find} onClear={() => setFind("")} />}
           <div className="space-y-2">
-            {q.data?.tests.map((t) => (
+            {tests.map((t) => (
               <button key={t.id} onClick={() => navigate(`/external/${t.id}`)} className="card flex w-full items-center gap-3 p-4 text-left transition hover:border-brand">
                 <div className="min-w-0 flex-1">
                   <p className="truncate font-bold">{t.title}</p>
@@ -162,15 +167,22 @@ function ImportModal({ onClose, onDone }: { onClose: () => void; onDone: (id: st
 
 function Ranking() {
   const [days, setDays] = useState<"30" | "90" | "365" | "0">("90");
+  const [find, setFind] = useState("");
   const q = useQuery({ queryKey: ["external-ranking", days], queryFn: () => api.externalRanking(Number(days)) });
+  // O'rin raqami butun reytingdagi o'rni bo'lib qoladi (qidiruvda ham)
+  const ranked = (q.data ?? []).map((r, i) => ({ r, i })).filter(({ r }) => matches(find, r.name, r.groupName));
   return (
     <>
-      <Chips className="mb-4" value={days} onChange={setDays} options={[["30", "30 kun"], ["90", "90 kun"], ["365", "1 yil"], ["0", "Hammasi"]] as const} />
+      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <Chips value={days} onChange={setDays} options={[["30", "30 kun"], ["90", "90 kun"], ["365", "1 yil"], ["0", "Hammasi"]] as const} />
+        <SearchBox value={find} onChange={setFind} placeholder="O'quvchi yoki guruh" />
+      </div>
       {q.isPending && <Spinner className="text-ink-4" />}
       {q.data?.length === 0 && <Empty title="Reyting uchun natija yo'q" />}
-      {q.data && q.data.length > 0 && (
+      {!!q.data?.length && !ranked.length && <NoMatch q={find} onClear={() => setFind("")} />}
+      {ranked.length > 0 && (
         <div className="card divide-y divide-line">
-          {q.data.map((r, i) => (
+          {ranked.map(({ r, i }) => (
             <Link key={r.studentId} to={`/students/${r.studentId}`} className="flex items-center gap-3 px-4 py-3 hover:bg-surface-2">
               <span className={`w-7 text-center font-extrabold ${i < 3 ? "text-amber-700" : "text-ink-3"}`}>{i < 3 ? <Trophy size={16} className="mx-auto" /> : i + 1}</span>
               <div className="min-w-0 flex-1">
@@ -320,7 +332,8 @@ function Results({ t, onChanged }: { t: ExternalTestDetail; onChanged: () => voi
   const [linking, setLinking] = useState<ExternalTestDetail["rows"][number] | null>(null);
   const [showUnmatched, setShowUnmatched] = useState(false);
   const [card, setCard] = useState<ExternalTestDetail["rows"][number] | null>(null);
-  const rows = showUnmatched ? t.rows.filter((r) => !r.student) : t.rows;
+  const [find, setFind] = useState("");
+  const rows = (showUnmatched ? t.rows.filter((r) => !r.student) : t.rows).filter((r) => matches(find, r.name, r.username, r.student?.name, r.grade));
   return (
     <section className="card overflow-hidden">
       <div className="flex flex-wrap items-center gap-2 px-4 pt-4 sm:px-5">
@@ -330,7 +343,9 @@ function Results({ t, onChanged }: { t: ExternalTestDetail; onChanged: () => voi
             Topilmaganlar ({t.participants - t.matched})
           </button>
         )}
+        <SearchBox className="sm:w-64" value={find} onChange={setFind} placeholder="Ism yoki @username" />
       </div>
+      {find.trim() && !rows.length && <div className="p-4"><NoMatch q={find} onClear={() => setFind("")} /></div>}
       <ul className="mt-3 divide-y divide-line border-t border-line">
         {rows.map((r) => (
           <li key={r.id} className="flex flex-wrap items-center gap-x-2 gap-y-1 px-4 py-3 sm:flex-nowrap sm:gap-3 sm:px-5">

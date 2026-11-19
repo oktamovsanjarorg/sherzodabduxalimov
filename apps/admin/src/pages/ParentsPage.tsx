@@ -2,7 +2,8 @@ import { PARENT_FLAG_LABELS, type AdminParentLink } from "@onatili/shared";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { AlertTriangle, Check, Phone, ShieldCheck, Users, X } from "lucide-react";
 import { useState } from "react";
-import { Badge, ConfirmButton, Empty, Modal, PageHeader, Spinner, Chips } from "../components/ui";
+import { Badge, ConfirmButton, Empty, Modal, NoMatch, PageHeader, SearchBox, Spinner, Chips } from "../components/ui";
+import { matches } from "../lib/search";
 import { api, errMsg } from "../lib/api";
 import { fmtShortDateTime } from "../lib/format";
 import { useToast } from "../lib/toast";
@@ -12,8 +13,12 @@ const REASONS = ["Raqam o'quvchining o'ziniki", "Qo'ng'iroqqa javob bermadi", "B
 
 export function ParentsPage() {
   const [tab, setTab] = useState<Tab>("PENDING");
+  const [q, setQ] = useState("");
   const links = useQuery({ queryKey: ["parent-links", tab], queryFn: () => api.parentLinks(tab), refetchInterval: tab === "PENDING" ? 15_000 : false });
   const pending = useQuery({ queryKey: ["parent-links", "PENDING"], queryFn: () => api.parentLinks("PENDING"), enabled: tab !== "PENDING" });
+  const shown = (links.data ?? []).filter((l) =>
+    matches(q, l.student.name, l.student.username, l.student.phone, l.student.groupName, l.parent.name, l.parent.username, l.phone),
+  );
   const pendingCount = (tab === "PENDING" ? links.data : pending.data)?.length ?? 0;
 
   return (
@@ -22,8 +27,8 @@ export function ParentsPage() {
         title="Ota-onalar"
         subtitle="O'quvchi yuborgan havola orqali ota-ona botda o'z raqamini ulashadi. Raqamga qo'ng'iroq qilib, haqiqatan ota-onasi ekanini tekshiring."
       />
+      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
       <Chips
-        className="mb-4"
         value={tab}
         onChange={setTab}
         options={[
@@ -32,12 +37,15 @@ export function ParentsPage() {
           ["REJECTED", "Rad etilgan"],
         ] as const}
       />
+      <SearchBox value={q} onChange={setQ} placeholder="O'quvchi yoki ota-ona: ism, telefon" />
+      </div>
       {links.isPending && <Spinner className="text-ink-4" />}
       {links.data?.length === 0 && (
         <Empty Icon={Users} title={tab === "PENDING" ? "Tekshiriladigan so'rov yo'q" : "Ro'yxat bo'sh"} hint={tab === "PENDING" ? "Yangi so'rovlar shu yerda paydo bo'ladi." : undefined} />
       )}
+      {!!links.data?.length && !!q.trim() && !shown.length && <NoMatch q={q} onClear={() => setQ("")} />}
       <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
-        {links.data?.map((l) => <LinkCard key={l.id} link={l} />)}
+        {shown.map((l) => <LinkCard key={l.id} link={l} />)}
       </div>
     </>
   );

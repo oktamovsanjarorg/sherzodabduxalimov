@@ -11,6 +11,7 @@ import {
   type EssayStatsPeriod,
 } from "@onatili/shared";
 import { PrismaService } from "../prisma/prisma.service";
+import { userSearchWhere } from "../users/user-search";
 
 const DAY = 86_400_000;
 const TZ_OFFSET = 5 * 3600_000; // Toshkent
@@ -130,12 +131,7 @@ export class EssayStatsService {
         ...(d.studentId ? { userId: d.studentId } : {}),
         ...(q
           ? {
-              OR: [
-                { prompt: { contains: q, mode: "insensitive" } },
-                { user: { firstName: { contains: q, mode: "insensitive" } } },
-                { user: { lastName: { contains: q, mode: "insensitive" } } },
-                { user: { username: { contains: q, mode: "insensitive" } } },
-              ],
+              OR: [{ prompt: { contains: q, mode: "insensitive" } }, { user: userSearchWhere(q) ?? {} }],
             }
           : {}),
       },

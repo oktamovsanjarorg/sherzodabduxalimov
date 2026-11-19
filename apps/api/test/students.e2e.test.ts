@@ -11,7 +11,7 @@ import { BOT_TOKEN, OWNER, createApp, login } from "./helpers";
 const prisma = new PrismaClient();
 const TG = { owner: 900001001, assistant: 900001002, phoneUser: 900001003, linkUser: 900001004, existing: 900001005, managed: 900001006, newbie: 900001007, stranger: 900001008 };
 const TAG = "E2E-roster";
-const PHONES = ["+998901110001", "+998901110002", "+998901110003", "+998901110004"];
+const PHONES = ["+998901110001", "+998901110002", "+998901110003", "+998901110004", "+998901110009"];
 
 async function cleanup() {
   await prisma.user.deleteMany({ where: { OR: [{ telegramId: { in: Object.values(TG).map(BigInt) } }, { phone: { in: PHONES } }, { firstName: { startsWith: TAG } }] } });
@@ -73,6 +73,17 @@ describe("O'quvchilar: botsiz kiritish, ro'yxat, karta, hisobni bog'lash (e2e)",
     expect((await req("GET", `/admin/roster?groupId=${groupId}`, undefined, A)).json()[0].paidThisMonth).toBeNull();
     // Qidiruv
     expect((await req("GET", `/admin/roster?q=${encodeURIComponent("Madina")}`)).json().some((r: { name: string }) => r.name.includes("Madina"))).toBe(true);
+  });
+
+  it("qidiruv: to'liq ism istalgan tartibda, apostrof turi va telefon bo'yicha topiladi", async () => {
+    expect((await req("POST", "/admin/students", { firstName: `${TAG}G'ulom`, lastName: "Qo'chqorov", phone: "90 111 00 09" })).statusCode).toBe(201);
+    const find = async (q: string) => ((await req("GET", `/admin/roster?q=${encodeURIComponent(q)}`)).json() as { name: string }[]).map((r) => r.name);
+    expect(await find(`qo'chqorov ${TAG}g'ulom`)).toEqual([`${TAG}G'ulom Qo'chqorov`]);
+    expect(await find("Qoʻchqorov")).toContain(`${TAG}G'ulom Qo'chqorov`); // boshqa apostrof (ʻ)
+    expect(await find("111 00 09")).toContain(`${TAG}G'ulom Qo'chqorov`);
+    expect(await find(`${TAG}G'ulom Karimov`)).toEqual([]); // har bir so'z mos kelishi kerak
+    // Guruhga qo'shish oynasidagi qidiruv ham shu qoida bilan
+    expect(((await req("GET", `/admin/students?search=${encodeURIComponent("qoʻchqorov")}`)).json() as { name: string }[]).length).toBe(1);
   });
 
   it("davomat va to'lov botsiz o'quvchiga ham yoziladi; karta hammasini ko'rsatadi", async () => {

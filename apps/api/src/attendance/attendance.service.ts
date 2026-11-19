@@ -14,6 +14,7 @@ import {
 import { NotifyService } from "../notify/notify.service";
 import { esc } from "../notify/telegram";
 import { PrismaService } from "../prisma/prisma.service";
+import { userSearchWhere } from "../users/user-search";
 import { TrashService } from "../trash/trash.service";
 
 const studentInclude = {
@@ -121,23 +122,12 @@ export class AttendanceService {
 
   /** O'quvchilarni qidirish (guruhga qo'shish uchun) */
   async searchStudents(q: string): Promise<AdminStudent[]> {
-    const term = q.trim().replace(/^@/, "");
-    // Telefon bo'yicha faqat kamida 3 ta raqam yozilganda (aks holda "aziz_2" kabi so'z hammaning raqamiga mos keladi)
-    const digits = term.replace(/\D/g, "");
+    const search = userSearchWhere(q);
     const rows = await this.prisma.studentProfile.findMany({
       where: {
         user: {
           role: "STUDENT",
-          ...(term
-            ? {
-                OR: [
-                  { firstName: { contains: term, mode: "insensitive" } },
-                  { lastName: { contains: term, mode: "insensitive" } },
-                  { username: { contains: term, mode: "insensitive" } },
-                  ...(digits.length >= 3 ? [{ phone: { contains: digits } }] : []),
-                ],
-              }
-            : {}),
+          ...(search ?? {}),
         },
       },
       include: studentInclude,

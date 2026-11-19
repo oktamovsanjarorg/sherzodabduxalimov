@@ -5,7 +5,8 @@ import { VoicePlayer, VoiceRecorder } from "../components/VoiceRecorder";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ChevronRight, ImageOff, Pencil, PenLine, Phone } from "lucide-react";
 import { useState } from "react";
-import { Badge, Empty, Modal, Spinner, Chips } from "../components/ui";
+import { Badge, Empty, Modal, NoMatch, SearchBox, Spinner, Chips } from "../components/ui";
+import { matches } from "../lib/search";
 import { api, errMsg } from "../lib/api";
 import { fmtShortDateTime } from "../lib/format";
 import { useToast } from "../lib/toast";
@@ -15,21 +16,26 @@ import { useToast } from "../lib/toast";
 export function HwEssays() {
   const [tab, setTab] = useState<"pending" | "reviewed">("pending");
   const [open, setOpen] = useState<AdminHwEssay | null>(null);
+  const [q, setQ] = useState("");
   const list = useQuery({ queryKey: ["hw-essays", tab], queryFn: () => api.hwEssays(tab), refetchInterval: tab === "pending" ? 30_000 : false });
+  const shown = (list.data ?? []).filter((e) => matches(q, e.student.name, e.student.username, e.student.phone, e.prompt));
   return (
     <>
+      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
       <Chips
-        className="mb-4"
         value={tab}
         onChange={setTab}
         options={[["pending", `Tekshirilmagan${tab === "pending" && list.data?.length ? ` (${list.data.length})` : ""}`], ["reviewed", "Tekshirilgan"]] as const}
       />
+      <SearchBox value={q} onChange={setQ} placeholder="Ism, @username yoki mavzu" />
+      </div>
       {list.isPending && <Spinner className="text-ink-4" />}
       {list.data?.length === 0 && (
         <Empty Icon={PenLine} title={tab === "pending" ? "Tekshiriladigan esse yo'q" : "Hali esse tekshirilmagan"} hint={tab === "pending" ? "To'lovi tasdiqlangan esselar shu yerga tushadi." : undefined} />
       )}
+      {!!list.data?.length && !shown.length && <NoMatch q={q} onClear={() => setQ("")} />}
       <div className="space-y-2">
-        {list.data?.map((e) => {
+        {shown.map((e) => {
           const t = e.reviews.find((r) => r.source === "TEACHER");
           return (
             <button key={e.id} onClick={() => setOpen(e)} className="card flex w-full items-center gap-3 p-4 text-left transition hover:border-brand">

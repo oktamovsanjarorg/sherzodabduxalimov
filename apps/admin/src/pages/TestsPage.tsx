@@ -3,13 +3,15 @@ import { useQuery } from "@tanstack/react-query";
 import { ListChecks, Plus } from "lucide-react";
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { Badge, Empty, PageHeader, Spinner, Chips } from "../components/ui";
+import { Badge, Empty, NoMatch, PageHeader, SearchBox, Spinner, Chips } from "../components/ui";
+import { matches } from "../lib/search";
 import { api } from "../lib/api";
 
 export function TestsPage() {
   const [tab, setTab] = useState<"ALL" | "TOPIC" | "MOCK">("ALL");
   const tests = useQuery({ queryKey: ["tests"], queryFn: api.tests });
-  const list = (tests.data ?? []).filter((t) => tab === "ALL" || t.type === tab);
+  const [q, setQ] = useState("");
+  const list = (tests.data ?? []).filter((t) => (tab === "ALL" || t.type === tab) && matches(q, t.title, t.topicTitle));
 
   return (
     <>
@@ -23,10 +25,13 @@ export function TestsPage() {
           </>
         }
       />
-      <Chips className="mb-4" value={tab} onChange={setTab} options={[["ALL", "Hammasi"], ["TOPIC", "Mavzu testlari"], ["MOCK", "Mock testlar"]] as const} />
+      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <Chips value={tab} onChange={setTab} options={[["ALL", "Hammasi"], ["TOPIC", "Mavzu testlari"], ["MOCK", "Mock testlar"]] as const} />
+        <SearchBox value={q} onChange={setQ} placeholder="Test yoki mavzu nomi" />
+      </div>
       {tests.isPending && <Spinner className="text-ink-4" />}
-      {tests.data && list.length === 0 && <Empty Icon={ListChecks} title="Test yo'q" />}
-      <div className="card divide-y divide-line overflow-hidden">
+      {tests.data && list.length === 0 && (q.trim() ? <NoMatch q={q} onClear={() => setQ("")} /> : <Empty Icon={ListChecks} title="Test yo'q" />)}
+      <div className="card divide-y divide-line overflow-hidden empty:hidden">
         {list.map((t) => (
           <Link key={t.id} to={`/tests/${t.id}`} className="flex flex-wrap items-center gap-3 px-5 py-4 hover:bg-surface-2">
             <div className="min-w-0 flex-1">

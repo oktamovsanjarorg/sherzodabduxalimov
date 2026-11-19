@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { OfflineLedgerView } from "./OfflineLedger";
 import { Badge, ConfirmButton, Empty, Field, Modal, PageHeader, Spinner, Segmented } from "../components/ui";
+import { matches } from "../lib/search";
 import { api, errMsg } from "../lib/api";
 import { fmtDate, fmtShortDateTime } from "../lib/format";
 import { useToast } from "../lib/toast";
@@ -92,11 +93,9 @@ function PaymentList({ status, q, onClearSearch }: { status: PaymentStatusName; 
     );
 
   const needle = q.trim().toLowerCase();
-  const digitsOnly = needle.replace(/\D/g, "");
-
-  const filtered = list.data.filter((p) => {
-    if (!needle) return true;
-    const hay = [
+  const filtered = list.data.filter((p) =>
+    matches(
+      q,
       p.student.name,
       p.student.username,
       p.student.phone,
@@ -107,16 +106,9 @@ function PaymentList({ status, q, onClearSearch }: { status: PaymentStatusName; 
       p.reviewedBy,
       dateTime(p.createdAt),
       date(p.createdAt),
-    ]
-      .filter(Boolean)
-      .join(" ")
-      .toLowerCase();
-
-    if (hay.includes(needle)) return true;
-    if (digitsOnly.length >= 3 && p.amountUzs.toString().includes(digitsOnly)) return true;
-    if (digitsOnly.length >= 3 && p.student.phone?.replace(/\D/g, "").includes(digitsOnly)) return true;
-    return false;
-  });
+      p.amountUzs,
+    ),
+  );
 
   return (
     <>
@@ -322,15 +314,8 @@ function Subscribers({ q, onClearSearch }: { q: string; onClearSearch: () => voi
     view === "lapsed"
       ? (subs.data?.lapsed ?? [])
       : (subs.data?.active ?? []).filter((s) => view === "all" || (lastEnd.get(s.student.id)! <= soon && new Date(s.endsAt).getTime() === lastEnd.get(s.student.id)));
-  const needle = q.trim().toLowerCase();
-  const digitsOnly = needle.replace(/\D/g, "");
-  const rows = base.filter((s) => {
-    if (!needle) return true;
-    const hay = `${s.student.name} ${s.student.username ?? ""} ${s.student.phone ?? ""} ${s.planName}`.toLowerCase();
-    if (hay.includes(needle)) return true;
-    if (digitsOnly.length >= 3 && s.student.phone?.replace(/\D/g, "").includes(digitsOnly)) return true;
-    return false;
-  });
+  const needle = q.trim();
+  const rows = base.filter((s) => matches(q, s.student.name, s.student.username, s.student.phone, s.planName));
   const soonCount = [...lastEnd.values()].filter((t) => t <= soon).length;
   return (
     <>

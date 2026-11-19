@@ -24,6 +24,7 @@ import { AccessService, isFullAccess } from "../access/access.service";
 import { ENV, type Env } from "../config/env";
 import { ExternalService } from "../external/external.service";
 import { PrismaService } from "../prisma/prisma.service";
+import { userSearchWhere } from "../users/user-search";
 import { TrashService } from "../trash/trash.service";
 import { defaultMonthlyFee, effectiveFee } from "../billing/fee";
 import { effective, paidNowWhere, pickPayment, referenceDate } from "../billing/offline-period";
@@ -90,21 +91,11 @@ export class StudentsService {
   // ---------------- Ro'yxat ----------------
 
   async roster(opts: { groupId?: string; q?: string }, isTeacher: boolean): Promise<RosterRow[]> {
-    const term = (opts.q ?? "").trim().replace(/^@/, "");
-    const digits = term.replace(/\D/g, "");
+    const search = userSearchWhere(opts.q);
     const where: Prisma.StudentProfileWhereInput = {
       user: {
         role: "STUDENT",
-        ...(term
-          ? {
-              OR: [
-                { firstName: { contains: term, mode: "insensitive" } },
-                { lastName: { contains: term, mode: "insensitive" } },
-                { username: { contains: term, mode: "insensitive" } },
-                ...(digits.length >= 3 ? [{ phone: { contains: digits } }] : []),
-              ],
-            }
-          : {}),
+        ...(search ?? {}),
       },
       ...(opts.groupId === "none" ? { groupId: null } : opts.groupId ? { groupId: opts.groupId } : {}),
     };
@@ -119,21 +110,11 @@ export class StudentsService {
 
   /** O'quvchilar → Hammasi: botga kirgan har bir kishi va qo'lda kiritilgan o'quvchilar (xodimlarsiz), eng yangisi birinchi */
   async allUsers(q: string | undefined, isTeacher: boolean): Promise<AdminUserRow[]> {
-    const term = (q ?? "").trim().replace(/^@/, "");
-    const digits = term.replace(/\D/g, "");
+    const search = userSearchWhere(q);
     const rows = await this.prisma.user.findMany({
       where: {
         role: { in: ["STUDENT", "PARENT"] },
-        ...(term
-          ? {
-              OR: [
-                { firstName: { contains: term, mode: "insensitive" as const } },
-                { lastName: { contains: term, mode: "insensitive" as const } },
-                { username: { contains: term, mode: "insensitive" as const } },
-                ...(digits.length >= 3 ? [{ phone: { contains: digits } }] : []),
-              ],
-            }
-          : {}),
+        ...(search ?? {}),
       },
       orderBy: { createdAt: "desc" },
       take: 1000,

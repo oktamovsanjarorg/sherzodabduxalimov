@@ -4,6 +4,7 @@ import { Bell, Check, ChevronLeft, ChevronRight, Phone, Undo2, Users } from "luc
 import { useEffect, useState } from "react";
 import { PayDialog } from "../components/PayDialog";
 import { Badge, Empty, Spinner } from "../components/ui";
+import { matches } from "../lib/search";
 import { api, errMsg } from "../lib/api";
 import { fmtShortDateTime, fmtYmd } from "../lib/format";
 import { useToast } from "../lib/toast";
@@ -44,14 +45,7 @@ export function OfflineLedgerView({ q = "", onClearSearch }: { q?: string; onCle
   const l = ledger.data;
   const isCurrent = month === currentMonth();
   const needle = q.trim().toLowerCase();
-  const digitsOnly = needle.replace(/\D/g, "");
-  const rows = (l?.rows ?? []).filter((r) => {
-    if (!needle) return true;
-    const hay = `${r.name} ${r.username ?? ""} ${r.phone ?? ""}`.toLowerCase();
-    if (hay.includes(needle)) return true;
-    if (digitsOnly.length >= 3 && r.phone?.replace(/\D/g, "").includes(digitsOnly)) return true;
-    return false;
-  });
+  const rows = (l?.rows ?? []).filter((r) => matches(q, r.name, r.username, r.phone));
 
   return (
     <>
