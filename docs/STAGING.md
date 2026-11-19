@@ -1,34 +1,32 @@
 # Staging
 
-Staging ham, production ham serverda ishlaydi, lekin alohida papkalarda: `/home/ubuntu/onatili-staging` va `/home/ubuntu/onatili-prod`. Har bir o'zgarish avval staging'da Telegram ichida sinaladi, keyin `main` ga tushadi. `main` ga tushgan narsa 2 daqiqada production'ga chiqadi ([DEPLOY.md](DEPLOY.md)).
+Staging **noutbukda** ishlaydi, tashqariga **teskari SSH tunnel** orqali chiqadi (2026-11-19 dan). Prod server faqat trafikni uzatadi: unda staging konteynerlari ishlamaydi, yuk deyarli yo'q. Har bir o'zgarish avval staging'da Telegram ichida sinaladi, keyin `main` ga tushadi. `main` ga tushgan narsa 2 daqiqada production'ga chiqadi ([DEPLOY.md](DEPLOY.md)).
 
 ```
-feature branch → git push → scripts/staging.sh deploy → test botda sinash → main ga merge → production
+feature branch → scripts/staging.sh up (noutbukda) → test botda sinash → main ga merge → production
 ```
 
-**Qoida:** production serverda kod tahrirlanmaydi. `/home/ubuntu/onatili-prod` faqat `deploy.sh` orqali yangilanadi. `/home/ubuntu/onatili-staging` ham qo'lda tahrirlanmaydi, faqat `staging.sh deploy` orqali yangilanadi.
+**Qoida:** production serverda kod tahrirlanmaydi. `/home/ubuntu/onatili-prod` faqat `deploy.sh` orqali yangilanadi. Serverdagi eski `/home/ubuntu/onatili-staging` to'xtatilgan (zaxira, keyin o'chiriladi).
 
 ## Manzil
 `https://staging.sherzodabduxalimov.uzbek-talim.uz`
 
 ```
 Telegram → DNS (63.186.202.165) → edge-caddy (HTTPS)
-         → 172.18.0.1:18098 (server, faqat docker tarmog'ida) → onatili-staging web
+         → 172.18.0.1:18098 (server) ══ ssh -R ══> noutbuk 127.0.0.1:8098 → onatili-staging web
 ```
 
-Noutbuk o'chiq bo'lsa ham staging ishlaydi. Build server internetida bo'ladi.
+Noutbuk o'chiq bo'lsa, manzil «Staging o'chiq» (503) deydi. Serverda `ubuntu` uchun `GatewayPorts clientspecified` yoqilgan, shuning uchun tunnel 172.18.0.1 ga bog'lana oladi.
 
-## Ishlatish (noutbukdan)
+## Ishlatish (noutbukda)
+`.env.staging` da: `STAGING_WEB_BIND=127.0.0.1:8098`, `STAGING_TUNNEL=1`, test bot tokeni.
 ```bash
-git push                                # branch GitHub'da bo'lishi kerak
-scripts/staging.sh deploy               # joriy branch
-scripts/staging.sh deploy feat/boshqa   # boshqa branch
-scripts/staging.sh remote status        # serverdagi holat
-scripts/staging.sh remote logs api bot  # serverdagi jurnallar
+git checkout feat/nimadir
+scripts/staging.sh up        # build, ko'tarish, migratsiya, tunnel
+scripts/staging.sh logs api bot
+scripts/staging.sh down      # to'xtatish (ma'lumot qoladi), tunnel ham yopiladi
 ```
-`deploy` serverda `git checkout <sha>` qiladi, keyin `scripts/staging.sh up` (build, migratsiya, birinchi marta seed). Build vaqtida (bir necha daqiqa) server CPU si band bo'ladi, prod sekinlashishi mumkin.
-
-Noutbukda ham `.env.staging` kerak (faqat `STAGING_SSH_HOST` va `STAGING_REMOTE_DIR` o'qiladi, qolgani serverdagi nusxada).
+Bitta test bot faqat bitta joyda ishlay oladi: serverdagi eski staging yoqilmasin.
 
 ## Birinchi sozlash (server)
 1. BotFather'da test bot oching.
