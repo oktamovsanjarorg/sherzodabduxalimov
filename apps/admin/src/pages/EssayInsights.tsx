@@ -321,12 +321,12 @@ function LogList({ rows, onOpen, hideStudent }: { rows: AdminEssayLogRow[]; onOp
     <div className="space-y-2">
       {rows.map((r) => (
         <button key={r.id} onClick={() => onOpen(r.id)} className="card flex w-full items-center gap-3 p-3 text-left transition hover:border-brand sm:p-4">
-          <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${r.mode === "AI" ? "bg-brand-soft text-brand-dark" : "bg-amber-100 text-amber-800"}`}>
+          <span className={`hidden h-9 w-9 shrink-0 items-center justify-center rounded-lg sm:flex ${r.mode === "AI" ? "bg-brand-soft text-brand-dark" : "bg-amber-100 text-amber-800"}`}>
             {r.mode === "AI" ? <Bot size={18} /> : <UserCheck size={18} />}
           </span>
           <div className="min-w-0 flex-1">
             {!hideStudent && (
-              <p className="truncate font-bold">
+              <p className="break-words font-bold sm:truncate">
                 {r.student.name}
                 {r.student.username && <span className="ml-1.5 text-xs font-normal text-ink-3">@{r.student.username}</span>}
               </p>

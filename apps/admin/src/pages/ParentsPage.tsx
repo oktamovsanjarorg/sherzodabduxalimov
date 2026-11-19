@@ -47,7 +47,7 @@ function Person({ label, name, username, phone }: { label: string; name: string;
   return (
     <div className="min-w-0 flex-1">
       <p className="text-[11px] font-bold uppercase tracking-wide text-ink-4">{label}</p>
-      <p className="truncate font-bold">{name}</p>
+      <p className="break-words font-bold sm:truncate">{name}</p>
       <p className="truncate text-xs text-ink-3">{username ? `@${username}` : "username yo'q"}</p>
       {phone ? (
         <a href={`tel:${phone}`} className="mt-1 inline-flex items-center gap-1 text-sm font-semibold text-brand">

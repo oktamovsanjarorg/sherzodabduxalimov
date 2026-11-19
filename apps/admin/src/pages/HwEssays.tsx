@@ -188,7 +188,7 @@ function ReviewModal({ essay, onClose }: { essay: AdminHwEssay; onClose: () => v
           <span className="mr-auto self-center text-sm font-bold">
             Jami: {formatScore(total)} / {ESSAY_MAX_SCORE}
           </span>
-          <button className="btn-secondary" onClick={onClose}>
+          <button className="btn-secondary hidden sm:inline-flex" onClick={onClose}>
             Yopish
           </button>
           <button className="btn-primary" disabled={!rubricComplete(rubric) || save.isPending} onClick={() => save.mutate()}>

@@ -189,7 +189,7 @@ function PaymentCard({ p }: { p: AdminPayment }) {
     <div className="card p-4">
       <div className="flex items-start gap-3">
         <div className="min-w-0 flex-1">
-          <p className="truncate font-bold">{p.student.name}</p>
+          <p className="break-words font-bold sm:truncate">{p.student.name}</p>
           <p className="truncate text-xs text-ink-3">
             {p.student.username ? `@${p.student.username}` : "username yo'q"}
             {p.student.phone && (
@@ -224,11 +224,12 @@ function PaymentCard({ p }: { p: AdminPayment }) {
         <span className="flex-1" />
         {p.status === "PENDING" ? (
           <div className="flex w-full gap-2 sm:w-auto">
-            <button className="btn-danger flex-1 sm:flex-none" onClick={() => setRejecting(true)}>
+            <button className="btn-danger shrink-0 px-3 sm:px-4" onClick={() => setRejecting(true)}>
               <X size={16} /> Rad etish
             </button>
-            <button className="btn-primary flex-1 sm:flex-none" onClick={() => approve.mutate()} disabled={approve.isPending}>
-              <Check size={16} /> Pul tushdi, tasdiqlash
+            <button className="btn-primary min-w-0 flex-1 sm:flex-none" onClick={() => approve.mutate()} disabled={approve.isPending}>
+              <Check size={16} /> <span className="sm:hidden">Pul tushdi</span>
+              <span className="hidden sm:inline">Pul tushdi, tasdiqlash</span>
             </button>
           </div>
         ) : p.status === "APPROVED" ? (
