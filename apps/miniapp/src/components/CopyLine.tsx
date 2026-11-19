@@ -22,10 +22,11 @@ export function CopyLine({ text, display }: { text: string; display: string }) {
   };
   return (
     <button onClick={copy} className="tap mt-1 flex w-full items-center justify-between gap-2 text-left">
-      <span className="text-xl font-extrabold tabular-nums tracking-wider">{display}</span>
-      <span className="flex shrink-0 items-center gap-1 text-xs font-bold text-brand">
-        {done ? <Check size={16} /> : <Copy size={16} />}
-        {done ? "Nusxalandi" : "Nusxalash"}
+      {/* Raqam bitta qatorda: tor telefonda shrift kichrayadi, "Nusxalash" yozuvi o'rniga faqat belgi */}
+      <span className="whitespace-nowrap text-lg font-extrabold tabular-nums tracking-wide min-[400px]:text-xl min-[400px]:tracking-wider">{display}</span>
+      <span className="flex shrink-0 items-center gap-1 text-xs font-bold text-brand" aria-label={done ? "Nusxalandi" : "Nusxalash"}>
+        {done ? <Check size={18} /> : <Copy size={18} />}
+        <span className="hidden min-[400px]:inline">{done ? "Nusxalandi" : "Nusxalash"}</span>
       </span>
     </button>
   );

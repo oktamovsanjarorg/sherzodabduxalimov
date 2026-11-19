@@ -4,6 +4,7 @@ import {
   currentMonth,
   daysBetween,
   defaultPeriodEnd,
+  formatCard,
   formatSum,
   monthBounds,
   monthLabel,
@@ -194,6 +195,10 @@ export class OfflineBillingService {
     if (!debtorIds.length) throw new ConflictException("Qarzdor yo'q");
     const debtors = await this.prisma.studentProfile.findMany({ where: { id: { in: debtorIds }, groupId }, select: studentSelect });
     const rowOf = new Map(l.rows.map((r) => [r.studentId, r]));
+    // Ustoz kiritgan karta bo'lsa, eslatmada ko'rsatamiz: kartaga o'tkazib to'lash mumkin
+    const cardRow = await this.prisma.appSetting.findUnique({ where: { key: "billing" } });
+    const c = cardRow?.value as { number?: string; holder?: string } | undefined;
+    const card = c?.number && c.holder ? `\n💳 Kartaga: <code>${formatCard(c.number)}</code> (${esc(c.holder)}). O'tkazgandan keyin chekni ustozga ko'rsating.` : "";
     const fee = l.group.monthlyFeeUzs ? ` (${formatSum(l.group.monthlyFeeUzs)} so'm)` : "";
     let messages = 0;
     for (const s of debtors) {
@@ -204,16 +209,16 @@ export class OfflineBillingService {
         await this.notify.send(
           p.parent.telegramId,
           cov
-            ? `🔔 Assalomu alaykum! Farzandingiz <b>${name}</b>ning to'lov muddati ${shortDate(cov)} da tugagan${fee}. Iltimos, to'lovni amalga oshiring.`
-            : `🔔 Assalomu alaykum! Farzandingiz <b>${name}</b>ning ${monthLabel(month)} oyi uchun to'lovi${fee} hali qabul qilinmagan. Iltimos, to'lovni amalga oshiring.`,
+            ? `🔔 Assalomu alaykum! Farzandingiz <b>${name}</b>ning to'lov muddati ${shortDate(cov)} da tugagan${fee}. Iltimos, to'lovni amalga oshiring.${card}`
+            : `🔔 Assalomu alaykum! Farzandingiz <b>${name}</b>ning ${monthLabel(month)} oyi uchun to'lovi${fee} hali qabul qilinmagan. Iltimos, to'lovni amalga oshiring.${card}`,
         );
         messages++;
       }
       await this.notify.send(
         s.user.telegramId,
         cov
-          ? `🔔 To'lov muddatingiz ${shortDate(cov)} da tugagan${fee}. Iltimos, keyingi darsda to'lovni amalga oshiring.`
-          : `🔔 ${monthLabel(month)} oyi uchun to'lov${fee} hali qabul qilinmagan. Iltimos, keyingi darsda to'lovni amalga oshiring.`,
+          ? `🔔 To'lov muddatingiz ${shortDate(cov)} da tugagan${fee}. Iltimos, keyingi darsda${card ? " yoki kartaga" : ""} to'lovni amalga oshiring.${card}`
+          : `🔔 ${monthLabel(month)} oyi uchun to'lov${fee} hali qabul qilinmagan. Iltimos, keyingi darsda${card ? " yoki kartaga" : ""} to'lovni amalga oshiring.${card}`,
       );
       messages++;
       // Qarzdor bilan ishlash tarixiga: kimga yuborildi

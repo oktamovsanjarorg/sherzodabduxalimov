@@ -41,7 +41,7 @@ export function SubscribePage() {
       {b && (
         <>
           {b.offline ? (
-            <OfflineCard o={b.offline} />
+            <OfflineCard o={b.offline} card={b.card} />
           ) : b.subscription ? (
             <div className="card mt-4 flex items-center gap-3">
               <CheckCircle2 size={28} className="shrink-0 text-success" />
@@ -106,16 +106,33 @@ function useSyncSubscription(b: BillingView | undefined) {
   }, [b, user, qc]);
 }
 
-function OfflineCard({ o }: { o: MyOfflineBilling }) {
+function OfflineCard({ o, card }: { o: MyOfflineBilling; card: BillingView["card"] }) {
   return (
     <>
       <div className="card mt-4 flex items-center gap-3">
         <CheckCircle2 size={28} className="shrink-0 text-success" />
         <div>
           <p className="font-bold">Offline guruh: {o.groupName}</p>
-          <p className="text-sm text-hint">Barcha darslar va testlar ochiq. To'lov darsda qabul qilinadi.</p>
+          <p className="text-sm text-hint">Barcha darslar va testlar ochiq. Oylik to'lovni darsda naqd yoki kartaga o'tkazib to'lashingiz mumkin.</p>
         </div>
       </div>
+      {card && (
+        <>
+          <p className="mb-2 mt-6 px-1 text-sm font-bold text-hint">Kartaga to'lash</p>
+          <div className="card">
+            <p className="text-xs text-hint">Karta raqami</p>
+            <CopyLine text={card.number} display={formatCard(card.number)} />
+            <p className="mt-1 text-sm font-semibold">{card.holder}</p>
+            {o.monthlyFeeUzs ? (
+              <p className="mt-3 rounded-xl bg-brand-soft px-3 py-2 text-sm">
+                Oylik summa: <b>{formatSum(o.monthlyFeeUzs)} so'm</b>
+              </p>
+            ) : null}
+            <p className="mt-2 text-xs text-hint">O'tkazgandan keyin chekni ustozga ko'rsating: ustoz to'lovni belgilaydi va bu yerda «To'langan» chiqadi.</p>
+            {card.note && <p className="mt-2 text-xs text-hint">{card.note}</p>}
+          </div>
+        </>
+      )}
       <p className="mb-2 mt-6 px-1 text-sm font-bold text-hint">Oylik to'lovlar{o.monthlyFeeUzs ? ` · ${formatSum(o.monthlyFeeUzs)} so'm` : ""}</p>
       <div className="card divide-y divide-hint/10 py-1">
         {o.months.map((m) => (

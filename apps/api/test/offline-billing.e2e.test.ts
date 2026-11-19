@@ -144,10 +144,14 @@ describe("Offline guruh: kirish va oylik to'lov; online obuna eslatmalari (e2e)"
     expect(l.rows[1].paid).toMatchObject({ amountUzs: 300000, note: "Naqd" });
     expect((await jobs()).some((j) => j.chatId === String(parentTgId(TG.paid)) && j.text.includes("qabul qilindi"))).toBe(true);
 
+    // Ustoz kartani kiritgan: eslatmada karta raqami ko'rinadi (kartaga o'tkazib to'lash mumkin)
+    expect((await req("PUT", "/admin/billing-settings", { number: "8600000000001234", holder: "Test Ustoz" })).statusCode).toBe(200);
     const r = (await req("POST", "/admin/offline-payments/remind", { groupId, month })).json();
     expect(r).toEqual({ students: 1, messages: 2 }); // ota-ona + o'quvchining o'zi
     const texts = (await jobs()).filter((j) => j.chatId === String(parentTgId(TG.offline))).map((j) => j.text);
-    expect(texts.some((t) => t.includes("hali qabul qilinmagan") && t.includes("300 000"))).toBe(true);
+    expect(texts.some((t) => t.includes("hali qabul qilinmagan") && t.includes("300 000") && t.includes("8600 0000 0000 1234"))).toBe(true);
+    // Offline o'quvchining to'lov sahifasida ham karta bor
+    expect((await req("GET", "/billing", undefined, OFF)).json().card).toMatchObject({ number: "8600000000001234" });
     // Qayta-qayta yuborib bo'lmaydi
     expect((await req("POST", "/admin/offline-payments/remind", { groupId, month })).statusCode).toBe(409);
 
