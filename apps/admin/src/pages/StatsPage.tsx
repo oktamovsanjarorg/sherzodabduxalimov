@@ -235,8 +235,11 @@ function Body({ s }: { s: TeacherStats }) {
             </p>
           )}
           {s.income.offlineDebtors > 0 && (
-            <Link to="/payments?tab=OFFLINE" className="mt-3 inline-flex items-center gap-1 text-sm font-bold text-amber-700 hover:underline">
-              <AlertTriangle size={15} /> <span className="capitalize">{monthLabel(s.month)}</span>: {s.income.offlineDebtors} ta offline o'quvchi hali to'lamagan
+            <Link to="/payments?tab=OFFLINE" className="mt-3 inline-flex items-start gap-1.5 text-sm font-bold text-amber-700 hover:underline">
+              <AlertTriangle size={15} className="mt-0.5 shrink-0" />
+              <span>
+                <span className="capitalize">{monthLabel(s.month)}</span>: {s.income.offlineDebtors} ta offline o'quvchi hali to'lamagan
+              </span>
             </Link>
           )}
         </Card>

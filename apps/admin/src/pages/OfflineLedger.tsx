@@ -79,10 +79,10 @@ export function OfflineLedgerView({ q = "", onClearSearch }: { q?: string; onCle
         <Spinner className="text-ink-4" />
       ) : (
         <>
-          <div className="mb-3 grid grid-cols-3 gap-2 sm:max-w-lg">
+          <div className="mb-3 grid grid-cols-2 gap-2 sm:max-w-lg sm:grid-cols-3">
             <Stat label="To'lagan" value={`${l.totals.paid} / ${l.totals.students}`} tone="text-emerald-700" />
             <Stat label="Qarzdor" value={String(l.totals.debtors)} tone={l.totals.debtors ? "text-red-600" : "text-ink-2"} />
-            <Stat label="Yig'ildi" value={`${formatSum(l.totals.sumUzs)}`} tone="text-ink" />
+            <Stat label="Yig'ildi" value={`${formatSum(l.totals.sumUzs)} so'm`} tone="text-ink" className="col-span-2 sm:col-span-1" />
           </div>
           {l.totals.debtors > 0 && (
             <div className="mb-3 flex flex-wrap items-center gap-3">
@@ -168,11 +168,11 @@ export function OfflineLedgerView({ q = "", onClearSearch }: { q?: string; onCle
   );
 }
 
-function Stat({ label, value, tone }: { label: string; value: string; tone: string }) {
+function Stat({ label, value, tone, className = "" }: { label: string; value: string; tone: string; className?: string }) {
   return (
-    <div className="card px-3 py-2">
+    <div className={`card px-3 py-2 ${className}`}>
       <p className="text-[11px] font-bold uppercase tracking-wide text-ink-4">{label}</p>
-      <p className={`text-lg font-extrabold ${tone}`}>{value}</p>
+      <p className={`whitespace-nowrap text-lg font-extrabold ${tone}`}>{value}</p>
     </div>
   );
 }

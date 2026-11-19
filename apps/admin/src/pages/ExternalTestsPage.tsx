@@ -411,7 +411,7 @@ function Tile({ label, value, hint }: { label: string; value: string | number; h
   return (
     <div className="card p-4">
       <p className="text-xs font-bold uppercase tracking-wide text-ink-3">{label}</p>
-      <p className={`mt-1 break-words font-extrabold leading-tight tracking-tight sm:truncate ${wordy ? "text-base sm:text-2xl" : "text-xl sm:text-2xl"}`}>{value}</p>
+      <p className={`mt-1 break-words font-extrabold leading-tight tracking-tight sm:truncate ${wordy ? "text-sm sm:text-2xl" : "text-xl sm:text-2xl"}`}>{value}</p>
       {hint && <p className="mt-0.5 line-clamp-2 text-xs text-ink-3 sm:truncate">{hint}</p>}
     </div>
   );

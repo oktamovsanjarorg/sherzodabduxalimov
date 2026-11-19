@@ -43,7 +43,14 @@ export function App() {
       >
         <Route index element={<DashboardPage />} />
         <Route path="stats" element={<StatsPage />} />
-        <Route path="trash" element={<TrashPage />} />
+        <Route
+          path="trash"
+          element={
+            <RequireAuth teacher>
+              <TrashPage />
+            </RequireAuth>
+          }
+        />
         <Route path="content" element={<ContentPage />} />
         <Route path="more" element={<MorePage />} />
         <Route path="essays" element={<EssaysPage />} />
