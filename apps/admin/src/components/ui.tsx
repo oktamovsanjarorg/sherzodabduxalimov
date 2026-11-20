@@ -1,5 +1,5 @@
 import { Inbox, Loader2, Search, X, type LucideIcon } from "lucide-react";
-import { useEffect, useState, type ReactNode } from "react";
+import { cloneElement, isValidElement, useEffect, useId, useState, type ReactElement, type ReactNode } from "react";
 
 export function PageHeader({ title, subtitle, actions }: { title: string; subtitle?: string; actions?: ReactNode }) {
   return (
@@ -138,10 +138,16 @@ export function Empty({ title, hint, action, Icon = Inbox }: { title: string; hi
 }
 
 export function Field({ label, children, hint }: { label: string; children: ReactNode; hint?: string }) {
+  // Yorliq maydonga bog'lanadi (bosilsa maydon fokuslanadi, ekran o'quvchi nomini o'qiydi): bitta input/select/textarea bo'lsa
+  const auto = useId();
+  const one = isValidElement(children) && ["input", "select", "textarea"].includes(children.type as string) ? (children as ReactElement<{ id?: string }>) : null;
+  const id = one ? (one.props.id ?? auto) : undefined;
   return (
     <div>
-      <label className="label">{label}</label>
-      {children}
+      <label className="label" htmlFor={id}>
+        {label}
+      </label>
+      {one ? cloneElement(one, { id }) : children}
       {hint && <p className="mt-1 text-xs text-ink-3">{hint}</p>}
     </div>
   );

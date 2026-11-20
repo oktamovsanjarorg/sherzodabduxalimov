@@ -26,6 +26,7 @@ export function MorePage() {
   ];
   return (
     <div className="space-y-5">
+      <h1 className="sr-only">Ko'proq</h1>
       <div className="card flex items-center gap-3 p-4">
         <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-brand text-lg font-bold text-white">{s.user.firstName[0]}</span>
         <div className="min-w-0 flex-1">

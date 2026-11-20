@@ -71,8 +71,8 @@ export function AttendancePage() {
         <>
           <div className="mb-4 flex flex-wrap items-end gap-2">
             <div className="w-full sm:w-auto">
-              <label className="label">Guruh</label>
-              <select className="input sm:w-64" value={groupId} onChange={(e) => setGroupId(e.target.value)}>
+              <label className="label" htmlFor="att-group">Guruh</label>
+              <select id="att-group" className="input sm:w-64" value={groupId} onChange={(e) => setGroupId(e.target.value)}>
                 {active.map((g) => (
                   <option key={g.id} value={g.id}>
                     {g.name} ({g.studentCount})
@@ -82,8 +82,8 @@ export function AttendancePage() {
             </div>
             {view === "day" ? (
               <div>
-                <label className="label">Sana</label>
-                <input type="date" className="input" value={date} max={todayTashkent()} onChange={(e) => e.target.value && setDate(e.target.value)} />
+                <label className="label" htmlFor="att-date">Sana</label>
+                <input id="att-date" type="date" className="input" value={date} max={todayTashkent()} onChange={(e) => e.target.value && setDate(e.target.value)} />
               </div>
             ) : null}
             <Segmented value={view} onChange={setView} options={[["day", "Kunlik"], ["month", "Oylik"]] as const} />
@@ -277,7 +277,7 @@ function MonthView({ groupId, q }: { groupId: string; q: string; onClear: () => 
     <>
       <div className="mb-3">
         <label className="label">Oy</label>
-        <input type="month" className="input w-auto" value={month} onChange={(e) => e.target.value && setMonth(e.target.value)} />
+        <input type="month" aria-label="Oy" className="input w-auto" value={month} onChange={(e) => e.target.value && setMonth(e.target.value)} />
       </div>
       {m.isPending && <Spinner className="text-ink-4" />}
       {m.data && m.data.days.length === 0 && <Empty title="Bu oyda davomat olinmagan" />}

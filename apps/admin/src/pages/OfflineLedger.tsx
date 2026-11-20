@@ -51,7 +51,7 @@ export function OfflineLedgerView({ q = "", onClearSearch }: { q?: string; onCle
   return (
     <>
       <div className="mb-4 flex flex-wrap items-center gap-2">
-        <select className="input w-auto min-w-[180px]" value={groupId} onChange={(e) => setGroupId(e.target.value)}>
+        <select aria-label="Guruh" className="input w-auto min-w-[180px]" value={groupId} onChange={(e) => setGroupId(e.target.value)}>
           {active.map((g) => (
             <option key={g.id} value={g.id}>
               {g.name} ({g.studentCount})
@@ -196,6 +196,7 @@ function FeeEditor({ groupId, fee, defaultFee, onSaved }: { groupId: string; fee
     >
       <input
         className="input w-40"
+        aria-label="Guruhning oylik to'lovi (so'm)"
         inputMode="numeric"
         placeholder={defaultFee ? `Umumiy: ${formatSum(defaultFee)}` : "Oylik summa"}
         title="Bo'sh qoldirilsa, Tariflardagi umumiy oylik narx olinadi"

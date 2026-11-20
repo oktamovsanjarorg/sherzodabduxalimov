@@ -187,7 +187,7 @@ function Block({ s }: { s: StudentDetail }) {
         </div>
       ) : (
         <div className="flex flex-col gap-2 sm:flex-row">
-          <input className="input h-10 flex-1 text-sm sm:h-9" placeholder="Sabab (ixtiyoriy, o'quvchiga ko'rinadi)" value={reason} onChange={(e) => setReason(e.target.value)} />
+          <input aria-label="Bloklash sababi" className="input h-10 flex-1 text-sm sm:h-9" placeholder="Sabab (ixtiyoriy, o'quvchiga ko'rinadi)" value={reason} onChange={(e) => setReason(e.target.value)} />
           <button className="btn-danger btn-sm" disabled={block.isPending} onClick={() => block.mutate(true)}>
             Bloklash
           </button>
@@ -225,7 +225,7 @@ function Delete({ s, isTeacher }: { s: StudentDetail; isTeacher: boolean }) {
       hint={<>Barcha natijalari, davomati va to'lovlari bilan korzinkaga o'tadi: 30 kun ichida Ko'proq → Korzinka'dan tiklash mumkin.{s.telegramLinked && " Vaqtincha to'xtatish uchun bloklash yaxshiroq."}</>}
     >
       <div className="flex flex-col gap-2 sm:flex-row">
-        <input className="input h-10 flex-1 text-sm sm:h-9" placeholder={`Tasdiqlash uchun "${first}" deb yozing`} value={confirm} onChange={(e) => setConfirm(e.target.value)} />
+        <input aria-label="O'chirishni tasdiqlash" className="input h-10 flex-1 text-sm sm:h-9" placeholder={`Tasdiqlash uchun "${first}" deb yozing`} value={confirm} onChange={(e) => setConfirm(e.target.value)} />
         <button className="btn-danger btn-sm" disabled={confirm.trim().toLowerCase() !== first.toLowerCase() || del.isPending} onClick={() => del.mutate()}>
           <Trash2 size={13} /> O'chirish
         </button>
