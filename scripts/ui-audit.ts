@@ -18,6 +18,11 @@ const API = process.env.AUDIT_API ?? "http://127.0.0.1:4100/api";
 const MINI = process.env.AUDIT_MINIAPP ?? "http://127.0.0.1:5180";
 const ADMIN = process.env.AUDIT_ADMIN ?? "http://127.0.0.1:5181/admin";
 
+/** Bazadan olinadigan sahifalar (birinchi o'quvchi va uning tablari): main() to'ldiradi */
+const EXTRA_ADMIN: string[] = [];
+/** AUDIT_WIDTHS=320,360 — faqat shu kengliklar (telefon tekshiruvi); bo'lmasa odatdagi 390 / 1440+390 */
+const WIDTHS = process.env.AUDIT_WIDTHS?.split(",").map(Number).filter(Boolean);
+
 const MINI_ROUTES = ["/", "/lessons", "/profile", "/tests", "/mocks", "/essays", "/essays/new", "/subscribe", "/stats", "/parents", "/my-attendance", "/settings"];
 const ADMIN_ROUTES = ["/", "/advisor", "/students", "/content", "/questions", "/tests", "/essays", "/attendance", "/parents", "/payments", "/payments?tab=SUBS", "/payments?tab=OFFLINE", "/billing", "/staff", "/stats", "/external", "/backups", "/trash", "/more"];
 
@@ -100,7 +105,7 @@ async function run(browser: Browser, out: string, report: Row[], app: "miniapp" 
 
   const base = app === "miniapp" ? MINI : ADMIN;
   const prefix = new URL(base).pathname.replace(/\/$/, "");
-  const routes = app === "miniapp" ? MINI_ROUTES : ADMIN_ROUTES;
+  const routes = app === "miniapp" ? MINI_ROUTES : [...ADMIN_ROUTES, ...EXTRA_ADMIN];
   for (const [i, route] of routes.entries()) {
     errors.length = 0;
     if (i === 0) await page.goto(base + route, { waitUntil: "domcontentloaded" });
@@ -131,12 +136,14 @@ async function main() {
   await post("/me/name", { firstName: "Test", lastName: "O'quvchi" }, s.token).catch(() => {});
   const owner = await post<{ token: string; user: unknown }>("/auth/telegram", { initData: initData(1000002, "Ustoz", "audit_owner") });
   const auth = { student, owner: { token: owner.token, user: owner.user } };
+  const roster = (await (await fetch(`${API}/admin/roster`, { headers: { authorization: `Bearer ${owner.token}` } })).json()) as { studentId: string }[];
+  if (roster[0]) for (const tab of ["", "?tab=results", "?tab=attendance", "?tab=billing", "?tab=parents", "?tab=activity", "?tab=settings"]) EXTRA_ADMIN.push(`/students/${roster[0].studentId}${tab}`);
 
   const browser = await chromium.launch(process.env.CHROMIUM_PATH ? { executablePath: process.env.CHROMIUM_PATH } : {});
   const report: Row[] = [];
   try {
-    if (which !== "admin") for (const sc of ["light", "dark"] as const) await run(browser, out, report, "miniapp", 390, sc, auth);
-    if (which !== "miniapp") for (const w of [1440, 390]) await run(browser, out, report, "admin", w, "light", auth);
+    if (which !== "admin") for (const [w, sc] of WIDTHS ? WIDTHS.map((x) => [x, "light"] as const) : ([[390, "light"], [390, "dark"]] as const)) await run(browser, out, report, "miniapp", w, sc, auth);
+    if (which !== "miniapp") for (const w of WIDTHS ?? [1440, 390]) await run(browser, out, report, "admin", w, "light", auth);
   } finally {
     await browser.close();
   }

@@ -16,7 +16,7 @@ export function CopyField({ value }: { value: string }) {
   const [done, setDone] = useState(false);
   return (
     <div className="flex items-center gap-2">
-      <input readOnly className="input h-9 min-w-0 flex-1 bg-surface text-xs" value={value} onFocus={(e) => e.target.select()} />
+      <input readOnly aria-label="Havola" className="input h-9 min-w-0 flex-1 bg-surface text-xs" value={value} onFocus={(e) => e.target.select()} />
       <button
         className="btn-primary btn-sm shrink-0"
         onClick={async () => {
