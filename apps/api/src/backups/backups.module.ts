@@ -1,12 +1,13 @@
-import { Controller, Get, Inject, Injectable, Module, NotFoundException, Param, Res } from "@nestjs/common";
+import { Controller, ForbiddenException, Get, Inject, Injectable, Module, NotFoundException, Param, Post, Query, Res } from "@nestjs/common";
 import { BACKUP_NAME_RE, type BackupList } from "@onatili/shared";
 import type { FastifyReply } from "fastify";
 import { createReadStream } from "node:fs";
 import { readdir, stat } from "node:fs/promises";
 import { join } from "node:path";
-import { CurrentUser, Roles, type JwtUser } from "../auth/decorators";
+import { CurrentUser, Public, Roles, type JwtUser } from "../auth/decorators";
 import { ENV, type Env } from "../config/env";
 import { PrismaService } from "../prisma/prisma.service";
+import { signBackupToken, verifyBackupToken } from "./backup-token";
 
 /** "db-20261115-220001.dump" -> 2026-11-15T22:00:01Z (server soati UTC) */
 function stampOf(name: string): Date | null {
@@ -44,16 +45,27 @@ export class BackupsService {
     return { enabled: true, files: files.filter((f) => f !== null).sort((a, b) => b.createdAt.localeCompare(a.createdAt) || a.kind.localeCompare(b.kind)) };
   }
 
-  async open(actorId: string, name: string) {
+  private async file(name: string) {
     const dir = this.env.BACKUP_DIR;
     // Faqat zaxira nomi qolipidagi fayl: yo'l (../) va boshqa fayllar umuman o'tmaydi
     if (!dir || !BACKUP_NAME_RE.test(name)) throw new NotFoundException("Zaxira topilmadi");
     const path = join(dir, name);
     const s = await stat(path).catch(() => null);
     if (!s?.isFile()) throw new NotFoundException("Zaxira topilmadi");
-    // Bazada barcha o'quvchilarning shaxsiy ma'lumoti bor: kim qachon yuklab olgani yoziladi
-    await this.prisma.auditLog.create({ data: { actorId, action: "backup.download", entity: "Backup", entityId: name, meta: { bytes: s.size } } });
-    return { stream: createReadStream(path), size: s.size };
+    return { path, size: s.size };
+  }
+
+  /** Brauzer o'zi yuklab oladigan 10 daqiqalik havola. Bazada barcha o'quvchilarning shaxsiy ma'lumoti bor: kim qachon olgani yoziladi */
+  async link(actorId: string, name: string) {
+    const { size } = await this.file(name);
+    await this.prisma.auditLog.create({ data: { actorId, action: "backup.download", entity: "Backup", entityId: name, meta: { bytes: size } } });
+    return { url: `/api/admin/backups/file/${name}?t=${signBackupToken(this.env.JWT_SECRET, name, actorId)}` };
+  }
+
+  async open(name: string, token: string | undefined) {
+    if (!verifyBackupToken(this.env.JWT_SECRET, name, token)) throw new ForbiddenException("Havola eskirgan: Zaxira sahifasida tugmani qayta bosing");
+    const { path, size } = await this.file(name);
+    return { stream: createReadStream(path), size };
   }
 }
 
@@ -67,13 +79,21 @@ export class BackupsController {
     return this.svc.list();
   }
 
-  @Get(":name") async download(@CurrentUser() u: JwtUser, @Param("name") name: string, @Res() res: FastifyReply) {
-    const { stream, size } = await this.svc.open(u.sub, name);
+  @Post(":name/link") link(@CurrentUser() u: JwtUser, @Param("name") name: string) {
+    return this.svc.link(u.sub, name);
+  }
+
+  /** JWT'siz: kirish faqat URL'dagi imzo orqali (oddiy havola sarlavha yubora olmaydi) */
+  @Public()
+  @Get("file/:name")
+  async download(@Param("name") name: string, @Query("t") t: string, @Res() res: FastifyReply) {
+    const { stream, size } = await this.svc.open(name, t);
     return res
       .header("Content-Type", "application/octet-stream")
       .header("Content-Length", String(size))
       .header("Content-Disposition", `attachment; filename="${name}"`)
       .header("Cache-Control", "private, no-store")
+      .header("Referrer-Policy", "no-referrer")
       .send(stream);
   }
 }
