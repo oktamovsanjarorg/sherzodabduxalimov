@@ -240,9 +240,11 @@ export class OfflineBillingService {
   async mine(userId: string): Promise<MyOfflineBilling | null> {
     const s = await this.prisma.studentProfile.findUnique({
       where: { userId },
-      select: { id: true, group: { select: { name: true, isActive: true, monthlyFeeUzs: true } } },
+      select: { id: true, startedOn: true, createdAt: true, group: { select: { name: true, isActive: true, monthlyFeeUzs: true } } },
     });
     if (!s?.group?.isActive) return null;
+    // O'qishni boshlashdan oldingi oylar "to'lanmagan" bo'lib ko'rinmasin (admin sahifasidagi qoida bilan bir xil)
+    const firstMonth = s.startedOn ? s.startedOn.toISOString().slice(0, 7) : currentMonth(s.createdAt);
     const now = currentMonth();
     const months = [0, 1, 2].map((i) => {
       const d = new Date(`${now}-15T00:00:00Z`);
@@ -250,10 +252,11 @@ export class OfflineBillingService {
       return d.toISOString().slice(0, 7);
     });
     const paid = await this.prisma.offlinePayment.findMany({ where: { studentId: s.id }, orderBy: { month: "desc" }, take: 24 });
+    const shown = months.filter((m) => m >= firstMonth || paid.some((p) => p.month === m));
     return {
       groupName: s.group.name,
       monthlyFeeUzs: effectiveFee(s.group.monthlyFeeUzs, await defaultMonthlyFee(this.prisma)),
-      months: months.map((m) => {
+      months: shown.map((m) => {
         const p = pickPayment(paid, m);
         return { month: m, paid: !!p, amountUzs: p?.amountUzs ?? null };
       }),

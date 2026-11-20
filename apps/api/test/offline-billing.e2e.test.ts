@@ -75,6 +75,13 @@ describe("Offline guruh: kirish va oylik to'lov; online obuna eslatmalari (e2e)"
     const b = (await req("GET", "/billing", undefined, OFF)).json();
     expect(b.offline).toMatchObject({ groupName: `${TAG} 1-guruh` });
     expect(b.offline.months[0]).toMatchObject({ month, paid: false });
+    // O'qishni boshlashdan oldingi oylar ko'rsatilmaydi: bu oy boshlagan → faqat bu oy; o'tgan oy (20 kun oldin) → 2 oy
+    const months = async (startedOn: Date) => {
+      await prisma.studentProfile.update({ where: { id: offlineStudentId }, data: { startedOn } });
+      return (await req("GET", "/billing", undefined, OFF)).json().offline.months.map((m: { month: string }) => m.month);
+    };
+    expect(await months(dateCol(`${month}-01`))).toEqual([month]);
+    expect(await months(new Date(Date.parse(`${month}-01`) - 20 * 86_400_000))).toHaveLength(2);
 
     // Online o'quvchi hali ham yopiq
     expect((await req("GET", `/lessons/${lessonId}`, undefined, ON)).statusCode).toBe(403);
