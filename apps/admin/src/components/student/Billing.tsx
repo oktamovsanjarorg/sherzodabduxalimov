@@ -39,22 +39,27 @@ export function StudentBilling({ s }: { s: StudentDetail }) {
           <p className="label">Oylik to'lov (offline guruh)</p>
           <div className="divide-y divide-line">
             {b.offlineMonths.map((m) => (
-              <div key={m.month} className="flex items-center gap-2 py-1.5 text-sm">
-                <span className="flex-1 capitalize">{monthLabel(m.month)}</span>
+              // Tor telefonda summa va davr oy nomi ostiga tushadi (ustunga siqilib qolmasin)
+              <div key={m.month} className="flex flex-wrap items-center gap-x-2 gap-y-1 py-2 text-sm">
+                <span className="min-w-[6.5rem] flex-1 capitalize">{monthLabel(m.month)}</span>
                 {m.paid ? (
                   <>
-                    <Badge tone="green">
-                      {m.amountUzs ? `${formatSum(m.amountUzs)} so'm` : "to'langan"}
-                      {m.note ? ` · ${m.note}` : ""}
-                    </Badge>
-                    {m.period && <span className="text-[11px] text-ink-3">{m.period}</span>}
+                    <span className="shrink-0 whitespace-nowrap">
+                      <Badge tone="green">
+                        {m.amountUzs ? `${formatSum(m.amountUzs)} so'm` : "to'langan"}
+                        {m.note ? ` · ${m.note}` : ""}
+                      </Badge>
+                    </span>
+                    {m.period && <span className="shrink-0 whitespace-nowrap text-[11px] text-ink-3">{m.period}</span>}
                     <ConfirmButton label="Qaytarilsinmi?" className="btn-ghost btn-sm text-ink-3" onConfirm={() => unmark.mutate(m.paymentMonth ?? m.month)}>
                       <RotateCcw size={14} /> Qaytarish
                     </ConfirmButton>
                   </>
                 ) : (
                   <>
-                    <Badge tone="red">to'lanmagan</Badge>
+                    <span className="shrink-0 whitespace-nowrap">
+                      <Badge tone="red">to'lanmagan</Badge>
+                    </span>
                     <button className="btn-primary btn-sm" onClick={() => setPaying(true)}>
                       To'ladi
                     </button>
@@ -91,9 +96,11 @@ export function StudentBilling({ s }: { s: StudentDetail }) {
                 <span className="min-w-0 flex-1 truncate">
                   {p.title} · {formatSum(p.amountUzs)} so'm
                 </span>
-                <Badge tone={p.status === "APPROVED" ? "green" : p.status === "PENDING" ? "amber" : "red"}>
-                  {p.status === "APPROVED" ? "tasdiqlangan" : p.status === "PENDING" ? "kutilmoqda" : "rad etilgan"}
-                </Badge>
+                <span className="shrink-0 whitespace-nowrap">
+                  <Badge tone={p.status === "APPROVED" ? "green" : p.status === "PENDING" ? "amber" : "red"}>
+                    {p.status === "APPROVED" ? "tasdiqlangan" : p.status === "PENDING" ? "kutilmoqda" : "rad etilgan"}
+                  </Badge>
+                </span>
               </div>
             ))}
           </div>

@@ -51,13 +51,15 @@ function Attendance({ s }: { s: StudentDetail }) {
           </div>
         ))}
       </div>
-      <div className="max-h-56 divide-y divide-line overflow-y-auto">
+      <div className="max-h-56 divide-y divide-line overflow-y-auto" tabIndex={0} aria-label="Oxirgi davomat belgilari">
         {s.attendance.recent.map((a) => (
           <div key={a.date} className="flex items-center gap-2 py-1.5 text-sm">
             <span className="w-24 shrink-0 text-ink-3">{fmtDate(a.date)}</span>
-            <Badge tone={ATT_TONE[a.status]}>{ATTENDANCE_LABELS[a.status]}</Badge>
-            {a.grade && <span className="text-xs font-extrabold text-ink-2">{a.grade}/5</span>}
-            {a.note && <span className="truncate text-xs text-ink-3">{a.note}</span>}
+            <span className="shrink-0 whitespace-nowrap">
+              <Badge tone={ATT_TONE[a.status]}>{ATTENDANCE_LABELS[a.status]}</Badge>
+            </span>
+            {a.grade && <span className="shrink-0 text-xs font-extrabold text-ink-2">{a.grade}/5</span>}
+            {a.note && <span className="min-w-0 flex-1 truncate text-xs text-ink-3">{a.note}</span>}
           </div>
         ))}
       </div>
@@ -86,7 +88,7 @@ function ExternalResults({ s }: { s: StudentDetail }) {
                 {x.takenAt ? date(x.takenAt) : ""} · {x.correct}/{x.questionCount} to'g'ri · {x.rank}-o'rin / {x.participants}
               </p>
             </div>
-            <Badge tone={x.percent >= 80 ? "green" : x.percent >= 60 ? "blue" : x.percent >= 40 ? "amber" : "red"}>{formatScore(x.percent)}%</Badge>
+            <span className="shrink-0 whitespace-nowrap"><Badge tone={x.percent >= 80 ? "green" : x.percent >= 60 ? "blue" : x.percent >= 40 ? "amber" : "red"}>{formatScore(x.percent)}%</Badge></span>
           </li>
         ))}
       </ul>
@@ -164,7 +166,7 @@ function Stats({ s }: { s: StudentDetail }) {
                   {a.type === "MOCK" && <ClipboardCheck size={14} className="shrink-0 text-ink-4" aria-label="Mock" />}
                   <span className="truncate">{a.title}</span>
                 </span>
-                <Badge tone={a.percent >= 80 ? "green" : a.percent >= 50 ? "brand" : "red"}>{a.percent}%</Badge>
+                <span className="shrink-0 whitespace-nowrap"><Badge tone={a.percent >= 80 ? "green" : a.percent >= 50 ? "brand" : "red"}>{a.percent}%</Badge></span>
               </div>
             ))}
           </div>
@@ -181,7 +183,7 @@ function Stats({ s }: { s: StudentDetail }) {
                   {e.mode === "AI" ? <Bot size={14} className="shrink-0 text-ink-4" aria-label="AI" /> : <GraduationCap size={14} className="shrink-0 text-ink-4" aria-label="Ustoz" />}
                   <span className="truncate">{e.prompt}</span>
                 </span>
-                {e.score !== null ? <Badge tone="green">{formatScore(e.score)}/24</Badge> : <Badge>{ESSAY_STATUS_LABELS[e.status as EssayStatusName] ?? e.status}</Badge>}
+                <span className="shrink-0 whitespace-nowrap">{e.score !== null ? <Badge tone="green">{formatScore(e.score)}/24</Badge> : <Badge>{ESSAY_STATUS_LABELS[e.status as EssayStatusName] ?? e.status}</Badge>}</span>
               </div>
             ))}
           </div>
