@@ -74,6 +74,19 @@ describe("Ustoz yordamchisi (e2e)", () => {
     expect(d.advice[0].level).toBe("urgent");
   });
 
+  it("boshqaruv: boshlash sanasi yo'q → sozlamalarga; sana kiritilsa → guruh qarzdorlari ismi va kuni bilan", async () => {
+    const by = async (k: string) => (await get("/admin/advisor")).json().advice.find((a: { key: string }) => a.key === k);
+    const noStart = await by("payments:no-start");
+    expect(noStart.why).toContain(`${TAG} Qoldiruvchi`);
+    expect(noStart.action.to).toBe(`/students/${studentId}?tab=settings`);
+
+    const sp = await prisma.studentProfile.update({ where: { id: studentId }, data: { startedOn: new Date(Date.now() - 20 * 86_400_000) }, select: { groupId: true } });
+    const debt = await by(`payments:debtors:${sp.groupId}`);
+    expect(debt).toMatchObject({ level: "urgent", area: "payments", action: { to: `/payments?tab=OFFLINE&group=${sp.groupId}` } });
+    expect(debt.why).toMatch(new RegExp(`${TAG} Qoldiruvchi \\(\\d+ kun\\)`));
+    expect((await by("payments:no-start"))?.why ?? "").not.toContain(TAG);
+  });
+
   it("yordamchi (ASSISTANT) to'lov tavsiyasini ko'rmaydi", async () => {
     const d = (await get("/admin/advisor", A)).json();
     expect(d.advice.some((a: { area: string }) => a.area === "payments")).toBe(false);

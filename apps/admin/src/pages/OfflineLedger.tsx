@@ -21,7 +21,8 @@ export function OfflineLedgerView({ q = "", onClearSearch }: { q?: string; onCle
   const qc = useQueryClient();
   const groups = useQuery({ queryKey: ["groups"], queryFn: api.groups });
   const active = groups.data?.filter((g) => g.isActive) ?? [];
-  const [groupId, setGroupId] = useState("");
+  // ?group= : Yordamchidagi «Qarzdorlar ro'yxati» havolasi shu guruhni ochadi
+  const [groupId, setGroupId] = useState(() => new URLSearchParams(window.location.search).get("group") ?? "");
   const [month, setMonth] = useState(currentMonth());
   const [paying, setPaying] = useState<OfflineLedgerRow | null>(null);
   useEffect(() => {

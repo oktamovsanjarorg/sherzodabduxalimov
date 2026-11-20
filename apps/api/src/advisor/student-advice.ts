@@ -74,11 +74,11 @@ export async function studentAdvice(prisma: PrismaService, studentId: string): P
 
   // ---- Davomat, faollik, ota-ona ----
   const absent = sp.attendance.filter((a) => a.status === "ABSENT").length;
-  if (absent >= 2) add({ key: "s:absent", level: absent >= 3 ? "urgent" : "important", area: "attendance", title: `Oxirgi 30 kunda ${absent} marta darsga kelmagan`, why: `${sp.attendance.length} ta darsdan. Ota-onasiga qo'ng'iroq qiling.`, count: absent });
+  if (absent >= 2) add({ key: "s:absent", level: absent >= 3 ? "urgent" : "important", area: "attendance", title: `Oxirgi 30 kunda ${absent} marta darsga kelmagan`, why: `${sp.attendance.length} ta darsdan. Ota-onasiga qo'ng'iroq qiling.`, count: absent, action: { label: "Davomatni ko'rish", to: `/students/${studentId}?tab=attendance` } });
   const idle = sp.user.lastAppAt ? Math.floor((Date.now() - sp.user.lastAppAt.getTime()) / DAY) : null;
   if (idle === null) add({ key: "s:never-app", level: "important", area: "activity", title: "Ilovani bir marta ham ochmagan", why: "Darslar, testlar va esse tekshiruvi ilovada. Darsda telefonidan ochib ko'rsating." });
   else if (idle >= 10) add({ key: "s:idle", level: "important", area: "activity", title: `${idle} kundan beri ilovaga kirmagan`, why: "Uy vazifasi va testlarni ilovada bajarmayapti." });
-  if (!sp.parents.length) add({ key: "s:no-parent", level: "important", area: "parents", title: "Ota-onasi ulanmagan", why: "Natija va davomat haqida ota-onaga xabar bormaydi. O'quvchi sahifasidagi havolani ota-onaga yuboring." });
+  if (!sp.parents.length) add({ key: "s:no-parent", level: "important", area: "parents", title: "Ota-onasi ulanmagan", why: "Natija va davomat haqida ota-onaga xabar bormaydi. Ulash havolasini ota-onaga yuboring.", action: { label: "Havolani olish", to: `/students/${studentId}?tab=parents` } });
 
   // ---- Keyingi qadamlar: eng zaif mavzudagi ko'rilmagan darslar va ishlanmagan testlar ----
   const weakTopicIds = topics.filter((t) => t.percent < 55).slice(0, 2).map((t) => t.topicId);
