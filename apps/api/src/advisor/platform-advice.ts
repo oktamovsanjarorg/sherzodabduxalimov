@@ -6,6 +6,7 @@ import { formatScore, sectionScore, sortAdvice, type Advice, type ExternalRasch,
 import { Prisma } from "@onatili/db";
 import type { PrismaService } from "../prisma/prisma.service";
 import { dateDaysAgo, daysAgo, essayFacts, fullName, names, pct, topicAccuracy } from "./facts";
+import { manageAdvice } from "./manage-advice";
 
 export async function platformAdvice(prisma: PrismaService): Promise<PlatformAdvice> {
   const advice: Advice[] = [];
@@ -149,6 +150,8 @@ export async function platformAdvice(prisma: PrismaService): Promise<PlatformAdv
       why: "Tasdiqlanmaguncha o'quvchining obunasi ochilmaydi.",
       action: { label: "To'lovlar", to: "/payments" },
     });
+
+  await manageAdvice(prisma, add);
 
   return { generatedAt: new Date().toISOString(), pulse, advice: sortAdvice(advice) };
 }

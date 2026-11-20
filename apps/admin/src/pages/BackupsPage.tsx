@@ -53,26 +53,27 @@ export function BackupsPage() {
 
 function DownloadButton({ file }: { file: BackupFile }) {
   const toast = useToast();
-  const [pct, setPct] = useState<number | null>(null);
+  const [busy, setBusy] = useState(false);
   const Icon = file.kind === "db" ? Database : Film;
   return (
     <button
       className="btn-secondary"
-      disabled={pct !== null}
+      disabled={busy}
       onClick={async () => {
-        setPct(0);
+        setBusy(true);
         try {
-          await api.downloadBackup(file.name, setPct);
+          await api.downloadBackup(file.name);
+          toast(file.sizeBytes > 200 * 1024 ** 2 ? "Yuklab olish boshlandi: jarayonni brauzerning yuklamalar oynasida ko'ring" : "Yuklab olish boshlandi");
         } catch (e) {
           toast(errMsg(e), "error");
         } finally {
-          setPct(null);
+          setBusy(false);
         }
       }}
     >
       <Icon size={16} />
       {file.kind === "db" ? "Baza" : "Media"} · {mb(file.sizeBytes)}
-      {pct !== null ? <span className="text-ink-3">{pct}%</span> : <Download size={15} className="text-ink-3" />}
+      {busy ? <Spinner className="text-ink-3" /> : <Download size={15} className="text-ink-3" />}
     </button>
   );
 }

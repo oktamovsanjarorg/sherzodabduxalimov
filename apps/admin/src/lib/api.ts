@@ -158,29 +158,19 @@ export const api = {
     request<{ items: { resultId: string; name: string; fileName: string; score24: number }[]; unmatched: string[]; missing: number; bad: string[] }>(`/admin/external-tests/${id}/essays/file`, json("POST", d)),
   externalNotify: (id: string) => request<{ students: number; parents: number }>(`/admin/external-tests/${id}/notify`, json("POST")),
   externalDelete: (id: string) => request(`/admin/external-tests/${id}`, { method: "DELETE" }),
-  /** Zaxira faylini yuklab olish: avtorizatsiya sarlavhasi kerak, shuning uchun havola emas; foiz onProgress ga */
-  downloadBackup: async (name: string, onProgress: (pct: number) => void) => {
-    const res = await fetch(`/api/admin/backups/${encodeURIComponent(name)}`, { headers: { Authorization: `Bearer ${loadSession()?.token}` } });
-    if (!res.ok || !res.body) throw new ApiError(res.status, "Faylni yuklab bo'lmadi");
-    const total = Number(res.headers.get("content-length")) || 0;
-    const reader = res.body.getReader();
-    const parts: Uint8Array[] = [];
-    let got = 0;
-    for (;;) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      parts.push(value);
-      got += value.length;
-      if (total) onProgress(Math.min(99, Math.floor((got / total) * 100)));
-    }
-    const url = URL.createObjectURL(new Blob(parts as BlobPart[]));
+  /**
+   * Zaxira faylini yuklab olish: server 10 daqiqalik imzolangan havola beradi, faylni brauzer o'zi yuklaydi
+   * (o'z yuklab olish oynasi, foiz, davom ettirish). Avval JS xotirasiga yig'ilardi: GB'lik media va telefonda yiqilardi.
+   */
+  downloadBackup: async (name: string) => {
+    const { url } = await request<{ url: string }>(`/admin/backups/${encodeURIComponent(name)}/link`, json("POST"));
     const a = document.createElement("a");
     a.href = url;
     a.download = name;
+    a.rel = "noopener";
     document.body.appendChild(a);
     a.click();
     a.remove();
-    setTimeout(() => URL.revokeObjectURL(url), 10_000);
   },
   /** Chek rasmi: avtorizatsiya sarlavhasi kerak, shuning uchun <img src> emas, blob */
   receipt: async (id: string) => {
