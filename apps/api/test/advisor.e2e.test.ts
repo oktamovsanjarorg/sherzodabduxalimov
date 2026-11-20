@@ -103,4 +103,13 @@ describe("Ustoz yordamchisi (e2e)", () => {
     expect(d.advice[0].level).toBe("urgent");
     expect((await get("/admin/students/yoq/advisor")).statusCode).toBe(404);
   });
+
+  it("botga kirmagan o'quvchi: «ilovani ochmagan» takrorlanmaydi (sahifada «botga kirmagan» kartasi bor)", async () => {
+    const res = await app.inject({ method: "POST", url: "/api/admin/students", headers: H, payload: { firstName: `${TAG} Qo'lda`, lastName: null, phone: null, groupId: null, startedOn: null } });
+    expect(res.statusCode).toBeLessThan(300);
+    const sp = await prisma.studentProfile.findFirstOrThrow({ where: { user: { firstName: `${TAG} Qo'lda` } }, select: { id: true, userId: true } });
+    const keys = (await get(`/admin/students/${sp.id}/advisor`)).json().advice.map((a: { key: string }) => a.key);
+    expect(keys).not.toContain("s:never-app");
+    await prisma.user.delete({ where: { id: sp.userId } });
+  });
 });

@@ -13,7 +13,7 @@ export async function studentAdvice(prisma: PrismaService, studentId: string): P
   const sp = await prisma.studentProfile.findUnique({
     where: { id: studentId },
     select: {
-      user: { select: { id: true, firstName: true, lastName: true, lastAppAt: true, createdAt: true } },
+      user: { select: { id: true, firstName: true, lastName: true, lastAppAt: true, createdAt: true, telegramId: true } },
       group: { select: { name: true, isActive: true } },
       parents: { where: { status: "APPROVED" }, select: { id: true } },
       attendance: { where: { date: { gte: dateDaysAgo(30) } }, select: { status: true } },
@@ -76,8 +76,9 @@ export async function studentAdvice(prisma: PrismaService, studentId: string): P
   const absent = sp.attendance.filter((a) => a.status === "ABSENT").length;
   if (absent >= 2) add({ key: "s:absent", level: absent >= 3 ? "urgent" : "important", area: "attendance", title: `Oxirgi 30 kunda ${absent} marta darsga kelmagan`, why: `${sp.attendance.length} ta darsdan. Ota-onasiga qo'ng'iroq qiling.`, count: absent, action: { label: "Davomatni ko'rish", to: `/students/${studentId}?tab=attendance` } });
   const idle = sp.user.lastAppAt ? Math.floor((Date.now() - sp.user.lastAppAt.getTime()) / DAY) : null;
-  if (idle === null) add({ key: "s:never-app", level: "important", area: "activity", title: "Ilovani bir marta ham ochmagan", why: "Darslar, testlar va esse tekshiruvi ilovada. Darsda telefonidan ochib ko'rsating." });
-  else if (idle >= 10) add({ key: "s:idle", level: "important", area: "activity", title: `${idle} kundan beri ilovaga kirmagan`, why: "Uy vazifasi va testlarni ilovada bajarmayapti." });
+  // Botga hali kirmagan o'quvchi: sahifa tepasida "botga kirmagan" kartasi bor, takrorlamaymiz
+  if (idle === null && sp.user.telegramId) add({ key: "s:never-app", level: "important", area: "activity", title: "Ilovani bir marta ham ochmagan", why: "Darslar, testlar va esse tekshiruvi ilovada. Darsda telefonidan ochib ko'rsating." });
+  else if (idle !== null && idle >= 10) add({ key: "s:idle", level: "important", area: "activity", title: `${idle} kundan beri ilovaga kirmagan`, why: "Uy vazifasi va testlarni ilovada bajarmayapti." });
   if (!sp.parents.length) add({ key: "s:no-parent", level: "important", area: "parents", title: "Ota-onasi ulanmagan", why: "Natija va davomat haqida ota-onaga xabar bormaydi. Ulash havolasini ota-onaga yuboring.", action: { label: "Havolani olish", to: `/students/${studentId}?tab=parents` } });
 
   // ---- Keyingi qadamlar: eng zaif mavzudagi ko'rilmagan darslar va ishlanmagan testlar ----
