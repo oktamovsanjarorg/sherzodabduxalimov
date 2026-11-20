@@ -19,7 +19,7 @@ const MINI = process.env.AUDIT_MINIAPP ?? "http://127.0.0.1:5180";
 const ADMIN = process.env.AUDIT_ADMIN ?? "http://127.0.0.1:5181/admin";
 
 const MINI_ROUTES = ["/", "/lessons", "/profile", "/tests", "/mocks", "/essays", "/essays/new", "/subscribe", "/stats", "/parents", "/my-attendance", "/settings"];
-const ADMIN_ROUTES = ["/", "/students", "/content", "/questions", "/tests", "/essays", "/attendance", "/parents", "/payments", "/payments?tab=SUBS", "/payments?tab=OFFLINE", "/billing", "/staff", "/stats", "/external", "/backups", "/trash"];
+const ADMIN_ROUTES = ["/", "/advisor", "/students", "/content", "/questions", "/tests", "/essays", "/attendance", "/parents", "/payments", "/payments?tab=SUBS", "/payments?tab=OFFLINE", "/billing", "/staff", "/stats", "/external", "/backups", "/trash", "/more"];
 
 // Telegram'ning standart mavzulari (Android)
 const THEMES = {
