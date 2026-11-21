@@ -13,7 +13,10 @@
     "db:seed": "pnpm --filter @onatili/db seed",
     "dev:init-data": "tsx --env-file=.env scripts/dev-init-data.ts",
     "ui:audit": "tsx --env-file=.env scripts/ui-audit.ts",
-    "essay:try": "tsx --env-file=.env scripts/essay-ai-try.ts"
+    "essay:try": "tsx --env-file=.env scripts/essay-ai-try.ts",
+    "eval:uzlib": "tsx --env-file=.env scripts/eval/uzlib.ts",
+    "eval:gold": "tsx --env-file=.env scripts/eval/gold.ts",
+    "test:eval": "pnpm --filter @onatili/api exec vitest run --root ../.. scripts/eval"
   },
   "devDependencies": {
     "@onatili/shared": "workspace:*",

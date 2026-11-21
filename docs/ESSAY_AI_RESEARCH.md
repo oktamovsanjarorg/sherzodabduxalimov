@@ -99,6 +99,13 @@ Avvaldan to'g'ri qilingan narsalar:
   - 1 861 ta variantli savoldan iborat, shundan 1 501 tasi "to'g'ri yozilgan so'zni tanlash".
   - Savollar Telegram imlo kanallaridan olingan, lotin yozuvida.
   - `temperature=1.0`, `top-p=0.95` bilan o'tkazilgan. Fikrlash rejimi aytilmagan.
+  - **DeepSeek-V4-Pro aynan qanday sinalgan** (2026-11-21, `utils.py` kodidan tekshirildi):
+    - so'rov OpenRouter orqali yuborilgan;
+    - `temperature=1`, `top_p=0.95`;
+    - javob uchun ko'pi bilan **256 token** berilgan;
+    - fikrlash rejimi kodda yoqilmagan.
+
+    Ya'ni bu bizning sozlamamiz emas: bizda u yuqori fikrlash rejimida ishlaydi. 1 501 savoldan 30 tasi javobsiz qolgan. Leaderboard raqamlari saqlangan javoblardan qayta hisoblandi va aynan mos keldi: 0.6396 va Gemini 4 Carbon 0.8448. Juft solishtirishda Gemini 4 Carbon 355 ta savolda yolg'iz to'g'ri, DeepSeek esa 47 tasida (McNemar p ≈ 1e-59).
 
 | Model | Umumiy | To'g'ri so'z (imlo) |
 |---|---|---|
@@ -231,8 +238,8 @@ Avvaldan to'g'ri qilingan narsalar:
 
 ## Keyingi qadamlar
 
-- [ ] UzLiB "to'g'ri so'z" bo'limini bizning sozlamamiz bilan o'tkazish. Ma'lumotlar ochiq, oz miqdorda API xarajati bor. Foydalanuvchi ruxsatini kutyapti.
-- [ ] O'lchash skripti: CER/WER, xatolar bo'yicha aniqlik, to'liqlik va F0.5, bandlar bo'yicha QWK, MAE va SMD.
+- [ ] UzLiB "to'g'ri so'z" bo'limini bizning sozlamamiz bilan o'tkazish. Ruxsat berilgan (2026-11-21), skript tayyor (`pnpm eval:uzlib`). `.env` da API kalitlari kutilmoqda.
+- [x] O'lchash skripti: CER/WER, xatolar bo'yicha aniqlik, to'liqlik va F0.5, bandlar bo'yicha QWK, MAE va SMD. Skript `pnpm eval:gold`, format [ESSAY_AI_EVAL.md](ESSAY_AI_EVAL.md).
 - [ ] Real sinov to'plami (ustoz tayyorlaydi).
 - [ ] So'ng tavsiya etilgan yo'lning 3–8-bandlari, har birining ta'siri sinov to'plamida o'lchanadi.
 

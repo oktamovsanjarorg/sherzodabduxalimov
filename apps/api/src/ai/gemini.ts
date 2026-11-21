@@ -64,6 +64,11 @@ const textOf = (j: any): string => (j?.candidates?.[0]?.content?.parts ?? []).ma
 
 /** Gemini'ga so'rov: band bo'lsa (503/429) yoki model yo'q bo'lsa (404) navbatdagi modelga o'tiladi */
 async function generate(apiKey: string, preferred: string, body: object): Promise<string> {
+  return (await generateMeta(apiKey, preferred, body)).text;
+}
+
+/** generate + javobni haqiqatan qaysi model bergani (zaxira modelga jim o'tilganini bilish uchun) */
+async function generateMeta(apiKey: string, preferred: string, body: object): Promise<{ text: string; model: string }> {
   const tried = new Set<string>();
   let last = "";
   const attempt = async (model: string) => {
@@ -72,7 +77,7 @@ async function generate(apiKey: string, preferred: string, body: object): Promis
     if (r.status === 200) {
       const text = textOf(r.json);
       if (!text) throw new Error(`Gemini bo'sh javob (${r.json?.candidates?.[0]?.finishReason ?? r.json?.promptFeedback?.blockReason ?? "?"})`);
-      return text;
+      return { text, model: (r.json?.modelVersion as string | undefined) ?? model };
     }
     last = `Gemini ${model} ${r.status}: ${r.json?.error?.message ?? "javob yo'q"}`;
     if (!RETRYABLE.has(r.status)) throw new Error(last);
@@ -94,7 +99,12 @@ async function generate(apiKey: string, preferred: string, body: object): Promis
 const imageParts = (images: { mime: string; data: Buffer }[]) => images.map((i) => ({ inline_data: { mime_type: i.mime, data: i.data.toString("base64") } }));
 
 export async function transcribeHandwriting(opts: { apiKey: string; model: string; images: { mime: string; data: Buffer }[] }): Promise<string> {
-  return generate(opts.apiKey, opts.model, {
+  return (await transcribeHandwritingMeta(opts)).text;
+}
+
+/** O'qilgan matn va uni o'qigan modelning haqiqiy versiyasi */
+export function transcribeHandwritingMeta(opts: { apiKey: string; model: string; images: { mime: string; data: Buffer }[] }) {
+  return generateMeta(opts.apiKey, opts.model, {
     contents: [{ parts: [...imageParts(opts.images), { text: OCR_PROMPT }] }],
     generationConfig: { temperature: 0, maxOutputTokens: 8192 },
   });
