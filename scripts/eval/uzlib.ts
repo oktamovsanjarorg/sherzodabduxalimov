@@ -160,7 +160,10 @@ function report() {
   const ref = compare ? new Map(readFileSync(compare, "utf8").split("\n").filter(Boolean).map((l) => JSON.parse(l)).map((r: { id: string; extracted_answer: string | null }) => [r.id, r.extracted_answer])) : null;
   if (!existsSync(RUNS)) return console.log("Hali natija yo'q");
   for (const f of readdirSync(RUNS).filter((x) => x.endsWith(".jsonl")).sort()) {
-    const rows = readLines(join(RUNS, f)).filter((r) => gold.has(r.id));
+    const all = readLines(join(RUNS, f)).filter((r) => gold.has(r.id));
+    // Javob olinmagan savollar (429, tarmoq) noto'g'ri deb sanalmaydi: ular alohida ko'rsatiladi va keyin qayta so'raladi
+    const failed = all.filter((r) => r.error);
+    const rows = all.filter((r) => !r.error);
     const ok = rows.filter((r) => r.answer === gold.get(r.id)).length;
     const ci = wilson(ok, rows.length);
     const tokens = rows.reduce((s, r) => ({ input: s.input + (r.usage?.input ?? 0), cached: s.cached + (r.usage?.cached ?? 0), output: s.output + (r.usage?.output ?? 0) }), { input: 0, cached: 0, output: 0 });
@@ -170,7 +173,7 @@ function report() {
     const versions = [...new Set(rows.map((r) => r.model).filter(Boolean))];
     const ms = rows.map((r) => r.ms).sort((a, b) => a - b);
     console.log(`\n${f}\n  to'g'ri: ${ok}/${rows.length} = ${ci.p.toFixed(4)} (95%: ${ci.lo.toFixed(3)}–${ci.hi.toFixed(3)})`);
-    console.log(`  javobsiz: ${rows.filter((r) => !r.answer).length} (xato: ${rows.filter((r) => r.error).length}) · javob versiyasi: ${versions.join(", ") || "—"}`);
+    console.log(`  javobsiz: ${rows.filter((r) => !r.answer).length} · javob olinmagan (qayta so'raladi): ${failed.length}${failed[0] ? ` — ${failed[failed.length - 1].error?.slice(0, 80)}` : ""} · javob versiyasi: ${versions.join(", ") || "—"}`);
     console.log(`  token: kirish ${tokens.input}, chiqish ${tokens.output}${cost !== null ? ` · narx ≤ $${cost.toFixed(2)}` : ""} · vaqt mediana ${((ms[ms.length >> 1] ?? 0) / 1000).toFixed(1)} s`);
     if (ref) {
       const both = rows.filter((r) => ref.has(r.id));

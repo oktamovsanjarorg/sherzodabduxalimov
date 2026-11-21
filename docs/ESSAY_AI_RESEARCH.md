@@ -124,6 +124,21 @@ Avvaldan to'g'ri qilingan narsalar:
   - Bu variantli test. Esse ichidan xato topish boshqa vazifa.
   - Biz DeepSeek'ni yuqori fikrlash rejimida ishlatamiz, benchmark esa boshqa sozlamada o'tkazilgan bo'lishi mumkin. Shuning uchun uni o'z sozlamamiz bilan qayta o'tkazish kerak.
   - `gemini-3.8-flash` jadvalda yo'q.
+- **Bizning o'lchovimiz (2026-11-21, `pnpm eval:uzlib`).** 1 501 savoldan teng taqsimlab olingan 200 ta savol, prompt asl skript bilan bir xil:
+
+  | Sozlama | To'g'ri | 95% oraliq | 200 savol narxi | Mediana vaqt |
+  |---|---|---|---|---|
+  | DeepSeek-V4-Pro, fikrlashsiz | 63,0% | 56–69% | $0.08 | 2,5 s |
+  | **DeepSeek-V4-Pro, fikrlash `high` (bizdagi)** | **77,0%** | 71–82% | $1.46 | 9,2 s |
+  | DeepSeek-V4.1-Flash, fikrlash `high` | 78,5% | 72–84% | $0.23 | 3,0 s |
+  | Gemini 4 Carbon (leaderboard, shu 200 savol) | 83,5% | — | — | — |
+
+  - **Sinov to'g'riligi.** Fikrlashsiz V4-Pro shu 200 savolda leaderboard bilan bir xil natija berdi: 63,0% va 63,5%, McNemar p = 1,0.
+  - **Fikrlash rejimi katta farq beradi.** V4-Pro fikrlash bilan leaderboard'dagi o'zidan ancha yaxshi: 280 ta bir xil savolda 60 ta savolni faqat u to'g'ri topdi, 8 tasini faqat leaderboard (p ≈ 6e-11).
+  - **Pro va Flash.** Fikrlash yoqilganda ular orasidagi farq tasodif darajasida (p = 0,68), lekin Flash ~6 marta arzon va ~3 marta tez.
+  - **Gemini 4 Carbon hali ham oldinda.** 200 savolda 8 ta savolni faqat bizdagi model to'g'ri topdi, 21 tasini faqat Carbon (p = 0,024).
+  - **To'liq sinov tugamadi.** Balans tugadi (402 Insufficient Balance): V4-Pro 280 tasini, Flash 479 tasini bajardi. 200 dan keyingilari ro'yxat boshidan ketma-ket olingan, tasodifiy emas, shuning uchun mutlaq raqam sifatida faqat 200 talik tanlov ishlatiladi.
+  - **Cheklov.** Bu variantli test: esse ichidan xato topishni sinov to'plami o'lchaydi.
 - **O'zbek tili uchun vositalar:**
   - `hunspell-uz` (Debian paketi);
   - `uzmorph` (~122 ming o'zak, MIT);
@@ -238,7 +253,7 @@ Avvaldan to'g'ri qilingan narsalar:
 
 ## Keyingi qadamlar
 
-- [ ] UzLiB "to'g'ri so'z" bo'limini bizning sozlamamiz bilan o'tkazish. Ruxsat berilgan (2026-11-21), skript tayyor (`pnpm eval:uzlib`). `.env` da API kalitlari kutilmoqda.
+- [~] UzLiB "to'g'ri so'z" bo'limini bizning sozlamamiz bilan o'tkazish. 200 savollik tanlov bajarildi, natija yuqorida. To'liq 1 501 savol balans to'ldirilgach davom ettiriladi (taxminan V4-Pro ≤ $9, Flash ≤ $1.2). Gemini uchun `GEMINI_API_KEY` kerak.
 - [x] O'lchash skripti: CER/WER, xatolar bo'yicha aniqlik, to'liqlik va F0.5, bandlar bo'yicha QWK, MAE va SMD. Skript `pnpm eval:gold`, format [ESSAY_AI_EVAL.md](ESSAY_AI_EVAL.md).
 - [ ] Real sinov to'plami (ustoz tayyorlaydi).
 - [ ] So'ng tavsiya etilgan yo'lning 3–8-bandlari, har birining ta'siri sinov to'plamida o'lchanadi.
