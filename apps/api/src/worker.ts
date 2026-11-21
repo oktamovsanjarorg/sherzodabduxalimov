@@ -4,7 +4,7 @@
  */
 import { PrismaClient } from "@onatili/db";
 import { Queue, Worker } from "bullmq";
-import { gradeEssayDeepSeek } from "./ai/deepseek";
+import { gradeEssayDeepSeek } from "./ai/essay/grade";
 import { locatePhrases, transcribeHandwriting } from "./ai/gemini";
 import { ESSAY_AI_QUEUE, type EssayAiJob } from "./ai/queue";
 import { runSubscriptionReminders } from "./billing/reminders";
@@ -132,7 +132,7 @@ async function essayImages(paths: string[]) {
   );
 }
 
-/** AI esse tekshiruvi (DeepSeek). Bir vaqtda 3 ta: API limitlari va xarajat nazorati uchun */
+/** AI esse tekshiruvi (DeepSeek, 4 bosqich: tahlil + savodxonlik → qayta tekshiruv → taqriz). Bir vaqtda 3 ta: API limitlari va xarajat nazorati uchun */
 const essayAi = new Worker<EssayAiJob>(
   ESSAY_AI_QUEUE,
   async (job) => {
@@ -141,7 +141,7 @@ const essayAi = new Worker<EssayAiJob>(
     const total = await gradeEssayJob(
       prisma,
       job.data.essayId,
-      (topic, text, handwritten) => gradeEssayDeepSeek({ apiKey: key, model: env.DEEPSEEK_MODEL, topic, text, handwritten }),
+      (topic, text, handwritten) => gradeEssayDeepSeek({ apiKey: key, model: env.DEEPSEEK_ESSAY_MODEL, effort: env.DEEPSEEK_ESSAY_EFFORT, topic, text, handwritten }),
       (chatId, text, button) => notifyQueue.add("send", { chatId: String(chatId), text, button }),
       env.MINIAPP_URL,
       env.GEMINI_API_KEY ? async (paths) => transcribeHandwriting({ apiKey: env.GEMINI_API_KEY!, model: env.GEMINI_MODEL, images: await essayImages(paths) }) : undefined,

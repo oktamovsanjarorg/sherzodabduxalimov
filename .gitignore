@@ -11,5 +11,8 @@ coverage
 *.tsbuildinfo
 .deploy
 
+# O'lchash ma'lumotlari va natijalari (pnpm eval:*)
+eval-data/
+
 # pnpm ui:audit natijalari
 .ui-audit/

@@ -422,6 +422,8 @@ model EssayReview {
   annotations Json?
   /// AI: aniq tavsiyalar [{focus, text, example}] — eng zaif bandlar bo'yicha, o'quvchining o'z jumlasi namunasi bilan
   tips        Json?
+  /// AI: chuqur tahlil — xatboshilar xaritasi, qarashlar va dalillar iqtiboslari, ball dalillari, bosqichlar vaqti
+  analysis    Json?
   totalScore  Float
   /// Esse tekshirilmaydigan holat (OFF_TOPIC, TOO_SHORT, ...)
   special     String?
