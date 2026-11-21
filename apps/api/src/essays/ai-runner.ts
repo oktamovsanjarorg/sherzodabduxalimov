@@ -112,6 +112,7 @@ export async function gradeEssayJob(prisma: PrismaClient, essayId: string, grade
         mistakes: r.mistakes,
         tips: r.tips.length ? r.tips : (special ? SPECIAL_TIPS[special] : undefined) ?? undefined,
         annotations: annotations ?? undefined,
+        analysis: "analysis" in r ? ((r.analysis as object | undefined) ?? undefined) : undefined,
         totalScore: total,
         feedback: r.feedback || null,
       },

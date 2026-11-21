@@ -1,5 +1,8 @@
 import { z } from "zod";
 
+/** .env qiymatidagi "# izoh" qismi olib tashlanadi; bo'sh qiymat — standart qiymat */
+const noComment = (v: unknown) => (typeof v === "string" ? v.split("#")[0].trim() || undefined : v);
+
 const schema = z.object({
   NODE_ENV: z.string().default("development"),
   API_PORT: z.coerce.number().default(4100),
@@ -26,7 +29,11 @@ const schema = z.object({
   // AI esse tekshiruvi. Qiymatdagi "# izoh" qismi olib tashlanadi (.env da shunday yozilgan bo'lishi mumkin)
   AI_PROVIDER: z.preprocess((v) => (typeof v === "string" ? v.split("#")[0].trim() : v), z.enum(["deepseek", "none"]).catch("none")).default("none"),
   DEEPSEEK_API_KEY: z.preprocess((v) => (typeof v === "string" ? v.split("#")[0].trim() || undefined : v), z.string().optional()),
-  DEEPSEEK_MODEL: z.string().default("deepseek-chat"),
+  // Hisobotlar uchun tezkor model ("deepseek-chat" nomi 2026-07-24 da o'chirilgan)
+  DEEPSEEK_MODEL: z.preprocess(noComment, z.string().default("deepseek-flash")),
+  // Esse tekshiruvi: kuchli model fikrlash rejimida (off | low | high | max)
+  DEEPSEEK_ESSAY_MODEL: z.preprocess(noComment, z.string().default("deepseek-v4-pro")),
+  DEEPSEEK_ESSAY_EFFORT: z.preprocess(noComment, z.enum(["off", "low", "high", "max"]).catch("high").default("high")),
   // Qo'lyozma esseni o'qish (rasm -> matn). Bo'lmasa AI faqat yozilgan matnni tekshiradi
   GEMINI_API_KEY: z.preprocess((v) => (typeof v === "string" ? v.split("#")[0].trim() || undefined : v), z.string().optional()),
   GEMINI_MODEL: z.string().default("gemini-3.8-flash"),
