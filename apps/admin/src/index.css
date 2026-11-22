@@ -6,8 +6,7 @@
   :root { color-scheme: light; }
   body { @apply bg-page font-sans text-ink antialiased; -webkit-tap-highlight-color: transparent; }
   /* Bitta element ekrandan chiqib ketsa ham butun sahifa yonga surilmasin */
-  /* iPhone: tepaga/pastga surganda sahifa "sakrab", sarlavha ustida bo'sh fon chiqmasin */
-  html, body { overflow-x: hidden; overscroll-behavior-y: none; }
+  html, body { overflow-x: hidden; }
 }
 
 /* Sarlavhalar saytdagi serif bilan bir xil. Utility qatlami ustidan yoziladi. */
@@ -73,4 +72,12 @@ html.in-telegram {
 }
 html.tg-fullscreen {
   --safe-top: calc(var(--tg-safe-area-inset-top, env(safe-area-inset-top, 0px)) + var(--tg-content-safe-area-inset-top, 46px));
+}
+
+/*
+ * Telegram ichida iPhone'da tepaga/pastga surganda sahifa biroz "sakraydi" (bu odatiy, o'chirilmaydi).
+ * Sakraganda ochiladigan fon: tepada sarlavha rangi, pastda sahifa rangi, shunda xunuk chiziq ko'rinmaydi.
+ */
+html.in-telegram {
+  background: linear-gradient(to bottom, #0b3b36 50%, #f6f3ec 50%);
 }

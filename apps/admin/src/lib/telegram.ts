@@ -3,8 +3,8 @@ import { useLocation, useNavigate } from "react-router-dom";
 
 /**
  * Admin panel Telegram Mini App ichida ham ochiladi (ustoz ilovani ochganda shu yerga o'tadi).
- * Bu holatda telegram-web-app.js yuklanadi (index.html), Telegram tepa paneli rangi moslanadi,
- * pastga surganda ilova yopilib ketmaydi va "Orqaga" tugmasi ishlaydi.
+ * Bu holatda telegram-web-app.js yuklanadi (index.html), Telegram tepa paneli rangi moslanadi
+ * va "Orqaga" tugmasi ishlaydi. Surish (scroll, swipe) Telegram'ning odatdagidek qoladi.
  */
 interface TgWebApp {
   platform: string;
@@ -15,7 +15,6 @@ interface TgWebApp {
   setHeaderColor(c: string): void;
   setBackgroundColor(c: string): void;
   setBottomBarColor?(c: string): void;
-  disableVerticalSwipes?(): void;
   onEvent(e: "fullscreenChanged", cb: () => void): void;
   BackButton: { show(): void; hide(): void; onClick(cb: () => void): void; offClick(cb: () => void): void };
 }
@@ -45,8 +44,6 @@ export function initTelegram() {
       t.setBackgroundColor(PAGE);
     }
     if (supports("7.10")) t.setBottomBarColor?.("#ffffff");
-    // Ro'yxatni pastga surganda Mini App yopilib ketmasin
-    if (supports("7.7")) t.disableVerticalSwipes?.();
     if (supports("8.0")) t.onEvent("fullscreenChanged", syncFullscreen);
   } catch {
     /* eski Telegram klienti */

@@ -211,7 +211,7 @@ const ADMIN_PAGE = "#f6f3ec";
 /**
  * Xodim admin panelga o'tishidan oldin: fullscreen'dan chiqamiz (Telegram o'zining tepa panelini ko'rsatadi,
  * admin uning ostidan boshlanadi: ✕ / ⋯ tugmalari ustma-ust tushmaydi), panel rangini admin sarlavhasiga
- * moslaymiz va pastga surganda yopilishni o'chiramiz. Bular shu (Mini App) sahifada aniq ishlaydi va
+ * moslaymiz (surish o'chirilmaydi: o'quvchi ilovasi kabi). Bular shu (Mini App) sahifada aniq ishlaydi va
  * keyingi sahifaga ham saqlanib qoladi. Fullscreen'dan chiqish tugashini 800ms gacha kutamiz.
  */
 export function prepareAdminWindow(): Promise<void> {
@@ -223,7 +223,6 @@ export function prepareAdminWindow(): Promise<void> {
         tg.setBackgroundColor(ADMIN_PAGE);
       }
       if (supports("7.10")) tg.setBottomBarColor?.("#ffffff");
-      if (supports("7.7")) tg.disableVerticalSwipes?.();
       if (tg.isFullscreen && supports("8.0") && tg.exitFullscreen) {
         const done = () => {
           clearTimeout(timer);
