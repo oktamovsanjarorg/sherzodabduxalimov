@@ -19,6 +19,7 @@ import { TrashModule } from "./trash/trash.module";
 import { BackupsModule } from "./backups/backups.module";
 import { ExternalModule } from "./external/external.module";
 import { AdvisorModule } from "./advisor/advisor.module";
+import { AnnounceModule } from "./announce/announce.module";
 import { StaffModule } from "./staff/staff.module";
 import { TestsModule } from "./tests/tests.module";
 import { ReviewModule } from "./review/review.module";
@@ -37,7 +38,7 @@ export class AppModule {
   static forRoot(env: Env): DynamicModule {
     return {
       module: AppModule,
-      imports: [EnvModule.forRoot(env), PrismaModule, TrashModule, AccessModule, UsersModule, AuthModule, StaffModule, ContentModule, TestsModule, AdminModule, MediaModule, NotifyModule, ParentsModule, AttendanceModule, BillingModule, EssaysModule, StudentsModule, ReviewModule, VoiceModule, ExportModule, BackupsModule, ExternalModule, AdvisorModule],
+      imports: [EnvModule.forRoot(env), PrismaModule, TrashModule, AccessModule, UsersModule, AuthModule, StaffModule, ContentModule, TestsModule, AdminModule, MediaModule, NotifyModule, ParentsModule, AttendanceModule, BillingModule, EssaysModule, StudentsModule, ReviewModule, VoiceModule, ExportModule, BackupsModule, ExternalModule, AdvisorModule, AnnounceModule],
       controllers: [HealthController],
     };
   }

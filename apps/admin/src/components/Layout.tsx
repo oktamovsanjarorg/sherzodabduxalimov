@@ -72,12 +72,13 @@ export function useNavGroups(): NavGroup[] {
       to: "/students",
       label: "O'quvchilar",
       Icon: GraduationCap,
-      match: /^\/(students|attendance|parents)/,
+      match: /^\/(students|attendance|parents|announcements)/,
       // Yangi kelganlar va ota-ona so'rovlari O'quvchilar sahifasining tepasida ko'rib chiqiladi
       badge: people || undefined,
       sub: [
         { to: "/students", label: "O'quvchilar", match: /^\/(students|parents)/, badge: people || undefined },
         { to: "/attendance", label: "Davomat", match: /^\/attendance/ },
+        ...(isTeacher ? [{ to: "/announcements", label: "E'lonlar", match: /^\/announcements/ }] : []),
       ],
     },
     // Telefonda «Ko'proq»: bo'limlar ro'yxati va chiqish. Pul va xodimlar faqat egada

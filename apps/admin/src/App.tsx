@@ -22,6 +22,9 @@ import { StudentDetailPage } from "./pages/StudentDetailPage";
 import { StudentsPage } from "./pages/StudentsPage";
 import { TestEditorPage } from "./pages/TestEditorPage";
 import { TestsPage } from "./pages/TestsPage";
+import { AnnouncementsPage } from "./pages/AnnouncementsPage";
+import { AnnounceComposerPage } from "./pages/AnnounceComposerPage";
+import { AnnounceDetailPage } from "./pages/AnnounceDetailPage";
 
 function RequireAuth({ children, teacher }: { children: JSX.Element; teacher?: boolean }) {
   const s = loadSession();
@@ -86,6 +89,38 @@ export function App() {
           element={
             <RequireAuth teacher>
               <StaffPage />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="announcements"
+          element={
+            <RequireAuth teacher>
+              <AnnouncementsPage />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="announcements/new"
+          element={
+            <RequireAuth teacher>
+              <AnnounceComposerPage />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="announcements/:id/edit"
+          element={
+            <RequireAuth teacher>
+              <AnnounceComposerPage />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="announcements/:id"
+          element={
+            <RequireAuth teacher>
+              <AnnounceDetailPage />
             </RequireAuth>
           }
         />

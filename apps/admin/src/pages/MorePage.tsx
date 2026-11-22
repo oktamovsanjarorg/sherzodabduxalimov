@@ -1,5 +1,5 @@
 import { ROLE_LABELS } from "@onatili/shared";
-import { Archive, BarChart3, ChevronRight, CreditCard, LogOut, Sparkles, Tags, Trash2, Users, UsersRound, type LucideIcon } from "lucide-react";
+import { Archive, BarChart3, Megaphone, ChevronRight, CreditCard, LogOut, Sparkles, Tags, Trash2, Users, UsersRound, type LucideIcon } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useNavGroups } from "../components/Layout";
 import { clearSession, loadSession } from "../lib/session";
@@ -13,6 +13,7 @@ export function MorePage() {
   const isTeacher = s.user.role === "TEACHER";
   const more = useNavGroups().find((g) => g.to === "/more");
   const money: Item[] = [
+    { to: "/announcements", label: "E'lonlar", hint: "Hammaga yoki guruhga xabar yuborish", Icon: Megaphone },
     { to: "/payments", label: "To'lovlar", hint: "Cheklar, obunalar, qarzdorlar", Icon: CreditCard, badge: more?.badge },
     { to: "/billing", label: "Tariflar va karta", hint: "Narxlar, karta raqami, esse narxi", Icon: Tags },
     { to: "/staff", label: "Xodimlar", hint: "Yordamchi qo'shish", Icon: Users },

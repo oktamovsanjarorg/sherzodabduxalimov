@@ -16,3 +16,4 @@ export * from "./annotation-types";
 export * from "./stats-types";
 export * from "./advisor-types";
 export * from "./period";
+export * from "./announce-types";
