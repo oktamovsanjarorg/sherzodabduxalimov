@@ -7,6 +7,9 @@ import ReactDOM from "react-dom/client";
 import { BrowserRouter } from "react-router-dom";
 import { App } from "./App";
 import { ToastProvider } from "./lib/toast";
+import { initTelegram } from "./lib/telegram";
+
+initTelegram();
 
 const qc = new QueryClient({ defaultOptions: { queries: { retry: 1, refetchOnWindowFocus: false, staleTime: 10_000 } } });
 

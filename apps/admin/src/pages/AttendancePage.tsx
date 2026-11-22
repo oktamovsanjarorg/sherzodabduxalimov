@@ -243,7 +243,7 @@ function DayView({ groupId, date, q, onClear }: { groupId: string; date: string;
       {/* Telefonda ham doim ko'rinadigan panel */}
       <div
         // Telefonda pastki navigatsiya (64px) ustida turadi
-        className="fixed inset-x-0 bottom-[calc(64px+env(safe-area-inset-bottom,0px))] z-20 border-t border-line bg-surface/95 px-4 py-3 backdrop-blur md:bottom-0"
+        className="fixed inset-x-0 bottom-[calc(64px+var(--safe-bottom))] z-20 border-t border-line bg-surface/95 px-4 py-3 backdrop-blur md:bottom-0"
       >
         {/* Telefonda bitta qator: faqat hozir kerakli tugma (saqlanmagan o'zgarish bo'lsa Saqlash, bo'lmasa Yuborish) */}
         <div className="mx-auto flex max-w-6xl items-center gap-2">

@@ -76,7 +76,7 @@ function PageImage({ id, n, anno, onSave }: { id: string; n: number; anno: PageA
         </button>
       </div>
       {edit && (
-        <div className="fixed inset-0 z-[70] flex flex-col bg-surface p-3" style={{ paddingTop: "max(12px, env(safe-area-inset-top, 0px))" }}>
+        <div className="fixed inset-0 z-[70] flex flex-col bg-surface p-3" style={{ paddingTop: "max(12px, var(--safe-top))" }}>
           <div className="mb-2 flex items-center gap-2">
             <p className="flex-1 font-extrabold">{n + 1}-varoqni belgilash</p>
             <button className="btn-secondary btn-sm" onClick={() => setEdit(null)}>

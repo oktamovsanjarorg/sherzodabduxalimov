@@ -18,7 +18,7 @@ export function MobileBar({ children }: { children: ReactNode }) {
   return (
     <>
       <div className="h-16 md:hidden" />
-      <div className="fixed inset-x-0 z-20 border-t border-line bg-surface/95 px-4 py-2.5 backdrop-blur md:hidden" style={{ bottom: "calc(4rem + env(safe-area-inset-bottom, 0px))" }}>
+      <div className="fixed inset-x-0 z-20 border-t border-line bg-surface/95 px-4 py-2.5 backdrop-blur md:hidden" style={{ bottom: "calc(4rem + var(--safe-bottom))" }}>
         {children}
       </div>
     </>
@@ -40,7 +40,7 @@ export function Modal({ title, onClose, children, footer, wide }: { title: strin
         className={`flex h-full w-full flex-col bg-surface shadow-xl sm:h-auto sm:rounded-2xl sm:border sm:border-line ${wide ? "sm:max-w-4xl" : "sm:max-w-xl"}`}
         onMouseDown={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between border-b border-line px-4 py-3 sm:px-5 sm:py-4" style={{ paddingTop: "max(12px, env(safe-area-inset-top, 0px))" }}>
+        <div className="flex items-center justify-between border-b border-line px-4 py-3 sm:px-5 sm:py-4" style={{ paddingTop: "max(12px, var(--safe-top))" }}>
           <h2 className="text-lg font-extrabold">{title}</h2>
           <button className="btn-ghost h-10 w-10 p-0" onClick={onClose} aria-label="Yopish">
             <X size={20} />
@@ -48,7 +48,7 @@ export function Modal({ title, onClose, children, footer, wide }: { title: strin
         </div>
         <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4 sm:max-h-[70vh] sm:flex-none sm:px-5">{children}</div>
         {footer && (
-          <div className="flex flex-wrap justify-end gap-2 border-t border-line px-4 py-3 sm:px-5" style={{ paddingBottom: "max(12px, env(safe-area-inset-bottom, 0px))" }}>
+          <div className="flex flex-wrap justify-end gap-2 border-t border-line px-4 py-3 sm:px-5" style={{ paddingBottom: "max(12px, var(--safe-bottom))" }}>
             {footer}
           </div>
         )}

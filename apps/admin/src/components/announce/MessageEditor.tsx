@@ -88,7 +88,7 @@ export function MessageEditor({
         <textarea
           ref={ref}
           aria-label="Xabar matni"
-          className="block min-h-[180px] w-full resize-y border-0 bg-surface px-3 py-2 text-[15px] outline-none"
+          className="block min-h-[180px] w-full resize-y border-0 bg-surface px-3 py-2 text-[16px] sm:text-[15px] outline-none"
           value={text}
           maxLength={ANNOUNCE_TEXT_MAX}
           placeholder="Xabar matni. {ism} o'rniga har kimning o'z ismi qo'yiladi."
