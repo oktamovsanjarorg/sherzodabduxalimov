@@ -109,6 +109,8 @@ const post = <T>(path: string, body?: unknown) =>
 
 export const api = {
   loginTelegram: (initData: string) => post<AuthResponse>("/auth/telegram", { initData }),
+  /** Xodim uchun bir martalik admin panel havolasi */
+  adminLink: () => post<{ url: string }>("/me/admin-link"),
   me: () => request<Me>("/me"),
   setMyName: (d: { firstName: string; lastName: string }) => post<Me>("/me/name", d),
   myParents: () => request<MyParents>("/me/parents"),

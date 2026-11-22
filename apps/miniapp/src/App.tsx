@@ -1,7 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
-import { lazy, Suspense, useState } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
 import { AppLayout } from "./components/AppLayout";
+import { STAFF_ROLES } from "@onatili/shared";
 import { api, ApiError } from "./lib/api";
 import { getInitData } from "./lib/telegram";
 import { HomePage } from "./pages/HomePage";
@@ -78,6 +79,8 @@ export function App() {
       />
     );
   if (session.isError) return <FullScreen title="Kirishda xatolik" text={session.error.message} />;
+  // Ustoz va yordamchi: o'quvchi sahifasi emas, to'g'ridan-to'g'ri admin panel
+  if (user && STAFF_ROLES.includes(user.role)) return <StaffRedirect />;
   // Ota-ona havolasi orqali kelgan: raqam ilovaning o'zida so'raladi
   if (user?.pendingParentInvite && !phoneSkipped)
     return (
@@ -139,6 +142,30 @@ function FullScreen({ title, text }: { title: string; text: string }) {
     <div className="flex h-full flex-col items-center justify-center gap-2 p-8 text-center">
       <h1 className="text-lg font-bold">{title}</h1>
       <p className="text-sm text-hint">{text}</p>
+    </div>
+  );
+}
+
+/** Xodim: bir martalik havola olib, admin panelni shu oynaning o'zida ochadi */
+function StaffRedirect() {
+  const link = useQuery({ queryKey: ["admin-link"], queryFn: api.adminLink, staleTime: Infinity, gcTime: 0, retry: 1 });
+  useEffect(() => {
+    if (link.data?.url) window.location.replace(link.data.url);
+  }, [link.data]);
+  if (link.isError)
+    return (
+      <div className="flex h-full flex-col items-center justify-center gap-4 p-6 text-center">
+        <p className="text-lg font-extrabold">Admin panelni ochib bo'lmadi</p>
+        <p className="text-sm text-hint">{link.error.message}. Botga /admin deb yozib ham kirishingiz mumkin.</p>
+        <button className="btn-primary" onClick={() => link.refetch()}>
+          Qayta urinish
+        </button>
+      </div>
+    );
+  return (
+    <div className="flex h-full flex-col items-center justify-center gap-3">
+      <div className="h-10 w-10 animate-spin rounded-full border-4 border-brand-soft border-t-brand" />
+      <p className="text-sm text-hint">Admin panel ochilmoqda…</p>
     </div>
   );
 }
