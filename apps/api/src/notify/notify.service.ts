@@ -2,6 +2,7 @@ import { Inject, Injectable, OnModuleDestroy } from "@nestjs/common";
 import { Queue } from "bullmq";
 import { ENV, type Env } from "../config/env";
 import { redisConnection } from "../media/queue";
+import type { TgExtra } from "./telegram";
 
 export const NOTIFY_QUEUE = "telegram-notify";
 /** Xabar ostidagi tugmalar: bosilganda bot data'ni API'ga yuboradi (Telegram chegarasi: 64 bayt) */
@@ -15,6 +16,12 @@ export interface NotifyJob {
   /** Xabar ostidagi Mini App tugmasi */
   button?: { text: string; webAppUrl: string };
   keyboard?: Keyboard;
+  /** Rasm, havola tugmasi, ovozsiz yuborish (e'lonlar) */
+  extra?: TgExtra;
+  /** E'lon oluvchisi: natija (yuborildi/blok/xato) shu yozuvga yoziladi */
+  recipientId?: string;
+  /** "delete" ishi: shu xabarni Telegram'dan o'chirish */
+  deleteMessageId?: number;
 }
 
 export function createNotifyQueue(redisUrl: string, prefix: string) {
@@ -37,6 +44,10 @@ export class NotifyService implements OnModuleDestroy {
   }
   async onModuleDestroy() {
     await this.queue.close();
+  }
+  /** Ko'p ishni birdaniga navbatga qo'yish (e'lonlar, xabarlarni o'chirish) */
+  addBulk(jobs: { name: string; data: NotifyJob }[]) {
+    return this.queue.addBulk(jobs);
   }
   /** chatId null: o'quvchi hali botga kirmagan (ustoz qo'lda kiritgan), xabar yuborilmaydi */
   async send(chatId: bigint | string | null, text: string, attendanceId?: string) {

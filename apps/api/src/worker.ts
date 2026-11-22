@@ -19,7 +19,8 @@ import { MediaPaths } from "./media/paths";
 import { VIDEO_QUEUE, redisConnection, type TranscodeJob } from "./media/queue";
 import { transcode } from "./media/transcode";
 import { NOTIFY_QUEUE, createNotifyQueue, type NotifyJob } from "./notify/notify.service";
-import { sendTelegramMessage, sendTelegramVoice } from "./notify/telegram";
+import { deleteTelegramMessage, sendTelegramMessage, sendTelegramVoice } from "./notify/telegram";
+import { ANNOUNCE_QUEUE, recordDelivery, recordFinalFailure, runAnnouncement, type AnnounceJob } from "./announce/announce-runner";
 
 const env = loadEnv();
 const prisma = new PrismaClient();
@@ -78,7 +79,11 @@ worker.on("ready", () => console.log(`[worker] tayyor, navbat: ${env.QUEUE_PREFI
 const notifier = new Worker<NotifyJob>(
   NOTIFY_QUEUE,
   async (job) => {
-    const r = await sendTelegramMessage(env.BOT_TOKEN, job.data.chatId, job.data.text, job.data.button, job.data.keyboard);
+    const d = job.data;
+    const r = d.deleteMessageId
+      ? await deleteTelegramMessage(env.BOT_TOKEN, d.chatId, d.deleteMessageId)
+      : await sendTelegramMessage(env.BOT_TOKEN, d.chatId, d.text, d.button, d.keyboard, d.extra);
+    if (r.ok || r.status === 403 || r.status === 400) await recordDelivery(prisma, job, r);
     if (r.ok) {
       if (job.data.attendanceId) {
         await prisma.attendance.update({ where: { id: job.data.attendanceId }, data: { notifiedAt: new Date() } }).catch(() => {});
@@ -94,11 +99,22 @@ const notifier = new Worker<NotifyJob>(
   },
   { connection: redisConnection(env.REDIS_URL), prefix: env.QUEUE_PREFIX, concurrency: 5, limiter: { max: 20, duration: 1000 } },
 );
-notifier.on("failed", (job, err) => console.error(`[notify] ${job?.data.chatId} xato:`, err.message.replace(/bot\d+:[\w-]+/g, "bot***")));
+notifier.on("failed", (job, err) => {
+  console.error(`[notify] ${job?.data.chatId} xato:`, err.message.replace(/bot\d+:[\w-]+/g, "bot***"));
+  void recordFinalFailure(prisma, job, err);
+});
 
 /** Obuna eslatmalari: har soatda (to'lov jadvali) */
 const CRON_QUEUE = "billing-cron";
 const notifyQueue = createNotifyQueue(env.REDIS_URL, env.QUEUE_PREFIX);
+
+/** E'lonlar: rejalashtirilgan vaqtda (yoki darhol) auditoriyani aniqlab, Telegram navbatiga tarqatadi */
+const announcer = new Worker<AnnounceJob>(
+  ANNOUNCE_QUEUE,
+  (job) => runAnnouncement(prisma, notifyQueue, env.MINIAPP_URL?.replace(/\/$/, ""), job.data.announcementId),
+  { connection: redisConnection(env.REDIS_URL), prefix: env.QUEUE_PREFIX, concurrency: 1 },
+);
+announcer.on("failed", (job, err) => console.error(`[announce] ${job?.data.announcementId} xato:`, err.message));
 const cronQueue = new Queue(CRON_QUEUE, { prefix: env.QUEUE_PREFIX, connection: redisConnection(env.REDIS_URL) });
 void cronQueue
   .upsertJobScheduler("subscription-reminders", { every: 3600_000 }, { name: "reminders", opts: { removeOnComplete: 50, removeOnFail: 50 } })
@@ -177,6 +193,7 @@ voice.on("failed", async (job, err) => {
 
 const shutdown = async () => {
   await voice.close();
+  await announcer.close();
   await essayAi.close();
   await cron.close();
   await cronQueue.close();

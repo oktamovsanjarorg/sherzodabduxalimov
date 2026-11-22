@@ -66,6 +66,8 @@ model User {
   invitesSent           StaffInvite[]
   followUpsWritten      PaymentFollowUp[] @relation("FollowUpAuthor")
   trialUses             TrialUse[]
+  announcements         Announcement[]    @relation("AnnouncementAuthor")
+  announcementsReceived AnnouncementRecipient[]
 }
 
 enum TrialKind {
@@ -778,4 +780,65 @@ model ExternalResult {
 
   @@unique([testId, key])
   @@index([studentId])
+}
+
+enum AnnouncementStatus {
+  DRAFT
+  SCHEDULED
+  SENT
+}
+
+/// E'lon: ustoz tanlangan auditoriyaga (o'quvchi, ota-ona, xodim, guruh) bot orqali yuboradigan xabar
+model Announcement {
+  id          String                  @id @default(cuid())
+  authorId    String?
+  author      User?                   @relation("AnnouncementAuthor", fields: [authorId], references: [id], onDelete: SetNull)
+  title       String?
+  /// Matn: **qalin**, __kursiv__, {ism} — har bir oluvchining ismi
+  text        String
+  /// Telegram file_id (rasm bir marta yuklanadi, keyin shu id bilan yuboriladi)
+  photoFileId String?
+  buttonText  String?
+  /// "app:/yo'l" — ilova sahifasi, yoki https:// havola
+  buttonUrl   String?
+  /// Ovozsiz (bildirishnoma tovushisiz) yuborish
+  silent      Boolean                 @default(false)
+  /// Auditoriya filtri: { roles, groupIds, modes, onlyAccepted, userIds }
+  audience    Json
+  status      AnnouncementStatus      @default(DRAFT)
+  scheduledAt DateTime?
+  sentAt      DateTime?
+  /// Telegram'dan o'chirib (qaytarib) olingan payt
+  recalledAt  DateTime?
+  recipients  AnnouncementRecipient[]
+  createdAt   DateTime                @default(now())
+  updatedAt   DateTime                @updatedAt
+
+  @@index([status, createdAt])
+}
+
+enum DeliveryStatus {
+  PENDING
+  SENT
+  FAILED
+  BLOCKED
+}
+
+model AnnouncementRecipient {
+  id             String         @id @default(cuid())
+  announcementId String
+  announcement   Announcement   @relation(fields: [announcementId], references: [id], onDelete: Cascade)
+  userId         String
+  user           User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  chatId         BigInt
+  /// Kim sifatida oldi: STUDENT, PARENT, ASSISTANT, TEACHER
+  role           Role
+  status         DeliveryStatus @default(PENDING)
+  messageId      Int?
+  error          String?
+  sentAt         DateTime?
+  deletedAt      DateTime?
+
+  @@unique([announcementId, userId])
+  @@index([announcementId, status])
 }
