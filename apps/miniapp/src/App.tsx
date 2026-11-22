@@ -4,7 +4,7 @@ import { Navigate, Route, Routes } from "react-router-dom";
 import { AppLayout } from "./components/AppLayout";
 import { STAFF_ROLES } from "@onatili/shared";
 import { api, ApiError } from "./lib/api";
-import { getInitData } from "./lib/telegram";
+import { getInitData, telegramLaunchParams } from "./lib/telegram";
 import { HomePage } from "./pages/HomePage";
 import { LessonsPage } from "./pages/LessonsPage";
 import { ProfilePage } from "./pages/ProfilePage";
@@ -150,7 +150,9 @@ function FullScreen({ title, text }: { title: string; text: string }) {
 function StaffRedirect() {
   const link = useQuery({ queryKey: ["admin-link"], queryFn: api.adminLink, staleTime: Infinity, gcTime: 0, retry: 1 });
   useEffect(() => {
-    if (link.data?.url) window.location.replace(link.data.url);
+    if (!link.data?.url) return;
+    const extra = telegramLaunchParams();
+    window.location.replace(extra ? `${link.data.url}&${extra}` : link.data.url);
   }, [link.data]);
   if (link.isError)
     return (

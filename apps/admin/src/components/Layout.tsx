@@ -6,6 +6,7 @@ import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { api } from "../lib/api";
 import { useDismissed } from "../lib/dismiss";
 import { clearSession, loadSession } from "../lib/session";
+import { useTelegramBackButton } from "../lib/telegram";
 
 interface NavGroup {
   to: string;
@@ -118,6 +119,7 @@ export function Layout() {
     navigate("/login");
   };
   const groups = useNavGroups();
+  useTelegramBackButton();
   const s = loadSession()!;
   const current = groups.find((g) => g.match.test(pathname)) ?? groups[0];
   // Telefonda faol bo'lim tugmasi ko'rinib tursin (Korzinka, Zaxira kabi oxirgilari ekran chetida qolmasin)
@@ -185,7 +187,7 @@ export function Layout() {
       </aside>
 
       {/* Telefon/planshet: yuqorida faqat guruh ichidagi bo'limlar (qaysi guruhdaligi pastki menyuda ko'rinadi) */}
-      <header className="sticky top-0 z-30 bg-navy text-white shadow-sm md:hidden" style={{ paddingTop: "env(safe-area-inset-top, 0px)" }}>
+      <header className="sticky top-0 z-30 bg-navy text-white shadow-sm md:hidden" style={{ paddingTop: "var(--safe-top)" }}>
         {chips ? (
           <div ref={tabs} className="no-scrollbar flex gap-1.5 overflow-x-auto px-4 py-2.5">
             {chips.map((t) => {
@@ -222,7 +224,7 @@ export function Layout() {
       {/* Telefon/planshet: pastki navigatsiya */}
       <nav
         className="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-surface/95 backdrop-blur md:hidden"
-        style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
+        style={{ paddingBottom: "var(--safe-bottom)" }}
       >
         <ul className="grid grid-cols-5">
           {groups.map((g) => {

@@ -14,6 +14,7 @@ type ThemeParams = Partial<
 
 interface TgWebApp {
   initData: string;
+  version?: string;
   colorScheme: "light" | "dark";
   themeParams: ThemeParams;
   ready(): void;
@@ -189,4 +190,16 @@ export function requestOwnPhone(botStartPhoneUrl: string): Promise<boolean> {
       resolve(true);
     }
   });
+}
+
+/**
+ * Boshqa sahifaga (admin panel) o'tganda Telegram sozlamalarini hash orqali uzatamiz:
+ * telegram-web-app.js ularni o'qib, Telegram ichida ekanini, versiya va fullscreen holatini biladi.
+ * initData (shaxsiy ma'lumot) uzatilmaydi.
+ */
+export function telegramLaunchParams(): string {
+  if (!tg || !isInTelegram) return "";
+  const p = new URLSearchParams({ tgWebAppVersion: tg.version ?? "6.0", tgWebAppPlatform: tg.platform ?? "unknown", tgWebAppThemeParams: JSON.stringify(tg.themeParams ?? {}) });
+  if (tg.isFullscreen) p.set("tgWebAppFullscreen", "1");
+  return p.toString();
 }

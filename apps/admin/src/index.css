@@ -57,3 +57,19 @@ h1 {
 /* Gorizontal aylanadigan tugmalar qatori: scrollbar ko'rinmasin (telefonda baribir barmoq bilan suriladi) */
 .no-scrollbar { scrollbar-width: none; }
 .no-scrollbar::-webkit-scrollbar { display: none; }
+
+/*
+ * Ekran chetlari (iPhone soat qatori, pastki chiziq). Telegram Mini App ichida Telegram o'z qiymatlarini beradi:
+ * fullscreen'da tepada soat qatori + Telegram tugmalari (✕, ⋯) turadi, kontent ulardan pastda boshlanadi.
+ * Telegram qiymat yubormasa: iPhone soat qatori + 46px (Telegram tugmalari balandligi).
+ */
+:root {
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: max(env(safe-area-inset-bottom, 0px), var(--tg-safe-area-inset-bottom, 0px));
+}
+html.in-telegram {
+  --safe-top: calc(var(--tg-safe-area-inset-top, 0px) + var(--tg-content-safe-area-inset-top, 0px));
+}
+html.tg-fullscreen {
+  --safe-top: calc(var(--tg-safe-area-inset-top, env(safe-area-inset-top, 0px)) + var(--tg-content-safe-area-inset-top, 46px));
+}
