@@ -21,6 +21,7 @@ interface TgWebApp {
   expand(): void;
   setHeaderColor(color: string): void;
   setBackgroundColor(color: string): void;
+  setBottomBarColor?(color: string): void;
   platform?: string;
   isFullscreen?: boolean;
   requestFullscreen?(): void;
@@ -202,4 +203,41 @@ export function telegramLaunchParams(): string {
   const p = new URLSearchParams({ tgWebAppVersion: tg.version ?? "6.0", tgWebAppPlatform: tg.platform ?? "unknown", tgWebAppThemeParams: JSON.stringify(tg.themeParams ?? {}) });
   if (tg.isFullscreen) p.set("tgWebAppFullscreen", "1");
   return p.toString();
+}
+
+const ADMIN_NAVY = "#0b3b36";
+const ADMIN_PAGE = "#f6f3ec";
+
+/**
+ * Xodim admin panelga o'tishidan oldin: fullscreen'dan chiqamiz (Telegram o'zining tepa panelini ko'rsatadi,
+ * admin uning ostidan boshlanadi: ✕ / ⋯ tugmalari ustma-ust tushmaydi), panel rangini admin sarlavhasiga
+ * moslaymiz va pastga surganda yopilishni o'chiramiz. Bular shu (Mini App) sahifada aniq ishlaydi va
+ * keyingi sahifaga ham saqlanib qoladi. Fullscreen'dan chiqish tugashini 800ms gacha kutamiz.
+ */
+export function prepareAdminWindow(): Promise<void> {
+  return new Promise((resolve) => {
+    if (!tg || !isInTelegram) return resolve();
+    try {
+      if (supports("6.9")) {
+        tg.setHeaderColor(ADMIN_NAVY);
+        tg.setBackgroundColor(ADMIN_PAGE);
+      }
+      if (supports("7.10")) tg.setBottomBarColor?.("#ffffff");
+      if (supports("7.7")) tg.disableVerticalSwipes?.();
+      if (tg.isFullscreen && supports("8.0") && tg.exitFullscreen) {
+        const done = () => {
+          clearTimeout(timer);
+          tg.offEvent?.("fullscreenChanged", done);
+          resolve();
+        };
+        const timer = setTimeout(done, 800);
+        tg.onEvent("fullscreenChanged", done);
+        tg.exitFullscreen();
+        return;
+      }
+    } catch {
+      /* eski Telegram klienti */
+    }
+    resolve();
+  });
 }
