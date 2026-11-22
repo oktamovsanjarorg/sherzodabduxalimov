@@ -1,4 +1,4 @@
-import { BadRequestException, Body, Controller, Delete, Get, HttpCode, Param, Post, UseGuards } from "@nestjs/common";
+import { BadRequestException, Body, ForbiddenException, Controller, Delete, Get, HttpCode, Param, Post, UseGuards } from "@nestjs/common";
 import { z } from "zod";
 import { CurrentUser, Public, Roles, type JwtUser } from "../auth/decorators";
 import { InternalGuard } from "./internal.guard";
@@ -35,6 +35,16 @@ export class StaffController {
     const p = loginLinkBody.safeParse(body);
     if (!p.success) throw new BadRequestException();
     return this.staff.recordVisit(p.data);
+  }
+
+  /** Mini App chaqiradi: xodim uchun bir martalik admin panel havolasi */
+  @Roles("TEACHER", "ASSISTANT")
+  @Post("me/admin-link")
+  @HttpCode(200)
+  async myLoginLink(@CurrentUser() user: JwtUser) {
+    const url = await this.staff.loginLinkFor(user.sub);
+    if (!url) throw new ForbiddenException("Admin panel faqat ustoz va yordamchilar uchun");
+    return { url };
   }
 
   @Public()
