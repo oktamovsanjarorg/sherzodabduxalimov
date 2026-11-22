@@ -4,7 +4,7 @@ import { Navigate, Route, Routes } from "react-router-dom";
 import { AppLayout } from "./components/AppLayout";
 import { STAFF_ROLES } from "@onatili/shared";
 import { api, ApiError } from "./lib/api";
-import { getInitData, telegramLaunchParams } from "./lib/telegram";
+import { getInitData, prepareAdminWindow, telegramLaunchParams } from "./lib/telegram";
 import { HomePage } from "./pages/HomePage";
 import { LessonsPage } from "./pages/LessonsPage";
 import { ProfilePage } from "./pages/ProfilePage";
@@ -149,25 +149,33 @@ function FullScreen({ title, text }: { title: string; text: string }) {
 /** Xodim: bir martalik havola olib, admin panelni shu oynaning o'zida ochadi */
 function StaffRedirect() {
   const link = useQuery({ queryKey: ["admin-link"], queryFn: api.adminLink, staleTime: Infinity, gcTime: 0, retry: 1 });
+  // Havola olinayotganda oynani tayyorlaymiz (fullscreen'dan chiqish, ranglar): ikkalasi tugagach o'tamiz
+  const [windowReady, setWindowReady] = useState(false);
   useEffect(() => {
-    if (!link.data?.url) return;
+    void prepareAdminWindow().then(() => setWindowReady(true));
+  }, []);
+  useEffect(() => {
+    if (!link.data?.url || !windowReady) return;
     const extra = telegramLaunchParams();
     window.location.replace(extra ? `${link.data.url}&${extra}` : link.data.url);
-  }, [link.data]);
-  if (link.isError)
-    return (
-      <div className="flex h-full flex-col items-center justify-center gap-4 p-6 text-center">
-        <p className="text-lg font-extrabold">Admin panelni ochib bo'lmadi</p>
-        <p className="text-sm text-hint">{link.error.message}. Botga /admin deb yozib ham kirishingiz mumkin.</p>
-        <button className="btn-primary" onClick={() => link.refetch()}>
-          Qayta urinish
-        </button>
-      </div>
-    );
+  }, [link.data, windowReady]);
+  // Admin panelning kirish sahifasi bilan bir xil to'q yashil fon: o'tish paytida ekran "sakramaydi"
   return (
-    <div className="flex h-full flex-col items-center justify-center gap-3">
-      <div className="h-10 w-10 animate-spin rounded-full border-4 border-brand-soft border-t-brand" />
-      <p className="text-sm text-hint">Admin panel ochilmoqda…</p>
+    <div className="fixed inset-0 flex flex-col items-center justify-center gap-4 bg-[#0b3b36] p-6 text-center text-white">
+      {link.isError ? (
+        <>
+          <p className="text-lg font-extrabold">Admin panelni ochib bo'lmadi</p>
+          <p className="text-sm text-white/70">{link.error.message}. Botga /admin deb yozib ham kirishingiz mumkin.</p>
+          <button className="rounded-xl bg-white px-5 py-3 font-bold text-[#0b3b36]" onClick={() => link.refetch()}>
+            Qayta urinish
+          </button>
+        </>
+      ) : (
+        <>
+          <div className="h-10 w-10 animate-spin rounded-full border-4 border-white/20 border-t-white" />
+          <p className="text-sm text-white/70">Admin panel ochilmoqda…</p>
+        </>
+      )}
     </div>
   );
 }

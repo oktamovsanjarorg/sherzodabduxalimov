@@ -6,7 +6,8 @@
   :root { color-scheme: light; }
   body { @apply bg-page font-sans text-ink antialiased; -webkit-tap-highlight-color: transparent; }
   /* Bitta element ekrandan chiqib ketsa ham butun sahifa yonga surilmasin */
-  html, body { overflow-x: hidden; }
+  /* iPhone: tepaga/pastga surganda sahifa "sakrab", sarlavha ustida bo'sh fon chiqmasin */
+  html, body { overflow-x: hidden; overscroll-behavior-y: none; }
 }
 
 /* Sarlavhalar saytdagi serif bilan bir xil. Utility qatlami ustidan yoziladi. */
