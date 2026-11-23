@@ -27,14 +27,16 @@ async function question(q: Q) {
       text: q.text,
       explanation: q.explanation,
       correctText: q.correctText,
-      options: q.options
-        ? { create: q.options.map((o, i) => ({ text: o.text, isCorrect: Boolean(o.ok), order: i + 1 })) }
-        : undefined,
+      options: q.options ? { create: q.options.map((o, i) => ({ text: o.text, isCorrect: Boolean(o.ok), order: i + 1 })) } : undefined,
     },
   });
 }
 
-async function test(id: string, data: { type: "TOPIC" | "MOCK"; title: string; topicId?: string; isFree: boolean; timeLimitSec?: number }, questionIds: string[]) {
+async function test(
+  id: string,
+  data: { type: "TOPIC" | "MOCK"; title: string; topicId?: string; isFree: boolean; timeLimitSec?: number },
+  questionIds: string[],
+) {
   await prisma.test.upsert({
     where: { id },
     update: {},
@@ -160,9 +162,7 @@ async function main() {
     options: [{ text: "st" }, { text: "sh", ok: true }, { text: "nk" }, { text: "rt" }],
   });
 
-  await test("test-fonetika-1", { type: "TOPIC", title: "Fonetika: 1-test", topicId: fon.id, isFree: true }, [
-    "q-unli-soni",
-  ]);
+  await test("test-fonetika-1", { type: "TOPIC", title: "Fonetika: 1-test", topicId: fon.id, isFree: true }, ["q-unli-soni"]);
   // Mavjud bazada 1-testga yangi savollarni ham qo'shamiz
   for (const [i, qid] of ["q-faqat-unli", "q-unlilarni-tanlang", "q-kitob-bogin"].entries()) {
     await prisma.testQuestion.upsert({
@@ -205,17 +205,18 @@ async function main() {
     explanation: "Issiq va sovuq: ma'nosi qarama-qarshi. Qolganlari sinonim juftliklar.",
     options: [{ text: "katta – ulkan" }, { text: "issiq – sovuq", ok: true }, { text: "tez – chaqqon" }, { text: "go'zal – chiroyli" }],
   });
-  await test("test-leksika-1", { type: "TOPIC", title: "Leksikologiya: 1-test", topicId: lex.id, isFree: false }, [
+  await test("test-leksika-1", { type: "TOPIC", title: "Leksikologiya: 1-test", topicId: lex.id, isFree: false }, ["q-sinonim", "q-antonim"]);
+
+  // ---------- Mock ----------
+  await test("mock-demo-1", { type: "MOCK", title: "Demo mock: 1-variant", isFree: true, timeLimitSec: 600 }, [
+    "q-unli-soni",
+    "q-faqat-unli",
+    "q-unlilarni-tanlang",
+    "q-kitob-bogin",
+    "q-harfbirikma",
     "q-sinonim",
     "q-antonim",
   ]);
-
-  // ---------- Mock ----------
-  await test(
-    "mock-demo-1",
-    { type: "MOCK", title: "Demo mock: 1-variant", isFree: true, timeLimitSec: 600 },
-    ["q-unli-soni", "q-faqat-unli", "q-unlilarni-tanlang", "q-kitob-bogin", "q-harfbirikma", "q-sinonim", "q-antonim"],
-  );
 
   console.log("Seed tayyor");
 }

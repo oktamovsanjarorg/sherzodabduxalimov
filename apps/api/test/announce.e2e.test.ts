@@ -21,7 +21,8 @@ describe("E'lonlar (e2e)", () => {
   let H: Record<string, string>;
   let A: Record<string, string>;
   let groupId: string;
-  const req = (method: "GET" | "POST" | "PATCH" | "DELETE", url: string, payload?: object, headers = H) => app.inject({ method, url: `/api${url}`, headers, payload });
+  const req = (method: "GET" | "POST" | "PATCH" | "DELETE", url: string, payload?: object, headers = H) =>
+    app.inject({ method, url: `/api${url}`, headers, payload });
   const audience = () => ({ roles: ["STUDENT", "PARENT"], groupIds: [groupId] });
 
   beforeAll(async () => {
@@ -33,12 +34,18 @@ describe("E'lonlar (e2e)", () => {
     A = (await login(app, TG.assistant, "Yordamchi")).headers;
     groupId = (await req("POST", "/admin/groups", { name: `${TAG} guruh` })).json().id;
     const ids: string[] = [];
-    for (const [tg, name] of [[TG.s1, "Ali"], [TG.s2, "Vali"]] as const) {
+    for (const [tg, name] of [
+      [TG.s1, "Ali"],
+      [TG.s2, "Vali"],
+    ] as const) {
       const s = await login(app, tg, name);
       ids.push((await prisma.studentProfile.findUniqueOrThrow({ where: { userId: s.userId } })).id);
     }
     // Botga hali kirmagan (ustoz qo'lda kiritgan) o'quvchi: unga xabar bormaydi
-    const manual = await prisma.user.create({ data: { firstName: `${TAG} qo'lda`, student: { create: { parentLinkCode: `${TAG}-pl`, acceptedAt: new Date() } } }, include: { student: true } });
+    const manual = await prisma.user.create({
+      data: { firstName: `${TAG} qo'lda`, student: { create: { parentLinkCode: `${TAG}-pl`, acceptedAt: new Date() } } },
+      include: { student: true },
+    });
     ids.push(manual.student!.id);
     await req("POST", `/admin/groups/${groupId}/students`, { studentIds: ids });
   });
@@ -63,11 +70,15 @@ describe("E'lonlar (e2e)", () => {
 
   it("noto'g'ri ma'lumotni rad etadi", async () => {
     expect((await req("POST", "/admin/announcements", { text: "", audience: audience() })).statusCode).toBe(400);
-    expect((await req("POST", "/admin/announcements", { text: `${TAG} x`, audience: audience(), buttonText: "Ochish", buttonUrl: "javascript:1" })).statusCode).toBe(400);
+    expect(
+      (await req("POST", "/admin/announcements", { text: `${TAG} x`, audience: audience(), buttonText: "Ochish", buttonUrl: "javascript:1" })).statusCode,
+    ).toBe(400);
   });
 
   it("yuboradi, har kimga ismi bilan, ikki marta ishlasa ham bir marta; natijalarni sanaydi", async () => {
-    const a = (await req("POST", "/admin/announcements", { text: `${TAG} **Salom**, {ism}!`, audience: audience(), buttonText: "Testlar", buttonUrl: "app:/tests" })).json();
+    const a = (
+      await req("POST", "/admin/announcements", { text: `${TAG} **Salom**, {ism}!`, audience: audience(), buttonText: "Testlar", buttonUrl: "app:/tests" })
+    ).json();
     expect(a).toMatchObject({ status: "DRAFT", audienceLabel: `O'quvchilar, Ota-onalar · ${TAG} guruh` });
     expect((await req("POST", `/admin/announcements/${a.id}/send`, {})).json().status).toBe("SCHEDULED");
 

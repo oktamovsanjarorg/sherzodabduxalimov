@@ -6,7 +6,16 @@ describe("parseTestMatrix", () => {
     const csv = '﻿Ism;Username;Q1;Q2;Q3;Jami\r\n"Karimova; Aziza";aziza_k;1;0;1;2\r\nAli;;0;;1;1\r\n';
     const r = parseTestMatrix(csv);
     expect(r.questionCount).toBe(3);
-    expect(r.rows[0]).toMatchObject({ name: "Karimova; Aziza", username: "aziza_k", answers: "cwc", correct: 2, wrong: 1, blank: 0, percent: 66.7, key: "name:aziza_k" });
+    expect(r.rows[0]).toMatchObject({
+      name: "Karimova; Aziza",
+      username: "aziza_k",
+      answers: "cwc",
+      correct: 2,
+      wrong: 1,
+      blank: 0,
+      percent: 66.7,
+      key: "name:aziza_k",
+    });
     expect(r.rows[1]).toMatchObject({ name: "Ali", username: null, answers: "w-c", correct: 1, blank: 1, key: "name:ali" });
   });
   it("bir xil ismlar alohida kalit oladi", () => {

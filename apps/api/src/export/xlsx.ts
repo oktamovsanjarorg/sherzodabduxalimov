@@ -73,7 +73,11 @@ function sheetXml(sh: Sheet, strings: Strings) {
 function sheetNames(sheets: Sheet[]) {
   const used = new Set<string>();
   return sheets.map((s, i) => {
-    let n = s.name.replace(/[[\]:*?/\\]/g, " ").trim().slice(0, 31) || `Varaq ${i + 1}`;
+    let n =
+      s.name
+        .replace(/[[\]:*?/\\]/g, " ")
+        .trim()
+        .slice(0, 31) || `Varaq ${i + 1}`;
     while (used.has(n.toLowerCase())) n = `${n.slice(0, 28)} ${i + 1}`;
     used.add(n.toLowerCase());
     return n;
@@ -92,7 +96,12 @@ export function buildXlsx(sheets: Sheet[]): Buffer {
         `<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>` +
         `<Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>` +
         `<Override PartName="/xl/sharedStrings.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sharedStrings+xml"/>` +
-        sheets.map((_, i) => `<Override PartName="/xl/worksheets/sheet${i + 1}.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>`).join("") +
+        sheets
+          .map(
+            (_, i) =>
+              `<Override PartName="/xl/worksheets/sheet${i + 1}.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>`,
+          )
+          .join("") +
         `</Types>`,
     ],
     [
@@ -112,7 +121,12 @@ export function buildXlsx(sheets: Sheet[]): Buffer {
     [
       "xl/_rels/workbook.xml.rels",
       `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">` +
-        sheets.map((_, i) => `<Relationship Id="rId${i + 1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet${i + 1}.xml"/>`).join("") +
+        sheets
+          .map(
+            (_, i) =>
+              `<Relationship Id="rId${i + 1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet${i + 1}.xml"/>`,
+          )
+          .join("") +
         `<Relationship Id="rId${sheets.length + 1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>` +
         `<Relationship Id="rId${sheets.length + 2}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/sharedStrings" Target="sharedStrings.xml"/></Relationships>`,
     ],

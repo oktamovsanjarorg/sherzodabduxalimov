@@ -48,7 +48,10 @@ const resultSchema = z.object({
   criteria: z.array(z.object({ key: z.string(), score: z.coerce.number(), comment: z.string().nullish() })).default([]),
   feedback: z.string().default(""),
   mistakes: z.array(z.object({ wrong: z.string(), right: z.string(), note: z.string().nullish(), type: z.string().nullish() })).default([]),
-  tips: z.array(z.object({ focus: z.string().nullish(), text: z.string(), example: z.string().nullish() })).default([]).catch([]),
+  tips: z
+    .array(z.object({ focus: z.string().nullish(), text: z.string(), example: z.string().nullish() }))
+    .default([])
+    .catch([]),
 });
 
 const TYPE_KEYS = ERROR_TYPES.map((t) => t.key as string);
@@ -182,8 +185,15 @@ export async function gradeEssayDeepSeek(opts: { apiKey: string; model: string; 
 }
 
 /** Faqat tavsiyalar (asosiy javobda tushib qolganda): eng past ball olgan bandlardan boshlab */
-async function listTipsDeepSeek(opts: { apiKey: string; model: string; topic: string; text: string }, criteria: AiEssayResult["criteria"]): Promise<AiEssayResult["tips"]> {
-  const weak = [...criteria].sort((a, b) => a.score - b.score).slice(0, 6).map((c) => `- ${c.key} (${c.score} ball): ${c.comment ?? ""}`).join("\n");
+async function listTipsDeepSeek(
+  opts: { apiKey: string; model: string; topic: string; text: string },
+  criteria: AiEssayResult["criteria"],
+): Promise<AiEssayResult["tips"]> {
+  const weak = [...criteria]
+    .sort((a, b) => a.score - b.score)
+    .slice(0, 6)
+    .map((c) => `- ${c.key} (${c.score} ball): ${c.comment ?? ""}`)
+    .join("\n");
   const system = `Sen ona tili fan ekspertisan. Esse allaqachon mezon bo'yicha baholangan; endi o'quvchiga 3–5 ta ANIQ tavsiya yoz — eng past ball olgan bandlardan boshlab.
 Har tavsiya shu essega tegishli bo'lsin, umumiy gap emas. "focus" — band kaliti (style, views, evidence, parts, structure, coherence, spelling, punctuation, affixes, wordUsage, lexicon, purity).
 "text" — nima qilish kerakligi (1–2 jumla). "example" — o'quvchi essesidagi bitta jumlaning yaxshilangan namunasi yoki shu esse uchun namunaviy jumla (kirish, dalil, xulosa); kerak bo'lmasa null.

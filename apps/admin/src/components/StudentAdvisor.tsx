@@ -44,7 +44,13 @@ export function StudentAdvisor({ id }: { id: string }) {
             {d.next.map((n) => (
               <li key={n.label} className="flex items-center gap-2">
                 <ArrowRight size={14} className="shrink-0 text-brand" />
-                {n.to ? <Link to={n.to} className="font-semibold text-brand hover:underline">{n.label}</Link> : n.label}
+                {n.to ? (
+                  <Link to={n.to} className="font-semibold text-brand hover:underline">
+                    {n.label}
+                  </Link>
+                ) : (
+                  n.label
+                )}
               </li>
             ))}
           </ul>

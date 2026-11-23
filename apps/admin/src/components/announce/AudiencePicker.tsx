@@ -110,7 +110,12 @@ export function AudiencePicker({
             {value.userIds.map((id) => (
               <span key={id} className="inline-flex items-center gap-1 rounded-full bg-surface-3 py-1 pl-3 pr-1 text-sm font-semibold">
                 {names[id] ?? "Tanlangan"}
-                <button type="button" aria-label="Olib tashlash" className="rounded-full p-1 hover:bg-surface-4" onClick={() => set({ userIds: value.userIds.filter((x) => x !== id) })}>
+                <button
+                  type="button"
+                  aria-label="Olib tashlash"
+                  className="rounded-full p-1 hover:bg-surface-4"
+                  onClick={() => set({ userIds: value.userIds.filter((x) => x !== id) })}
+                >
                   <X size={13} />
                 </button>
               </span>
@@ -155,7 +160,12 @@ export function AudiencePicker({
 
 function GroupChip({ on, onClick, children }: { on: boolean; onClick: () => void; children: React.ReactNode }) {
   return (
-    <button type="button" aria-pressed={on} onClick={onClick} className={`h-9 rounded-full px-3.5 text-sm font-bold ${on ? "bg-ink text-page" : "bg-surface-3 text-ink-2 hover:bg-surface-4"}`}>
+    <button
+      type="button"
+      aria-pressed={on}
+      onClick={onClick}
+      className={`h-9 rounded-full px-3.5 text-sm font-bold ${on ? "bg-ink text-page" : "bg-surface-3 text-ink-2 hover:bg-surface-4"}`}
+    >
       {children}
     </button>
   );

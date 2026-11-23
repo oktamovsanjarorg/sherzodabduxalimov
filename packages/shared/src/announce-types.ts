@@ -20,7 +20,10 @@ export const announceAudience = z
     /** Bo'sh: hamma guruhlar (va guruhsizlar ham) */
     groupIds: z.array(z.string().min(1)).max(100).default([]),
     /** Bo'sh: online ham, offline ham */
-    modes: z.array(z.enum(["ONLINE", "OFFLINE"])).max(2).default([]),
+    modes: z
+      .array(z.enum(["ONLINE", "OFFLINE"]))
+      .max(2)
+      .default([]),
     /** Faqat ustoz qabul qilgan o'quvchilar (botdan o'zi kirgan yangilar kirmaydi) */
     onlyAccepted: z.boolean().default(true),
     /** Qo'lda tanlangan odamlar (filtrdan tashqari qo'shiladi) */

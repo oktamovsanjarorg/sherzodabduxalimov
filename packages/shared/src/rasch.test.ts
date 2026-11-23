@@ -4,7 +4,7 @@ import { abilityT, calibrate, difficultyWeights, estimateTheta, raschT } from ".
 /** Ma'lum qiyinlik va qobiliyatlardan simulyatsiya: model ularni qayta tiklay olishi kerak */
 function simulate(thetas: number[], bs: number[], seed = 7) {
   let x = seed;
-  const rnd = () => ((x = (x * 1103515245 + 12345) % 2 ** 31) / 2 ** 31);
+  const rnd = () => (x = (x * 1103515245 + 12345) % 2 ** 31) / 2 ** 31;
   return thetas.map((t) => bs.map((b) => (rnd() < 1 / (1 + Math.exp(-(t - b))) ? 1 : 0) as 0 | 1));
 }
 
@@ -24,7 +24,9 @@ describe("Rasch modeli", () => {
     const corr = (() => {
       const m1 = c.b.reduce((s, x) => s + x, 0) / c.b.length;
       const m2 = trueB.reduce((s, x) => s + x, 0) / trueB.length;
-      let a = 0, d1 = 0, d2 = 0;
+      let a = 0,
+        d1 = 0,
+        d2 = 0;
       c.b.forEach((x, i) => ((a += (x - m1) * (trueB[i] - m2)), (d1 += (x - m1) ** 2), (d2 += (trueB[i] - m2) ** 2)));
       return a / Math.sqrt(d1 * d2);
     })();
@@ -42,7 +44,11 @@ describe("Rasch modeli", () => {
 
   it("mutlaq T: guruhga bog'liq emas, teng savollarda C ≈ 43%, A+ ≈ 81%", () => {
     const w = new Array(40).fill(1);
-    const share = (k: number) => abilityT(Array.from({ length: 40 }, (_, j) => (j < k ? 1 : 0)), w);
+    const share = (k: number) =>
+      abilityT(
+        Array.from({ length: 40 }, (_, j) => (j < k ? 1 : 0)),
+        w,
+      );
     expect(share(17)).toBeGreaterThanOrEqual(46 - 1.5); // ≈43% → C chegarasi atrofida
     expect(share(17)).toBeLessThan(50);
     expect(share(32)).toBeLessThan(70); // 80% hali A emas

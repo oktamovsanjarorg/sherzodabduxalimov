@@ -12,7 +12,17 @@ const forbid = (files, group, message) => ({
 
 export default tseslint.config(
   {
-    ignores: ["**/dist/**", "**/node_modules/**", "**/coverage/**", "**/.turbo/**", "**/*.d.ts", "**/migrations/**", ".playwright-mcp/**", ".ui-audit/**", "eval-data/**"],
+    ignores: [
+      "**/dist/**",
+      "**/node_modules/**",
+      "**/coverage/**",
+      "**/.turbo/**",
+      "**/*.d.ts",
+      "**/migrations/**",
+      ".playwright-mcp/**",
+      ".ui-audit/**",
+      "eval-data/**",
+    ],
   },
   js.configs.recommended,
   ...tseslint.configs.strict,
@@ -62,8 +72,16 @@ export default tseslint.config(
     rules: { "@typescript-eslint/no-require-imports": "off" },
   },
   // Chegaralar: UI va bot bazaga to'g'ridan-to'g'ri murojaat qilmaydi, faqat API orqali
-  forbid(["apps/admin/**/*.{ts,tsx}", "apps/miniapp/**/*.{ts,tsx}", "apps/bot/**/*.ts"], ["@onatili/db", "@onatili/db/*", "@prisma/*"], "UI va bot bazaga faqat API orqali murojaat qiladi."),
-  forbid(["packages/shared/**/*.ts"], ["@onatili/db", "@onatili/db/*", "@nestjs/*"], "packages/shared: DB va framework yo'q (brauzerda ham ishlaydi; node:* faqat server.ts orqali)."),
+  forbid(
+    ["apps/admin/**/*.{ts,tsx}", "apps/miniapp/**/*.{ts,tsx}", "apps/bot/**/*.ts"],
+    ["@onatili/db", "@onatili/db/*", "@prisma/*"],
+    "UI va bot bazaga faqat API orqali murojaat qiladi.",
+  ),
+  forbid(
+    ["packages/shared/**/*.ts"],
+    ["@onatili/db", "@onatili/db/*", "@nestjs/*"],
+    "packages/shared: DB va framework yo'q (brauzerda ham ishlaydi; node:* faqat server.ts orqali).",
+  ),
   {
     files: ["**/*.test.ts", "**/*.test.tsx", "**/test/**/*.ts"],
     rules: {

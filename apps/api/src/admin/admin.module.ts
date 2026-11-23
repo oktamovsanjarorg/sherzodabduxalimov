@@ -7,5 +7,9 @@ import { StatsController } from "./stats.controller";
 import { EssaysController } from "./essays.controller";
 import { EssaysService } from "./essays.service";
 
-@Module({ controllers: [AdminContentController, DashboardController, EssaysController, StatsController, PaymentInsightsController], providers: [AdminContentService, EssaysService], exports: [AdminContentService] })
+@Module({
+  controllers: [AdminContentController, DashboardController, EssaysController, StatsController, PaymentInsightsController],
+  providers: [AdminContentService, EssaysService],
+  exports: [AdminContentService],
+})
 export class AdminModule {}

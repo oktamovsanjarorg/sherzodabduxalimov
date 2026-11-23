@@ -49,10 +49,7 @@ export function AttendancePage() {
 
   return (
     <>
-      <PageHeader
-        title="Davomat"
-        subtitle="Davomat va baholarni saqlang, so'ng «Ota-onalarga yuborish» tugmasi bilan Telegram orqali xabar yuboring."
-      />
+      <PageHeader title="Davomat" subtitle="Davomat va baholarni saqlang, so'ng «Ota-onalarga yuborish» tugmasi bilan Telegram orqali xabar yuboring." />
 
       {groups.isPending && <Spinner className="text-ink-4" />}
       {groups.data && active.length === 0 && (
@@ -71,7 +68,9 @@ export function AttendancePage() {
         <>
           <div className="mb-4 flex flex-wrap items-end gap-2">
             <div className="w-full sm:w-auto">
-              <label className="label" htmlFor="att-group">Guruh</label>
+              <label className="label" htmlFor="att-group">
+                Guruh
+              </label>
               <select id="att-group" className="input sm:w-64" value={groupId} onChange={(e) => setGroupId(e.target.value)}>
                 {active.map((g) => (
                   <option key={g.id} value={g.id}>
@@ -82,17 +81,38 @@ export function AttendancePage() {
             </div>
             {view === "day" ? (
               <div>
-                <label className="label" htmlFor="att-date">Sana</label>
-                <input id="att-date" type="date" className="input" value={date} max={todayTashkent()} onChange={(e) => e.target.value && setDate(e.target.value)} />
+                <label className="label" htmlFor="att-date">
+                  Sana
+                </label>
+                <input
+                  id="att-date"
+                  type="date"
+                  className="input"
+                  value={date}
+                  max={todayTashkent()}
+                  onChange={(e) => e.target.value && setDate(e.target.value)}
+                />
               </div>
             ) : null}
-            <Segmented value={view} onChange={setView} options={[["day", "Kunlik"], ["month", "Oylik"]] as const} />
+            <Segmented
+              value={view}
+              onChange={setView}
+              options={
+                [
+                  ["day", "Kunlik"],
+                  ["month", "Oylik"],
+                ] as const
+              }
+            />
             <SearchBox className="sm:ml-auto sm:w-64" value={q} onChange={setQ} placeholder="O'quvchini qidirish" />
           </div>
-          {view === "day" ? <DayView key={`${groupId}-${date}`} groupId={groupId} date={date} q={q} onClear={() => setQ("")} /> : <MonthView groupId={groupId} q={q} onClear={() => setQ("")} />}
+          {view === "day" ? (
+            <DayView key={`${groupId}-${date}`} groupId={groupId} date={date} q={q} onClear={() => setQ("")} />
+          ) : (
+            <MonthView groupId={groupId} q={q} onClear={() => setQ("")} />
+          )}
         </>
       )}
-
     </>
   );
 }
@@ -130,7 +150,12 @@ function DayView({ groupId, date, q, onClear }: { groupId: string; date: string;
         date,
         items: Object.entries(marks)
           .filter(([, v]) => v.status === "PRESENT" || v.status === "ABSENT")
-          .map(([studentId, v]) => ({ studentId, status: v.status as "PRESENT" | "ABSENT", grade: v.status === "PRESENT" ? v.grade : null, note: v.note.trim() || null })),
+          .map(([studentId, v]) => ({
+            studentId,
+            status: v.status as "PRESENT" | "ABSENT",
+            grade: v.status === "PRESENT" ? v.grade : null,
+            note: v.note.trim() || null,
+          })),
       }),
     onSuccess: () => {
       toast("Saqlandi");
@@ -163,7 +188,16 @@ function DayView({ groupId, date, q, onClear }: { groupId: string; date: string;
         <span className="flex-1" />
         <button
           className="btn-secondary btn-sm"
-          onClick={() => setMarks((m) => Object.fromEntries(day.data.rows.map((r) => [r.student.studentId, m[r.student.studentId]?.status ? m[r.student.studentId] : { ...(m[r.student.studentId] ?? EMPTY), status: "PRESENT" as const }])))}
+          onClick={() =>
+            setMarks((m) =>
+              Object.fromEntries(
+                day.data.rows.map((r) => [
+                  r.student.studentId,
+                  m[r.student.studentId]?.status ? m[r.student.studentId] : { ...(m[r.student.studentId] ?? EMPTY), status: "PRESENT" as const },
+                ]),
+              ),
+            )
+          }
           disabled={!unmarked}
         >
           <CheckCheck size={14} /> Qolganlar keldi
@@ -171,73 +205,81 @@ function DayView({ groupId, date, q, onClear }: { groupId: string; date: string;
       </div>
       {q.trim() && !day.data.rows.some((r) => matches(q, r.student.name, r.student.username, r.student.phone)) && <NoMatch q={q} onClear={onClear} />}
       <ul className="card divide-y divide-line overflow-hidden empty:hidden">
-        {day.data.rows.filter((r) => matches(q, r.student.name, r.student.username, r.student.phone)).map(({ student: s, notifiedAt }) => {
-          const cur = get(s.studentId);
-          const dirty = !sameMark(cur, initial[s.studentId] ?? EMPTY);
-          const showNote = openNote[s.studentId] || cur.note.length > 0;
-          return (
-            <li key={s.studentId} className="px-4 py-3">
-              <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-                <div className="min-w-0 flex-1 basis-40">
-                  <p className="truncate font-bold">{s.name}</p>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <ParentState s={s} />
-                    {cur.status && !dirty && (notifiedAt ? <span className="text-[11px] text-emerald-600">· ota-onaga yuborilgan</span> : <span className="text-[11px] text-amber-600">· yuborilmagan</span>)}
+        {day.data.rows
+          .filter((r) => matches(q, r.student.name, r.student.username, r.student.phone))
+          .map(({ student: s, notifiedAt }) => {
+            const cur = get(s.studentId);
+            const dirty = !sameMark(cur, initial[s.studentId] ?? EMPTY);
+            const showNote = openNote[s.studentId] || cur.note.length > 0;
+            return (
+              <li key={s.studentId} className="px-4 py-3">
+                <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+                  <div className="min-w-0 flex-1 basis-40">
+                    <p className="truncate font-bold">{s.name}</p>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <ParentState s={s} />
+                      {cur.status &&
+                        !dirty &&
+                        (notifiedAt ? (
+                          <span className="text-[11px] text-emerald-600">· ota-onaga yuborilgan</span>
+                        ) : (
+                          <span className="text-[11px] text-amber-600">· yuborilmagan</span>
+                        ))}
+                    </div>
+                  </div>
+                  <div className="grid w-full grid-cols-2 gap-1 sm:w-48">
+                    {ATTENDANCE_MARKS.map((st) => (
+                      <button
+                        key={st}
+                        onClick={() => patch(s.studentId, { status: st, ...(st === "ABSENT" ? { grade: null } : {}) })}
+                        className={`h-10 rounded-lg border px-2 text-xs font-bold transition ${
+                          cur.status === st ? STATUS_STYLE[st].on : "border-line bg-surface text-ink-2 hover:bg-surface-2"
+                        }`}
+                        aria-pressed={cur.status === st}
+                      >
+                        {STATUS_STYLE[st].short}
+                      </button>
+                    ))}
                   </div>
                 </div>
-                <div className="grid w-full grid-cols-2 gap-1 sm:w-48">
-                  {ATTENDANCE_MARKS.map((st) => (
-                    <button
-                      key={st}
-                      onClick={() => patch(s.studentId, { status: st, ...(st === "ABSENT" ? { grade: null } : {}) })}
-                      className={`h-10 rounded-lg border px-2 text-xs font-bold transition ${
-                        cur.status === st ? STATUS_STYLE[st].on : "border-line bg-surface text-ink-2 hover:bg-surface-2"
-                      }`}
-                      aria-pressed={cur.status === st}
-                    >
-                      {STATUS_STYLE[st].short}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              {cur.status && (
-                <div className="mt-2 flex flex-wrap items-center gap-2">
-                  {cur.status === "PRESENT" && (
-                    <div className="flex items-center gap-1" role="group" aria-label="Dars bahosi">
-                      <span className="mr-1 text-xs font-semibold text-ink-3">Baho</span>
-                      {Array.from({ length: GRADE_MAX - GRADE_MIN + 1 }, (_, i) => GRADE_MIN + i).map((g) => (
-                        <button
-                          key={g}
-                          onClick={() => patch(s.studentId, { grade: cur.grade === g ? null : g })}
-                          className={`h-9 w-9 rounded-lg border text-sm font-extrabold transition ${
-                            cur.grade === g ? "border-brand bg-brand text-white" : "border-line bg-surface text-ink-2 hover:bg-surface-2"
-                          }`}
-                          aria-pressed={cur.grade === g}
-                        >
-                          {g}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                  {!showNote && (
-                    <button className="btn-secondary btn-sm" onClick={() => setOpenNote((o) => ({ ...o, [s.studentId]: true }))}>
-                      <MessageSquare size={14} /> Izoh
-                    </button>
-                  )}
-                  {showNote && (
-                    <input
-                      className="input h-9 min-w-0 flex-1 basis-48 text-sm"
-                      placeholder={cur.status === "PRESENT" ? "Izoh (masalan: faol edi, uy vazifasi yo'q)" : "Sabab (masalan: kasal)"}
-                      maxLength={300}
-                      value={cur.note}
-                      onChange={(e) => patch(s.studentId, { note: e.target.value })}
-                    />
-                  )}
-                </div>
-              )}
-            </li>
-          );
-        })}
+                {cur.status && (
+                  <div className="mt-2 flex flex-wrap items-center gap-2">
+                    {cur.status === "PRESENT" && (
+                      <div className="flex items-center gap-1" role="group" aria-label="Dars bahosi">
+                        <span className="mr-1 text-xs font-semibold text-ink-3">Baho</span>
+                        {Array.from({ length: GRADE_MAX - GRADE_MIN + 1 }, (_, i) => GRADE_MIN + i).map((g) => (
+                          <button
+                            key={g}
+                            onClick={() => patch(s.studentId, { grade: cur.grade === g ? null : g })}
+                            className={`h-9 w-9 rounded-lg border text-sm font-extrabold transition ${
+                              cur.grade === g ? "border-brand bg-brand text-white" : "border-line bg-surface text-ink-2 hover:bg-surface-2"
+                            }`}
+                            aria-pressed={cur.grade === g}
+                          >
+                            {g}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                    {!showNote && (
+                      <button className="btn-secondary btn-sm" onClick={() => setOpenNote((o) => ({ ...o, [s.studentId]: true }))}>
+                        <MessageSquare size={14} /> Izoh
+                      </button>
+                    )}
+                    {showNote && (
+                      <input
+                        className="input h-9 min-w-0 flex-1 basis-48 text-sm"
+                        placeholder={cur.status === "PRESENT" ? "Izoh (masalan: faol edi, uy vazifasi yo'q)" : "Sabab (masalan: kasal)"}
+                        maxLength={300}
+                        value={cur.note}
+                        onChange={(e) => patch(s.studentId, { note: e.target.value })}
+                      />
+                    )}
+                  </div>
+                )}
+              </li>
+            );
+          })}
       </ul>
 
       {/* Telefonda ham doim ko'rinadigan panel */}
@@ -247,7 +289,9 @@ function DayView({ groupId, date, q, onClear }: { groupId: string; date: string;
       >
         {/* Telefonda bitta qator: faqat hozir kerakli tugma (saqlanmagan o'zgarish bo'lsa Saqlash, bo'lmasa Yuborish) */}
         <div className="mx-auto flex max-w-6xl items-center gap-2">
-          <span className="hidden text-sm text-ink-3 sm:inline">{changed.length ? `${changed.length} ta o'zgarish saqlanmagan` : unsent ? `${unsent} ta yozuv ota-onaga yuborilmagan` : "O'zgarish yo'q"}</span>
+          <span className="hidden text-sm text-ink-3 sm:inline">
+            {changed.length ? `${changed.length} ta o'zgarish saqlanmagan` : unsent ? `${unsent} ta yozuv ota-onaga yuborilmagan` : "O'zgarish yo'q"}
+          </span>
           <span className="hidden flex-1 sm:block" />
           <button
             className={changed.length ? "btn-primary flex-1 sm:flex-none" : "btn-secondary hidden sm:inline-flex"}
@@ -288,41 +332,48 @@ function MonthView({ groupId, q }: { groupId: string; q: string; onClear: () => 
               <tr className="border-b border-line text-xs text-ink-3">
                 <th className="sticky left-0 bg-surface px-4 py-2 text-left">O'quvchi</th>
                 {m.data.days.map((d) => (
-                  <th key={d} className="px-1 py-2 font-bold">{d.slice(8)}</th>
+                  <th key={d} className="px-1 py-2 font-bold">
+                    {d.slice(8)}
+                  </th>
                 ))}
                 <th className="px-3 py-2">Kelgan</th>
                 <th className="px-3 py-2">O'rtacha baho</th>
               </tr>
             </thead>
             <tbody>
-              {m.data.rows.filter((r) => matches(q, r.student.name, r.student.username, r.student.phone)).map((r) => {
-                const present = Object.values(r.marks).filter((x) => x === "PRESENT" || x === "LATE").length;
-                const gs = Object.values(r.grades);
-                const avg = gs.length ? (gs.reduce((a, b) => a + b, 0) / gs.length).toFixed(1) : "–";
-                return (
-                  <tr key={r.student.studentId} className="border-b border-line last:border-0">
-                    <td className="sticky left-0 max-w-[160px] truncate bg-surface px-4 py-2 font-semibold">{r.student.name}</td>
-                    {m.data!.days.map((d) => {
-                      const x = r.marks[d];
-                      return (
-                        <td key={d} className="px-1 py-1 text-center">
-                          {x ? (
-                            <span title={`${ATTENDANCE_LABELS[x]}${r.grades[d] ? ` · baho ${r.grades[d]}` : ""}`} className={`inline-flex h-7 w-7 items-center justify-center rounded-md text-[11px] font-extrabold ${CELL[x]}`}>
-                              {r.grades[d] ?? SYMBOL[x]}
-                            </span>
-                          ) : (
-                            <span className="text-ink-5">·</span>
-                          )}
-                        </td>
-                      );
-                    })}
-                    <td className="px-3 py-2 text-center font-bold">
-                      {present}/{m.data!.days.length}
-                    </td>
-                    <td className="px-3 py-2 text-center font-bold">{avg}</td>
-                  </tr>
-                );
-              })}
+              {m.data.rows
+                .filter((r) => matches(q, r.student.name, r.student.username, r.student.phone))
+                .map((r) => {
+                  const present = Object.values(r.marks).filter((x) => x === "PRESENT" || x === "LATE").length;
+                  const gs = Object.values(r.grades);
+                  const avg = gs.length ? (gs.reduce((a, b) => a + b, 0) / gs.length).toFixed(1) : "–";
+                  return (
+                    <tr key={r.student.studentId} className="border-b border-line last:border-0">
+                      <td className="sticky left-0 max-w-[160px] truncate bg-surface px-4 py-2 font-semibold">{r.student.name}</td>
+                      {m.data!.days.map((d) => {
+                        const x = r.marks[d];
+                        return (
+                          <td key={d} className="px-1 py-1 text-center">
+                            {x ? (
+                              <span
+                                title={`${ATTENDANCE_LABELS[x]}${r.grades[d] ? ` · baho ${r.grades[d]}` : ""}`}
+                                className={`inline-flex h-7 w-7 items-center justify-center rounded-md text-[11px] font-extrabold ${CELL[x]}`}
+                              >
+                                {r.grades[d] ?? SYMBOL[x]}
+                              </span>
+                            ) : (
+                              <span className="text-ink-5">·</span>
+                            )}
+                          </td>
+                        );
+                      })}
+                      <td className="px-3 py-2 text-center font-bold">
+                        {present}/{m.data!.days.length}
+                      </td>
+                      <td className="px-3 py-2 text-center font-bold">{avg}</td>
+                    </tr>
+                  );
+                })}
             </tbody>
           </table>
         </div>

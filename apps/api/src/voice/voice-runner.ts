@@ -4,7 +4,12 @@ import { readFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import { esc } from "../notify/telegram";
 
-export type SendVoiceFn = (chatId: bigint, ogg: Buffer, caption: string, durationSec: number | null) => Promise<{ ok: boolean; status: number; description?: string }>;
+export type SendVoiceFn = (
+  chatId: bigint,
+  ogg: Buffer,
+  caption: string,
+  durationSec: number | null,
+) => Promise<{ ok: boolean; status: number; description?: string }>;
 
 function run(cmd: string, args: string[]): Promise<string> {
   return new Promise((ok, fail) => {
@@ -38,8 +43,42 @@ export async function processVoice(prisma: PrismaClient, mediaDir: string, voice
   const m4a = `voice/${v.id}.m4a`;
   let durationSec = v.durationSec;
   if (v.status !== "READY") {
-    await run("ffmpeg", ["-y", "-hide_banner", "-loglevel", "error", "-i", abs(v.originalPath), "-vn", "-ac", "1", "-c:a", "libopus", "-b:a", "32k", "-application", "voip", abs(ogg)]);
-    await run("ffmpeg", ["-y", "-hide_banner", "-loglevel", "error", "-i", abs(v.originalPath), "-vn", "-ac", "1", "-c:a", "aac", "-b:a", "64k", "-movflags", "+faststart", abs(m4a)]);
+    await run("ffmpeg", [
+      "-y",
+      "-hide_banner",
+      "-loglevel",
+      "error",
+      "-i",
+      abs(v.originalPath),
+      "-vn",
+      "-ac",
+      "1",
+      "-c:a",
+      "libopus",
+      "-b:a",
+      "32k",
+      "-application",
+      "voip",
+      abs(ogg),
+    ]);
+    await run("ffmpeg", [
+      "-y",
+      "-hide_banner",
+      "-loglevel",
+      "error",
+      "-i",
+      abs(v.originalPath),
+      "-vn",
+      "-ac",
+      "1",
+      "-c:a",
+      "aac",
+      "-b:a",
+      "64k",
+      "-movflags",
+      "+faststart",
+      abs(m4a),
+    ]);
     const dur = Number((await run("ffprobe", ["-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", abs(m4a)])).trim());
     durationSec = Number.isFinite(dur) ? Math.max(1, Math.round(dur)) : null;
     await prisma.voiceNote.update({ where: { id: v.id }, data: { oggPath: ogg, m4aPath: m4a, durationSec, status: "READY", error: null } });
@@ -53,7 +92,10 @@ export async function processVoice(prisma: PrismaClient, mediaDir: string, voice
     chatId = e?.user.telegramId ?? null;
     about = e ? `«${esc(e.prompt.slice(0, 80))}» essesi` : "esse";
   } else if (v.attemptId) {
-    const a = await prisma.attempt.findUnique({ where: { id: v.attemptId }, select: { test: { select: { title: true } }, user: { select: { telegramId: true } } } });
+    const a = await prisma.attempt.findUnique({
+      where: { id: v.attemptId },
+      select: { test: { select: { title: true } }, user: { select: { telegramId: true } } },
+    });
     chatId = a?.user.telegramId ?? null;
     about = a ? `«${esc(a.test.title)}» essesi` : "esse";
   }

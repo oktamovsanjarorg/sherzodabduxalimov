@@ -126,16 +126,14 @@ export class BillingService {
       this.prisma.payment.findMany({ where: { userId }, orderBy: { createdAt: "desc" }, take: 10, include: { plan: { select: { name: true } } } }),
       this.offline.mine(userId),
     ]);
-    const mine = payments.map(
-      (p): MyPayment => ({
-        id: p.id,
-        planName: p.plan?.name ?? "Esse tekshiruvi",
-        amountUzs: p.amountUzs,
-        status: p.status,
-        reviewNote: p.reviewNote,
-        createdAt: p.createdAt.toISOString(),
-      }),
-    );
+    const mine = payments.map((p): MyPayment => ({
+      id: p.id,
+      planName: p.plan?.name ?? "Esse tekshiruvi",
+      amountUzs: p.amountUzs,
+      status: p.status,
+      reviewNote: p.reviewNote,
+      createdAt: p.createdAt.toISOString(),
+    }));
     return {
       plans: plans.map((p) => ({ id: p.id, name: p.name, priceUzs: p.priceUzs, durationDays: p.durationDays, description: p.description })),
       card,
@@ -183,7 +181,14 @@ export class BillingService {
         : await tx.payment.count({ where: { userId, status: "PENDING", planId: { not: null } } });
       if (dup) throw new ConflictException("Avvalgi chekingiz hali tekshirilmoqda");
       return tx.payment.create({
-        data: { userId, planId: item.planId, essayId: item.essayId, method: "MANUAL", amountUzs: item.amountUzs, payerNote: payerNote?.trim().slice(0, 300) || null },
+        data: {
+          userId,
+          planId: item.planId,
+          essayId: item.essayId,
+          method: "MANUAL",
+          amountUzs: item.amountUzs,
+          payerNote: payerNote?.trim().slice(0, 300) || null,
+        },
         include: { user: { select: { firstName: true, lastName: true, username: true } } },
       });
     });
@@ -202,7 +207,10 @@ export class BillingService {
     const who = esc(fullName(p.user)) + (p.user.username ? ` (@${esc(p.user.username)})` : "");
     await Promise.all(
       teachers.map((t) =>
-        this.notify.send(t.telegramId, `💳 <b>Yangi to'lov cheki</b>\n${who}\n${esc(item.title)} · ${formatSum(item.amountUzs)} so'm\n\nAdmin panel → To'lovlar`),
+        this.notify.send(
+          t.telegramId,
+          `💳 <b>Yangi to'lov cheki</b>\n${who}\n${esc(item.title)} · ${formatSum(item.amountUzs)} so'm\n\nAdmin panel → To'lovlar`,
+        ),
       ),
     );
     return { id: p.id, planName: item.title, amountUzs: p.amountUzs, status: "PENDING", reviewNote: null, createdAt: p.createdAt.toISOString() };
@@ -270,7 +278,10 @@ export class BillingService {
         const exists = await tx.payment.count({ where: { id } });
         throw exists ? new ConflictException("To'lov allaqachon ko'rib chiqilgan") : new NotFoundException("To'lov topilmadi");
       }
-      const p = await tx.payment.findUniqueOrThrow({ where: { id }, include: { plan: true, essay: { select: { id: true, prompt: true } }, user: { select: { telegramId: true } } } });
+      const p = await tx.payment.findUniqueOrThrow({
+        where: { id },
+        include: { plan: true, essay: { select: { id: true, prompt: true } }, user: { select: { telegramId: true } } },
+      });
       if (p.essayId) {
         // Esse tekshiruvi: esse ustoz navbatiga tushadi
         await tx.essay.updateMany({ where: { id: p.essayId, status: "AWAITING_PAYMENT" }, data: { status: "SUBMITTED" } });
@@ -300,7 +311,10 @@ export class BillingService {
   }
 
   async reject(actorId: string, id: string, reason: string) {
-    const { count } = await this.prisma.payment.updateMany({ where: { id, status: "PENDING" }, data: { status: "REJECTED", reviewedById: actorId, reviewNote: reason } });
+    const { count } = await this.prisma.payment.updateMany({
+      where: { id, status: "PENDING" },
+      data: { status: "REJECTED", reviewedById: actorId, reviewNote: reason },
+    });
     if (!count) {
       throw (await this.prisma.payment.count({ where: { id } }))
         ? new ConflictException("To'lov allaqachon ko'rib chiqilgan")
@@ -330,12 +344,26 @@ export class BillingService {
     const sub = await this.prisma.$transaction(async (tx) => {
       const sub = await this.extend(tx, userId, planId, plan.durationDays);
       await tx.payment.create({
-        data: { userId, planId, method: "MANUAL", amountUzs: plan.priceUzs, status: "APPROVED", reviewedById: actorId, reviewNote: note ?? "Qo'lda berildi", subscriptionId: sub.id },
+        data: {
+          userId,
+          planId,
+          method: "MANUAL",
+          amountUzs: plan.priceUzs,
+          status: "APPROVED",
+          reviewedById: actorId,
+          reviewNote: note ?? "Qo'lda berildi",
+          subscriptionId: sub.id,
+        },
       });
       return sub;
     });
     await this.audit(actorId, "subscription.grant", "Subscription", sub.id, { userId, planId, note });
-    await this.notify.sendApp(user.telegramId, `✅ <b>Obuna faollashtirildi</b>\n${esc(plan.name)} · <b>${fmtDate(sub.endsAt)}</b> gacha. Barcha darslar va testlar ochildi!`, "/", "Ilovani ochish");
+    await this.notify.sendApp(
+      user.telegramId,
+      `✅ <b>Obuna faollashtirildi</b>\n${esc(plan.name)} · <b>${fmtDate(sub.endsAt)}</b> gacha. Barcha darslar va testlar ochildi!`,
+      "/",
+      "Ilovani ochish",
+    );
     return { ok: true, endsAt: sub.endsAt.toISOString() };
   }
 
@@ -394,7 +422,9 @@ export class BillingService {
         data: { status: "REJECTED", reviewedById: actorId, reviewNote: `Bekor qilindi: ${reason}` },
       });
       if (!count) {
-        throw (await tx.payment.count({ where: { id } })) ? new ConflictException("Faqat tasdiqlangan to'lovni bekor qilish mumkin") : new NotFoundException("To'lov topilmadi");
+        throw (await tx.payment.count({ where: { id } }))
+          ? new ConflictException("Faqat tasdiqlangan to'lovni bekor qilish mumkin")
+          : new NotFoundException("To'lov topilmadi");
       }
       const p = await tx.payment.findUniqueOrThrow({ where: { id }, include: { plan: true, user: { select: { telegramId: true } } } });
       if (p.subscriptionId) await this.cancelSubTx(tx, p.subscriptionId);

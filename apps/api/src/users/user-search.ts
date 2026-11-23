@@ -19,7 +19,11 @@ function wordVariants(w: string): string[] {
 export function userSearchWhere(q: string | undefined | null): Prisma.UserWhereInput | null {
   const term = (q ?? "").trim().replace(/^@/, "");
   if (!term) return null;
-  const words = term.split(/\s+/).map((w) => w.replace(/^@/, "")).filter(Boolean).slice(0, 5);
+  const words = term
+    .split(/\s+/)
+    .map((w) => w.replace(/^@/, ""))
+    .filter(Boolean)
+    .slice(0, 5);
   const digits = term.replace(/\D/g, "");
   const byWords: Prisma.UserWhereInput = {
     AND: words.map((w) => ({

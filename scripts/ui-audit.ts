@@ -23,13 +23,62 @@ const EXTRA_ADMIN: string[] = [];
 /** AUDIT_WIDTHS=320,360 — faqat shu kengliklar (telefon tekshiruvi); bo'lmasa odatdagi 390 / 1440+390 */
 const WIDTHS = process.env.AUDIT_WIDTHS?.split(",").map(Number).filter(Boolean);
 
-const MINI_ROUTES = ["/", "/lessons", "/profile", "/tests", "/mocks", "/essays", "/essays/new", "/subscribe", "/stats", "/parents", "/my-attendance", "/settings"];
-const ADMIN_ROUTES = ["/", "/advisor", "/students", "/content", "/questions", "/tests", "/essays", "/attendance", "/parents", "/payments", "/payments?tab=SUBS", "/payments?tab=OFFLINE", "/billing", "/staff", "/stats", "/external", "/backups", "/trash", "/more"];
+const MINI_ROUTES = [
+  "/",
+  "/lessons",
+  "/profile",
+  "/tests",
+  "/mocks",
+  "/essays",
+  "/essays/new",
+  "/subscribe",
+  "/stats",
+  "/parents",
+  "/my-attendance",
+  "/settings",
+];
+const ADMIN_ROUTES = [
+  "/",
+  "/advisor",
+  "/students",
+  "/content",
+  "/questions",
+  "/tests",
+  "/essays",
+  "/attendance",
+  "/parents",
+  "/payments",
+  "/payments?tab=SUBS",
+  "/payments?tab=OFFLINE",
+  "/billing",
+  "/staff",
+  "/stats",
+  "/external",
+  "/backups",
+  "/trash",
+  "/more",
+];
 
 // Telegram'ning standart mavzulari (Android)
 const THEMES = {
-  light: { bg_color: "#ffffff", secondary_bg_color: "#efeff4", section_bg_color: "#ffffff", text_color: "#000000", hint_color: "#8e8e93", link_color: "#2481cc", destructive_text_color: "#e53935" },
-  dark: { bg_color: "#212d3b", secondary_bg_color: "#151e27", section_bg_color: "#1d2733", text_color: "#ffffff", hint_color: "#7d8b99", link_color: "#62bcf9", destructive_text_color: "#ee686f" },
+  light: {
+    bg_color: "#ffffff",
+    secondary_bg_color: "#efeff4",
+    section_bg_color: "#ffffff",
+    text_color: "#000000",
+    hint_color: "#8e8e93",
+    link_color: "#2481cc",
+    destructive_text_color: "#e53935",
+  },
+  dark: {
+    bg_color: "#212d3b",
+    secondary_bg_color: "#151e27",
+    section_bg_color: "#1d2733",
+    text_color: "#ffffff",
+    hint_color: "#7d8b99",
+    link_color: "#62bcf9",
+    destructive_text_color: "#ee686f",
+  },
 } as const;
 type Scheme = keyof typeof THEMES;
 
@@ -82,14 +131,35 @@ async function auditPage(page: Page, file: string) {
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
   await page.addScriptTag({ content: AXE });
   const axe = await page.evaluate(async () => {
-    const w = window as unknown as { axe: { run: (d: Document, o: object) => Promise<{ violations: { id: string; impact: string | null; help: string; nodes: { target: string[]; any: { message: string }[] }[] }[] }> } };
+    const w = window as unknown as {
+      axe: {
+        run: (
+          d: Document,
+          o: object,
+        ) => Promise<{ violations: { id: string; impact: string | null; help: string; nodes: { target: string[]; any: { message: string }[] }[] }[] }>;
+      };
+    };
     const r = await w.axe.run(document, { resultTypes: ["violations"], runOnly: ["wcag2a", "wcag2aa", "best-practice"] });
-    return r.violations.map((v) => ({ id: v.id, impact: v.impact, help: v.help, n: v.nodes.length, sample: v.nodes.slice(0, 3).map((x) => `${x.target.join(" ")} :: ${x.any[0]?.message ?? ""}`) }));
+    return r.violations.map((v) => ({
+      id: v.id,
+      impact: v.impact,
+      help: v.help,
+      n: v.nodes.length,
+      sample: v.nodes.slice(0, 3).map((x) => `${x.target.join(" ")} :: ${x.any[0]?.message ?? ""}`),
+    }));
   });
   return { overflow, axe };
 }
 
-async function run(browser: Browser, out: string, report: Row[], app: "miniapp" | "admin", width: number, scheme: Scheme, auth: { student: string; owner: { token: string; user: unknown } }) {
+async function run(
+  browser: Browser,
+  out: string,
+  report: Row[],
+  app: "miniapp" | "admin",
+  width: number,
+  scheme: Scheme,
+  auth: { student: string; owner: { token: string; user: unknown } },
+) {
   const ctx = await browser.newContext({ viewport: { width, height: width < 600 ? 844 : 900 }, deviceScaleFactor: 1 });
   await ctx.route(/telegram\.org/, (r) => r.fulfill({ status: 200, contentType: "text/javascript", body: "" }));
   if (app === "miniapp") await ctx.addInitScript(tgMock(auth.student, scheme));
@@ -137,12 +207,21 @@ async function main() {
   const owner = await post<{ token: string; user: unknown }>("/auth/telegram", { initData: initData(1000002, "Ustoz", "audit_owner") });
   const auth = { student, owner: { token: owner.token, user: owner.user } };
   const roster = (await (await fetch(`${API}/admin/roster`, { headers: { authorization: `Bearer ${owner.token}` } })).json()) as { studentId: string }[];
-  if (roster[0]) for (const tab of ["", "?tab=results", "?tab=attendance", "?tab=billing", "?tab=parents", "?tab=activity", "?tab=settings"]) EXTRA_ADMIN.push(`/students/${roster[0].studentId}${tab}`);
+  if (roster[0])
+    for (const tab of ["", "?tab=results", "?tab=attendance", "?tab=billing", "?tab=parents", "?tab=activity", "?tab=settings"])
+      EXTRA_ADMIN.push(`/students/${roster[0].studentId}${tab}`);
 
   const browser = await chromium.launch(process.env.CHROMIUM_PATH ? { executablePath: process.env.CHROMIUM_PATH } : {});
   const report: Row[] = [];
   try {
-    if (which !== "admin") for (const [w, sc] of WIDTHS ? WIDTHS.map((x) => [x, "light"] as const) : ([[390, "light"], [390, "dark"]] as const)) await run(browser, out, report, "miniapp", w, sc, auth);
+    if (which !== "admin")
+      for (const [w, sc] of WIDTHS
+        ? WIDTHS.map((x) => [x, "light"] as const)
+        : ([
+            [390, "light"],
+            [390, "dark"],
+          ] as const))
+        await run(browser, out, report, "miniapp", w, sc, auth);
     if (which !== "miniapp") for (const w of WIDTHS ?? [1440, 390]) await run(browser, out, report, "admin", w, "light", auth);
   } finally {
     await browser.close();

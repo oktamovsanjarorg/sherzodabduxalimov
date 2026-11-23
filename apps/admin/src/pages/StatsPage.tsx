@@ -1,6 +1,18 @@
 import { formatScore, formatSum, monthLabel, type TeacherStats } from "@onatili/shared";
 import { useQuery } from "@tanstack/react-query";
-import { AlertTriangle, BookOpen, CalendarCheck, ChevronLeft, ChevronRight, ClipboardList, FileText, Trophy, Users, Wallet, type LucideIcon } from "lucide-react";
+import {
+  AlertTriangle,
+  BookOpen,
+  CalendarCheck,
+  ChevronLeft,
+  ChevronRight,
+  ClipboardList,
+  FileText,
+  Trophy,
+  Users,
+  Wallet,
+  type LucideIcon,
+} from "lucide-react";
 import { useState, type ReactNode } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { loadSession } from "../lib/session";
@@ -51,10 +63,12 @@ export function StatsPage() {
           className="mb-5"
           value={tab}
           onChange={(k) => setParams(k === "pay" ? { tab: "pay" } : {}, { replace: true })}
-          options={[
-            ["main", "Umumiy"],
-            ["pay", "To'lovlar tahlili"],
-          ] as const}
+          options={
+            [
+              ["main", "Umumiy"],
+              ["pay", "To'lovlar tahlili"],
+            ] as const
+          }
         />
       )}
       {tab === "pay" ? (
@@ -76,14 +90,24 @@ function Body({ s }: { s: TeacherStats }) {
     <div className="space-y-5">
       {/* Asosiy ko'rsatkichlar */}
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <Kpi Icon={Users} label="O'quvchilar" value={String(s.students.total)} hint={`${s.students.offline} offline · ${s.students.online} online${s.students.newThisMonth ? ` · +${s.students.newThisMonth} yangi` : ""}`} />
+        <Kpi
+          Icon={Users}
+          label="O'quvchilar"
+          value={String(s.students.total)}
+          hint={`${s.students.offline} offline · ${s.students.online} online${s.students.newThisMonth ? ` · +${s.students.newThisMonth} yangi` : ""}`}
+        />
         <Kpi
           Icon={BookOpen}
           label="Faol o'quvchilar"
           value={String(s.students.active)}
           hint={s.students.total ? `${Math.round((s.students.active / s.students.total) * 100)}% — dars ko'rgan, test yoki esse topshirgan` : "—"}
         />
-        <Kpi Icon={CalendarCheck} label="Davomat" value={a.rate === null ? "—" : `${a.rate}%`} hint={a.rate === null ? "Bu oy davomat olinmagan" : `${a.lessons} ta dars · ${a.absent} marta kelmagan`} />
+        <Kpi
+          Icon={CalendarCheck}
+          label="Davomat"
+          value={a.rate === null ? "—" : `${a.rate}%`}
+          hint={a.rate === null ? "Bu oy davomat olinmagan" : `${a.lessons} ta dars · ${a.absent} marta kelmagan`}
+        />
         <Kpi
           Icon={ClipboardList}
           label="Test natijasi (o'rtacha)"
@@ -100,7 +124,10 @@ function Body({ s }: { s: TeacherStats }) {
             <ul className="divide-y divide-line">
               {s.attention.map((x) => (
                 <li key={x.userId}>
-                  <Link to={x.studentId ? `/students/${x.studentId}` : "/students"} className="-mx-2 flex items-start gap-3 rounded-lg px-2 py-2 hover:bg-surface-2">
+                  <Link
+                    to={x.studentId ? `/students/${x.studentId}` : "/students"}
+                    className="-mx-2 flex items-start gap-3 rounded-lg px-2 py-2 hover:bg-surface-2"
+                  >
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-sm font-bold">
                         {x.name} {x.group && <span className="font-normal text-ink-3">· {x.group}</span>}
@@ -115,7 +142,11 @@ function Body({ s }: { s: TeacherStats }) {
           )}
         </Card>
 
-        <Card title="Qiyin mavzular" hint="Test javoblarida to'g'ri javoblar ulushi eng past mavzular. Shu mavzularni qayta tushuntirish foydali" Icon={BookOpen}>
+        <Card
+          title="Qiyin mavzular"
+          hint="Test javoblarida to'g'ri javoblar ulushi eng past mavzular. Shu mavzularni qayta tushuntirish foydali"
+          Icon={BookOpen}
+        >
           {s.tests.weakTopics.length === 0 ? (
             <Calm text="Hali yetarli ma'lumot yo'q (mavzu bo'yicha kamida 5 ta javob kerak)" />
           ) : (
@@ -139,7 +170,9 @@ function Body({ s }: { s: TeacherStats }) {
                   <Meter
                     label={g.name}
                     value={g.rate}
-                    note={g.lessons ? `${g.lessons} ta dars · ${g.students} o'quvchi${g.absent ? ` · ${g.absent} marta kelmagan` : ""}` : "bu oy davomat olinmagan"}
+                    note={
+                      g.lessons ? `${g.lessons} ta dars · ${g.students} o'quvchi${g.absent ? ` · ${g.absent} marta kelmagan` : ""}` : "bu oy davomat olinmagan"
+                    }
                   />
                 </li>
               ))}
@@ -187,7 +220,10 @@ function Body({ s }: { s: TeacherStats }) {
             <ol className="space-y-2">
               {s.top.map((t, i) => (
                 <li key={t.userId}>
-                  <Link to={t.studentId ? `/students/${t.studentId}` : "/students"} className="-mx-2 flex items-center gap-3 rounded-lg px-2 py-1.5 hover:bg-surface-2">
+                  <Link
+                    to={t.studentId ? `/students/${t.studentId}` : "/students"}
+                    className="-mx-2 flex items-center gap-3 rounded-lg px-2 py-1.5 hover:bg-surface-2"
+                  >
                     <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-surface-3 text-xs font-extrabold">{i + 1}</span>
                     <span className="min-w-0 flex-1 truncate text-sm font-bold">
                       {t.name} {t.group && <span className="font-normal text-ink-3">· {t.group}</span>}
@@ -209,7 +245,12 @@ function Body({ s }: { s: TeacherStats }) {
             { name: "Ishlangan testlar", color: S2 },
             { name: "Esselar", color: S3 },
           ]}
-          data={s.weeks.map((w) => ({ key: w.start, label: ddmm(w.start), title: `${ddmm(w.start)} dan boshlangan hafta`, values: [w.lessons, w.tests, w.essays] }))}
+          data={s.weeks.map((w) => ({
+            key: w.start,
+            label: ddmm(w.start),
+            title: `${ddmm(w.start)} dan boshlangan hafta`,
+            values: [w.lessons, w.tests, w.essays],
+          }))}
           format={(n) => String(n)}
         />
       </Card>
@@ -222,7 +263,12 @@ function Body({ s }: { s: TeacherStats }) {
               { name: "Online obuna", color: S2 },
               { name: "Esse tekshiruvi", color: S3 },
             ]}
-            data={s.income.months.map((m) => ({ key: m.month, label: shortMonth(m.month), title: monthLabel(m.month), values: [m.offline, m.online, m.essays] }))}
+            data={s.income.months.map((m) => ({
+              key: m.month,
+              label: shortMonth(m.month),
+              title: monthLabel(m.month),
+              values: [m.offline, m.online, m.essays],
+            }))}
             format={(n) => `${formatSum(n)} so'm`}
             total
           />
@@ -231,7 +277,8 @@ function Body({ s }: { s: TeacherStats }) {
           </Link>
           {s.income.feeMissing > 0 && (
             <p className="mt-3 flex items-start gap-1.5 text-xs text-amber-700">
-              <AlertTriangle size={14} className="mt-px shrink-0" /> {s.income.feeMissing} ta offline o'quvchining guruhida oylik summa kiritilmagan — offline daromad to'liq ko'rinmaydi.
+              <AlertTriangle size={14} className="mt-px shrink-0" /> {s.income.feeMissing} ta offline o'quvchining guruhida oylik summa kiritilmagan — offline
+              daromad to'liq ko'rinmaydi.
             </p>
           )}
           {s.income.offlineDebtors > 0 && (
@@ -289,7 +336,14 @@ function Mini({ label, value }: { label: string; value: number | string }) {
 
 /** Foiz chizig'i. Holat matn bilan ham yoziladi (faqat rangga tayanmaydi) */
 function Meter({ label, value, note }: { label: string; value: number | null; note: string }) {
-  const state = value === null ? null : value >= 85 ? { t: "yaxshi", c: "text-emerald-700" } : value >= 65 ? { t: "o'rtacha", c: "text-amber-700" } : { t: "past", c: "text-red-700" };
+  const state =
+    value === null
+      ? null
+      : value >= 85
+        ? { t: "yaxshi", c: "text-emerald-700" }
+        : value >= 65
+          ? { t: "o'rtacha", c: "text-amber-700" }
+          : { t: "past", c: "text-red-700" };
   return (
     <div>
       <div className="mb-1 flex items-baseline gap-2 text-sm">
@@ -311,7 +365,11 @@ function Levels({ levels }: { levels: TeacherStats["mocks"]["levels"] }) {
   return (
     <div className="flex h-36 items-end gap-2">
       {levels.map((l) => (
-        <div key={l.code} className="flex h-full flex-1 flex-col items-center justify-end gap-1" title={`${l.code === "—" ? "46 dan kam" : `${l.code} daraja`}: ${l.count} ta`}>
+        <div
+          key={l.code}
+          className="flex h-full flex-1 flex-col items-center justify-end gap-1"
+          title={`${l.code === "—" ? "46 dan kam" : `${l.code} daraja`}: ${l.count} ta`}
+        >
           <span className="text-xs font-bold">{l.count || ""}</span>
           <div className="w-full max-w-[44px] rounded-t" style={{ height: `${(l.count / max) * 100}%`, minHeight: l.count ? 4 : 0, background: S1 }} />
           <span className="text-[11px] font-bold text-ink-2">{l.code === "—" ? "<46" : l.code}</span>

@@ -30,7 +30,10 @@ export function StudentDetailPage() {
   };
   return (
     <div className="mx-auto max-w-5xl space-y-4">
-      <Link to={s.group ? `/students?group=${s.group.id}` : "/students"} className="tap inline-flex items-center gap-1 text-sm font-semibold text-ink-3 hover:text-ink">
+      <Link
+        to={s.group ? `/students?group=${s.group.id}` : "/students"}
+        className="tap inline-flex items-center gap-1 text-sm font-semibold text-ink-3 hover:text-ink"
+      >
         <ArrowLeft size={16} /> O'quvchilar
       </Link>
       <Header s={s} />

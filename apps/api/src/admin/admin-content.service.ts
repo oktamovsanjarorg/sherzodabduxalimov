@@ -34,7 +34,6 @@ const testRowInclude = {
   _count: { select: { questions: true, attempts: true } },
 } satisfies Prisma.TestInclude;
 
-
 @Injectable()
 export class AdminContentService {
   constructor(
@@ -93,10 +92,7 @@ export class AdminContentService {
   }
 
   async deleteCourse(actorId: string, id: string) {
-    const c = await this.mustExist(
-      this.prisma.course.findUnique({ where: { id }, include: { _count: { select: { topics: true } } } }),
-      "Kurs",
-    );
+    const c = await this.mustExist(this.prisma.course.findUnique({ where: { id }, include: { _count: { select: { topics: true } } } }), "Kurs");
     if (c._count.topics > 0) throw new ConflictException("Avval kursdagi mavzularni o'chiring");
     await this.trash.remove({ kind: "COURSE", id, title: c.title, actorId });
     await this.audit(actorId, "delete", "Course", id, { title: c.title });
@@ -121,10 +117,7 @@ export class AdminContentService {
   }
 
   async deleteTopic(actorId: string, id: string) {
-    const t = await this.mustExist(
-      this.prisma.topic.findUnique({ where: { id }, include: { _count: { select: { lessons: true, tests: true } } } }),
-      "Mavzu",
-    );
+    const t = await this.mustExist(this.prisma.topic.findUnique({ where: { id }, include: { _count: { select: { lessons: true, tests: true } } } }), "Mavzu");
     if (t._count.lessons > 0 || t._count.tests > 0) throw new ConflictException("Avval mavzudagi darslar va testlarni o'chiring");
     await this.trash.remove({ kind: "TOPIC", id, title: t.title, actorId });
     await this.audit(actorId, "delete", "Topic", id, { title: t.title });
@@ -318,9 +311,7 @@ export class AdminContentService {
       ...(d.questions
         ? [
             this.prisma.testQuestion.deleteMany({ where: { testId: id } }),
-            ...d.questions.map((q, i) =>
-              this.prisma.testQuestion.create({ data: { testId: id, questionId: q.questionId, points: q.points, order: i + 1 } }),
-            ),
+            ...d.questions.map((q, i) => this.prisma.testQuestion.create({ data: { testId: id, questionId: q.questionId, points: q.points, order: i + 1 } })),
           ]
         : []),
       this.prisma.test.update({ where: { id }, data: this.testData(d) }),
@@ -330,10 +321,7 @@ export class AdminContentService {
   }
 
   async deleteTest(actorId: string, id: string) {
-    const t = await this.mustExist(
-      this.prisma.test.findUnique({ where: { id }, include: { _count: { select: { attempts: true } } } }),
-      "Test",
-    );
+    const t = await this.mustExist(this.prisma.test.findUnique({ where: { id }, include: { _count: { select: { attempts: true } } } }), "Test");
     if (t._count.attempts > 0) throw new ConflictException("Bu testni o'quvchilar topshirgan. O'chirish o'rniga nashrdan oling.");
     await this.trash.remove({ kind: "TEST", id, title: t.title, actorId });
     await this.audit(actorId, "delete", "Test", id, { title: t.title });
@@ -383,7 +371,7 @@ export class AdminContentService {
       explanation: d.explanation ?? null,
       imageUrl: d.imageUrl ?? null,
       difficulty: d.difficulty,
-      correctText: d.type === "TEXT" ? d.correctText ?? null : null,
+      correctText: d.type === "TEXT" ? (d.correctText ?? null) : null,
     };
   }
 
@@ -392,7 +380,7 @@ export class AdminContentService {
       type: d.type,
       title: d.title,
       description: d.description ?? null,
-      topicId: d.type === "TOPIC" ? d.topicId ?? null : d.topicId ?? null,
+      topicId: d.type === "TOPIC" ? (d.topicId ?? null) : (d.topicId ?? null),
       timeLimitSec: d.timeLimitSec ?? null,
       shuffle: d.shuffle ?? true,
       gradingScale: d.gradingScale ?? "NONE",
@@ -423,8 +411,8 @@ export class AdminContentService {
       topicId: q.topicId,
       topicTitle: q.topic?.title ?? null,
       passageId: q.passageId,
-      passageTitle: q.passage ? q.passage.title ?? q.passage.body.slice(0, 60) : null,
-      keyStatus: ((q.aiReview as { keyStatus?: "proposed" | "uncertain" } | null)?.keyStatus ?? null),
+      passageTitle: q.passage ? (q.passage.title ?? q.passage.body.slice(0, 60)) : null,
+      keyStatus: (q.aiReview as { keyStatus?: "proposed" | "uncertain" } | null)?.keyStatus ?? null,
       type: q.type,
       text: q.text,
       explanation: q.explanation,

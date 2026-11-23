@@ -49,7 +49,12 @@ describe("Kontent va testlar (e2e)", () => {
       data: {
         id: `${P}-q1`,
         text: "1-savol",
-        options: { create: [{ id: `${P}-q1a`, text: "A" }, { id: `${P}-q1b`, text: "B", isCorrect: true }] },
+        options: {
+          create: [
+            { id: `${P}-q1a`, text: "A" },
+            { id: `${P}-q1b`, text: "B", isCorrect: true },
+          ],
+        },
       },
     });
     await prisma.question.create({
@@ -63,7 +68,12 @@ describe("Kontent va testlar (e2e)", () => {
         topicId: `${P}-topic`,
         isFree: true,
         isPublished: true,
-        questions: { create: [{ questionId: `${P}-q1`, order: 1, points: 2 }, { questionId: `${P}-q2`, order: 2 }] },
+        questions: {
+          create: [
+            { questionId: `${P}-q1`, order: 1, points: 2 },
+            { questionId: `${P}-q2`, order: 2 },
+          ],
+        },
       },
     });
     await prisma.test.create({

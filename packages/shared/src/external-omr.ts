@@ -27,13 +27,19 @@ export function isOmrExport(text: string): boolean {
 }
 
 export function parseOmrExport(text: string, takenAt: string | null): OmrParsed {
-  const lines = text.replace(/^\uFEFF/, "").split(/\r?\n/).filter((l) => l.trim());
+  const lines = text
+    .replace(/^\uFEFF/, "")
+    .split(/\r?\n/)
+    .filter((l) => l.trim());
   if (lines.length < 2) throw new Error("Faylda natija yo'q");
   const sep = lines[0].includes(";") ? ";" : lines[0].includes("\t") ? "\t" : ",";
   const head = splitCsv(lines[0], sep).map((h) => h.trim());
   const col = (re: RegExp) => head.findIndex((h) => re.test(h));
 
-  const marks = head.map((h, i) => [Number(MARKS.exec(h)?.[1]), i] as const).filter(([q]) => q > 0).sort((a, b) => a[0] - b[0]);
+  const marks = head
+    .map((h, i) => [Number(MARKS.exec(h)?.[1]), i] as const)
+    .filter(([q]) => q > 0)
+    .sort((a, b) => a[0] - b[0]);
   if (!marks.length) throw new Error("Q 1 Marks ustunlari topilmadi");
   const N = marks.length;
   const options = new Map(head.map((h, i) => [h.toLowerCase().replace(/\s+/g, " "), i]));
@@ -43,8 +49,7 @@ export function parseOmrExport(text: string, takenAt: string | null): OmrParsed 
   const secCols = head.map((h, i) => [SECTION.exec(h), i] as const).filter(([m]) => m) as [RegExpExecArray, number][];
 
   const cells = lines.slice(1).map((l) => splitCsv(l, sep));
-  const answersOf = (c: string[]) =>
-    marks.map(([, i], k) => (Number(c[i]?.trim()) > 0 ? "c" : optCol[k] >= 0 && !c[optCol[k]]?.trim() ? "b" : "w")).join("");
+  const answersOf = (c: string[]) => marks.map(([, i], k) => (Number(c[i]?.trim()) > 0 ? "c" : optCol[k] >= 0 && !c[optCol[k]]?.trim() ? "b" : "w")).join("");
   const all = cells.map((c) => ({ c, answers: answersOf(c) }));
 
   // Bo'limlar: oraliqni fayldagi yig'indi bilan tasdiqlaymiz, mos kelmasa oxirgisini cho'zamiz
@@ -87,6 +92,6 @@ export function parseOmrExport(text: string, takenAt: string | null): OmrParsed 
       durationSec: null,
     };
   });
-  const exam = examCol >= 0 ? cells.find((c) => c[examCol]?.trim())?.[examCol].trim() ?? null : null;
+  const exam = examCol >= 0 ? (cells.find((c) => c[examCol]?.trim())?.[examCol].trim() ?? null) : null;
   return { exam, questionCount: N, sections, milliy: sections.length > 0, rows };
 }

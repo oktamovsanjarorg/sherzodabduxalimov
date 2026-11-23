@@ -41,22 +41,19 @@ export function PaymentsPage() {
         <Segmented
           value={tab}
           onChange={setTab}
-          options={[
-            ["PENDING", `Kutilmoqda${n ? ` (${n})` : ""}`],
-            ["APPROVED", "Tasdiqlangan"],
-            ["REJECTED", "Rad etilgan"],
-            ["SUBS", "Online obunalar"],
-            ["OFFLINE", "Offline guruhlar"],
-          ] as const}
+          options={
+            [
+              ["PENDING", `Kutilmoqda${n ? ` (${n})` : ""}`],
+              ["APPROVED", "Tasdiqlangan"],
+              ["REJECTED", "Rad etilgan"],
+              ["SUBS", "Online obunalar"],
+              ["OFFLINE", "Offline guruhlar"],
+            ] as const
+          }
         />
         <div className="relative w-full sm:w-80">
           <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-4" />
-          <input
-            className="input pl-9 pr-8"
-            placeholder="Ism, @username, telefon, summa..."
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-          />
+          <input className="input pl-9 pr-8" placeholder="Ism, @username, telefon, summa..." value={q} onChange={(e) => setQ(e.target.value)} />
           {q && (
             <button
               type="button"
@@ -87,7 +84,8 @@ function PaymentList({ status, q, onClearSearch }: { status: PaymentStatusName; 
   if (!list.data?.length)
     return (
       <Empty
-        Icon={Receipt} title={status === "PENDING" ? "Tekshiriladigan chek yo'q" : "Ro'yxat bo'sh"}
+        Icon={Receipt}
+        title={status === "PENDING" ? "Tekshiriladigan chek yo'q" : "Ro'yxat bo'sh"}
         hint={status === "PENDING" ? "Yangi cheklar shu yerda paydo bo'ladi, botga ham xabar keladi." : undefined}
       />
     );
@@ -142,8 +140,18 @@ function ReceiptImage({ id }: { id: string }) {
   const [open, setOpen] = useState(false);
   // blob: URL keshda qoladi (qayta ochilganda qayta yuklanmaydi). Rasm kichik, xotira muammo emas.
   const img = useQuery({ queryKey: ["receipt", id], queryFn: () => api.receipt(id), staleTime: Infinity, gcTime: 10 * 60_000 });
-  if (img.isPending) return <div className="flex h-48 items-center justify-center rounded-xl bg-surface-3"><Spinner className="text-ink-4" /></div>;
-  if (!img.data) return <div className="flex h-24 items-center justify-center gap-2 rounded-xl bg-surface-3 text-sm text-ink-3"><ImageOff size={16} /> Chek yuklanmadi</div>;
+  if (img.isPending)
+    return (
+      <div className="flex h-48 items-center justify-center rounded-xl bg-surface-3">
+        <Spinner className="text-ink-4" />
+      </div>
+    );
+  if (!img.data)
+    return (
+      <div className="flex h-24 items-center justify-center gap-2 rounded-xl bg-surface-3 text-sm text-ink-3">
+        <ImageOff size={16} /> Chek yuklanmadi
+      </div>
+    );
   return (
     <>
       <button onClick={() => setOpen(true)} className="block w-full overflow-hidden rounded-xl bg-surface-3" title="Kattalashtirish">
@@ -193,9 +201,7 @@ function PaymentCard({ p }: { p: AdminPayment }) {
         </div>
         <div className="min-w-0 max-w-[55%] shrink-0 text-right">
           <p className="whitespace-nowrap text-lg font-extrabold">{formatSum(p.amountUzs)} so'm</p>
-          <p className="truncate text-xs text-ink-3">
-            {p.plan ? `${p.plan.name} · ${p.plan.durationDays} kun` : `Esse tekshiruvi: ${p.essay?.prompt ?? ""}`}
-          </p>
+          <p className="truncate text-xs text-ink-3">{p.plan ? `${p.plan.name} · ${p.plan.durationDays} kun` : `Esse tekshiruvi: ${p.essay?.prompt ?? ""}`}</p>
         </div>
       </div>
 
@@ -204,9 +210,11 @@ function PaymentCard({ p }: { p: AdminPayment }) {
           <ReceiptImage id={p.id} />
         </div>
       )}
-      {p.payerNote && <p className="mt-2 flex items-start gap-2 rounded-lg bg-surface-2 px-3 py-2 text-sm">
+      {p.payerNote && (
+        <p className="mt-2 flex items-start gap-2 rounded-lg bg-surface-2 px-3 py-2 text-sm">
           <MessageSquare size={15} className="mt-0.5 shrink-0 text-ink-4" /> {p.payerNote}
-        </p>}
+        </p>
+      )}
       {p.status === "PENDING" && p.activeUntil && (
         <p className="mt-2 text-xs text-ink-3">Hozir obunasi bor: {date(p.activeUntil)} gacha. Tasdiqlansa shu sanadan uzaytiriladi.</p>
       )}
@@ -227,7 +235,7 @@ function PaymentCard({ p }: { p: AdminPayment }) {
         ) : p.status === "APPROVED" ? (
           <>
             <Badge tone="green">
-              {p.hasReceipt ? "Tasdiqlangan" : p.reviewNote ?? "Qo'lda berilgan"}
+              {p.hasReceipt ? "Tasdiqlangan" : (p.reviewNote ?? "Qo'lda berilgan")}
               {p.subscription ? ` · ${date(p.subscription.endsAt)} gacha` : ""}
               {p.reviewedBy ? ` · ${p.reviewedBy}` : ""}
             </Badge>
@@ -266,7 +274,11 @@ function RejectModal({ p, revoke = false, onClose, onDone }: { p: AdminPayment; 
           <button className="btn-secondary" onClick={onClose}>
             {revoke ? "Yopish" : "Bekor qilish"}
           </button>
-          <button className="btn bg-red-600 text-white hover:bg-red-700" disabled={reason.trim().length < 3 || reject.isPending} onClick={() => reject.mutate()}>
+          <button
+            className="btn bg-red-600 text-white hover:bg-red-700"
+            disabled={reason.trim().length < 3 || reject.isPending}
+            onClick={() => reject.mutate()}
+          >
             {revoke ? "To'lovni bekor qilish" : "Rad etish"}
           </button>
         </>
@@ -282,7 +294,11 @@ function RejectModal({ p, revoke = false, onClose, onDone }: { p: AdminPayment; 
       </p>
       <div className="mb-3 flex flex-wrap gap-2">
         {(revoke ? REVOKE_REASONS : REASONS).map((r) => (
-          <button key={r} className={`rounded-full border px-3 py-1 text-xs font-semibold ${reason === r ? "border-brand bg-brand-soft text-brand-dark" : "border-line text-ink-2 hover:bg-surface-2"}`} onClick={() => setReason(r)}>
+          <button
+            key={r}
+            className={`rounded-full border px-3 py-1 text-xs font-semibold ${reason === r ? "border-brand bg-brand-soft text-brand-dark" : "border-line text-ink-2 hover:bg-surface-2"}`}
+            onClick={() => setReason(r)}
+          >
             {r}
           </button>
         ))}
@@ -313,7 +329,9 @@ function Subscribers({ q, onClearSearch }: { q: string; onClearSearch: () => voi
   const base =
     view === "lapsed"
       ? (subs.data?.lapsed ?? [])
-      : (subs.data?.active ?? []).filter((s) => view === "all" || (lastEnd.get(s.student.id)! <= soon && new Date(s.endsAt).getTime() === lastEnd.get(s.student.id)));
+      : (subs.data?.active ?? []).filter(
+          (s) => view === "all" || (lastEnd.get(s.student.id)! <= soon && new Date(s.endsAt).getTime() === lastEnd.get(s.student.id)),
+        );
   const needle = q.trim();
   const rows = base.filter((s) => matches(q, s.student.name, s.student.username, s.student.phone, s.planName));
   const soonCount = [...lastEnd.values()].filter((t) => t <= soon).length;
@@ -327,7 +345,11 @@ function Subscribers({ q, onClearSearch }: { q: string; onClearSearch: () => voi
             ["lapsed", `Uzaytirmagan (${subs.data?.lapsed.length ?? 0})`],
           ] as const
         ).map(([k, l]) => (
-          <button key={k} onClick={() => setView(k)} className={`h-9 shrink-0 rounded-full px-4 text-sm font-bold ${view === k ? "bg-brand text-white" : "bg-surface-3 text-ink-2 hover:bg-surface-4"}`}>
+          <button
+            key={k}
+            onClick={() => setView(k)}
+            className={`h-9 shrink-0 rounded-full px-4 text-sm font-bold ${view === k ? "bg-brand text-white" : "bg-surface-3 text-ink-2 hover:bg-surface-4"}`}
+          >
             {l}
           </button>
         ))}
@@ -445,7 +467,13 @@ function GrantModal({ onClose }: { onClose: () => void }) {
             </div>
           ) : (
             <>
-              <input className="input" autoFocus placeholder="Ism, username yoki telefon (kamida 2 belgi)" value={search} onChange={(e) => setSearch(e.target.value)} />
+              <input
+                className="input"
+                autoFocus
+                placeholder="Ism, username yoki telefon (kamida 2 belgi)"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
               {found.data && (
                 <div className="mt-2 max-h-56 divide-y divide-line overflow-y-auto rounded-lg border border-line">
                   {found.data.length === 0 && <p className="px-3 py-2 text-sm text-ink-3">Topilmadi</p>}

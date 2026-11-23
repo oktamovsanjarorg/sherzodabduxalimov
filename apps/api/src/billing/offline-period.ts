@@ -28,7 +28,12 @@ export function effective(p: PayRecord) {
  * O'quvchining o'z sanasidan hisoblangan davr kalendar oy bilan mos tushmaydi, shuning uchun oy emas, sana tekshiriladi.
  */
 export function paidNowWhere(today = tashkentToday()): Prisma.OfflinePaymentWhereInput {
-  return { OR: [{ periodStart: { lte: dateCol(today) }, periodEnd: { gte: dateCol(today) } }, { periodEnd: null, month: monthOfYmd(today) }] };
+  return {
+    OR: [
+      { periodStart: { lte: dateCol(today) }, periodEnd: { gte: dateCol(today) } },
+      { periodEnd: null, month: monthOfYmd(today) },
+    ],
+  };
 }
 
 /** Hisobotdagi oy uchun solishtirma sana: joriy oy bo'lsa bugun, o'tgan oy bo'lsa uning oxirgi kuni */
@@ -48,7 +53,10 @@ export function pickPayment<T extends PayRecord>(pays: T[], month: string, today
 /** Davr qaysi sanagacha to'langan (hisobotdagi sanagacha boshlangan davrlar ichida) va necha kun o'tgan */
 /** startedOn: o'qishni boshlagan sana — hali to'lov bo'lmasa birinchi davr shundan boshlanadi (bo'lmasa bugundan) */
 export function coverage(pays: PayRecord[], ref: string, startedOn: string | null = null) {
-  const ends = pays.map(effective).filter((e) => e.start <= ref).map((e) => e.end);
+  const ends = pays
+    .map(effective)
+    .filter((e) => e.start <= ref)
+    .map((e) => e.end);
   const coveredUntil = ends.length ? ends.reduce((a, b) => (a >= b ? a : b)) : null;
   return {
     coveredUntil,

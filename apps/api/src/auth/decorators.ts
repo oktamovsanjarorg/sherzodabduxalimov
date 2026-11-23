@@ -12,6 +12,4 @@ export const Public = () => SetMetadata(IS_PUBLIC, true);
 export const ROLES_KEY = "roles";
 export const Roles = (...roles: RoleName[]) => SetMetadata(ROLES_KEY, roles);
 
-export const CurrentUser = createParamDecorator(
-  (_: unknown, ctx: ExecutionContext): JwtUser => ctx.switchToHttp().getRequest().user,
-);
+export const CurrentUser = createParamDecorator((_: unknown, ctx: ExecutionContext): JwtUser => ctx.switchToHttp().getRequest().user);

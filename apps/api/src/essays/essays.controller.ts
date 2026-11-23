@@ -105,7 +105,10 @@ const period = (v?: string): EssayStatsPeriod => {
 @Roles("TEACHER", "ASSISTANT")
 @Controller("admin/essay-log")
 export class AdminEssayLogController {
-  constructor(private readonly stats: EssayStatsService, private readonly svc: EssaysService) {}
+  constructor(
+    private readonly stats: EssayStatsService,
+    private readonly svc: EssaysService,
+  ) {}
 
   @Get("stats") summary(@Query("days") days?: string) {
     return this.stats.stats(period(days));

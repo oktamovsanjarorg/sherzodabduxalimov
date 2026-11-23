@@ -33,15 +33,15 @@ export function HomePage() {
         {user.photoUrl ? (
           <img src={user.photoUrl} alt="" className="h-11 w-11 rounded-full object-cover ring-1 ring-hint/20" />
         ) : (
-          <span className="flex h-11 w-11 items-center justify-center rounded-full bg-brand font-display text-lg text-white">
-            {user.firstName[0]}
-          </span>
+          <span className="flex h-11 w-11 items-center justify-center rounded-full bg-brand font-display text-lg text-white">{user.firstName[0]}</span>
         )}
         <div className="min-w-0 flex-1">
           <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-hint">Xush kelibsiz</p>
           <h1 className="truncate text-[1.65rem] leading-none">{user.firstName}</h1>
         </div>
-        <button className="-my-2.5 py-2.5" onClick={go("/subscribe")}>{sub ? <Badge>Obuna faol</Badge> : user.offlineGroup ? <Badge>Offline guruh</Badge> : <Badge>Obuna olish</Badge>}</button>
+        <button className="-my-2.5 py-2.5" onClick={go("/subscribe")}>
+          {sub ? <Badge>Obuna faol</Badge> : user.offlineGroup ? <Badge>Offline guruh</Badge> : <Badge>Obuna olish</Badge>}
+        </button>
       </header>
 
       <TrialBanner user={user} />

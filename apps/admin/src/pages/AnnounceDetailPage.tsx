@@ -76,7 +76,9 @@ function Detail({ a }: { a: AnnounceDetail }) {
   });
 
   const s = a.stats;
-  const rows = a.recipients.filter((r) => (filter === "all" || r.status === filter) && (!search || `${r.name} ${r.username ?? ""}`.toLowerCase().includes(search.toLowerCase())));
+  const rows = a.recipients.filter(
+    (r) => (filter === "all" || r.status === filter) && (!search || `${r.name} ${r.username ?? ""}`.toLowerCase().includes(search.toLowerCase())),
+  );
   const cnt = (k: DeliveryStatusName) => a.recipients.filter((r) => r.status === k).length;
 
   return (
@@ -105,7 +107,12 @@ function Detail({ a }: { a: AnnounceDetail }) {
               </button>
             )}
             {a.canRecall && (
-              <ConfirmButton label="Hammaning Telegram'idan o'chirilsinmi?" className="btn-secondary text-red-700" title="Qaytarib olish" onConfirm={() => recall.mutate()}>
+              <ConfirmButton
+                label="Hammaning Telegram'idan o'chirilsinmi?"
+                className="btn-secondary text-red-700"
+                title="Qaytarib olish"
+                onConfirm={() => recall.mutate()}
+              >
                 <Undo2 size={16} /> Qaytarib olish
               </ConfirmButton>
             )}
@@ -122,7 +129,9 @@ function Detail({ a }: { a: AnnounceDetail }) {
         <div className="space-y-4">
           {a.status !== "SENT" && (
             <p className="card p-4 text-sm text-ink-3">
-              {a.status === "SCHEDULED" ? "Vaqti kelganda yuboriladi: shu paytdagi guruh tarkibi bo'yicha. Natija shu yerda ko'rinadi." : "Qoralama: hali hech kimga yuborilmagan."}
+              {a.status === "SCHEDULED"
+                ? "Vaqti kelganda yuboriladi: shu paytdagi guruh tarkibi bo'yicha. Natija shu yerda ko'rinadi."
+                : "Qoralama: hali hech kimga yuborilmagan."}
             </p>
           )}
           {a.status === "SENT" && (

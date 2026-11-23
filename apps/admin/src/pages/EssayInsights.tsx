@@ -190,7 +190,10 @@ function Legend({ color, text }: { color: string; text: string }) {
 }
 
 function CriteriaCard({ title, stats }: { title: string; stats: EssayScoreStats }) {
-  const weakest = [...stats.criteria].sort((a, b) => a.avg / a.max - b.avg / b.max).slice(0, 3).map((c) => c.key);
+  const weakest = [...stats.criteria]
+    .sort((a, b) => a.avg / a.max - b.avg / b.max)
+    .slice(0, 3)
+    .map((c) => c.key);
   return (
     <section className="card p-4 sm:p-5">
       <h2 className="mb-1 font-extrabold">{title}</h2>
@@ -267,7 +270,17 @@ function TopStudents({ rows, onOpen }: { rows: AdminEssayStats["topStudents"]; o
   );
 }
 
-function StudentEssaysModal({ studentId, days, rows, onClose }: { studentId: string; days: EssayStatsPeriod; rows: AdminEssayStats["topStudents"]; onClose: () => void }) {
+function StudentEssaysModal({
+  studentId,
+  days,
+  rows,
+  onClose,
+}: {
+  studentId: string;
+  days: EssayStatsPeriod;
+  rows: AdminEssayStats["topStudents"];
+  onClose: () => void;
+}) {
   const st = rows.find((r) => r.id === studentId);
   const [open, setOpen] = useState<string | null>(null);
   const q = useQuery({ queryKey: ["essay-log", days, "student", studentId], queryFn: () => api.essayLog(days, "", "", studentId) });
@@ -300,7 +313,13 @@ export function EssayLog() {
         <Chips
           value={mode || "ALL"}
           onChange={(v) => setMode(v === "ALL" ? "" : v)}
-          options={[["ALL", "Hammasi"], ["AI", "AI"], ["TEACHER", "Ustoz"]] as const}
+          options={
+            [
+              ["ALL", "Hammasi"],
+              ["AI", "AI"],
+              ["TEACHER", "Ustoz"],
+            ] as const
+          }
         />
       </div>
       {list.isPending && <Spinner className="text-ink-4" />}
@@ -321,7 +340,9 @@ function LogList({ rows, onOpen, hideStudent }: { rows: AdminEssayLogRow[]; onOp
     <div className="space-y-2">
       {rows.map((r) => (
         <button key={r.id} onClick={() => onOpen(r.id)} className="card flex w-full items-center gap-3 p-3 text-left transition hover:border-brand sm:p-4">
-          <span className={`hidden h-9 w-9 shrink-0 items-center justify-center rounded-lg sm:flex ${r.mode === "AI" ? "bg-brand-soft text-brand-dark" : "bg-amber-100 text-amber-800"}`}>
+          <span
+            className={`hidden h-9 w-9 shrink-0 items-center justify-center rounded-lg sm:flex ${r.mode === "AI" ? "bg-brand-soft text-brand-dark" : "bg-amber-100 text-amber-800"}`}
+          >
             {r.mode === "AI" ? <Bot size={18} /> : <UserCheck size={18} />}
           </span>
           <div className="min-w-0 flex-1">
@@ -339,8 +360,16 @@ function LogList({ rows, onOpen, hideStudent }: { rows: AdminEssayLogRow[]; onOp
             </p>
           </div>
           <div className="flex shrink-0 flex-col items-end gap-1">
-            {r.ai && <Badge tone={scoreTone(r.ai.score)}>AI {formatScore(r.ai.score)}/{ESSAY_MAX_SCORE}</Badge>}
-            {r.teacher && <Badge tone={scoreTone(r.teacher.score)}>Ustoz {formatScore(r.teacher.score)}/{ESSAY_MAX_SCORE}</Badge>}
+            {r.ai && (
+              <Badge tone={scoreTone(r.ai.score)}>
+                AI {formatScore(r.ai.score)}/{ESSAY_MAX_SCORE}
+              </Badge>
+            )}
+            {r.teacher && (
+              <Badge tone={scoreTone(r.teacher.score)}>
+                Ustoz {formatScore(r.teacher.score)}/{ESSAY_MAX_SCORE}
+              </Badge>
+            )}
             {!r.ai && !r.teacher && <Badge tone={r.status === "AI_FAILED" ? "red" : "gray"}>{ESSAY_STATUS_LABELS[r.status]}</Badge>}
             {(r.ai?.special || r.teacher?.special) && <span className="text-[11px] font-semibold text-amber-800">{r.teacher?.special ?? r.ai?.special}</span>}
           </div>
@@ -398,8 +427,18 @@ function EssayDetailModal({ id, onClose }: { id: string; onClose: () => void }) 
 
 function PageImage({ id, n }: { id: string; n: number }) {
   const img = useQuery({ queryKey: ["essay-page", id, n], queryFn: () => api.essayPage(id, n), staleTime: Infinity, gcTime: 10 * 60_000 });
-  if (img.isPending) return <div className="flex h-48 items-center justify-center rounded-xl bg-surface-3"><Spinner className="text-ink-4" /></div>;
-  if (!img.data) return <div className="flex h-20 items-center justify-center gap-2 rounded-xl bg-surface-3 text-sm text-ink-3"><ImageOff size={16} /> Rasm yuklanmadi</div>;
+  if (img.isPending)
+    return (
+      <div className="flex h-48 items-center justify-center rounded-xl bg-surface-3">
+        <Spinner className="text-ink-4" />
+      </div>
+    );
+  if (!img.data)
+    return (
+      <div className="flex h-20 items-center justify-center gap-2 rounded-xl bg-surface-3 text-sm text-ink-3">
+        <ImageOff size={16} /> Rasm yuklanmadi
+      </div>
+    );
   return <img src={img.data} alt={`${n + 1}-varoq`} className="w-full rounded-xl" />;
 }
 
@@ -419,7 +458,9 @@ function ReviewBlock({ r }: { r: EssayReviewView }) {
           {formatScore(r.totalScore)} / {r.maxScore}
         </Badge>
       </div>
-      {r.special && <p className="mb-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm font-semibold text-amber-800">Baholanmadi: {r.special.label}</p>}
+      {r.special && (
+        <p className="mb-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm font-semibold text-amber-800">Baholanmadi: {r.special.label}</p>
+      )}
       {r.criteria.length > 0 && (
         <ul className="divide-y divide-line rounded-lg border border-line text-sm">
           {r.criteria.map((c) => (

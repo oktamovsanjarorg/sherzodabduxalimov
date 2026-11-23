@@ -46,7 +46,9 @@ export class DashboardController {
       this.prisma.subscription.groupBy({ by: ["userId"], where: { status: "ACTIVE", endsAt: { gt: now } }, _max: { endsAt: true } }),
     ]);
     const expiringSubscriptions = subEnds.filter((g) => g._max.endsAt! <= new Date(now.getTime() + 7 * 86_400_000)).length;
-    const newStudents = await this.prisma.studentProfile.count({ where: { acceptedAt: null, user: { role: "STUDENT", isBlocked: false, telegramId: { not: null } } } });
+    const newStudents = await this.prisma.studentProfile.count({
+      where: { acceptedAt: null, user: { role: "STUDENT", isBlocked: false, telegramId: { not: null } } },
+    });
     const [pendingParents, processing, failed, total, withApproved, groups, lp, ld, tests, questions] = await Promise.all([
       this.prisma.parentLink.count({ where: { status: "PENDING" } }),
       this.prisma.video.count({ where: { status: { in: ["PROCESSING", "UPLOADING"] }, lesson: { isNot: null } } }),
@@ -56,7 +58,14 @@ export class DashboardController {
       this.prisma.group.findMany({
         where: { isActive: true },
         orderBy: { name: "asc" },
-        select: { id: true, name: true, schedule: true, createdAt: true, _count: { select: { students: true } }, attendance: { where: { date: today }, select: { id: true } } },
+        select: {
+          id: true,
+          name: true,
+          schedule: true,
+          createdAt: true,
+          _count: { select: { students: true } },
+          attendance: { where: { date: today }, select: { id: true } },
+        },
       }),
       this.prisma.lesson.count({ where: { isPublished: true } }),
       this.prisma.lesson.count({ where: { isPublished: false } }),

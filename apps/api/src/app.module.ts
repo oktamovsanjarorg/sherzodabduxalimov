@@ -38,7 +38,32 @@ export class AppModule {
   static forRoot(env: Env): DynamicModule {
     return {
       module: AppModule,
-      imports: [EnvModule.forRoot(env), PrismaModule, TrashModule, AccessModule, UsersModule, AuthModule, StaffModule, ContentModule, TestsModule, AdminModule, MediaModule, NotifyModule, ParentsModule, AttendanceModule, BillingModule, EssaysModule, StudentsModule, ReviewModule, VoiceModule, ExportModule, BackupsModule, ExternalModule, AdvisorModule, AnnounceModule],
+      imports: [
+        EnvModule.forRoot(env),
+        PrismaModule,
+        TrashModule,
+        AccessModule,
+        UsersModule,
+        AuthModule,
+        StaffModule,
+        ContentModule,
+        TestsModule,
+        AdminModule,
+        MediaModule,
+        NotifyModule,
+        ParentsModule,
+        AttendanceModule,
+        BillingModule,
+        EssaysModule,
+        StudentsModule,
+        ReviewModule,
+        VoiceModule,
+        ExportModule,
+        BackupsModule,
+        ExternalModule,
+        AdvisorModule,
+        AnnounceModule,
+      ],
       controllers: [HealthController],
     };
   }

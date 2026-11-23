@@ -78,21 +78,51 @@ describe("Ona tili formati (49 katak)", () => {
     const row = ["Aziz", "0"];
     for (let q = 1; q <= 49; q++) row.push("A", "A", q === 33 || q === 13 ? "1" : "0");
     const p = parseOmrExport([head.join(","), row.join(",")].join("\n"), null);
-    expect(p.sections.map((s) => s.title)).toEqual(["Tilshunoslik nazariyasi", "Adabiyot nazariyasi va adabiyot tarixi", "O'qish savodxonligi", "Lingvistik va badiiy tahlil"]);
-    expect(p.rows[0].sections.map((s) => [s.max, s.correct])).toEqual([[15, 1], [5, 1], [15, 0], [14, 0]]);
+    expect(p.sections.map((s) => s.title)).toEqual([
+      "Tilshunoslik nazariyasi",
+      "Adabiyot nazariyasi va adabiyot tarixi",
+      "O'qish savodxonligi",
+      "Lingvistik va badiiy tahlil",
+    ]);
+    expect(p.rows[0].sections.map((s) => [s.max, s.correct])).toEqual([
+      [15, 1],
+      [5, 1],
+      [15, 0],
+      [14, 0],
+    ]);
   });
 });
 
 describe("parseEssayTable", () => {
   it("sarlavhasiz va sarlavhali; 75 lik ball 24 likka qaytadi, 24 lik o'zgarmaydi", () => {
-    expect(parseEssayTable([["Aliyev Vali", "62"], ["Karimova Aziza", "17,5"], ["Bo'sh", ""]])).toEqual({
-      rows: [{ name: "Aliyev Vali", score24: 17.5 }, { name: "Karimova Aziza", score24: 17.5 }],
+    expect(
+      parseEssayTable([
+        ["Aliyev Vali", "62"],
+        ["Karimova Aziza", "17,5"],
+        ["Bo'sh", ""],
+      ]),
+    ).toEqual({
+      rows: [
+        { name: "Aliyev Vali", score24: 17.5 },
+        { name: "Karimova Aziza", score24: 17.5 },
+      ],
       bad: [],
     });
-    expect(parseEssayTable([["F.I.SH", "Ball"], ["Ali", "31"]]).rows).toEqual([{ name: "Ali", score24: 2 }]);
+    expect(
+      parseEssayTable([
+        ["F.I.SH", "Ball"],
+        ["Ali", "31"],
+      ]).rows,
+    ).toEqual([{ name: "Ali", score24: 2 }]);
   });
   it("25–27 va yarim qadamga tushmaydigan qiymat xato", () => {
-    expect(parseEssayTable([["Ali", "26"], ["Vali", "10.3"], ["Soli", "20"]])).toEqual({ rows: [{ name: "Soli", score24: 20 }], bad: ["Ali", "Vali"] });
+    expect(
+      parseEssayTable([
+        ["Ali", "26"],
+        ["Vali", "10.3"],
+        ["Soli", "20"],
+      ]),
+    ).toEqual({ rows: [{ name: "Soli", score24: 20 }], bad: ["Ali", "Vali"] });
   });
 });
 

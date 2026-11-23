@@ -21,14 +21,14 @@ export async function configureApp(app: NestFastifyApplication, opts: { rateLimi
   app
     .getHttpAdapter()
     .getInstance()
-    .addContentTypeParser("application/octet-stream", { parseAs: "buffer", bodyLimit: UPLOAD_CHUNK_BYTES + 1024 }, (_req, body, done) =>
-      done(null, body),
-    );
+    .addContentTypeParser("application/octet-stream", { parseAs: "buffer", bodyLimit: UPLOAD_CHUNK_BYTES + 1024 }, (_req, body, done) => done(null, body));
   // To'lov cheki rasmi: xom baytlar. Haqiqiy turi serverda baytlardan tekshiriladi.
   app
     .getHttpAdapter()
     .getInstance()
-    .addContentTypeParser(["image/jpeg", "image/png", "image/webp"], { parseAs: "buffer", bodyLimit: MAX_RECEIPT_BYTES }, (_req, body, done) => done(null, body));
+    .addContentTypeParser(["image/jpeg", "image/png", "image/webp"], { parseAs: "buffer", bodyLimit: MAX_RECEIPT_BYTES }, (_req, body, done) =>
+      done(null, body),
+    );
   // Ustozning ovozli izohi: xom audio baytlari (turi ffmpeg o'girishda tekshiriladi)
   app
     .getHttpAdapter()

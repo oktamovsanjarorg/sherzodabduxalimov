@@ -43,7 +43,10 @@ describe("Korzinka (e2e)", () => {
     const sp = await prisma.studentProfile.findUniqueOrThrow({ where: { userId: s.userId } });
     await req("POST", `/admin/groups/${g.id}/students`, { studentIds: [sp.id] });
     await req("PUT", "/admin/offline-payments", { studentId: sp.id, month: currentMonth(), amountUzs: 300000 });
-    const before = { links: await prisma.parentLink.count({ where: { studentId: sp.id } }), pays: await prisma.offlinePayment.count({ where: { studentId: sp.id } }) };
+    const before = {
+      links: await prisma.parentLink.count({ where: { studentId: sp.id } }),
+      pays: await prisma.offlinePayment.count({ where: { studentId: sp.id } }),
+    };
     expect(before).toEqual({ links: 1, pays: 1 });
 
     expect((await req("DELETE", `/admin/students/${sp.id}?force=1`)).statusCode).toBe(200);
@@ -62,7 +65,10 @@ describe("Korzinka (e2e)", () => {
     expect(back.userId).toBe(s.userId);
     expect(back.groupId).toBe(g.id);
     expect(back.user.telegramId).toBe(BigInt(TG.student));
-    expect({ links: await prisma.parentLink.count({ where: { studentId: sp.id } }), pays: await prisma.offlinePayment.count({ where: { studentId: sp.id } }) }).toEqual(before);
+    expect({
+      links: await prisma.parentLink.count({ where: { studentId: sp.id } }),
+      pays: await prisma.offlinePayment.count({ where: { studentId: sp.id } }),
+    }).toEqual(before);
     expect((await req("GET", "/me", undefined, s.headers)).statusCode).toBe(200); // eski token yana ishlaydi
     expect((await req("POST", `/admin/trash/${item.id}/restore`)).statusCode).toBe(404);
   });

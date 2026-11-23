@@ -14,7 +14,10 @@ export function ContentPage() {
     queryKey: ["courses"],
     queryFn: api.courses,
     // Video qayta ishlanayotgan bo'lsa, holatini yangilab turamiz
-    refetchInterval: (q) => (q.state.data?.some((c) => c.topics.some((t) => t.lessons.some((l) => l.video?.status === "PROCESSING" || l.video?.status === "UPLOADING"))) ? 5000 : false),
+    refetchInterval: (q) =>
+      q.state.data?.some((c) => c.topics.some((t) => t.lessons.some((l) => l.video?.status === "PROCESSING" || l.video?.status === "UPLOADING")))
+        ? 5000
+        : false,
   });
   const create = useMutation({
     mutationFn: () => api.createCourse({ title: "Yangi kurs" }),
@@ -37,7 +40,9 @@ export function ContentPage() {
       {courses.isError && <p className="text-sm text-red-600">{errMsg(courses.error)}</p>}
       {courses.data?.length === 0 && <Empty title="Hali kurs yo'q" hint="Birinchi kursni yarating, keyin unga mavzu va darslar qo'shing." />}
       <div className="space-y-6">
-        {courses.data?.map((c) => <CourseCard key={c.id} course={c} />)}
+        {courses.data?.map((c) => (
+          <CourseCard key={c.id} course={c} />
+        ))}
       </div>
     </>
   );
@@ -60,7 +65,13 @@ function InlineTitle({ value, onSave, className = "" }: { value: string; onSave:
   const [v, setV] = useState(value);
   if (!edit)
     return (
-      <button className={`tap group flex min-w-0 items-center gap-2 text-left ${className}`} onClick={() => { setV(value); setEdit(true); }}>
+      <button
+        className={`tap group flex min-w-0 items-center gap-2 text-left ${className}`}
+        onClick={() => {
+          setV(value);
+          setEdit(true);
+        }}
+      >
         <span className="min-w-0 break-words">{value}</span>
         <Pencil size={14} className="shrink-0 text-ink-5 group-hover:text-ink-3" />
       </button>
@@ -72,9 +83,22 @@ function InlineTitle({ value, onSave, className = "" }: { value: string; onSave:
   return (
     // Telefonda tahrir maydoni butun qatorni egallaydi: nom to'liq ko'rinsin
     <span className="flex min-w-0 flex-1 basis-full items-center gap-1 sm:basis-auto">
-      <input autoFocus className="input h-10 min-w-0 flex-1 sm:h-9" value={v} onChange={(e) => setV(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") save(); if (e.key === "Escape") setEdit(false); }} />
-      <button className="btn-ghost h-9 w-9 p-0" onClick={save} aria-label="Saqlash"><Check size={16} /></button>
-      <button className="btn-ghost h-9 w-9 p-0" onClick={() => setEdit(false)} aria-label="Bekor qilish"><X size={16} /></button>
+      <input
+        autoFocus
+        className="input h-10 min-w-0 flex-1 sm:h-9"
+        value={v}
+        onChange={(e) => setV(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") save();
+          if (e.key === "Escape") setEdit(false);
+        }}
+      />
+      <button className="btn-ghost h-9 w-9 p-0" onClick={save} aria-label="Saqlash">
+        <Check size={16} />
+      </button>
+      <button className="btn-ghost h-9 w-9 p-0" onClick={() => setEdit(false)} aria-label="Bekor qilish">
+        <X size={16} />
+      </button>
     </span>
   );
 }
@@ -82,11 +106,22 @@ function InlineTitle({ value, onSave, className = "" }: { value: string; onSave:
 function CourseCard({ course }: { course: AdminCourse }) {
   const r = useRefresh();
   const [newTopic, setNewTopic] = useState("");
-  const update = useMutation({ mutationFn: (d: Parameters<typeof api.updateCourse>[1]) => api.updateCourse(course.id, d), onSuccess: () => r.ok("Saqlandi"), onError: r.fail });
-  const del = useMutation({ mutationFn: () => api.deleteCourse(course.id), onSuccess: () => r.ok("Kurs o'chirildi. Korzinkadan 30 kun ichida tiklash mumkin"), onError: r.fail });
+  const update = useMutation({
+    mutationFn: (d: Parameters<typeof api.updateCourse>[1]) => api.updateCourse(course.id, d),
+    onSuccess: () => r.ok("Saqlandi"),
+    onError: r.fail,
+  });
+  const del = useMutation({
+    mutationFn: () => api.deleteCourse(course.id),
+    onSuccess: () => r.ok("Kurs o'chirildi. Korzinkadan 30 kun ichida tiklash mumkin"),
+    onError: r.fail,
+  });
   const addTopic = useMutation({
     mutationFn: () => api.createTopic(course.id, newTopic.trim()),
-    onSuccess: () => { setNewTopic(""); r.ok("Mavzu qo'shildi"); },
+    onSuccess: () => {
+      setNewTopic("");
+      r.ok("Mavzu qo'shildi");
+    },
     onError: r.fail,
   });
 
@@ -95,8 +130,14 @@ function CourseCard({ course }: { course: AdminCourse }) {
       <div className="flex flex-wrap items-center gap-3 border-b border-line px-4 py-4 sm:gap-4 sm:px-5">
         <InlineTitle value={course.title} onSave={(title) => update.mutate({ title })} className="text-lg font-extrabold" />
         <span className="flex-1" />
-        <Toggle checked={course.isPublished} onChange={(isPublished) => update.mutate({ isPublished })} label={course.isPublished ? "Nashr qilingan" : "Qoralama"} />
-        <ConfirmButton onConfirm={() => del.mutate()}><Trash2 size={14} /></ConfirmButton>
+        <Toggle
+          checked={course.isPublished}
+          onChange={(isPublished) => update.mutate({ isPublished })}
+          label={course.isPublished ? "Nashr qilingan" : "Qoralama"}
+        />
+        <ConfirmButton onConfirm={() => del.mutate()}>
+          <Trash2 size={14} />
+        </ConfirmButton>
       </div>
 
       {!course.isPublished && (
@@ -137,8 +178,16 @@ function TopicBlock({ topic, index, topicIds }: { topic: AdminTopic; index: numb
   const r = useRefresh();
   const navigate = useNavigate();
   const rename = useMutation({ mutationFn: (title: string) => api.updateTopic(topic.id, title), onSuccess: () => r.ok("Saqlandi"), onError: r.fail });
-  const del = useMutation({ mutationFn: () => api.deleteTopic(topic.id), onSuccess: () => r.ok("Mavzu o'chirildi. Korzinkadan 30 kun ichida tiklash mumkin"), onError: r.fail });
-  const reorder = useMutation({ mutationFn: (a: { kind: "topic" | "lesson"; ids: string[] }) => api.reorder(a.kind, a.ids), onSuccess: () => r.ok(), onError: r.fail });
+  const del = useMutation({
+    mutationFn: () => api.deleteTopic(topic.id),
+    onSuccess: () => r.ok("Mavzu o'chirildi. Korzinkadan 30 kun ichida tiklash mumkin"),
+    onError: r.fail,
+  });
+  const reorder = useMutation({
+    mutationFn: (a: { kind: "topic" | "lesson"; ids: string[] }) => api.reorder(a.kind, a.ids),
+    onSuccess: () => r.ok(),
+    onError: r.fail,
+  });
   const addLesson = useMutation({
     mutationFn: () => api.createLesson(topic.id, { title: "Yangi dars" }),
     onSuccess: (l) => {
@@ -155,9 +204,25 @@ function TopicBlock({ topic, index, topicIds }: { topic: AdminTopic; index: numb
         <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-surface-3 text-xs font-extrabold text-ink-3">{index + 1}</span>
         <InlineTitle value={topic.title} onSave={(t) => rename.mutate(t)} className="font-bold" />
         <span className="flex-1" />
-        <button className="btn-ghost h-9 w-9 shrink-0 p-0" disabled={index === 0} onClick={() => reorder.mutate({ kind: "topic", ids: move(topicIds, index, -1) })} aria-label="Yuqoriga"><ArrowUp size={15} /></button>
-        <button className="btn-ghost h-9 w-9 shrink-0 p-0" disabled={index === topicIds.length - 1} onClick={() => reorder.mutate({ kind: "topic", ids: move(topicIds, index, 1) })} aria-label="Pastga"><ArrowDown size={15} /></button>
-        <ConfirmButton onConfirm={() => del.mutate()} className="btn-ghost h-9 w-9 shrink-0 p-0 text-ink-4 hover:text-red-600"><Trash2 size={15} /></ConfirmButton>
+        <button
+          className="btn-ghost h-9 w-9 shrink-0 p-0"
+          disabled={index === 0}
+          onClick={() => reorder.mutate({ kind: "topic", ids: move(topicIds, index, -1) })}
+          aria-label="Yuqoriga"
+        >
+          <ArrowUp size={15} />
+        </button>
+        <button
+          className="btn-ghost h-9 w-9 shrink-0 p-0"
+          disabled={index === topicIds.length - 1}
+          onClick={() => reorder.mutate({ kind: "topic", ids: move(topicIds, index, 1) })}
+          aria-label="Pastga"
+        >
+          <ArrowDown size={15} />
+        </button>
+        <ConfirmButton onConfirm={() => del.mutate()} className="btn-ghost h-9 w-9 shrink-0 p-0 text-ink-4 hover:text-red-600">
+          <Trash2 size={15} />
+        </ConfirmButton>
       </div>
 
       <ul className="space-y-0.5 sm:ml-9">
@@ -198,11 +263,26 @@ function TopicBlock({ topic, index, topicIds }: { topic: AdminTopic; index: numb
 
 export function VideoBadge({ lesson }: { lesson: AdminLesson }) {
   const v = lesson.video;
-  if (v?.status === "READY") return <Badge tone="green"><Film size={11} /> Video tayyor</Badge>;
-  if (v?.status === "PROCESSING") return <Badge tone="amber"><Spinner className="h-3 w-3" /> Ishlanmoqda {v.processingPct ?? 0}%</Badge>;
+  if (v?.status === "READY")
+    return (
+      <Badge tone="green">
+        <Film size={11} /> Video tayyor
+      </Badge>
+    );
+  if (v?.status === "PROCESSING")
+    return (
+      <Badge tone="amber">
+        <Spinner className="h-3 w-3" /> Ishlanmoqda {v.processingPct ?? 0}%
+      </Badge>
+    );
   if (v?.status === "UPLOADING") return <Badge tone="amber">Yuklanmoqda {Math.round((v.receivedBytes / v.sizeBytes) * 100)}%</Badge>;
   if (v?.status === "FAILED") return <Badge tone="red">Video xato</Badge>;
-  if (lesson.videoUrl) return <Badge tone="blue"><Link2 size={11} /> Havola</Badge>;
+  if (lesson.videoUrl)
+    return (
+      <Badge tone="blue">
+        <Link2 size={11} /> Havola
+      </Badge>
+    );
   return <Badge>Video yo'q</Badge>;
 }
 
@@ -220,8 +300,12 @@ function LessonRow({ lesson, first, last, onMove }: { lesson: AdminLesson; first
         {lesson.isPublished ? <Badge tone="green">Nashr</Badge> : <Badge>Qoralama</Badge>}
       </span>
       <span className="flex transition md:opacity-0 md:group-hover:opacity-100">
-        <button className="btn-ghost h-9 w-9 p-0" disabled={first} onClick={() => onMove(-1)} aria-label="Yuqoriga"><ArrowUp size={15} /></button>
-        <button className="btn-ghost h-9 w-9 p-0" disabled={last} onClick={() => onMove(1)} aria-label="Pastga"><ArrowDown size={15} /></button>
+        <button className="btn-ghost h-9 w-9 p-0" disabled={first} onClick={() => onMove(-1)} aria-label="Yuqoriga">
+          <ArrowUp size={15} />
+        </button>
+        <button className="btn-ghost h-9 w-9 p-0" disabled={last} onClick={() => onMove(1)} aria-label="Pastga">
+          <ArrowDown size={15} />
+        </button>
       </span>
     </li>
   );

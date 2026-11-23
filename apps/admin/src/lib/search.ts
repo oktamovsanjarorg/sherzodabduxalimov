@@ -16,7 +16,10 @@ export const norm = (s: string) =>
 export function matches(q: string, ...fields: (string | number | null | undefined)[]): boolean {
   const n = norm(q);
   if (!n) return true;
-  const text = fields.filter((f) => f !== null && f !== undefined && f !== "").map((f) => norm(String(f))).join(" ");
+  const text = fields
+    .filter((f) => f !== null && f !== undefined && f !== "")
+    .map((f) => norm(String(f)))
+    .join(" ");
   if (n.split(" ").every((w) => text.includes(w))) return true;
   const digits = q.replace(/\D/g, "");
   return digits.length >= 3 && text.replace(/\D/g, "").includes(digits);

@@ -58,7 +58,10 @@ async function pickModel(apiKey: string, preferred: string): Promise<string> {
   const ok = models.filter((m) => m.supportedGenerationMethods?.includes("generateContent")).map((m) => m.name.replace(/^models\//, ""));
   const pick =
     ok.find((m) => m === preferred) ??
-    ok.filter((m) => /flash/.test(m) && !/lite|image|tts|live|preview|exp/.test(m)).sort().reverse()[0] ??
+    ok
+      .filter((m) => /flash/.test(m) && !/lite|image|tts|live|preview|exp/.test(m))
+      .sort()
+      .reverse()[0] ??
     ok.find((m) => /flash/.test(m));
   if (!pick) throw new Error(`Gemini: mos model topilmadi (${r.status})`);
   return pick;
@@ -68,7 +71,11 @@ async function pickModel(apiKey: string, preferred: string): Promise<string> {
 const FALLBACK_MODELS = ["gemini-3.7-flash", "gemini-3.5-flash", "gemini-flash-latest", "gemini-2.5-flash"];
 const RETRYABLE = new Set([404, 429, 500, 502, 503, 504]);
 
-const textOf = (j: GeminiJson | null): string => (j?.candidates?.[0]?.content?.parts ?? []).map((p: { text?: string }) => p.text ?? "").join("").trim();
+const textOf = (j: GeminiJson | null): string =>
+  (j?.candidates?.[0]?.content?.parts ?? [])
+    .map((p: { text?: string }) => p.text ?? "")
+    .join("")
+    .trim();
 
 /** Gemini'ga so'rov: band bo'lsa (503/429) yoki model yo'q bo'lsa (404) navbatdagi modelga o'tiladi */
 async function generate(apiKey: string, preferred: string, body: object): Promise<string> {
@@ -76,7 +83,10 @@ async function generate(apiKey: string, preferred: string, body: object): Promis
   let last = "";
   const attempt = async (model: string) => {
     tried.add(model);
-    const r = await call("POST", `/v1beta/models/${encodeURIComponent(model)}:generateContent`, apiKey, body, 75_000).catch((e: Error) => ({ status: 504, json: { error: { message: e.message } } as GeminiJson }));
+    const r = await call("POST", `/v1beta/models/${encodeURIComponent(model)}:generateContent`, apiKey, body, 75_000).catch((e: Error) => ({
+      status: 504,
+      json: { error: { message: e.message } } as GeminiJson,
+    }));
     if (r.status === 200) {
       const text = textOf(r.json);
       if (!text) throw new Error(`Gemini bo'sh javob (${r.json?.candidates?.[0]?.finishReason ?? r.json?.promptFeedback?.blockReason ?? "?"})`);
@@ -121,7 +131,12 @@ export interface LocatedPhrase {
  * Xato so'z/iboralarning qo'lyozma varoqdagi joyini topadi (AI belgilari uchun).
  * Topilmaganlari javobda bo'lmaydi.
  */
-export async function locatePhrases(opts: { apiKey: string; model: string; images: { mime: string; data: Buffer }[]; phrases: string[] }): Promise<LocatedPhrase[]> {
+export async function locatePhrases(opts: {
+  apiKey: string;
+  model: string;
+  images: { mime: string; data: Buffer }[];
+  phrases: string[];
+}): Promise<LocatedPhrase[]> {
   if (!opts.phrases.length) return [];
   const list = opts.phrases.map((p, i) => `${i}: "${p}"`).join("\n");
   const prompt = `Rasmlarda o'quvchining qo'lda yozgan o'zbekcha essesi bor (${opts.images.length} ta varoq, tartib bilan, 0 dan boshlab).

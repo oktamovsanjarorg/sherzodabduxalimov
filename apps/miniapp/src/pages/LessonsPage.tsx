@@ -19,8 +19,12 @@ export function LessonsPage() {
 
       {courses.isPending && <ListSkeleton />}
       {courses.isError && <p className="card text-sm text-danger">Yuklab bo'lmadi: {courses.error.message}</p>}
-      {courses.data && !courses.data.some((c) => c.topics.some((t) => t.lessons.length)) && <Empty Icon={PlayCircle} title="Hozircha dars yo'q" hint="Ustoz dars qo'shgach shu yerda chiqadi." />}
-      {courses.data?.map((c) => <CourseBlock key={c.id} course={c} showTitle={courses.data.length > 1} />)}
+      {courses.data && !courses.data.some((c) => c.topics.some((t) => t.lessons.length)) && (
+        <Empty Icon={PlayCircle} title="Hozircha dars yo'q" hint="Ustoz dars qo'shgach shu yerda chiqadi." />
+      )}
+      {courses.data?.map((c) => (
+        <CourseBlock key={c.id} course={c} showTitle={courses.data.length > 1} />
+      ))}
     </div>
   );
 }
@@ -65,9 +69,7 @@ function TopicBlock({ topic, index, defaultOpen }: { topic: TopicView; index: nu
         }}
         aria-expanded={open}
       >
-        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-surface text-sm font-extrabold text-hint">
-          {index}
-        </span>
+        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-surface text-sm font-extrabold text-hint">{index}</span>
         <span className="min-w-0 flex-1">
           <span className="block truncate text-[15px] font-bold">{topic.title}</span>
           <span className="block text-xs text-hint">
@@ -104,9 +106,7 @@ function LessonRow({ lesson }: { lesson: LessonSummary }) {
         <span className={`block truncate text-sm font-semibold ${lesson.locked ? "text-hint" : ""}`}>{lesson.title}</span>
         {(lesson.durationSec || lesson.isFree) && (
           <span className="block text-xs text-hint">
-            {[formatDuration(lesson.durationSec), lesson.isFree && !lesson.completed ? "bepul" : null]
-              .filter(Boolean)
-              .join(" · ")}
+            {[formatDuration(lesson.durationSec), lesson.isFree && !lesson.completed ? "bepul" : null].filter(Boolean).join(" · ")}
           </span>
         )}
       </span>

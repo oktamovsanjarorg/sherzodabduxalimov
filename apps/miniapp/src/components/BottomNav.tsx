@@ -23,9 +23,7 @@ export function BottomNav() {
               end={end}
               onClick={haptic}
               className={({ isActive }) =>
-                `flex h-16 flex-col items-center justify-center gap-0.5 text-[11px] font-bold tracking-wide transition ${
-                  isActive ? "text-brand" : "text-hint"
-                }`
+                `flex h-16 flex-col items-center justify-center gap-0.5 text-[11px] font-bold tracking-wide transition ${isActive ? "text-brand" : "text-hint"}`
               }
             >
               {({ isActive }) => (

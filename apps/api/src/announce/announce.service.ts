@@ -46,7 +46,11 @@ export class AnnounceService implements OnModuleDestroy {
 
   private async stats(ids: string[]) {
     const rows = await this.prisma.announcementRecipient.groupBy({ by: ["announcementId", "status"], where: { announcementId: { in: ids } }, _count: true });
-    const del = await this.prisma.announcementRecipient.groupBy({ by: ["announcementId"], where: { announcementId: { in: ids }, deletedAt: { not: null } }, _count: true });
+    const del = await this.prisma.announcementRecipient.groupBy({
+      by: ["announcementId"],
+      where: { announcementId: { in: ids }, deletedAt: { not: null } },
+      _count: true,
+    });
     const m = new Map<string, AnnounceStats>();
     for (const r of rows) {
       const s = m.get(r.announcementId) ?? { ...EMPTY };
@@ -101,7 +105,8 @@ export class AnnounceService implements OnModuleDestroy {
       include: { user: { select: { firstName: true, lastName: true, username: true } } },
       orderBy: [{ status: "asc" }, { user: { firstName: "asc" } }],
     });
-    const canRecall = a.status === "SENT" && !a.recalledAt && !!a.sentAt && Date.now() - a.sentAt.getTime() < ANNOUNCE_RECALL_MS && row.stats.sent > row.stats.deleted;
+    const canRecall =
+      a.status === "SENT" && !a.recalledAt && !!a.sentAt && Date.now() - a.sentAt.getTime() < ANNOUNCE_RECALL_MS && row.stats.sent > row.stats.deleted;
     return {
       ...row,
       photoFileId: a.photoFileId,
@@ -154,7 +159,16 @@ export class AnnounceService implements OnModuleDestroy {
   async duplicate(authorId: string, id: string) {
     const a = await this.load(id);
     const copy = await this.prisma.announcement.create({
-      data: { authorId, title: a.title, text: a.text, photoFileId: a.photoFileId, buttonText: a.buttonText, buttonUrl: a.buttonUrl, silent: a.silent, audience: a.audience ?? {} },
+      data: {
+        authorId,
+        title: a.title,
+        text: a.text,
+        photoFileId: a.photoFileId,
+        buttonText: a.buttonText,
+        buttonUrl: a.buttonUrl,
+        silent: a.silent,
+        audience: a.audience ?? {},
+      },
     });
     return this.detail(copy.id);
   }
@@ -202,7 +216,9 @@ export class AnnounceService implements OnModuleDestroy {
     const d = await this.detail(id);
     if (!d.canRecall) throw new ConflictException("Qaytarib olib bo'lmaydi: Telegram faqat 48 soat ichida o'chirishga ruxsat beradi");
     const rows = await this.prisma.announcementRecipient.findMany({ where: { announcementId: id, status: "SENT", deletedAt: null, messageId: { not: null } } });
-    await this.notify.addBulk(rows.map((r) => ({ name: "delete", data: { chatId: String(r.chatId), text: "", deleteMessageId: r.messageId!, recipientId: r.id } })));
+    await this.notify.addBulk(
+      rows.map((r) => ({ name: "delete", data: { chatId: String(r.chatId), text: "", deleteMessageId: r.messageId!, recipientId: r.id } })),
+    );
     await this.prisma.announcement.update({ where: { id }, data: { recalledAt: new Date() } });
     return { queued: rows.length };
   }

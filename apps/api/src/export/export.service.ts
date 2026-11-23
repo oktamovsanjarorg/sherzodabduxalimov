@@ -35,7 +35,10 @@ export class ExportService {
           _count: { select: { attendance: true } },
         },
       }),
-      this.prisma.group.findMany({ orderBy: { name: "asc" }, select: { name: true, schedule: true, monthlyFeeUzs: true, isActive: true, createdAt: true, _count: { select: { students: true } } } }),
+      this.prisma.group.findMany({
+        orderBy: { name: "asc" },
+        select: { name: true, schedule: true, monthlyFeeUzs: true, isActive: true, createdAt: true, _count: { select: { students: true } } },
+      }),
       this.prisma.attendance.findMany({
         orderBy: [{ date: "desc" }, { group: { name: "asc" } }],
         select: {
@@ -118,7 +121,9 @@ export class ExportService {
           s.user.username ? `@${s.user.username}` : "",
           yesNo(s.user.telegramId !== null),
           yesNo(!!s.acceptedAt),
-          s.parents.map((p) => `${fullName(p.parent)}${p.relation ? ` (${p.relation})` : ""}${p.phone ? ` ${p.phone}` : ""} — ${PARENT_STATUS[p.status]}`).join("; "),
+          s.parents
+            .map((p) => `${fullName(p.parent)}${p.relation ? ` (${p.relation})` : ""}${p.phone ? ` ${p.phone}` : ""} — ${PARENT_STATUS[p.status]}`)
+            .join("; "),
           s._count.attendance,
           ACCESS[s.accessMode] ?? s.accessMode,
           s.user.isBlocked ? `ha${s.user.blockedReason ? `: ${s.user.blockedReason}` : ""}` : "",
@@ -163,7 +168,17 @@ export class ExportService {
         ],
         rows: offline.map((o) => {
           const e = effective(o);
-          return [periodLabel(e.start, e.end), e.paidOn, Math.max(0, daysBetween(e.start, e.paidOn)), fullName(o.student.user), o.group?.name, o.amountUzs, o.note, fullName(o.markedBy), dt(o.createdAt)];
+          return [
+            periodLabel(e.start, e.end),
+            e.paidOn,
+            Math.max(0, daysBetween(e.start, e.paidOn)),
+            fullName(o.student.user),
+            o.group?.name,
+            o.amountUzs,
+            o.note,
+            fullName(o.markedBy),
+            dt(o.createdAt),
+          ];
         }),
       },
       {
@@ -234,7 +249,9 @@ export class ExportService {
       },
     ];
 
-    await this.prisma.auditLog.create({ data: { actorId, action: "data.export", entity: "Export", entityId: "xlsx", meta: { students: students.length, attendance: attendance.length } } });
+    await this.prisma.auditLog.create({
+      data: { actorId, action: "data.export", entity: "Export", entityId: "xlsx", meta: { students: students.length, attendance: attendance.length } },
+    });
     const stamp = dt(new Date()).replace(" ", "_").replace(":", "-");
     return { file: buildXlsx(sheets), name: `onatili_${stamp}.xlsx` };
   }

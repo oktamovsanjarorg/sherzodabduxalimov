@@ -69,7 +69,15 @@ export interface ExternalTestInput {
 /** Import oldidan ko'rinish: kim topildi, kim yo'q */
 export interface ExternalPreview {
   test: Omit<ExternalTestInput, "rows"> & { participants: number; alreadyImported: boolean };
-  rows: { key: string; name: string; username: string | null; percent: number; scaledScore: number | null; grade: string | null; match: { studentId: string; name: string; how: "username" | "name" } | null }[];
+  rows: {
+    key: string;
+    name: string;
+    username: string | null;
+    percent: number;
+    scaledScore: number | null;
+    grade: string | null;
+    match: { studentId: string; name: string; how: "username" | "name" } | null;
+  }[];
 }
 
 export interface ExternalTestSummary {
@@ -167,7 +175,10 @@ export interface MyExternalResultDetail extends MyExternalResult {
  * Kataklar: 1 to'g'ri, 0 xato yoki bo'sh, bo'sh katak: savol yo'q.
  */
 export function parseTestMatrix(text: string): { questionCount: number; rows: ExternalRowInput[] } {
-  const lines = text.replace(/^\uFEFF/, "").split(/\r?\n/).filter((l) => l.trim());
+  const lines = text
+    .replace(/^\uFEFF/, "")
+    .split(/\r?\n/)
+    .filter((l) => l.trim());
   if (lines.length < 2) throw new Error("Faylda natija yo'q");
   const sep = lines[0].includes(";") ? ";" : lines[0].includes("\t") ? "\t" : ",";
   const head = splitCsv(lines[0], sep);
@@ -220,15 +231,13 @@ export function splitCsv(line: string, sep: string): string[] {
       if (ch === '"' && line[i + 1] === '"') {
         cur += '"';
         i++;
-      }
-      else if (ch === '"') q = false;
+      } else if (ch === '"') q = false;
       else cur += ch;
     } else if (ch === '"') q = true;
     else if (ch === sep) {
       out.push(cur);
       cur = "";
-    }
-    else cur += ch;
+    } else cur += ch;
   }
   out.push(cur);
   return out;

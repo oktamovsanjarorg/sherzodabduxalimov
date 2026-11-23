@@ -14,7 +14,10 @@ export class VideosService implements OnModuleDestroy {
   readonly paths: MediaPaths;
   private readonly queue;
 
-  constructor(@Inject(ENV) env: Env, private readonly prisma: PrismaService) {
+  constructor(
+    @Inject(ENV) env: Env,
+    private readonly prisma: PrismaService,
+  ) {
     this.paths = new MediaPaths(env.MEDIA_DIR);
     this.queue = createVideoQueue(env.REDIS_URL, env.QUEUE_PREFIX);
   }

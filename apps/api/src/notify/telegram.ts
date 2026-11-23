@@ -20,7 +20,15 @@ function readResult(status: number, data: string): TgResult {
       result?: { message_id?: number; photo?: { file_id: string }[]; file_path?: string } | true;
     };
     const r = typeof j.result === "object" ? j.result : undefined;
-    return { ok: j.ok, status, description: j.description, retryAfter: j.parameters?.retry_after, messageId: r?.message_id, fileId: r?.photo?.at(-1)?.file_id, filePath: r?.file_path };
+    return {
+      ok: j.ok,
+      status,
+      description: j.description,
+      retryAfter: j.parameters?.retry_after,
+      messageId: r?.message_id,
+      fileId: r?.photo?.at(-1)?.file_id,
+      filePath: r?.file_path,
+    };
   } catch {
     return { ok: false, status, description: "bad response" };
   }

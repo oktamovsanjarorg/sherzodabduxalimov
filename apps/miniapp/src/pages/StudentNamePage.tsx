@@ -37,8 +37,24 @@ export function StudentNamePage() {
         <h1 className="mt-3 text-xl font-extrabold">Ism-familiyangizni yozing</h1>
         <p className="mt-1 text-sm text-hint">Ustoz sizni tanishi uchun hujjatdagidek to'liq yozing. Keyin uni faqat ustoz o'zgartira oladi.</p>
         <form className="mt-5 w-full space-y-3" onSubmit={submit}>
-          <input className={field} value={firstName} onChange={(e) => setFirstName(e.target.value)} maxLength={60} autoComplete="given-name" placeholder="Ism" aria-label="Ism" />
-          <input className={field} value={lastName} onChange={(e) => setLastName(e.target.value)} maxLength={60} autoComplete="family-name" placeholder="Familiya" aria-label="Familiya" />
+          <input
+            className={field}
+            value={firstName}
+            onChange={(e) => setFirstName(e.target.value)}
+            maxLength={60}
+            autoComplete="given-name"
+            placeholder="Ism"
+            aria-label="Ism"
+          />
+          <input
+            className={field}
+            value={lastName}
+            onChange={(e) => setLastName(e.target.value)}
+            maxLength={60}
+            autoComplete="family-name"
+            placeholder="Familiya"
+            aria-label="Familiya"
+          />
           {error && <p className="text-sm font-semibold text-red-600">{error}</p>}
           <button className="btn-primary w-full" disabled={save.isPending}>
             Davom etish

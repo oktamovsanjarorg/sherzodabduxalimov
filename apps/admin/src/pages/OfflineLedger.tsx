@@ -32,7 +32,11 @@ export function OfflineLedgerView({ q = "", onClearSearch }: { q?: string; onCle
 
   const ledger = useQuery({ queryKey: ["offline-ledger", groupId, month], queryFn: () => api.offlineLedger(groupId, month), enabled: !!groupId });
   const refresh = () => qc.invalidateQueries({ queryKey: ["offline-ledger"] });
-  const unmark = useMutation({ mutationFn: (r: OfflineLedgerRow) => api.unmarkOffline(r.studentId, r.paid?.month ?? month), onSuccess: refresh, onError: (e) => toast(errMsg(e), "error") });
+  const unmark = useMutation({
+    mutationFn: (r: OfflineLedgerRow) => api.unmarkOffline(r.studentId, r.paid?.month ?? month),
+    onSuccess: refresh,
+    onError: (e) => toast(errMsg(e), "error"),
+  });
   const remind = useMutation({
     mutationFn: () => api.remindDebtors(groupId, month),
     onSuccess: (r) => {
@@ -43,7 +47,14 @@ export function OfflineLedgerView({ q = "", onClearSearch }: { q?: string; onCle
   });
 
   if (groups.isPending) return <Spinner className="text-ink-4" />;
-  if (!active.length) return <Empty Icon={Users} title="Faol guruh yo'q" hint="Guruhlarni Davomat bo'limida yaratib, o'quvchilarni qo'shing. Guruhdagi o'quvchiga ilova obunasiz ochiladi." />;
+  if (!active.length)
+    return (
+      <Empty
+        Icon={Users}
+        title="Faol guruh yo'q"
+        hint="Guruhlarni Davomat bo'limida yaratib, o'quvchilarni qo'shing. Guruhdagi o'quvchiga ilova obunasiz ochiladi."
+      />
+    );
   const l = ledger.data;
   const isCurrent = month === currentMonth();
   const needle = q.trim().toLowerCase();
@@ -124,7 +135,8 @@ export function OfflineLedgerView({ q = "", onClearSearch }: { q?: string; onCle
                       {!r.approvedParents && <span className="ml-2 font-semibold text-amber-800">ota-ona tasdiqlanmagan</span>}
                     </p>
                     <p className="text-xs text-ink-3">
-                      O'qishni boshlagan: {r.startedOn ? <b className="text-ink-2">{fmtYmd(r.startedOn)}</b> : <span className="font-semibold text-amber-800">kiritilmagan</span>}
+                      O'qishni boshlagan:{" "}
+                      {r.startedOn ? <b className="text-ink-2">{fmtYmd(r.startedOn)}</b> : <span className="font-semibold text-amber-800">kiritilmagan</span>}
                     </p>
                   </div>
                   {r.paid ? (
@@ -146,7 +158,9 @@ export function OfflineLedgerView({ q = "", onClearSearch }: { q?: string; onCle
                     <>
                       <div className="flex min-w-0 flex-1 flex-col items-start gap-1 sm:flex-none sm:items-end sm:text-right">
                         <Badge tone="red">{r.overdueDays ? `Qarzdor · ${r.overdueDays} kun o'tdi` : "Qarzdor"}</Badge>
-                        <span className="text-[11px] text-ink-3">{r.coveredUntil ? `To'lov muddati ${shortDate(r.coveredUntil)} da tugagan` : "Hali to'lamagan"}</span>
+                        <span className="text-[11px] text-ink-3">
+                          {r.coveredUntil ? `To'lov muddati ${shortDate(r.coveredUntil)} da tugagan` : "Hali to'lamagan"}
+                        </span>
                       </div>
                       <button className="btn-primary btn-sm" onClick={() => setPaying(r)}>
                         To'ladi

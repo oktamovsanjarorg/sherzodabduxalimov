@@ -53,9 +53,7 @@ export function LessonPage() {
             </button>
           </div>
         ) : (
-          <p className="card text-center text-sm text-hint">
-            {e instanceof ApiError && e.status === 404 ? "Dars topilmadi" : `Xatolik: ${e.message}`}
-          </p>
+          <p className="card text-center text-sm text-hint">{e instanceof ApiError && e.status === 404 ? "Dars topilmadi" : `Xatolik: ${e.message}`}</p>
         )}
       </FullPage>
     );
@@ -91,11 +89,7 @@ export function LessonPage() {
       {l.attachments.length > 0 && (
         <div className="card mt-4 space-y-1 p-2">
           {l.attachments.map((a) => (
-            <button
-              key={a.url}
-              onClick={() => openExternal(a.url)}
-              className="tap flex h-12 w-full items-center gap-3 rounded-xl px-2 text-left"
-            >
+            <button key={a.url} onClick={() => openExternal(a.url)} className="tap flex h-12 w-full items-center gap-3 rounded-xl px-2 text-left">
               <FileDown size={20} className="text-brand" />
               <span className="truncate text-sm font-semibold">{a.name}</span>
             </button>

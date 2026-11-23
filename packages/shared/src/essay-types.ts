@@ -12,47 +12,128 @@ export type EssayStatusName = "DRAFT" | "AWAITING_PAYMENT" | "SUBMITTED" | "AI_C
  */
 export const ESSAY_RUBRIC = [
   {
-    key: "style", group: "Topshiriq talablarining bajarilganligi", label: "Publitsistik uslub", max: 2,
-    levels: ["Esse to'liq publitsistik uslubda yozilgan", "Ayrim o'rinlarda publitsistik uslubdan chekinilgan", "Esse qisman publitsistik uslubda yozilgan", "Esse to'liq badiiy uslubda yozilgan", "Esse to'liq so'zlashuv uslubida yozilgan"],
+    key: "style",
+    group: "Topshiriq talablarining bajarilganligi",
+    label: "Publitsistik uslub",
+    max: 2,
+    levels: [
+      "Esse to'liq publitsistik uslubda yozilgan",
+      "Ayrim o'rinlarda publitsistik uslubdan chekinilgan",
+      "Esse qisman publitsistik uslubda yozilgan",
+      "Esse to'liq badiiy uslubda yozilgan",
+      "Esse to'liq so'zlashuv uslubida yozilgan",
+    ],
   },
   {
-    key: "views", group: "Topshiriq talablarining bajarilganligi", label: "Qarashlar va shaxsiy fikr", max: 2,
-    levels: ["Har ikkala qarash hamda shaxsiy qarash to'la yoritilgan", "Har ikkala qarash yoritilgan, shaxsiy fikr yoritilmagan", "Qarashlarning bittasi to'la yoritilgan", "Qarashlarning faqat bittasi qisman yoritilgan", "Qarashlar yoritilmagan"],
+    key: "views",
+    group: "Topshiriq talablarining bajarilganligi",
+    label: "Qarashlar va shaxsiy fikr",
+    max: 2,
+    levels: [
+      "Har ikkala qarash hamda shaxsiy qarash to'la yoritilgan",
+      "Har ikkala qarash yoritilgan, shaxsiy fikr yoritilmagan",
+      "Qarashlarning bittasi to'la yoritilgan",
+      "Qarashlarning faqat bittasi qisman yoritilgan",
+      "Qarashlar yoritilmagan",
+    ],
   },
   {
-    key: "evidence", group: "Topshiriq talablarining bajarilganligi", label: "Dalillar", max: 2,
-    levels: ["Har ikkala qarash dalillar bilan asoslangan", "Faqat bitta qarash dalillangan", "Har ikkala qarash uchun ayrim dalillar vaziyatga mos emas", "Har ikkala qarash uchun dalillar vaziyatga mos emas", "Har ikkala qarash dalillanmagan"],
+    key: "evidence",
+    group: "Topshiriq talablarining bajarilganligi",
+    label: "Dalillar",
+    max: 2,
+    levels: [
+      "Har ikkala qarash dalillar bilan asoslangan",
+      "Faqat bitta qarash dalillangan",
+      "Har ikkala qarash uchun ayrim dalillar vaziyatga mos emas",
+      "Har ikkala qarash uchun dalillar vaziyatga mos emas",
+      "Har ikkala qarash dalillanmagan",
+    ],
   },
   {
-    key: "parts", group: "Matn yaxlitligi", label: "Kirish, asosiy qism, xulosa", max: 2,
-    levels: ["Kirish, asosiy qism va xulosa to'la yoritilgan", "Qismlardan faqat ikkitasi to'la yoritilgan", "Qismlardan ikkitasi yuza yoritilgan", "Qismlardan faqat bittasi to'la yoritilgan", "Qismlardan faqat bittasi yuza yoritilgan"],
+    key: "parts",
+    group: "Matn yaxlitligi",
+    label: "Kirish, asosiy qism, xulosa",
+    max: 2,
+    levels: [
+      "Kirish, asosiy qism va xulosa to'la yoritilgan",
+      "Qismlardan faqat ikkitasi to'la yoritilgan",
+      "Qismlardan ikkitasi yuza yoritilgan",
+      "Qismlardan faqat bittasi to'la yoritilgan",
+      "Qismlardan faqat bittasi yuza yoritilgan",
+    ],
   },
   {
-    key: "structure", group: "Matn yaxlitligi", label: "Mantiqiy qurilish va xatboshilar", max: 2,
-    levels: ["Xatolik yo'q, xatboshilarga to'g'ri ajratilgan", "1–2 o'rinda xatolik", "3–4 o'rinda xatolik", "5–6 o'rinda xatolik", "7 va undan ko'p o'rinda xatolik yoki xatboshilarga umuman ajratilmagan"],
+    key: "structure",
+    group: "Matn yaxlitligi",
+    label: "Mantiqiy qurilish va xatboshilar",
+    max: 2,
+    levels: [
+      "Xatolik yo'q, xatboshilarga to'g'ri ajratilgan",
+      "1–2 o'rinda xatolik",
+      "3–4 o'rinda xatolik",
+      "5–6 o'rinda xatolik",
+      "7 va undan ko'p o'rinda xatolik yoki xatboshilarga umuman ajratilmagan",
+    ],
   },
   {
-    key: "coherence", group: "Matn yaxlitligi", label: "Mantiqiy-mazmuniy izchillik", max: 2,
-    levels: ["Izchillikka to'liq rioya qilingan, fikr takrori yo'q", "Fikr takrori 1–2 o'rinda, izchillik buzilmagan", "Fikr takrori 3–4 o'rinda, izchillik buzilgan", "Fikr takrori 5–6 o'rinda, izchillik buzilgan", "Fikr takrori 7 va undan ortiq o'rinda, izchillik buzilgan"],
+    key: "coherence",
+    group: "Matn yaxlitligi",
+    label: "Mantiqiy-mazmuniy izchillik",
+    max: 2,
+    levels: [
+      "Izchillikka to'liq rioya qilingan, fikr takrori yo'q",
+      "Fikr takrori 1–2 o'rinda, izchillik buzilmagan",
+      "Fikr takrori 3–4 o'rinda, izchillik buzilgan",
+      "Fikr takrori 5–6 o'rinda, izchillik buzilgan",
+      "Fikr takrori 7 va undan ortiq o'rinda, izchillik buzilgan",
+    ],
   },
   {
-    key: "spelling", group: "Savodxonlik", label: "Imlo", max: 2,
-    levels: ["Imlo xatosi umuman yo'q", "Imlo xatosi 1–2 o'rinda", "Imlo xatosi 3–4 o'rinda", "Imlo xatosi 5–6 o'rinda", "Imlo xatosi 7 va undan ortiq o'rinda"],
+    key: "spelling",
+    group: "Savodxonlik",
+    label: "Imlo",
+    max: 2,
+    levels: [
+      "Imlo xatosi umuman yo'q",
+      "Imlo xatosi 1–2 o'rinda",
+      "Imlo xatosi 3–4 o'rinda",
+      "Imlo xatosi 5–6 o'rinda",
+      "Imlo xatosi 7 va undan ortiq o'rinda",
+    ],
   },
   {
-    key: "punctuation", group: "Savodxonlik", label: "Punktuatsiya", max: 2,
-    levels: ["Punktuatsion xato umuman yo'q", "Punktuatsion xato 1–2 o'rinda", "Punktuatsion xato 3–4 o'rinda", "Punktuatsion xato 5–6 o'rinda", "Punktuatsion xato 7 va undan ortiq o'rinda"],
+    key: "punctuation",
+    group: "Savodxonlik",
+    label: "Punktuatsiya",
+    max: 2,
+    levels: [
+      "Punktuatsion xato umuman yo'q",
+      "Punktuatsion xato 1–2 o'rinda",
+      "Punktuatsion xato 3–4 o'rinda",
+      "Punktuatsion xato 5–6 o'rinda",
+      "Punktuatsion xato 7 va undan ortiq o'rinda",
+    ],
   },
   {
-    key: "affixes", group: "Til birliklari uslubiyati", label: "Qo'shimcha qo'llash", max: 2,
+    key: "affixes",
+    group: "Til birliklari uslubiyati",
+    label: "Qo'shimcha qo'llash",
+    max: 2,
     levels: ["Qo'shimcha qo'llash xatosi yo'q", "1–2 o'rinda", "3–4 o'rinda", "5–6 o'rinda", "7 va undan ortiq o'rinda"],
   },
   {
-    key: "wordUsage", group: "Til birliklari uslubiyati", label: "So'z qo'llash (uslubiy)", max: 2,
+    key: "wordUsage",
+    group: "Til birliklari uslubiyati",
+    label: "So'z qo'llash (uslubiy)",
+    max: 2,
     levels: ["So'z qo'llash bilan bog'liq uslubiy xato yo'q", "1–2 o'rinda", "3–4 o'rinda", "5–6 o'rinda", "7 va undan ko'p o'rinda"],
   },
   {
-    key: "lexicon", group: "Lug'at boyligi", label: "Leksik xilma-xillik", max: 2,
+    key: "lexicon",
+    group: "Lug'at boyligi",
+    label: "Leksik xilma-xillik",
+    max: 2,
     levels: [
       "Tasviriy ifodalar, maxsus leksik birliklar, barqaror birikmalardan unumli foydalanilgan",
       "Ulardan ayrim o'rinlarda foydalanilgan",
@@ -62,8 +143,17 @@ export const ESSAY_RUBRIC = [
     ],
   },
   {
-    key: "purity", group: "Lug'at boyligi", label: "Sheva, vulgarizm, varvarizm, parazit so'zlar", max: 2,
-    levels: ["Uchramaydi", "1–2 o'rinda, uslubiy g'alizlik yo'q", "3–4 o'rinda, uslubiy g'alizlik bor", "5–6 o'rinda, uslubiy g'alizlik bor", "7 va undan ko'p o'rinda, uslubiy g'alizlik bor"],
+    key: "purity",
+    group: "Lug'at boyligi",
+    label: "Sheva, vulgarizm, varvarizm, parazit so'zlar",
+    max: 2,
+    levels: [
+      "Uchramaydi",
+      "1–2 o'rinda, uslubiy g'alizlik yo'q",
+      "3–4 o'rinda, uslubiy g'alizlik bor",
+      "5–6 o'rinda, uslubiy g'alizlik bor",
+      "7 va undan ko'p o'rinda, uslubiy g'alizlik bor",
+    ],
   },
 ] as const;
 export const ESSAY_MAX_SCORE = ESSAY_RUBRIC.reduce((s, c) => s + c.max, 0); // 24
@@ -194,13 +284,18 @@ export const createEssayInput = z
     text: z.string().trim().max(20_000).nullable().default(null),
   })
   // AI: matn yozilsa kamida 30 so'z; matnsiz bo'lsa varoq rasmlari yuklanadi
-  .refine((d) => d.mode !== "AI" || !d.text || (d.text.match(/\S+/g)?.length ?? 0) >= 30, { message: "AI tekshiruvi uchun kamida 30 so'zli matn kerak", path: ["text"] });
+  .refine((d) => d.mode !== "AI" || !d.text || (d.text.match(/\S+/g)?.length ?? 0) >= 30, {
+    message: "AI tekshiruvi uchun kamida 30 so'zli matn kerak",
+    path: ["text"],
+  });
 export type CreateEssayInput = z.infer<typeof createEssayInput>;
 
 export const teacherEssayReviewInput = z.object({
   /** Maxsus holat tanlansa criteria e'tiborga olinmaydi */
   special: z.enum(["OFF_TOPIC", "TOO_SHORT", "COPIED", "ONLY_INTRO", "CYRILLIC", "BLANK"]).nullable().default(null),
-  criteria: z.array(z.object({ key: z.string(), score: z.coerce.number().min(0).max(2), comment: z.string().trim().max(1000).nullable().default(null) })).default([]),
+  criteria: z
+    .array(z.object({ key: z.string(), score: z.coerce.number().min(0).max(2), comment: z.string().trim().max(1000).nullable().default(null) }))
+    .default([]),
   feedback: z.string().trim().max(5000).nullable().default(null),
 });
 export type TeacherEssayReviewInput = z.infer<typeof teacherEssayReviewInput>;

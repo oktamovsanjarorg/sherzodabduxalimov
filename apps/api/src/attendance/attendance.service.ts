@@ -34,7 +34,15 @@ const fmtDate = (d: string) => d.split("-").reverse().join(".");
 const EMOJI: Record<AttendanceStatusName, string> = { PRESENT: "✅", LATE: "⏰", ABSENT: "❌", EXCUSED: "📝" };
 
 /** Ota-onaga boradigan matn */
-export function attendanceMessage(child: string, group: string, date: string, status: AttendanceStatusName, note?: string | null, correction = false, grade?: number | null) {
+export function attendanceMessage(
+  child: string,
+  group: string,
+  date: string,
+  status: AttendanceStatusName,
+  note?: string | null,
+  correction = false,
+  grade?: number | null,
+) {
   const phrase: Record<AttendanceStatusName, string> = {
     PRESENT: "darsga keldi",
     LATE: "darsga kechikib keldi",
@@ -139,7 +147,10 @@ export class AttendanceService {
 
   async addStudents(actorId: string, groupId: string, studentIds: string[]) {
     await this.mustGroup(groupId);
-    const { count } = await this.prisma.studentProfile.updateMany({ where: { id: { in: studentIds } }, data: { groupId, mode: "OFFLINE", acceptedAt: new Date() } });
+    const { count } = await this.prisma.studentProfile.updateMany({
+      where: { id: { in: studentIds } },
+      data: { groupId, mode: "OFFLINE", acceptedAt: new Date() },
+    });
     await this.prisma.auditLog.create({ data: { actorId, action: "group.add", entity: "Group", entityId: groupId, meta: { studentIds } } });
     return { added: count };
   }
@@ -156,10 +167,7 @@ export class AttendanceService {
   async day(groupId: string, date: string): Promise<AttendanceDay> {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) throw new BadRequestException("Sana noto'g'ri");
     const g = await this.mustGroup(groupId);
-    const [students, marks] = await Promise.all([
-      this.groupStudents(groupId),
-      this.prisma.attendance.findMany({ where: { groupId, date: toDate(date) } }),
-    ]);
+    const [students, marks] = await Promise.all([this.groupStudents(groupId), this.prisma.attendance.findMany({ where: { groupId, date: toDate(date) } })]);
     const byStudent = new Map(marks.map((m) => [m.studentId, m]));
     return {
       date,
@@ -237,7 +245,9 @@ export class AttendanceService {
       }
       students++;
     }
-    await this.prisma.auditLog.create({ data: { actorId, action: "attendance.notify", entity: "Group", entityId: groupId, meta: { date: dateStr, notified, students } } });
+    await this.prisma.auditLog.create({
+      data: { actorId, action: "attendance.notify", entity: "Group", entityId: groupId, meta: { date: dateStr, notified, students } },
+    });
     return { notified, students, withoutParent };
   }
 
@@ -270,4 +280,3 @@ export class AttendanceService {
     return g;
   }
 }
-

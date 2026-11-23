@@ -38,9 +38,16 @@ export async function runSubscriptionReminders(prisma: PrismaClient, send: SendF
     const renewed = await prisma.subscription.count({ where: { userId: s.userId, status: "ACTIVE", endsAt: { gt: s.endsAt } } });
     const silent = renewed > 0 || s.user.telegramId === null || s.user.isBlocked || s.user.role !== "STUDENT" || s.user.student?.group?.isActive === true;
     // Shartli yangilash: ikki jarayon bir vaqtda ishlasa ham xabar bir marta ketadi
-    const { count } = await prisma.subscription.updateMany({ where: { id: s.id, reminderStage: s.reminderStage }, data: { reminderStage: silent ? 3 : stage } });
+    const { count } = await prisma.subscription.updateMany({
+      where: { id: s.id, reminderStage: s.reminderStage },
+      data: { reminderStage: silent ? 3 : stage },
+    });
     if (!count || silent) continue;
-    await send(s.user.telegramId!, TEXT[stage](s.endsAt), miniAppUrl ? { text: "💳 Obunani uzaytirish", webAppUrl: `${miniAppUrl.replace(/\/$/, "")}/subscribe` } : undefined);
+    await send(
+      s.user.telegramId!,
+      TEXT[stage](s.endsAt),
+      miniAppUrl ? { text: "💳 Obunani uzaytirish", webAppUrl: `${miniAppUrl.replace(/\/$/, "")}/subscribe` } : undefined,
+    );
     sent++;
   }
   return { checked: subs.length, sent };

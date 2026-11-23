@@ -76,7 +76,12 @@ function ExternalResults({ s }: { s: StudentDetail }) {
     <div className="space-y-3">
       <div className="flex h-16 items-end gap-1" title="Foiz, eskidan yangiga">
         {trend.map((x) => (
-          <div key={x.id} className={`flex-1 rounded-t ${x.percent >= 60 ? "bg-brand" : "bg-amber-400"}`} style={{ height: `${Math.max(4, x.percent)}%` }} title={`${x.title}: ${x.percent}%`} />
+          <div
+            key={x.id}
+            className={`flex-1 rounded-t ${x.percent >= 60 ? "bg-brand" : "bg-amber-400"}`}
+            style={{ height: `${Math.max(4, x.percent)}%` }}
+            title={`${x.title}: ${x.percent}%`}
+          />
         ))}
       </div>
       <ul className="divide-y divide-line">
@@ -88,7 +93,9 @@ function ExternalResults({ s }: { s: StudentDetail }) {
                 {x.takenAt ? date(x.takenAt) : ""} · {x.correct}/{x.questionCount} to'g'ri · {x.rank}-o'rin / {x.participants}
               </p>
             </div>
-            <span className="shrink-0 whitespace-nowrap"><Badge tone={x.percent >= 80 ? "green" : x.percent >= 60 ? "blue" : x.percent >= 40 ? "amber" : "red"}>{formatScore(x.percent)}%</Badge></span>
+            <span className="shrink-0 whitespace-nowrap">
+              <Badge tone={x.percent >= 80 ? "green" : x.percent >= 60 ? "blue" : x.percent >= 40 ? "amber" : "red"}>{formatScore(x.percent)}%</Badge>
+            </span>
           </li>
         ))}
       </ul>
@@ -166,7 +173,9 @@ function Stats({ s }: { s: StudentDetail }) {
                   {a.type === "MOCK" && <ClipboardCheck size={14} className="shrink-0 text-ink-4" aria-label="Mock" />}
                   <span className="truncate">{a.title}</span>
                 </span>
-                <span className="shrink-0 whitespace-nowrap"><Badge tone={a.percent >= 80 ? "green" : a.percent >= 50 ? "brand" : "red"}>{a.percent}%</Badge></span>
+                <span className="shrink-0 whitespace-nowrap">
+                  <Badge tone={a.percent >= 80 ? "green" : a.percent >= 50 ? "brand" : "red"}>{a.percent}%</Badge>
+                </span>
               </div>
             ))}
           </div>
@@ -180,10 +189,20 @@ function Stats({ s }: { s: StudentDetail }) {
               <div key={e.id} className="flex items-center gap-2 py-1.5 text-sm">
                 <span className="w-24 shrink-0 text-ink-3">{date(e.createdAt)}</span>
                 <span className="flex min-w-0 flex-1 items-center gap-1.5 truncate">
-                  {e.mode === "AI" ? <Bot size={14} className="shrink-0 text-ink-4" aria-label="AI" /> : <GraduationCap size={14} className="shrink-0 text-ink-4" aria-label="Ustoz" />}
+                  {e.mode === "AI" ? (
+                    <Bot size={14} className="shrink-0 text-ink-4" aria-label="AI" />
+                  ) : (
+                    <GraduationCap size={14} className="shrink-0 text-ink-4" aria-label="Ustoz" />
+                  )}
                   <span className="truncate">{e.prompt}</span>
                 </span>
-                <span className="shrink-0 whitespace-nowrap">{e.score !== null ? <Badge tone="green">{formatScore(e.score)}/24</Badge> : <Badge>{ESSAY_STATUS_LABELS[e.status as EssayStatusName] ?? e.status}</Badge>}</span>
+                <span className="shrink-0 whitespace-nowrap">
+                  {e.score !== null ? (
+                    <Badge tone="green">{formatScore(e.score)}/24</Badge>
+                  ) : (
+                    <Badge>{ESSAY_STATUS_LABELS[e.status as EssayStatusName] ?? e.status}</Badge>
+                  )}
+                </span>
               </div>
             ))}
           </div>

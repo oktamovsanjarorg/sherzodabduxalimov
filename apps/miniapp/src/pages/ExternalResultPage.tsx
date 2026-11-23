@@ -81,14 +81,22 @@ export function ExternalResultPage() {
                 <span key={i} className={`rounded-lg py-1.5 text-center text-xs font-bold tabular-nums ${CELL[a] ?? CELL["-"]}`}>
                   {i + 1}
                   {/* Milliy sertifikat: shu savoldan olingan ball */}
-                  {r.questions && <span className="block text-[10px] font-semibold opacity-80">{a === "c" ? r.questions[i].points.toFixed(2).replace(".", ",") : "0"}</span>}
+                  {r.questions && (
+                    <span className="block text-[10px] font-semibold opacity-80">{a === "c" ? r.questions[i].points.toFixed(2).replace(".", ",") : "0"}</span>
+                  )}
                 </span>
               ))}
             </div>
             <p className="mt-3 flex flex-wrap gap-3 text-xs text-hint">
-              <span><b className="text-success">■</b> to'g'ri</span>
-              <span><b className="text-danger">■</b> xato</span>
-              <span><b className="text-hint">■</b> bo'sh</span>
+              <span>
+                <b className="text-success">■</b> to'g'ri
+              </span>
+              <span>
+                <b className="text-danger">■</b> xato
+              </span>
+              <span>
+                <b className="text-hint">■</b> bo'sh
+              </span>
             </p>
           </div>
         </>

@@ -89,9 +89,7 @@ describe("Xodimlar va admin kirishi (e2e)", () => {
 
     // Yordamchi xodimlar ro'yxatini ko'ra olmaydi va qo'sha olmaydi
     expect((await inject({ method: "GET", url: "/api/admin/staff", headers: helper.headers })).statusCode).toBe(403);
-    expect(
-      (await inject({ method: "POST", url: "/api/admin/staff", headers: helper.headers, payload: { username: "e2e_nobody" } })).statusCode,
-    ).toBe(403);
+    expect((await inject({ method: "POST", url: "/api/admin/staff", headers: helper.headers, payload: { username: "e2e_nobody" } })).statusCode).toBe(403);
 
     // Yordamchi ham admin panel havolasini oladi
     expect((await internal({ id: 900000202, first_name: "Yordamchi", username: ASSISTANT })).json().url).toBeTruthy();

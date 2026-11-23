@@ -36,7 +36,8 @@ export class AuthGuard implements CanActivate {
     // (o'quvchida 1 soat, xodimda 12 soat) darhol kuchini yo'qotadi; rol ham bazadagisi olinadi.
     const db = await this.prisma.user.findUnique({ where: { id: payload.sub }, select: { role: true, isBlocked: true, blockedReason: true } });
     if (!db) throw new UnauthorizedException("Hisob topilmadi");
-    if (db.isBlocked) throw new UnauthorizedException({ code: ERROR_CODES.BLOCKED, message: db.blockedReason ? `Hisob bloklangan: ${db.blockedReason}` : "Hisob bloklangan" });
+    if (db.isBlocked)
+      throw new UnauthorizedException({ code: ERROR_CODES.BLOCKED, message: db.blockedReason ? `Hisob bloklangan: ${db.blockedReason}` : "Hisob bloklangan" });
     req.user = { ...payload, role: db.role };
 
     const roles = this.reflector.getAllAndOverride<RoleName[] | undefined>(ROLES_KEY, targets);

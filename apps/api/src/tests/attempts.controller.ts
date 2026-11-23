@@ -24,12 +24,7 @@ export class AttemptsController {
   }
 
   @Put("attempts/:id/answers/:questionId")
-  save(
-    @CurrentUser() user: JwtUser,
-    @Param("id") id: string,
-    @Param("questionId") questionId: string,
-    @Body() body: unknown,
-  ) {
+  save(@CurrentUser() user: JwtUser, @Param("id") id: string, @Param("questionId") questionId: string, @Body() body: unknown) {
     const parsed = saveAnswerBody.safeParse(body ?? {});
     if (!parsed.success) throw new BadRequestException("Javob formati noto'g'ri");
     return this.attempts.saveAnswer(user, id, questionId, parsed.data);

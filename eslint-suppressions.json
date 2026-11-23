@@ -7,6 +7,14 @@
   "apps/admin/src/components/Annotate.tsx": {
     "@typescript-eslint/no-non-null-assertion": {
       "count": 2
+    },
+    "max-lines": {
+      "count": 1
+    }
+  },
+  "apps/admin/src/components/GroupManager.tsx": {
+    "max-lines-per-function": {
+      "count": 1
     }
   },
   "apps/admin/src/components/Inbox.tsx": {
@@ -34,6 +42,11 @@
       "count": 1
     }
   },
+  "apps/admin/src/lib/api.ts": {
+    "max-lines": {
+      "count": 1
+    }
+  },
   "apps/admin/src/main.tsx": {
     "@typescript-eslint/no-non-null-assertion": {
       "count": 1
@@ -41,6 +54,12 @@
   },
   "apps/admin/src/pages/AnnounceComposerPage.tsx": {
     "@typescript-eslint/no-non-null-assertion": {
+      "count": 1
+    },
+    "max-lines": {
+      "count": 1
+    },
+    "max-lines-per-function": {
       "count": 1
     }
   },
@@ -59,6 +78,11 @@
     "max-lines": {
       "count": 1
     },
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "apps/admin/src/pages/DashboardPage.tsx": {
     "max-lines-per-function": {
       "count": 1
     }
@@ -87,15 +111,26 @@
   "apps/admin/src/pages/HwEssays.tsx": {
     "@typescript-eslint/no-non-null-assertion": {
       "count": 3
+    },
+    "max-lines": {
+      "count": 1
     }
   },
   "apps/admin/src/pages/LessonEditorPage.tsx": {
     "@typescript-eslint/no-non-null-assertion": {
       "count": 2
+    },
+    "max-lines-per-function": {
+      "count": 1
     }
   },
   "apps/admin/src/pages/MorePage.tsx": {
     "@typescript-eslint/no-non-null-assertion": {
+      "count": 1
+    }
+  },
+  "apps/admin/src/pages/OfflineLedger.tsx": {
+    "max-lines-per-function": {
       "count": 1
     }
   },
@@ -119,6 +154,9 @@
     "@typescript-eslint/no-non-null-assertion": {
       "count": 1
     },
+    "max-lines": {
+      "count": 1
+    },
     "max-lines-per-function": {
       "count": 1
     }
@@ -136,9 +174,17 @@
       "count": 1
     }
   },
+  "apps/admin/src/pages/StudentsPage.tsx": {
+    "max-lines": {
+      "count": 1
+    }
+  },
   "apps/admin/src/pages/TestEditorPage.tsx": {
     "@typescript-eslint/no-non-null-assertion": {
       "count": 2
+    },
+    "max-lines": {
+      "count": 1
     },
     "max-lines-per-function": {
       "count": 1
@@ -169,6 +215,9 @@
     "@typescript-eslint/no-non-null-assertion": {
       "count": 6
     },
+    "max-lines": {
+      "count": 1
+    },
     "max-lines-per-function": {
       "count": 1
     }
@@ -183,6 +232,11 @@
   },
   "apps/api/src/advisor/facts.ts": {
     "@typescript-eslint/no-non-null-assertion": {
+      "count": 1
+    }
+  },
+  "apps/api/src/advisor/manage-advice.ts": {
+    "max-lines-per-function": {
       "count": 1
     }
   },
@@ -220,6 +274,9 @@
     },
     "max-lines": {
       "count": 1
+    },
+    "max-lines-per-function": {
+      "count": 1
     }
   },
   "apps/api/src/billing/offline.service.ts": {
@@ -237,6 +294,16 @@
       "count": 2
     }
   },
+  "apps/api/src/essays/ai-runner.ts": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "apps/api/src/essays/essay-stats.service.ts": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
   "apps/api/src/essays/essays.service.ts": {
     "max-lines": {
       "count": 1
@@ -250,6 +317,9 @@
   "apps/api/src/export/xlsx.ts": {
     "@typescript-eslint/no-non-null-assertion": {
       "count": 1
+    },
+    "max-lines-per-function": {
+      "count": 1
     }
   },
   "apps/api/src/external/external-essay.service.ts": {
@@ -262,6 +332,14 @@
       "count": 5
     },
     "max-lines": {
+      "count": 1
+    },
+    "max-lines-per-function": {
+      "count": 2
+    }
+  },
+  "apps/api/src/media/transcode.ts": {
+    "max-lines-per-function": {
       "count": 1
     }
   },
@@ -283,7 +361,7 @@
       "count": 1
     },
     "max-lines-per-function": {
-      "count": 1
+      "count": 2
     }
   },
   "apps/api/src/tests/attempts.service.ts": {
@@ -303,6 +381,11 @@
   },
   "apps/api/src/trash/trash.service.ts": {
     "@typescript-eslint/no-non-null-assertion": {
+      "count": 1
+    }
+  },
+  "apps/api/src/voice/voice-runner.ts": {
+    "max-lines-per-function": {
       "count": 1
     }
   },
@@ -372,6 +455,9 @@
     "@typescript-eslint/no-non-null-assertion": {
       "count": 2
     },
+    "max-lines": {
+      "count": 1
+    },
     "max-lines-per-function": {
       "count": 1
     }
@@ -399,14 +485,30 @@
   "apps/miniapp/src/pages/SubscribePage.tsx": {
     "@typescript-eslint/no-non-null-assertion": {
       "count": 1
+    },
+    "max-lines": {
+      "count": 1
     }
   },
   "packages/db/prisma/import-milliy-namuna.ts": {
     "@typescript-eslint/no-non-null-assertion": {
       "count": 1
+    },
+    "max-lines": {
+      "count": 1
     }
   },
   "packages/db/prisma/seed.ts": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "packages/shared/src/essay-types.ts": {
+    "max-lines": {
+      "count": 1
+    }
+  },
+  "packages/shared/src/external-omr.ts": {
     "max-lines-per-function": {
       "count": 1
     }

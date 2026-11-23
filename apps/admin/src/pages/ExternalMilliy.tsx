@@ -8,7 +8,7 @@ type Row = ExternalTestDetail["rows"][number];
 export function questionsLabel(s: ExternalSection) {
   const qs = sectionQuestions(s);
   const parts: string[] = [];
-  for (let i = 0; i < qs.length; ) {
+  for (let i = 0; i < qs.length;) {
     let j = i;
     while (j + 1 < qs.length && qs[j + 1] === qs[j] + 1) j++;
     parts.push(i === j ? `${qs[i]}` : `${qs[i]}–${qs[j]}`);
@@ -73,7 +73,10 @@ export function RaschCard({ t }: { t: ExternalTestDetail }) {
                         style={{ width: `${(Math.abs(i.b) / maxAbs) * 50}%` }}
                       />
                     </div>
-                    <span className="w-12 text-xs tabular-nums text-ink-3">{i.b > 0 ? "+" : ""}{i.b.toFixed(2)}</span>
+                    <span className="w-12 text-xs tabular-nums text-ink-3">
+                      {i.b > 0 ? "+" : ""}
+                      {i.b.toFixed(2)}
+                    </span>
                   </div>
                 </td>
                 <td className="px-4 py-1.5 text-right tabular-nums sm:px-5">{i.w.toFixed(2)}</td>
@@ -122,13 +125,16 @@ export function ResultCardModal({ t, row, onClose }: { t: ExternalTestDetail; ro
           {line("Test natijasi", row.testScore != null ? formatScore(row.testScore) : "—", true)}
           {line("Yozma savodxonlik", f.essay75 != null ? `${formatScore(f.essay75)} (esse ${formatScore(row.essayScore!)}/24)` : "kiritilmagan", true)}
         </div>
-        {f.essay75 == null && <p className="mt-2 text-xs text-amber-700">Esse kiritilmaguncha umumiy ball faqat test qismidan: sertifikatda (test + yozma) / 2.</p>}
+        {f.essay75 == null && (
+          <p className="mt-2 text-xs text-amber-700">Esse kiritilmaguncha umumiy ball faqat test qismidan: sertifikatda (test + yozma) / 2.</p>
+        )}
       </div>
       {row.testScore != null && <QuestionBreakdown t={t} row={row} />}
       {t.rasch && (
         <p className="mt-3 text-xs text-ink-3">
           Hisob: {row.correct}/{t.questionCount} to'g'ri, og'irlangan ulush {got.toFixed(2)} / {all.toFixed(2)} → test bali{" "}
-          {row.testScore != null ? formatScore(row.testScore) : "—"}. Bo'lim bali = test bali × bo'limda yechilgan savollar og'irligi ulushi. Foiz = umumiy / 65.
+          {row.testScore != null ? formatScore(row.testScore) : "—"}. Bo'lim bali = test bali × bo'limda yechilgan savollar og'irligi ulushi. Foiz = umumiy /
+          65.
         </p>
       )}
     </Modal>
@@ -157,7 +163,11 @@ function QuestionBreakdown({ t, row }: { t: ExternalTestDetail; row: Row }) {
             {sectionQuestions(s).map((q) => {
               const a = (row.answers[q - 1] ?? "b") as keyof typeof CELL;
               return (
-                <div key={q} title={`${q}-savol: ${a === "c" ? "to'g'ri" : a === "w" ? "xato" : "bo'sh"}`} className={`rounded px-1 py-1 text-center ${CELL[a] ?? CELL.b}`}>
+                <div
+                  key={q}
+                  title={`${q}-savol: ${a === "c" ? "to'g'ri" : a === "w" ? "xato" : "bo'sh"}`}
+                  className={`rounded px-1 py-1 text-center ${CELL[a] ?? CELL.b}`}
+                >
                   <p className="text-[10px] opacity-70">{q}</p>
                   <p className="text-[11px] font-bold tabular-nums">{a === "c" ? pts[q - 1].toFixed(2).replace(".", ",") : a === "w" ? "✕" : "–"}</p>
                 </div>
@@ -174,5 +184,9 @@ function QuestionBreakdown({ t, row }: { t: ExternalTestDetail; row: Row }) {
 }
 
 export function norm(s: string) {
-  return s.toLowerCase().replace(/[ʻʼ'`‘’]/g, "").replace(/\s+/g, " ").trim();
+  return s
+    .toLowerCase()
+    .replace(/[ʻʼ'`‘’]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
 }

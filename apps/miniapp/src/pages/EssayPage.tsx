@@ -1,4 +1,17 @@
-import { ESSAY_CANCELLED, ESSAY_RUBRIC, ESSAY_STATUS_LABELS, MAX_ESSAY_PAGES, NO_ESSAY_ERROR, formatCard, formatSum, type EssayConfig, type EssayReviewView, type MyEssayDetail, type PageAnnotations, formatScore } from "@onatili/shared";
+import {
+  ESSAY_CANCELLED,
+  ESSAY_RUBRIC,
+  ESSAY_STATUS_LABELS,
+  MAX_ESSAY_PAGES,
+  NO_ESSAY_ERROR,
+  formatCard,
+  formatSum,
+  type EssayConfig,
+  type EssayReviewView,
+  type MyEssayDetail,
+  type PageAnnotations,
+  formatScore,
+} from "@onatili/shared";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Bot, Clock, GraduationCap, ImagePlus, Lightbulb, Loader2, RotateCcw, Trash2, X, XCircle } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
@@ -49,12 +62,22 @@ export function EssayPage() {
             {e.mode === "AI" ? <Bot size={14} /> : <GraduationCap size={14} />}
             {e.mode === "AI" ? "AI tekshiruvi" : "Ustoz tekshiruvi"} · {formatDate(e.createdAt)}
           </div>
-          <h1 className={`mt-1 whitespace-pre-line break-words px-1 font-extrabold ${e.prompt.length > 120 ? "text-base leading-snug" : "text-xl"}`}>{e.prompt}</h1>
+          <h1 className={`mt-1 whitespace-pre-line break-words px-1 font-extrabold ${e.prompt.length > 120 ? "text-base leading-snug" : "text-xl"}`}>
+            {e.prompt}
+          </h1>
 
           {e.status === "DRAFT" && <DraftPages e={e} onChange={set} />}
           {e.status === "AWAITING_PAYMENT" && <EssayPay e={e} onChange={() => q.refetch()} />}
-          {e.status === "SUBMITTED" && <Waiting icon={<GraduationCap size={36} className="mx-auto text-brand" />} title="Ustoz tekshirmoqda" hint="Tekshirilgach bot orqali xabar keladi." />}
-          {e.status === "AI_CHECKING" && Date.now() - new Date(e.createdAt).getTime() > 20 * 60_000 && <Failed e={{ ...e, error: "Tekshiruv juda uzoq cho'zildi. Qayta yuborib ko'ring." }} onChange={set} />}
+          {e.status === "SUBMITTED" && (
+            <Waiting
+              icon={<GraduationCap size={36} className="mx-auto text-brand" />}
+              title="Ustoz tekshirmoqda"
+              hint="Tekshirilgach bot orqali xabar keladi."
+            />
+          )}
+          {e.status === "AI_CHECKING" && Date.now() - new Date(e.createdAt).getTime() > 20 * 60_000 && (
+            <Failed e={{ ...e, error: "Tekshiruv juda uzoq cho'zildi. Qayta yuborib ko'ring." }} onChange={set} />
+          )}
           {e.status === "AI_CHECKING" && Date.now() - new Date(e.createdAt).getTime() <= 20 * 60_000 && (
             <Waiting
               icon={<Loader2 size={36} className="mx-auto animate-spin text-brand" />}
@@ -75,7 +98,9 @@ export function EssayPage() {
 
           {e.status !== "DRAFT" && e.pages > 0 && (
             <>
-              <p className="mb-2 mt-6 px-1 text-sm font-bold text-hint">{teacherAnno ? "Ustoz belgilagan xatolar" : hasMarks ? "AI belgilagan xatolar (taxminiy)" : "Yuborilgan varoqlar"}</p>
+              <p className="mb-2 mt-6 px-1 text-sm font-bold text-hint">
+                {teacherAnno ? "Ustoz belgilagan xatolar" : hasMarks ? "AI belgilagan xatolar (taxminiy)" : "Yuborilgan varoqlar"}
+              </p>
               {hasMarks ? (
                 <div className="space-y-3">
                   <MarksLegend a={shownAnno!} />
@@ -141,7 +166,9 @@ function Failed({ e, onChange }: { e: MyEssayDetail; onChange: (e: MyEssayDetail
   return (
     <div className="card mt-4 text-center">
       <XCircle size={36} className="mx-auto text-danger" />
-      <p className="mt-2 font-bold">{noEssay ? "Rasmda esse topilmadi" : e.error === ESSAY_CANCELLED ? "Tekshiruv bekor qilindi" : ESSAY_STATUS_LABELS.AI_FAILED}</p>
+      <p className="mt-2 font-bold">
+        {noEssay ? "Rasmda esse topilmadi" : e.error === ESSAY_CANCELLED ? "Tekshiruv bekor qilindi" : ESSAY_STATUS_LABELS.AI_FAILED}
+      </p>
       <p className="mt-1 text-sm text-hint">
         {noEssay
           ? "Yuklangan rasmda esse matni ko'rinmadi (boshqa material, xira yoki bo'sh varoq bo'lishi mumkin). Esse yozilgan varoqni yorug' joyda, tekis qilib suratga oling. Bu urinish kunlik limitga hisoblanmadi."
@@ -180,23 +207,25 @@ function ReviewCard({ r }: { r: EssayReviewView }) {
           {r.special.label}: rasmiy mezon bo'yicha esse tekshirilmaydi va {r.totalScore} ball bilan baholanadi.
         </p>
       )}
-      {r.criteria.length > 0 && <div className="card divide-y divide-hint/10 py-1">
-        {r.criteria.map((c) => (
-          <div key={c.key} className="py-3">
-            <div className="flex items-center gap-2">
-              <span className="flex-1 text-sm font-semibold">{c.label}</span>
-              <span className="text-sm font-extrabold">
-                {formatScore(c.score)}
-                <span className="text-hint">/{c.max}</span>
-              </span>
+      {r.criteria.length > 0 && (
+        <div className="card divide-y divide-hint/10 py-1">
+          {r.criteria.map((c) => (
+            <div key={c.key} className="py-3">
+              <div className="flex items-center gap-2">
+                <span className="flex-1 text-sm font-semibold">{c.label}</span>
+                <span className="text-sm font-extrabold">
+                  {formatScore(c.score)}
+                  <span className="text-hint">/{c.max}</span>
+                </span>
+              </div>
+              <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-hint/15">
+                <div className="h-full rounded-full bg-brand" style={{ width: `${(c.score / c.max) * 100}%` }} />
+              </div>
+              {c.comment && <p className="mt-1.5 text-xs text-hint">{c.comment}</p>}
             </div>
-            <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-hint/15">
-              <div className="h-full rounded-full bg-brand" style={{ width: `${(c.score / c.max) * 100}%` }} />
-            </div>
-            {c.comment && <p className="mt-1.5 text-xs text-hint">{c.comment}</p>}
-          </div>
-        ))}
-      </div>}
+          ))}
+        </div>
+      )}
       {r.feedback && (
         <div className="card">
           <p className="mb-1 text-sm font-bold">Xulosa</p>
@@ -252,7 +281,12 @@ function AnnotatedPage({ id, n, a }: { id: string; n: number; a: PageAnnotations
   if (!img.data) return <div className="skeleton aspect-[3/4] w-full" />;
   const page = (
     <div className="relative w-full">
-      <img src={img.data} alt={`${n + 1}-varoq`} className="block w-full" onLoad={(ev) => setRatio(ev.currentTarget.naturalHeight / ev.currentTarget.naturalWidth || 1.4)} />
+      <img
+        src={img.data}
+        alt={`${n + 1}-varoq`}
+        className="block w-full"
+        onLoad={(ev) => setRatio(ev.currentTarget.naturalHeight / ev.currentTarget.naturalWidth || 1.4)}
+      />
       <PageOverlay a={a} ratio={ratio} />
     </div>
   );
@@ -278,7 +312,11 @@ function PageThumb({ id, n, onRemove }: { id: string; n: number; onRemove?: () =
       {img.data ? <img src={img.data} alt={`${n + 1}-varoq`} className="h-full w-full object-contain" /> : <div className="skeleton h-full w-full" />}
       <span className="absolute left-2 top-2 rounded-full bg-black/60 px-2 py-0.5 text-[11px] font-bold text-white">{n + 1}</span>
       {onRemove && (
-        <button onClick={onRemove} className="absolute right-2 top-2 flex h-8 w-8 items-center justify-center rounded-full bg-black/60 text-white" aria-label="O'chirish">
+        <button
+          onClick={onRemove}
+          className="absolute right-2 top-2 flex h-8 w-8 items-center justify-center rounded-full bg-black/60 text-white"
+          aria-label="O'chirish"
+        >
           <X size={16} />
         </button>
       )}
@@ -337,7 +375,15 @@ function DraftPages({ e, onChange }: { e: MyEssayDetail; onChange: (e: MyEssayDe
           </button>
         )}
       </div>
-      <input ref={fileRef} type="file" accept="image/*" multiple aria-label="Esse varog'i rasmlari" className="sr-only" onChange={(x) => add(x.target.files).finally(() => (x.target.value = ""))} />
+      <input
+        ref={fileRef}
+        type="file"
+        accept="image/*"
+        multiple
+        aria-label="Esse varog'i rasmlari"
+        className="sr-only"
+        onChange={(x) => add(x.target.files).finally(() => (x.target.value = ""))}
+      />
       <p className="mt-2 px-1 text-xs text-hint">Varoqni yorug' joyda, tekis qilib, butun sahifa ko'rinadigan qilib suratga oling.</p>
       {err && <p className="mt-2 px-1 text-sm text-danger">{err}</p>}
       <button className="btn-primary mt-4" disabled={!e.pages || finish.isPending || busy} onClick={() => finish.mutate()}>
@@ -356,9 +402,7 @@ function EssayPay({ e, onChange }: { e: MyEssayDetail; onChange: () => void }) {
   return (
     <>
       {p?.status === "REJECTED" && (
-        <p className="card mt-4 text-sm text-danger">
-          Chek qabul qilinmadi{p.reviewNote ? `: ${p.reviewNote}` : ""}. Qayta yuboring.
-        </p>
+        <p className="card mt-4 text-sm text-danger">Chek qabul qilinmadi{p.reviewNote ? `: ${p.reviewNote}` : ""}. Qayta yuboring.</p>
       )}
       {cfg.data && <PayBox e={e} card={cfg.data.card} onDone={onChange} />}
     </>
@@ -417,7 +461,10 @@ function PayBox({ e, card, onDone }: { e: MyEssayDetail; card: EssayConfig["card
           <span className="mt-2 block text-sm font-semibold text-brand">Boshqa rasm tanlash</span>
         </button>
       ) : (
-        <button onClick={() => fileRef.current?.click()} className="card tap flex w-full flex-col items-center gap-2 border-2 border-dashed border-hint/30 py-8 text-hint">
+        <button
+          onClick={() => fileRef.current?.click()}
+          className="card tap flex w-full flex-col items-center gap-2 border-2 border-dashed border-hint/30 py-8 text-hint"
+        >
           <ImagePlus size={32} />
           <span className="text-sm font-semibold">To'lov chekining skrinshotini tanlang</span>
         </button>

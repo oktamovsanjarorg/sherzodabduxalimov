@@ -66,7 +66,11 @@ function List({ title, items }: { title: string; items: Item[] }) {
                 <span className="block font-bold">{i.label}</span>
                 <span className="block truncate text-xs text-ink-3">{i.hint}</span>
               </span>
-              {i.badge ? <span className="flex h-6 min-w-[24px] items-center justify-center rounded-full bg-red-600 px-1.5 text-xs font-extrabold text-white">{i.badge}</span> : null}
+              {i.badge ? (
+                <span className="flex h-6 min-w-[24px] items-center justify-center rounded-full bg-red-600 px-1.5 text-xs font-extrabold text-white">
+                  {i.badge}
+                </span>
+              ) : null}
               <ChevronRight size={18} className="text-ink-4" />
             </Link>
           </li>

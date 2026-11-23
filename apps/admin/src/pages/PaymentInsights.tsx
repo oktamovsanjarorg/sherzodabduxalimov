@@ -27,7 +27,11 @@ export function PaymentInsightsView({ month }: { month: string }) {
         <Kpi
           label="Shu oy tushishi kerak"
           value={d.total.expectedUzs || d.total.complete ? sum(d.total.expectedUzs) : "—"}
-          hint={d.total.complete ? `Offline ${sum(d.offline.expectedUzs)} · online obuna ${sum(d.online.expectedUzs)}` : `${d.offline.feeMissing} o'quvchi hisobga olinmadi: guruh summasi kiritilmagan`}
+          hint={
+            d.total.complete
+              ? `Offline ${sum(d.offline.expectedUzs)} · online obuna ${sum(d.online.expectedUzs)}`
+              : `${d.offline.feeMissing} o'quvchi hisobga olinmadi: guruh summasi kiritilmagan`
+          }
         />
         <Kpi
           label="Tushdi"
@@ -45,7 +49,8 @@ export function PaymentInsightsView({ month }: { month: string }) {
       </div>
       {d.offline.paidNoAmount > 0 && (
         <p className="-mt-2 flex items-start gap-1.5 text-xs text-amber-700">
-          <AlertTriangle size={14} className="mt-px shrink-0" /> {d.offline.paidNoAmount} ta to'lov summasi yozilmay belgilangan (0 so'm). O'quvchi sahifasida «Qaytarish» qilib, summa bilan qayta belgilang.
+          <AlertTriangle size={14} className="mt-px shrink-0" /> {d.offline.paidNoAmount} ta to'lov summasi yozilmay belgilangan (0 so'm). O'quvchi sahifasida
+          «Qaytarish» qilib, summa bilan qayta belgilang.
         </p>
       )}
       <p className="-mt-2 text-xs text-ink-3">
@@ -68,7 +73,8 @@ export function PaymentInsightsView({ month }: { month: string }) {
           )}
           {d.offline.feeMissing > 0 && (
             <p className="mt-3 flex items-start gap-1.5 text-xs text-amber-700">
-              <AlertTriangle size={14} className="mt-px shrink-0" /> {d.offline.feeMissing} o'quvchining guruhida oylik summa kiritilmagan — kutilgan tushumga qo'shilmadi.{" "}
+              <AlertTriangle size={14} className="mt-px shrink-0" /> {d.offline.feeMissing} o'quvchining guruhida oylik summa kiritilmagan — kutilgan tushumga
+              qo'shilmadi.{" "}
               <Link to="/payments?tab=OFFLINE" className="font-bold underline">
                 Kiritish
               </Link>
@@ -105,7 +111,10 @@ export function PaymentInsightsView({ month }: { month: string }) {
         </Card>
       )}
 
-      <Card title={`To'lamaganlar (${d.debtors.length})`} hint="Eng uzoq qarzdorlar birinchi. Kim bilan gaplashganingizni yozib boring — keyingi safar ko'rinadi, AI ham hisobga oladi">
+      <Card
+        title={`To'lamaganlar (${d.debtors.length})`}
+        hint="Eng uzoq qarzdorlar birinchi. Kim bilan gaplashganingizni yozib boring — keyingi safar ko'rinadi, AI ham hisobga oladi"
+      >
         {d.debtors.length === 0 ? (
           <Calm text="Hamma to'lagan 🎉" />
         ) : (
@@ -181,8 +190,18 @@ function FeeMissing({ d }: { d: Insights }) {
 function Headline({ d }: { d: Insights }) {
   const o = d.offline;
   const parts: ReactNode[] = [];
-  if (o.students) parts.push(<Fragment key="o">{o.students} ta offline o'quvchidan <b>{o.paid} tasi</b> to'ladi</Fragment>);
-  if (d.online.due) parts.push(<Fragment key="n">{d.online.due} ta online obunadan <b>{d.online.renewed} tasi</b> uzaytirildi</Fragment>);
+  if (o.students)
+    parts.push(
+      <Fragment key="o">
+        {o.students} ta offline o'quvchidan <b>{o.paid} tasi</b> to'ladi
+      </Fragment>,
+    );
+  if (d.online.due)
+    parts.push(
+      <Fragment key="n">
+        {d.online.due} ta online obunadan <b>{d.online.renewed} tasi</b> uzaytirildi
+      </Fragment>,
+    );
   const pct = d.total.percent ?? 0;
   const planned = d.total.plannedCollectedUzs;
   const timePct = Math.round((d.day / d.daysInMonth) * 100);
@@ -190,12 +209,14 @@ function Headline({ d }: { d: Insights }) {
     <section className="card p-4 sm:p-5">
       <p className="text-xs font-bold uppercase tracking-wide text-ink-4">{monthLabel(d.month)}</p>
       <p className="mt-1 text-lg font-extrabold leading-snug sm:text-xl">
-        {parts.length ? parts.map((p, i) => (
-          <Fragment key={i}>
-            {i > 0 && ", "}
-            {p}
-          </Fragment>
-        )) : "Bu oy to'lashi kerak bo'lgan o'quvchi yo'q"}
+        {parts.length
+          ? parts.map((p, i) => (
+              <Fragment key={i}>
+                {i > 0 && ", "}
+                {p}
+              </Fragment>
+            ))
+          : "Bu oy to'lashi kerak bo'lgan o'quvchi yo'q"}
         .
       </p>
       {d.total.expectedUzs > 0 && (
@@ -203,7 +224,9 @@ function Headline({ d }: { d: Insights }) {
           <div className="relative h-3 overflow-hidden rounded-full bg-surface-3">
             <div className="h-full rounded-full" style={{ width: `${Math.min(100, pct)}%`, background: S1 }} />
             {/* Oyning qancha qismi o'tgani: shu chiziqdan orqada bo'lsa — to'lovlar kechikmoqda */}
-            {d.day < d.daysInMonth && <div className="absolute inset-y-0 w-0.5 bg-slate-500" style={{ left: `${timePct}%` }} title={`Oyning ${timePct}% i o'tdi`} />}
+            {d.day < d.daysInMonth && (
+              <div className="absolute inset-y-0 w-0.5 bg-slate-500" style={{ left: `${timePct}%` }} title={`Oyning ${timePct}% i o'tdi`} />
+            )}
           </div>
           <p className="mt-1.5 text-xs text-ink-3">
             {sum(planned)} / {sum(d.total.expectedUzs)} · {pct}% tushdi
@@ -229,7 +252,11 @@ function GroupLine({ g, month }: { g: Insights["offline"]["groups"][number]; mon
       <div className="mt-1 flex flex-wrap items-center gap-3 text-xs">
         <span className="text-ink-3">{g.feeUzs ? `Oylik: ${sum(g.feeUzs)}` : "Oylik summa kiritilmagan"}</span>
         {unpaid > 0 && (
-          <button className="tap inline-flex items-center gap-1 font-bold text-brand hover:underline disabled:opacity-50" disabled={remind.isPending} onClick={() => remind.mutate()}>
+          <button
+            className="tap inline-flex items-center gap-1 font-bold text-brand hover:underline disabled:opacity-50"
+            disabled={remind.isPending}
+            onClick={() => remind.mutate()}
+          >
             <BellRing size={13} /> {unpaid} qarzdorga va ota-onasiga bot orqali eslatish
           </button>
         )}
@@ -277,13 +304,19 @@ function Debtor({ x, month }: { x: DebtorRow; month: string }) {
           </p>
         </Link>
         <div className="flex flex-wrap items-center gap-1">
-          {x.overdue.months !== undefined && <Badge tone={x.overdue.months >= 2 ? "red" : "amber"}>{x.overdue.months >= 2 ? `${x.overdue.months} oydan beri to'lamagan` : "shu oy to'lamagan"}</Badge>}
+          {x.overdue.months !== undefined && (
+            <Badge tone={x.overdue.months >= 2 ? "red" : "amber"}>
+              {x.overdue.months >= 2 ? `${x.overdue.months} oydan beri to'lamagan` : "shu oy to'lamagan"}
+            </Badge>
+          )}
           {x.overdue.days !== undefined && <Badge tone={x.overdue.days > 7 ? "red" : "amber"}>obuna tugaganiga {x.overdue.days} kun</Badge>}
           {x.attended !== null && x.attended > 0 && <Badge tone="blue">darsga {x.attended} marta keldi</Badge>}
           {x.attended === 0 && <Badge>shu oy darsga kelmagan</Badge>}
           {x.idleDays !== null && x.idleDays >= 7 && <Badge>{x.idleDays} kundan beri ilovaga kirmagan</Badge>}
           {x.pendingReceipt && <Badge tone="green">chek yubordi — tasdiqlang</Badge>}
-          {promise && <Badge tone={promiseLate ? "red" : "green"}>{promiseLate ? "va'da muddati o'tdi" : `${fmtDate(promise.promisedAt!)} gacha to'laydi`}</Badge>}
+          {promise && (
+            <Badge tone={promiseLate ? "red" : "green"}>{promiseLate ? "va'da muddati o'tdi" : `${fmtDate(promise.promisedAt!)} gacha to'laydi`}</Badge>
+          )}
         </div>
       </div>
 
@@ -315,7 +348,11 @@ function Debtor({ x, month }: { x: DebtorRow; month: string }) {
               <span className="min-w-0 flex-1">
                 <b>{FOLLOW_UP_LABELS[f.kind]}</b>
                 {f.promisedAt ? ` (${fmtDate(f.promisedAt)} gacha)` : ""}
-                {f.note ? `: ${f.note}` : ""} <span className="text-ink-4">· {fmtShortDateTime(f.createdAt)}{f.by ? ` · ${f.by}` : ""}</span>
+                {f.note ? `: ${f.note}` : ""}{" "}
+                <span className="text-ink-4">
+                  · {fmtShortDateTime(f.createdAt)}
+                  {f.by ? ` · ${f.by}` : ""}
+                </span>
               </span>
               {f.kind !== "BOT" && (
                 <button className="text-ink-5 hover:text-red-600" aria-label="O'chirish" onClick={() => del.mutate(f.id)}>
@@ -333,12 +370,18 @@ function Debtor({ x, month }: { x: DebtorRow; month: string }) {
           {form === "PROMISE" && <input type="date" className="input h-8 w-40 text-sm" value={date} onChange={(e) => setDate(e.target.value)} />}
           <input
             className="input h-8 min-w-0 flex-1 basis-48 text-sm"
-            placeholder={form === "REASON" ? "Masalan: oilaviy qiyinchilik, keyingi oy to'laydi" : form === "CALL" ? "Nima dedi? (ixtiyoriy)" : "Izoh (ixtiyoriy)"}
+            placeholder={
+              form === "REASON" ? "Masalan: oilaviy qiyinchilik, keyingi oy to'laydi" : form === "CALL" ? "Nima dedi? (ixtiyoriy)" : "Izoh (ixtiyoriy)"
+            }
             value={note}
             maxLength={500}
             onChange={(e) => setNote(e.target.value)}
           />
-          <button className="btn-primary btn-sm h-8" disabled={add.isPending || (form === "PROMISE" && !date) || (form === "REASON" && !note.trim())} onClick={() => add.mutate()}>
+          <button
+            className="btn-primary btn-sm h-8"
+            disabled={add.isPending || (form === "PROMISE" && !date) || (form === "REASON" && !note.trim())}
+            onClick={() => add.mutate()}
+          >
             <Check size={14} /> Saqlash
           </button>
           <button className="btn-ghost btn-sm h-8" onClick={() => setForm(null)}>
@@ -390,14 +433,19 @@ function AiReport({ month }: { month: string }) {
       </div>
       {!report && !gen.isPending && (
         <p className="mt-2 text-sm text-ink-2">
-          AI shu oyning raqamlari va qarzdorlar ro'yxatini tahlil qilib, qisqa hisobot beradi: ahvol, prognoz, kim bilan birinchi bog'lanish kerak va nima qilish. O'quvchilarning ismlari AI'ga yuborilmaydi.
+          AI shu oyning raqamlari va qarzdorlar ro'yxatini tahlil qilib, qisqa hisobot beradi: ahvol, prognoz, kim bilan birinchi bog'lanish kerak va nima
+          qilish. O'quvchilarning ismlari AI'ga yuborilmaydi.
         </p>
       )}
       {gen.isPending && <p className="mt-2 text-sm text-ink-3">Tahlil qilinmoqda… (10–30 soniya)</p>}
       {report && (
         <>
-          <div className="mt-3"><AiText text={report.text} /></div>
-          <p className="mt-3 text-[11px] text-ink-4">AI tayyorladi: {fmtShortDateTime(report.generatedAt)} · raqamlarni yuqoridagi jadvallar bilan solishtiring</p>
+          <div className="mt-3">
+            <AiText text={report.text} />
+          </div>
+          <p className="mt-3 text-[11px] text-ink-4">
+            AI tayyorladi: {fmtShortDateTime(report.generatedAt)} · raqamlarni yuqoridagi jadvallar bilan solishtiring
+          </p>
         </>
       )}
     </section>

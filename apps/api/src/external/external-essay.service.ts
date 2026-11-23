@@ -18,7 +18,10 @@ export class ExternalEssayService {
     for (const it of items)
       if (it.score != null && (it.score < 0 || it.score > ESSAY_MAX_SCORE || Math.round(it.score * 2) !== it.score * 2))
         throw new BadRequestException(`Esse bali 0 dan ${ESSAY_MAX_SCORE} gacha, 0,5 qadam bilan`);
-    const rows = await this.prisma.externalResult.findMany({ where: { testId, id: { in: items.map((i) => i.resultId) } }, select: { id: true, testScore: true } });
+    const rows = await this.prisma.externalResult.findMany({
+      where: { testId, id: { in: items.map((i) => i.resultId) } },
+      select: { id: true, testScore: true },
+    });
     if (rows.length !== new Set(items.map((i) => i.resultId)).size) throw new NotFoundException("Natija topilmadi");
     if (rows.some((r) => r.testScore == null)) throw new BadRequestException("Bu test Milliy sertifikat shkalasida emas: esse qo'shib bo'lmaydi");
     const test = new Map(rows.map((r) => [r.id, r.testScore!]));

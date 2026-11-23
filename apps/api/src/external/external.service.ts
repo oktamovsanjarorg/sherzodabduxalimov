@@ -58,7 +58,16 @@ export class ExternalService {
     }
     // "test-K7P2QX-matritsa.csv" -> K7P2QX; bo'lmasa fayl nomi
     const code = /test-([A-Z0-9]{4,12})/i.exec(d.fileName)?.[1]?.toUpperCase() ?? d.fileName.replace(/\.[^.]+$/, "").slice(0, 60);
-    return { source: "CSV", code, title: d.title?.trim() || `Test ${code}`, subject: null, questionCount: parsed.questionCount, sections: [], rasch: null, rows: parsed.rows };
+    return {
+      source: "CSV",
+      code,
+      title: d.title?.trim() || `Test ${code}`,
+      subject: null,
+      questionCount: parsed.questionCount,
+      sections: [],
+      rasch: null,
+      rows: parsed.rows,
+    };
   }
 
   /** Skaner eksporti (Mock22_2026-09-01.csv): bo'limlar va Milliy sertifikat bahosi bilan */
@@ -103,7 +112,15 @@ export class ExternalService {
     const { rows, ...test } = input;
     return {
       test: { ...test, participants: rows.length, alreadyImported: Boolean(existing) },
-      rows: rows.map((r) => ({ key: r.key, name: r.name, username: r.username, percent: r.percent, scaledScore: r.scaledScore, grade: r.grade, match: match(r) })),
+      rows: rows.map((r) => ({
+        key: r.key,
+        name: r.name,
+        username: r.username,
+        percent: r.percent,
+        scaledScore: r.scaledScore,
+        grade: r.grade,
+        match: match(r),
+      })),
     };
   }
 
@@ -111,10 +128,19 @@ export class ExternalService {
   async save(actorId: string, input: ExternalTestInput): Promise<{ id: string; created: number; updated: number; matched: number }> {
     if (!input.rows.length) throw new BadRequestException("Testda hali natija yo'q");
     const match = await this.matcher();
-    const takenAt = input.rows.map((r) => r.submittedAt).filter((x): x is string => !!x).sort()[0];
+    const takenAt = input.rows
+      .map((r) => r.submittedAt)
+      .filter((x): x is string => !!x)
+      .sort()[0];
     const test = await this.prisma.externalTest.upsert({
       where: { source_code: { source: input.source, code: input.code } },
-      update: { title: input.title, subject: input.subject, questionCount: input.questionCount, sections: input.sections as unknown as Prisma.InputJsonValue, rasch: rasch(input) },
+      update: {
+        title: input.title,
+        subject: input.subject,
+        questionCount: input.questionCount,
+        sections: input.sections as unknown as Prisma.InputJsonValue,
+        rasch: rasch(input),
+      },
       create: {
         source: input.source,
         code: input.code,
@@ -127,7 +153,11 @@ export class ExternalService {
         importedById: actorId,
       },
     });
-    const old = new Map((await this.prisma.externalResult.findMany({ where: { testId: test.id }, select: { key: true, manualMatch: true, studentId: true, essayScore: true } })).map((r) => [r.key, r]));
+    const old = new Map(
+      (
+        await this.prisma.externalResult.findMany({ where: { testId: test.id }, select: { key: true, manualMatch: true, studentId: true, essayScore: true } })
+      ).map((r) => [r.key, r]),
+    );
     let created = 0;
     let matched = 0;
     await this.prisma.$transaction(
@@ -158,17 +188,32 @@ export class ExternalService {
           submittedAt: r.submittedAt ? new Date(r.submittedAt) : null,
           durationSec: r.durationSec,
         };
-        return this.prisma.externalResult.upsert({ where: { testId_key: { testId: test.id, key: r.key } }, update: data, create: { ...data, testId: test.id, key: r.key } });
+        return this.prisma.externalResult.upsert({
+          where: { testId_key: { testId: test.id, key: r.key } },
+          update: data,
+          create: { ...data, testId: test.id, key: r.key },
+        });
       }),
     );
-    await this.prisma.auditLog.create({ data: { actorId, action: "external.import", entity: "ExternalTest", entityId: test.id, meta: { source: input.source, code: input.code, rows: input.rows.length, matched } } });
+    await this.prisma.auditLog.create({
+      data: {
+        actorId,
+        action: "external.import",
+        entity: "ExternalTest",
+        entityId: test.id,
+        meta: { source: input.source, code: input.code, rows: input.rows.length, matched },
+      },
+    });
     return { id: test.id, created, updated: input.rows.length - created, matched };
   }
 
   // ---------------- Admin ko'rinishi ----------------
 
   async list(): Promise<ExternalTestSummary[]> {
-    const tests = await this.prisma.externalTest.findMany({ orderBy: [{ takenAt: "desc" }, { createdAt: "desc" }], include: { results: { select: { percent: true, studentId: true } } } });
+    const tests = await this.prisma.externalTest.findMany({
+      orderBy: [{ takenAt: "desc" }, { createdAt: "desc" }],
+      include: { results: { select: { percent: true, studentId: true } } },
+    });
     return tests.map((t) => this.summary(t));
   }
 
@@ -192,18 +237,29 @@ export class ExternalService {
   async detail(id: string): Promise<ExternalTestDetail> {
     const t = await this.prisma.externalTest.findUnique({
       where: { id },
-      include: { results: { orderBy: [{ percent: "desc" }, { durationSec: "asc" }], include: { student: { select: { id: true, user: { select: { firstName: true, lastName: true } } } } } } },
+      include: {
+        results: {
+          orderBy: [{ percent: "desc" }, { durationSec: "asc" }],
+          include: { student: { select: { id: true, user: { select: { firstName: true, lastName: true } } } } },
+        },
+      },
     });
     if (!t) throw new NotFoundException("Test topilmadi");
     const rs = t.results;
     const sorted = rs.map((r) => r.percent).sort((a, b) => a - b);
-    const median = sorted.length ? round1(sorted.length % 2 ? sorted[(sorted.length - 1) / 2] : (sorted[sorted.length / 2 - 1] + sorted[sorted.length / 2]) / 2) : null;
+    const median = sorted.length
+      ? round1(sorted.length % 2 ? sorted[(sorted.length - 1) / 2] : (sorted[sorted.length / 2 - 1] + sorted[sorted.length / 2]) / 2)
+      : null;
     const buckets = Array.from({ length: 10 }, (_, i) => ({ label: i === 9 ? "90–100" : `${i * 10}–${i * 10 + 9}`, count: 0 }));
     for (const r of rs) buckets[Math.min(9, Math.floor(r.percent / 10))].count++;
     const questions = Array.from({ length: t.questionCount }, (_, i) => {
       const states = rs.map((r) => r.answers[i]).filter((x) => x && x !== "-");
       const n = states.length || 1;
-      return { q: i + 1, correctPct: round1((states.filter((x) => x === "c").length / n) * 100), blankPct: round1((states.filter((x) => x === "b").length / n) * 100) };
+      return {
+        q: i + 1,
+        correctPct: round1((states.filter((x) => x === "c").length / n) * 100),
+        blankPct: round1((states.filter((x) => x === "b").length / n) * 100),
+      };
     });
     const secMeta = (t.sections as unknown as ExternalSection[]) ?? [];
     const sections = secMeta.map((s, i) => ({
@@ -251,7 +307,8 @@ export class ExternalService {
   async link(actorId: string, testId: string, resultId: string, studentId: string | null) {
     const r = await this.prisma.externalResult.findFirst({ where: { id: resultId, testId } });
     if (!r) throw new NotFoundException("Natija topilmadi");
-    if (studentId && !(await this.prisma.studentProfile.findUnique({ where: { id: studentId }, select: { id: true } }))) throw new NotFoundException("O'quvchi topilmadi");
+    if (studentId && !(await this.prisma.studentProfile.findUnique({ where: { id: studentId }, select: { id: true } })))
+      throw new NotFoundException("O'quvchi topilmadi");
     await this.prisma.externalResult.update({ where: { id: resultId }, data: { studentId, manualMatch: true } });
     await this.prisma.auditLog.create({ data: { actorId, action: "external.link", entity: "ExternalResult", entityId: resultId, meta: { studentId } } });
     return { ok: true };
@@ -277,7 +334,10 @@ export class ExternalService {
       select: {
         id: true,
         student: {
-          select: { user: { select: { firstName: true, lastName: true, telegramId: true, isBlocked: true } }, parents: { where: { status: "APPROVED" }, select: { parent: { select: { telegramId: true } } } } },
+          select: {
+            user: { select: { firstName: true, lastName: true, telegramId: true, isBlocked: true } },
+            parents: { where: { status: "APPROVED" }, select: { parent: { select: { telegramId: true } } } },
+          },
         },
       },
     });
@@ -288,11 +348,21 @@ export class ExternalService {
       const s = r.student!;
       if (s.user.isBlocked) continue;
       if (s.user.telegramId !== null) {
-        await this.notify.sendApp(s.user.telegramId, `📊 <b>${title}</b> testi natijangiz tayyor.\nNatijani, xatolaringizni va guruhdagi o'rningizni ilovada ko'ring.`, `/external/${r.id}`, "Natijani ko'rish");
+        await this.notify.sendApp(
+          s.user.telegramId,
+          `📊 <b>${title}</b> testi natijangiz tayyor.\nNatijani, xatolaringizni va guruhdagi o'rningizni ilovada ko'ring.`,
+          `/external/${r.id}`,
+          "Natijani ko'rish",
+        );
         students++;
       }
       for (const p of s.parents) {
-        await this.notify.sendApp(p.parent.telegramId, `📊 <b>${esc(fullName(s.user))}</b> «${title}» testini topshirdi, natijasi tayyor.\nNatijani ilovada ko'ring.`, "/", "Ilovani ochish");
+        await this.notify.sendApp(
+          p.parent.telegramId,
+          `📊 <b>${esc(fullName(s.user))}</b> «${title}» testini topshirdi, natijasi tayyor.\nNatijani ilovada ko'ring.`,
+          "/",
+          "Ilovani ochish",
+        );
         parents++;
       }
     }
@@ -318,7 +388,15 @@ export class ExternalService {
       by.set(s.id, e);
     }
     return [...by]
-      .map(([studentId, e]) => ({ studentId, name: e.name, groupName: e.groupName, tests: e.ps.length, avgPercent: avg(e.ps)!, best: Math.max(...e.ps), last: e.ps.at(-1)! }))
+      .map(([studentId, e]) => ({
+        studentId,
+        name: e.name,
+        groupName: e.groupName,
+        tests: e.ps.length,
+        avgPercent: avg(e.ps)!,
+        best: Math.max(...e.ps),
+        last: e.ps.at(-1)!,
+      }))
       .sort((a, b) => b.avgPercent - a.avgPercent || b.tests - a.tests);
   }
 
@@ -397,7 +475,11 @@ export class ExternalService {
 
   private questionsOf(answers: string, testScore: number | null, rasch: ExternalRasch | null, sections: ExternalSection[]) {
     if (testScore == null || !rasch) return null;
-    const pts = questionPoints(answers, rasch.items.map((i) => i.w), testScore);
+    const pts = questionPoints(
+      answers,
+      rasch.items.map((i) => i.w),
+      testScore,
+    );
     return pts.map((points, j) => ({ points, section: sections.find((s) => sectionQuestions(s).includes(j + 1))?.title ?? null }));
   }
 

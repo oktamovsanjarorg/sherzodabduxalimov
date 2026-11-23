@@ -160,7 +160,9 @@ const essayAi = new Worker<EssayAiJob>(
       (topic, text, handwritten) => gradeEssayDeepSeek({ apiKey: key, model: env.DEEPSEEK_MODEL, topic, text, handwritten }),
       (chatId, text, button) => notifyQueue.add("send", { chatId: String(chatId), text, button }),
       env.MINIAPP_URL,
-      env.GEMINI_API_KEY ? async (paths) => transcribeHandwriting({ apiKey: env.GEMINI_API_KEY!, model: env.GEMINI_MODEL, images: await essayImages(paths) }) : undefined,
+      env.GEMINI_API_KEY
+        ? async (paths) => transcribeHandwriting({ apiKey: env.GEMINI_API_KEY!, model: env.GEMINI_MODEL, images: await essayImages(paths) })
+        : undefined,
       env.GEMINI_API_KEY
         ? async (paths, phrases) => locatePhrases({ apiKey: env.GEMINI_API_KEY!, model: env.GEMINI_MODEL, images: await essayImages(paths), phrases })
         : undefined,

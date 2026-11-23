@@ -73,7 +73,10 @@ export class ParentsService {
    * Havola orqali birinchi marta kelgan odam darhol ota-ona bo'ladi: o'quvchi sifatida ko'rinmaydi.
    */
   async setPending(from: TelegramProfile, code: string): Promise<{ status: "ok" | "invalid" | "self" }> {
-    const student = await this.prisma.studentProfile.findUnique({ where: { parentLinkCode: code.toUpperCase() }, select: { user: { select: { telegramId: true } } } });
+    const student = await this.prisma.studentProfile.findUnique({
+      where: { parentLinkCode: code.toUpperCase() },
+      select: { user: { select: { telegramId: true } } },
+    });
     if (!student) return { status: "invalid" };
     const id = BigInt(from.id);
     if (student.user.telegramId === id) return { status: "self" };
@@ -96,7 +99,12 @@ export class ParentsService {
    * Ota-ona havola orqali botga kirib, o'z raqamini ulashdi.
    * Firibgarlikka qarshi: o'z akkaunti bo'lmasa rad etiladi; shubhali holatlar belgilanadi va ustoz ko'radi.
    */
-  async linkParent(code: string, from: TelegramProfile, contact: { phone_number: string; user_id?: number }, relation?: string | null): Promise<ParentLinkResult> {
+  async linkParent(
+    code: string,
+    from: TelegramProfile,
+    contact: { phone_number: string; user_id?: number },
+    relation?: string | null,
+  ): Promise<ParentLinkResult> {
     const student = await this.prisma.studentProfile.findUnique({
       where: { parentLinkCode: code.toUpperCase() },
       include: { user: true, parents: { where: { status: { in: ["PENDING", "APPROVED"] } } } },
@@ -119,7 +127,9 @@ export class ParentsService {
 
     // Shubhali belgilar (ustoz tekshirishi uchun)
     const [activity, children] = await Promise.all([
-      this.prisma.attempt.count({ where: { userId: parent.id } }).then(async (a) => a + (await this.prisma.lessonProgress.count({ where: { userId: parent.id } }))),
+      this.prisma.attempt
+        .count({ where: { userId: parent.id } })
+        .then(async (a) => a + (await this.prisma.lessonProgress.count({ where: { userId: parent.id } }))),
       this.prisma.parentLink.count({ where: { parentId: parent.id, status: { in: ["PENDING", "APPROVED"] } } }),
     ]);
     const flags: string[] = [];
@@ -205,14 +215,19 @@ export class ParentsService {
         },
       },
     });
-    return Promise.all(links.map(async (l) => ({
-      name: fullName(l.student.user),
-      status: l.status,
-      groupName: l.student.group?.name ?? null,
-      // Tasdiqlanmagan ota-onaga davomat ko'rsatilmaydi
-      recent: l.status === "APPROVED" ? l.student.attendance.map((a) => ({ date: a.date.toISOString().slice(0, 10), status: a.status, grade: a.grade, note: a.note })) : [],
-      tests: l.status === "APPROVED" ? await this.external.forStudent(l.studentId, 5) : [],
-    })));
+    return Promise.all(
+      links.map(async (l) => ({
+        name: fullName(l.student.user),
+        status: l.status,
+        groupName: l.student.group?.name ?? null,
+        // Tasdiqlanmagan ota-onaga davomat ko'rsatilmaydi
+        recent:
+          l.status === "APPROVED"
+            ? l.student.attendance.map((a) => ({ date: a.date.toISOString().slice(0, 10), status: a.status, grade: a.grade, note: a.note }))
+            : [],
+        tests: l.status === "APPROVED" ? await this.external.forStudent(l.studentId, 5) : [],
+      })),
+    );
   }
 
   // ---------------- Admin ----------------
@@ -274,7 +289,10 @@ export class ParentsService {
       l.student.user.telegramId,
       `❌ Ota-ona ulanish so'rovi rad etildi.\nSabab: ${esc(r)}\n\nIlovani ochib, haqiqiy ota-onangizni qayta ulang.`,
     );
-    await this.notify.send(l.parent.telegramId, `❌ <b>${esc(fullName(l.student.user))}</b>ning ota-onasi sifatida ulanish so'rovingiz rad etildi.\nSabab: ${esc(r)}\n\nSavollar bo'lsa, ustozga murojaat qiling.`);
+    await this.notify.send(
+      l.parent.telegramId,
+      `❌ <b>${esc(fullName(l.student.user))}</b>ning ota-onasi sifatida ulanish so'rovingiz rad etildi.\nSabab: ${esc(r)}\n\nSavollar bo'lsa, ustozga murojaat qiling.`,
+    );
     return { ok: true };
   }
 
@@ -283,7 +301,9 @@ export class ParentsService {
     const l = await this.prisma.parentLink.findUnique({ where: { id }, include: linkInclude });
     if (!l) throw new NotFoundException("Ulanish topilmadi");
     await this.prisma.parentLink.delete({ where: { id } });
-    await this.prisma.auditLog.create({ data: { actorId, action: "parent.delete", entity: "ParentLink", entityId: id, meta: { parent: fullName(l.parent), student: fullName(l.student.user) } } });
+    await this.prisma.auditLog.create({
+      data: { actorId, action: "parent.delete", entity: "ParentLink", entityId: id, meta: { parent: fullName(l.parent), student: fullName(l.student.user) } },
+    });
     return { ok: true };
   }
 

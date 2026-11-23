@@ -27,7 +27,17 @@ export function PayDialog({ studentId, onClose, onDone }: { studentId: string; o
   );
 }
 
-function Form({ studentId, info, onClose, onDone }: { studentId: string; info: Awaited<ReturnType<typeof api.offlineNextPeriod>>; onClose: () => void; onDone: () => void }) {
+function Form({
+  studentId,
+  info,
+  onClose,
+  onDone,
+}: {
+  studentId: string;
+  info: Awaited<ReturnType<typeof api.offlineNextPeriod>>;
+  onClose: () => void;
+  onDone: () => void;
+}) {
   const toast = useToast();
   const today = tashkentToday();
   const [amount, setAmount] = useState(info.feeUzs ? String(info.feeUzs) : "");
@@ -37,9 +47,10 @@ function Form({ studentId, info, onClose, onDone }: { studentId: string; info: A
   const [paidOn, setPaidOn] = useState(today);
   const late = start && paidOn ? Math.max(0, daysBetween(start, paidOn)) : 0;
   const badRange = !!start && !!end && end < start;
-  const bad = !start || !end || !paidOn || badRange || paidOn > today || !Number(amount || 0) && !info.feeUzs;
+  const bad = !start || !end || !paidOn || badRange || paidOn > today || (!Number(amount || 0) && !info.feeUzs);
   const save = useMutation({
-    mutationFn: () => api.markOffline({ studentId, periodStart: start, periodEnd: end, paidOn, amountUzs: Number(amount || 0) || undefined, note: note.trim() || null }),
+    mutationFn: () =>
+      api.markOffline({ studentId, periodStart: start, periodEnd: end, paidOn, amountUzs: Number(amount || 0) || undefined, note: note.trim() || null }),
     onSuccess: (r) => {
       toast(`${info.approvedParents ? "Belgilandi. Ota-onaga xabar yuborildi" : "Belgilandi"}${r.lateDays ? ` (${r.lateDays} kun kechikkan)` : ""}`);
       onDone();
@@ -65,7 +76,12 @@ function Form({ studentId, info, onClose, onDone }: { studentId: string; info: A
       </p>
       <div className="grid grid-cols-2 gap-3">
         <Field label="Davr boshi">
-          <input className="input" type="date" value={start} onChange={(e) => (setStart(e.target.value), e.target.value && setEnd(defaultPeriodEnd(e.target.value)))} />
+          <input
+            className="input"
+            type="date"
+            value={start}
+            onChange={(e) => (setStart(e.target.value), e.target.value && setEnd(defaultPeriodEnd(e.target.value)))}
+          />
         </Field>
         <Field label="Davr oxiri">
           <input className="input" type="date" value={end} min={start} onChange={(e) => setEnd(e.target.value)} />
@@ -77,7 +93,11 @@ function Form({ studentId, info, onClose, onDone }: { studentId: string; info: A
           <input className="input" inputMode="numeric" autoFocus value={amount} onChange={(e) => setAmount(e.target.value.replace(/\D/g, ""))} />
         </Field>
       </div>
-      {late > 0 && <p className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-800">Davr boshidan {late} kun keyin to'laydi: «kechikib to'ladi» deb belgilanadi.</p>}
+      {late > 0 && (
+        <p className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-800">
+          Davr boshidan {late} kun keyin to'laydi: «kechikib to'ladi» deb belgilanadi.
+        </p>
+      )}
       {badRange && <p className="mt-3 text-xs font-semibold text-red-600">Davr oxiri boshidan oldin bo'lishi mumkin emas.</p>}
       <div className="mt-3">
         <Field label="Izoh">
@@ -86,7 +106,12 @@ function Form({ studentId, info, onClose, onDone }: { studentId: string; info: A
       </div>
       <div className="mt-3 flex flex-wrap gap-2">
         {["Naqd", "Kartaga", "Chegirma"].map((n) => (
-          <button key={n} type="button" className={`h-10 rounded-full border px-4 text-sm font-semibold sm:h-8 sm:px-3 sm:text-xs ${note === n ? "border-brand bg-brand-soft text-brand-dark" : "border-line text-ink-2 hover:bg-surface-2"}`} onClick={() => setNote(n)}>
+          <button
+            key={n}
+            type="button"
+            className={`h-10 rounded-full border px-4 text-sm font-semibold sm:h-8 sm:px-3 sm:text-xs ${note === n ? "border-brand bg-brand-soft text-brand-dark" : "border-line text-ink-2 hover:bg-surface-2"}`}
+            onClick={() => setNote(n)}
+          >
             {n}
           </button>
         ))}

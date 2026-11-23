@@ -29,7 +29,8 @@ describe("Esse: AI (bepul) va ustoz (pullik, qo'lyozma) (e2e)", () => {
   let saved: { card: unknown; essay: unknown } = { card: null, essay: null };
   const req = (method: "GET" | "POST" | "PUT" | "PATCH" | "DELETE", url: string, payload?: object, headers = H) =>
     app.inject({ method, url: `/api${url}`, headers, payload });
-  const img = (url: string, headers = S) => app.inject({ method: "POST", url: `/api${url}`, headers: { ...headers, "content-type": "image/jpeg" }, payload: JPEG });
+  const img = (url: string, headers = S) =>
+    app.inject({ method: "POST", url: `/api${url}`, headers: { ...headers, "content-type": "image/jpeg" }, payload: JPEG });
 
   beforeAll(async () => {
     const [c, e] = await Promise.all(["billing", "essay"].map((key) => prisma.appSetting.findUnique({ where: { key } })));
@@ -45,7 +46,10 @@ describe("Esse: AI (bepul) va ustoz (pullik, qo'lyozma) (e2e)", () => {
   });
   afterAll(async () => {
     await cleanup();
-    for (const [key, value] of [["billing", saved.card], ["essay", saved.essay]] as const) {
+    for (const [key, value] of [
+      ["billing", saved.card],
+      ["essay", saved.essay],
+    ] as const) {
       if (value) await prisma.appSetting.update({ where: { key }, data: { value: value as object } });
       else await prisma.appSetting.deleteMany({ where: { key } });
     }
@@ -68,12 +72,24 @@ describe("Esse: AI (bepul) va ustoz (pullik, qo'lyozma) (e2e)", () => {
     // Worker o'rnida: soxta AI javobi (ball maksimumdan oshsa qisqaradi, bir xil "xato"lar tashlanadi)
     const fake = normalize({
       special: null,
-      criteria: [{ key: "style", score: 9, comment: "Mos" }, { key: "spelling", score: 1.3, comment: null }],
+      criteria: [
+        { key: "style", score: 9, comment: "Mos" },
+        { key: "spelling", score: 1.3, comment: null },
+      ],
       feedback: "Yaxshi",
-      mistakes: [{ wrong: "dust", right: "do'st", note: null }, { wrong: "kitob", right: "Kitob", note: null }],
+      mistakes: [
+        { wrong: "dust", right: "do'st", note: null },
+        { wrong: "kitob", right: "Kitob", note: null },
+      ],
     });
     const sent: string[] = [];
-    const total = await gradeEssayJob(prisma, e.id, async () => fake, async (_c, t) => void sent.push(t), undefined);
+    const total = await gradeEssayJob(
+      prisma,
+      e.id,
+      async () => fake,
+      async (_c, t) => void sent.push(t),
+      undefined,
+    );
     expect(total).toBe(2 + 1.5);
     const d = (await req("GET", `/essays/${e.id}`, undefined, S)).json();
     expect(d.status).toBe("AI_CHECKED");
@@ -90,7 +106,16 @@ describe("Esse: AI (bepul) va ustoz (pullik, qo'lyozma) (e2e)", () => {
 
     expect((await req("POST", "/essays", { mode: "AI", prompt: "Uchinchi", text: TEXT }, S)).statusCode).toBe(409); // 2 ta ishlatildi
     // Eski muvaffaqiyatsiz esse orqali limitni chetlab o'tib bo'lmaydi
-    const old = await prisma.essay.create({ data: { userId: (await prisma.user.findUniqueOrThrow({ where: { telegramId: BigInt(TG.student) } })).id, mode: "AI", prompt: "Kechagi", text: TEXT, status: "AI_FAILED", createdAt: new Date(Date.now() - 2 * 86_400_000) } });
+    const old = await prisma.essay.create({
+      data: {
+        userId: (await prisma.user.findUniqueOrThrow({ where: { telegramId: BigInt(TG.student) } })).id,
+        mode: "AI",
+        prompt: "Kechagi",
+        text: TEXT,
+        status: "AI_FAILED",
+        createdAt: new Date(Date.now() - 2 * 86_400_000),
+      },
+    });
     expect((await req("POST", `/essays/${old.id}/retry`, undefined, S)).statusCode).toBe(409);
     await prisma.essay.delete({ where: { id: old.id } });
     expect((await req("GET", "/essays", undefined, S)).json()).toHaveLength(2);
@@ -113,11 +138,19 @@ describe("Esse: AI (bepul) va ustoz (pullik, qo'lyozma) (e2e)", () => {
     const readPaths: string[][] = [];
     const handwrittenFlags: boolean[] = [];
     const read = async (p: string[]) => (readPaths.push(p), "Ona tilim mening faxrim. Men uni sevaman va [?] asrayman. ".repeat(12));
-    const grade = async (_t: string, _x: string, hw: boolean) => (handwrittenFlags.push(hw), normalize({ special: null, criteria: [{ key: "views", score: 1.5, comment: null }], feedback: "", mistakes: [] }));
+    const grade = async (_t: string, _x: string, hw: boolean) => (
+      handwrittenFlags.push(hw),
+      normalize({ special: null, criteria: [{ key: "views", score: 1.5, comment: null }], feedback: "", mistakes: [] })
+    );
     const locate = async () => [{ i: 0, page: 1, box: [100, 200, 150, 400] as [number, number, number, number] }];
     const grade2 = async (_t: string, _x: string, hw: boolean) => (
       handwrittenFlags.push(hw),
-      normalize({ special: null, criteria: [{ key: "views", score: 1.5, comment: null }], feedback: "", mistakes: [{ wrong: "asrayman", right: "asrayman.", type: "punctuation", note: null }] })
+      normalize({
+        special: null,
+        criteria: [{ key: "views", score: 1.5, comment: null }],
+        feedback: "",
+        mistakes: [{ wrong: "asrayman", right: "asrayman.", type: "punctuation", note: null }],
+      })
     );
     expect(await gradeEssayJob(prisma, e.id, grade2, async () => {}, undefined, read, locate)).toBe(1.5);
     expect(readPaths[0]).toHaveLength(2);
@@ -132,7 +165,16 @@ describe("Esse: AI (bepul) va ustoz (pullik, qo'lyozma) (e2e)", () => {
     const n = (await req("POST", "/essays", { mode: "AI", prompt: "Bo'sh varoq" }, S)).json();
     await img(`/essays/${n.id}/pages`);
     await req("POST", `/essays/${n.id}/finish`, undefined, S);
-    expect(await gradeEssayJob(prisma, n.id, grade, async () => {}, undefined, async () => "NO_ESSAY")).toBeNull();
+    expect(
+      await gradeEssayJob(
+        prisma,
+        n.id,
+        grade,
+        async () => {},
+        undefined,
+        async () => "NO_ESSAY",
+      ),
+    ).toBeNull();
     const nd = (await req("GET", `/essays/${n.id}`, undefined, S)).json();
     expect(nd).toMatchObject({ status: "AI_FAILED", error: NO_ESSAY_ERROR });
     expect((await req("GET", "/essays/config", undefined, S)).json().aiUsedToday).toBe(1); // hisoblanmadi
@@ -187,7 +229,11 @@ describe("Esse: AI (bepul) va ustoz (pullik, qo'lyozma) (e2e)", () => {
     expect((await req("POST", `/admin/hw-essays/${e.id}/review`, { criteria: [{ key: "style", score: 2 }] }, S)).statusCode).toBe(403);
     const r = (
       await req("POST", `/admin/hw-essays/${e.id}/review`, {
-        criteria: [{ key: "style", score: 2 }, { key: "evidence", score: 1.5, comment: "Dalillar yaxshi" }, { key: "spelling", score: 1 }],
+        criteria: [
+          { key: "style", score: 2 },
+          { key: "evidence", score: 1.5, comment: "Dalillar yaxshi" },
+          { key: "spelling", score: 1 },
+        ],
         feedback: "Barakalla",
       })
     ).json();
@@ -204,7 +250,24 @@ describe("Esse: AI (bepul) va ustoz (pullik, qo'lyozma) (e2e)", () => {
 
     // Varoq ustidagi belgilar: chizgi va xato yorliqlari; o'quvchiga ko'rinadi, soni turlar bo'yicha
     const anno = {
-      pages: [{ strokes: [{ tool: "pen", width: 0.004, points: [[0.1, 0.2], [0.3, 0.2]] }], marks: [{ x: 0.2, y: 0.2, type: "spelling", note: "do'st" }, { x: 0.5, y: 0.5, type: "punctuation" }] }],
+      pages: [
+        {
+          strokes: [
+            {
+              tool: "pen",
+              width: 0.004,
+              points: [
+                [0.1, 0.2],
+                [0.3, 0.2],
+              ],
+            },
+          ],
+          marks: [
+            { x: 0.2, y: 0.2, type: "spelling", note: "do'st" },
+            { x: 0.5, y: 0.5, type: "punctuation" },
+          ],
+        },
+      ],
       text: [],
     };
     expect((await req("PUT", `/admin/hw-essays/${e.id}/annotations`, anno)).json()).toEqual({ ok: true, counts: { spelling: 1, punctuation: 1 } });
@@ -214,7 +277,8 @@ describe("Esse: AI (bepul) va ustoz (pullik, qo'lyozma) (e2e)", () => {
 
     // Ustozning ovozli izohi: faqat baholangandan keyin; o'quvchi o'zinikini tinglaydi, begona — yo'q
     const audio = Buffer.concat([Buffer.from([0x1a, 0x45, 0xdf, 0xa3]), Buffer.alloc(4000, 3)]); // webm sarlavhasi + ma'lumot
-    const up = (url: string, body: Buffer, type = "audio/webm") => app.inject({ method: "POST", url: `/api${url}`, headers: { ...H, "content-type": type }, payload: body });
+    const up = (url: string, body: Buffer, type = "audio/webm") =>
+      app.inject({ method: "POST", url: `/api${url}`, headers: { ...H, "content-type": type }, payload: body });
     expect((await up(`/admin/hw-essays/${e.id}/voice`, Buffer.alloc(10))).statusCode).toBe(400); // juda qisqa
     expect((await up(`/admin/hw-essays/${e.id}/voice`, audio, "image/png")).json().message).toMatch(/audio/); // rasm emas, audio kerak
     const v = await up(`/admin/hw-essays/${e.id}/voice`, audio);

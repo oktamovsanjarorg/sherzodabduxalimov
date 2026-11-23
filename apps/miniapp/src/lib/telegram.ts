@@ -1,15 +1,6 @@
 /** telegram-web-app.js beradigan window.Telegram.WebApp ustidan yupqa, tiplangan qatlam. */
 type ThemeParams = Partial<
-  Record<
-    | "bg_color"
-    | "secondary_bg_color"
-    | "section_bg_color"
-    | "text_color"
-    | "hint_color"
-    | "link_color"
-    | "destructive_text_color",
-    string
-  >
+  Record<"bg_color" | "secondary_bg_color" | "section_bg_color" | "text_color" | "hint_color" | "link_color" | "destructive_text_color", string>
 >;
 
 interface TgWebApp {
@@ -200,7 +191,11 @@ export function requestOwnPhone(botStartPhoneUrl: string): Promise<boolean> {
  */
 export function telegramLaunchParams(): string {
   if (!tg || !isInTelegram) return "";
-  const p = new URLSearchParams({ tgWebAppVersion: tg.version ?? "6.0", tgWebAppPlatform: tg.platform ?? "unknown", tgWebAppThemeParams: JSON.stringify(tg.themeParams ?? {}) });
+  const p = new URLSearchParams({
+    tgWebAppVersion: tg.version ?? "6.0",
+    tgWebAppPlatform: tg.platform ?? "unknown",
+    tgWebAppThemeParams: JSON.stringify(tg.themeParams ?? {}),
+  });
   if (tg.isFullscreen) p.set("tgWebAppFullscreen", "1");
   return p.toString();
 }

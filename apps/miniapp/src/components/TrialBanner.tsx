@@ -36,7 +36,9 @@ export function TrialBanner({ user }: { user: Me }) {
       <div className="px-4 pb-2 pt-4">
         <div className="flex items-baseline justify-between gap-3">
           <p className="text-[15px] font-bold">Hisobni to'liq ochish</p>
-          <span className="shrink-0 text-xs font-bold text-hint">{done} / {steps.length}</span>
+          <span className="shrink-0 text-xs font-bold text-hint">
+            {done} / {steps.length}
+          </span>
         </div>
         <p className="mt-0.5 text-xs text-hint">
           Hozircha har bo'limdan bir martadan foydalana olasiz
@@ -60,9 +62,13 @@ export function TrialBanner({ user }: { user: Me }) {
 function StepRow({ s, onOpen }: { s: Step; onOpen?: () => void }) {
   const icon =
     s.state === "done" ? (
-      <span className="flex h-7 w-7 items-center justify-center rounded-full bg-brand text-white"><Check size={15} strokeWidth={3} /></span>
+      <span className="flex h-7 w-7 items-center justify-center rounded-full bg-brand text-white">
+        <Check size={15} strokeWidth={3} />
+      </span>
     ) : s.state === "wait" ? (
-      <span className="flex h-7 w-7 items-center justify-center rounded-full bg-hint/15 text-hint"><Clock size={15} /></span>
+      <span className="flex h-7 w-7 items-center justify-center rounded-full bg-hint/15 text-hint">
+        <Clock size={15} />
+      </span>
     ) : (
       <span className="h-7 w-7 rounded-full border-2 border-brand" />
     );

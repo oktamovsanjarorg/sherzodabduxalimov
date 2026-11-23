@@ -15,10 +15,16 @@ export async function manageAdvice(prisma: PrismaService, add: (a: Advice) => vo
   const groups = await prisma.group.findMany({
     where: { isActive: true },
     select: {
-      id: true, name: true,
+      id: true,
+      name: true,
       students: {
         where: { user: { isBlocked: false, role: "STUDENT" } },
-        select: { id: true, startedOn: true, user: { select: { firstName: true, lastName: true } }, offlinePayments: { orderBy: { month: "desc" }, take: 24, select: { month: true, periodStart: true, periodEnd: true, paidOn: true, createdAt: true } } },
+        select: {
+          id: true,
+          startedOn: true,
+          user: { select: { firstName: true, lastName: true } },
+          offlinePayments: { orderBy: { month: "desc" }, take: 24, select: { month: true, periodStart: true, periodEnd: true, paidOn: true, createdAt: true } },
+        },
       },
     },
   });
@@ -41,15 +47,24 @@ export async function manageAdvice(prisma: PrismaService, add: (a: Advice) => vo
     if (!debtors.length) continue;
     debtors.sort((a, b) => b.days - a.days);
     add({
-      key: `payments:debtors:${g.id}`, level: debtors[0].days >= 10 ? "urgent" : "important", area: "payments", count: debtors.length,
+      key: `payments:debtors:${g.id}`,
+      level: debtors[0].days >= 10 ? "urgent" : "important",
+      area: "payments",
+      count: debtors.length,
       title: `${g.name}: ${debtors.length} o'quvchi oylik to'lovni to'lamagan`,
-      why: `${names(debtors.map((d) => `${d.name} (${d.days} kun)`), 5)}. Qavsda: to'lov kunidan beri o'tgan kun. To'lovlar sahifasidan ota-onalarga bir bosishda eslatma yuborish mumkin.`,
+      why: `${names(
+        debtors.map((d) => `${d.name} (${d.days} kun)`),
+        5,
+      )}. Qavsda: to'lov kunidan beri o'tgan kun. To'lovlar sahifasidan ota-onalarga bir bosishda eslatma yuborish mumkin.`,
       action: { label: "Qarzdorlar ro'yxati", to: `/payments?tab=OFFLINE&group=${g.id}` },
     });
   }
   if (noStart.length)
     add({
-      key: "payments:no-start", level: "important", area: "payments", count: noStart.length,
+      key: "payments:no-start",
+      level: "important",
+      area: "payments",
+      count: noStart.length,
       title: `${noStart.length} offline o'quvchining o'qishni boshlagan sanasi kiritilmagan`,
       why: `${names(noStart.map((s) => s.name))}. Sana bo'lmasa to'lov davri va qarz hisoblanmaydi: o'quvchi sahifasi → Sozlamalar → «O'qishni boshlagan sana».`,
       action: { label: noStart.length === 1 ? "O'quvchini ochish" : "Birinchisini ochish", to: `/students/${noStart[0].id}?tab=settings` },
@@ -63,7 +78,10 @@ export async function manageAdvice(prisma: PrismaService, add: (a: Advice) => vo
   });
   if (ending.length)
     add({
-      key: "payments:subs-ending", level: "idea", area: "payments", count: ending.length,
+      key: "payments:subs-ending",
+      level: "idea",
+      area: "payments",
+      count: ending.length,
       title: `${ending.length} o'quvchining obunasi 3 kun ichida tugaydi`,
       why: `${names(ending.map((e) => `${fullName(e.user)} (${ymdOf(e.endsAt).slice(8)}.${ymdOf(e.endsAt).slice(5, 7)})`))}. Bot ularga o'zi eslatadi; uzaytirmasa darslar yopiladi.`,
       action: { label: "Obunalar", to: "/payments?tab=SUBS" },

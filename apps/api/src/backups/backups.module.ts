@@ -21,7 +21,10 @@ function stampOf(name: string): Date | null {
  */
 @Injectable()
 export class BackupsService {
-  constructor(@Inject(ENV) private readonly env: Env, private readonly prisma: PrismaService) {}
+  constructor(
+    @Inject(ENV) private readonly env: Env,
+    private readonly prisma: PrismaService,
+  ) {}
 
   async list(): Promise<BackupList> {
     const dir = this.env.BACKUP_DIR;
