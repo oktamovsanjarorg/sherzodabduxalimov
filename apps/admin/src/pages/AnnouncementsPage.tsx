@@ -102,7 +102,11 @@ function Row({ a }: { a: AnnounceRow }) {
         </div>
         <p className="mt-0.5 truncate text-xs text-ink-3">
           {a.audienceLabel} ·{" "}
-          {a.status === "SCHEDULED" && a.scheduledAt ? `${fmtShortDateTime(a.scheduledAt)} da yuboriladi` : a.sentAt ? fmtShortDateTime(a.sentAt) : `yozildi ${fmtShortDateTime(a.createdAt)}`}
+          {a.status === "SCHEDULED" && a.scheduledAt
+            ? `${fmtShortDateTime(a.scheduledAt)} da yuboriladi`
+            : a.sentAt
+              ? fmtShortDateTime(a.sentAt)
+              : `yozildi ${fmtShortDateTime(a.createdAt)}`}
         </p>
         {a.status === "SENT" && <StatsLine s={a.stats} />}
       </div>

@@ -31,7 +31,8 @@ export async function resolveAudience(prisma: PrismaClient, a: AnnounceAudience)
   const out = new Map<string, Target>();
   const add = (users: U[], role?: Role) => {
     for (const u of users) {
-      if (!out.has(u.id)) out.set(u.id, { userId: u.id, chatId: u.telegramId, role: role ?? u.role, name: [u.firstName, u.lastName].filter(Boolean).join(" ") });
+      if (!out.has(u.id))
+        out.set(u.id, { userId: u.id, chatId: u.telegramId, role: role ?? u.role, name: [u.firstName, u.lastName].filter(Boolean).join(" ") });
     }
   };
   const orderBy = { firstName: "asc" } as const;
@@ -39,7 +40,10 @@ export async function resolveAudience(prisma: PrismaClient, a: AnnounceAudience)
     add(await prisma.user.findMany({ where: { role: "STUDENT", isBlocked: false, student: { is: student } }, select: userSelect, orderBy }), "STUDENT");
   }
   if (a.roles.includes("PARENT")) {
-    add(await prisma.user.findMany({ where: { isBlocked: false, parentLinks: { some: { status: "APPROVED", student } } }, select: userSelect, orderBy }), "PARENT");
+    add(
+      await prisma.user.findMany({ where: { isBlocked: false, parentLinks: { some: { status: "APPROVED", student } } }, select: userSelect, orderBy }),
+      "PARENT",
+    );
   }
   if (a.roles.includes("ASSISTANT")) {
     add(await prisma.user.findMany({ where: { role: { in: ["ASSISTANT", "TEACHER"] }, isBlocked: false }, select: userSelect, orderBy }));

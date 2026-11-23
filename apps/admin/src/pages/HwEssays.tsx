@@ -1,4 +1,12 @@
-import { ESSAY_MAX_SCORE, countMarks, type AdminHwEssay, type EssayAnnotations, type EssayReviewView, type PageAnnotations, formatScore } from "@onatili/shared";
+import {
+  ESSAY_MAX_SCORE,
+  countMarks,
+  type AdminHwEssay,
+  type EssayAnnotations,
+  type EssayReviewView,
+  type PageAnnotations,
+  formatScore,
+} from "@onatili/shared";
 import { AnnotationOverlay, MarkCounts, PageAnnotator } from "../components/Annotate";
 import { RubricForm, emptyRubric, rubricComplete, rubricTotal, type RubricValue } from "../components/RubricForm";
 import { VoicePlayer, VoiceRecorder } from "../components/VoiceRecorder";
@@ -11,7 +19,6 @@ import { api, errMsg } from "../lib/api";
 import { fmtShortDateTime } from "../lib/format";
 import { useToast } from "../lib/toast";
 
-
 /** Qo'lyozma esselar: o'quvchi varoq rasmlarini yuklagan va ustoz tekshiruvi uchun to'lagan */
 export function HwEssays() {
   const [tab, setTab] = useState<"pending" | "reviewed">("pending");
@@ -22,16 +29,25 @@ export function HwEssays() {
   return (
     <>
       <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-      <Chips
-        value={tab}
-        onChange={setTab}
-        options={[["pending", `Tekshirilmagan${tab === "pending" && list.data?.length ? ` (${list.data.length})` : ""}`], ["reviewed", "Tekshirilgan"]] as const}
-      />
-      <SearchBox value={q} onChange={setQ} placeholder="Ism, @username yoki mavzu" />
+        <Chips
+          value={tab}
+          onChange={setTab}
+          options={
+            [
+              ["pending", `Tekshirilmagan${tab === "pending" && list.data?.length ? ` (${list.data.length})` : ""}`],
+              ["reviewed", "Tekshirilgan"],
+            ] as const
+          }
+        />
+        <SearchBox value={q} onChange={setQ} placeholder="Ism, @username yoki mavzu" />
       </div>
       {list.isPending && <Spinner className="text-ink-4" />}
       {list.data?.length === 0 && (
-        <Empty Icon={PenLine} title={tab === "pending" ? "Tekshiriladigan esse yo'q" : "Hali esse tekshirilmagan"} hint={tab === "pending" ? "To'lovi tasdiqlangan esselar shu yerga tushadi." : undefined} />
+        <Empty
+          Icon={PenLine}
+          title={tab === "pending" ? "Tekshiriladigan esse yo'q" : "Hali esse tekshirilmagan"}
+          hint={tab === "pending" ? "To'lovi tasdiqlangan esselar shu yerga tushadi." : undefined}
+        />
       )}
       {!!list.data?.length && !shown.length && <NoMatch q={q} onClear={() => setQ("")} />}
       <div className="space-y-2">
@@ -45,7 +61,13 @@ export function HwEssays() {
                   «{e.prompt}» · {e.pages} varoq · {fmtShortDateTime(e.createdAt)}
                 </p>
               </div>
-              {t ? <Badge tone="green">{formatScore(t.totalScore)}/{ESSAY_MAX_SCORE}</Badge> : <Badge tone="amber">Kutmoqda</Badge>}
+              {t ? (
+                <Badge tone="green">
+                  {formatScore(t.totalScore)}/{ESSAY_MAX_SCORE}
+                </Badge>
+              ) : (
+                <Badge tone="amber">Kutmoqda</Badge>
+              )}
               <ChevronRight size={18} className="text-ink-4" />
             </button>
           );
@@ -61,14 +83,29 @@ function PageImage({ id, n, anno, onSave }: { id: string; n: number; anno: PageA
   const [ratio, setRatio] = useState(1.4);
   const [saving, setSaving] = useState(false);
   const img = useQuery({ queryKey: ["essay-page", id, n], queryFn: () => api.essayPage(id, n), staleTime: Infinity, gcTime: 10 * 60_000 });
-  if (img.isPending) return <div className="flex h-64 items-center justify-center rounded-xl bg-surface-3"><Spinner className="text-ink-4" /></div>;
-  if (!img.data) return <div className="flex h-24 items-center justify-center gap-2 rounded-xl bg-surface-3 text-sm text-ink-3"><ImageOff size={16} /> Rasm yuklanmadi</div>;
+  if (img.isPending)
+    return (
+      <div className="flex h-64 items-center justify-center rounded-xl bg-surface-3">
+        <Spinner className="text-ink-4" />
+      </div>
+    );
+  if (!img.data)
+    return (
+      <div className="flex h-24 items-center justify-center gap-2 rounded-xl bg-surface-3 text-sm text-ink-3">
+        <ImageOff size={16} /> Rasm yuklanmadi
+      </div>
+    );
   const marks = anno.marks.length + anno.strokes.length;
   return (
     <>
       <div className="relative overflow-hidden rounded-xl bg-surface-3">
         <div className="relative mx-auto w-full max-w-[640px]">
-          <img src={img.data} alt={`${n + 1}-varoq`} className="block w-full" onLoad={(e) => setRatio(e.currentTarget.naturalHeight / e.currentTarget.naturalWidth || 1.4)} />
+          <img
+            src={img.data}
+            alt={`${n + 1}-varoq`}
+            className="block w-full"
+            onLoad={(e) => setRatio(e.currentTarget.naturalHeight / e.currentTarget.naturalWidth || 1.4)}
+          />
           <AnnotationOverlay a={anno} ratio={ratio} />
         </div>
         <button className="btn-primary btn-sm absolute right-2 top-2 shadow" onClick={() => setEdit(anno)}>
@@ -250,7 +287,9 @@ function ReviewModal({ essay, onClose }: { essay: AdminHwEssay; onClose: () => v
                 🤖 AI belgilarini olish ({countMarksTotal(ai.annotations)} ta)
               </button>
             )}
-            <p className="mt-1.5 text-[11px] text-ink-4">Mezondagi "1–2 o'rinda", "3–4 o'rinda" bandlarini shunga qarab qo'ying. Bir xil xato takrorlansa — bitta.</p>
+            <p className="mt-1.5 text-[11px] text-ink-4">
+              Mezondagi "1–2 o'rinda", "3–4 o'rinda" bandlarini shunga qarab qo'ying. Bir xil xato takrorlansa — bitta.
+            </p>
           </div>
           <RubricForm value={rubric} onChange={setRubric} aiHint={ai ? Object.fromEntries(ai.criteria.map((c) => [c.key, c.score])) : undefined} />
           <textarea

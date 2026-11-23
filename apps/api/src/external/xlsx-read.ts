@@ -32,7 +32,12 @@ function readZipEntries(buf: Buffer): Map<string, ZipEntry> {
     const nameLen = buf.readUInt16LE(p + 28);
     const name = buf.toString("utf8", p + 46, p + 46 + nameLen);
     if (method === 0 || method === 8)
-      out.set(name, { compressed: method === 8, offset: buf.readUInt32LE(p + 42), compressedSize: buf.readUInt32LE(p + 20), uncompressedSize: buf.readUInt32LE(p + 24) });
+      out.set(name, {
+        compressed: method === 8,
+        offset: buf.readUInt32LE(p + 42),
+        compressedSize: buf.readUInt32LE(p + 20),
+        uncompressedSize: buf.readUInt32LE(p + 24),
+      });
     p += 46 + nameLen + buf.readUInt16LE(p + 30) + buf.readUInt16LE(p + 32);
   }
   return out;
@@ -57,7 +62,8 @@ function decodeXml(t: string): string {
     .replace(/&amp;/g, "&");
 }
 
-const texts = (xml: string) => (xml.match(/<t\b[^>]*>([\s\S]*?)<\/t>/g) ?? []).map((x) => decodeXml(x.replace(/^<t\b[^>]*>/, "").replace(/<\/t>$/, ""))).join("");
+const texts = (xml: string) =>
+  (xml.match(/<t\b[^>]*>([\s\S]*?)<\/t>/g) ?? []).map((x) => decodeXml(x.replace(/^<t\b[^>]*>/, "").replace(/<\/t>$/, ""))).join("");
 const column = (ref: string) => [...ref].reduce((n, ch) => n * 26 + ch.charCodeAt(0) - 64, 0) - 1;
 
 export function readXlsx(buf: Buffer): string[][] {

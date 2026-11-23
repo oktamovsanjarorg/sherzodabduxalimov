@@ -24,7 +24,8 @@ export class StudentsController {
 
   /** Bitta o'quvchi ikki marta (botdagi + qo'lda kiritilgan). Birlashtirish faqat egada */
   @Roles("TEACHER")
-  @Get("students/duplicates") duplicates() {
+  @Get("students/duplicates")
+  duplicates() {
     return this.svc.duplicates();
   }
 
@@ -41,7 +42,9 @@ export class StudentsController {
 
   /** Qaytarib bo'lmaydi: faqat ega */
   @Roles("TEACHER")
-  @Post("students/:id/link") @HttpCode(200) link(@CurrentUser() u: JwtUser, @Param("id") id: string, @Body() b: unknown) {
+  @Post("students/:id/link")
+  @HttpCode(200)
+  link(@CurrentUser() u: JwtUser, @Param("id") id: string, @Body() b: unknown) {
     return this.svc.linkToPlaceholder(u.sub, id, parse(z.object({ placeholderStudentId: z.string().min(1) }), b).placeholderStudentId);
   }
 
@@ -68,12 +71,15 @@ export class StudentsController {
 
   /** Kirish rejimi va bloklash: faqat ega */
   @Roles("TEACHER")
-  @Patch("students/:id/access") access(@CurrentUser() u: JwtUser, @Param("id") id: string, @Body() b: unknown) {
+  @Patch("students/:id/access")
+  access(@CurrentUser() u: JwtUser, @Param("id") id: string, @Body() b: unknown) {
     return this.svc.setAccess(u.sub, id, parse(studentAccessInput, b).mode);
   }
 
   @Roles("TEACHER")
-  @Post("students/:id/block") @HttpCode(200) block(@CurrentUser() u: JwtUser, @Param("id") id: string, @Body() b: unknown) {
+  @Post("students/:id/block")
+  @HttpCode(200)
+  block(@CurrentUser() u: JwtUser, @Param("id") id: string, @Body() b: unknown) {
     const d = parse(studentBlockInput, b);
     return this.svc.setBlocked(u.sub, id, d.blocked, d.reason);
   }

@@ -155,10 +155,7 @@ export function ProtectedPlayer({ src, onExpired }: { src: string; onExpired?: (
     const tryNative = typeof el.requestFullscreen === "function" && (!isTelegramMobile() || isTelegramAndroid());
     if (tryNative) {
       try {
-        await Promise.race([
-          el.requestFullscreen({ navigationUI: "hide" }),
-          new Promise((_, rej) => setTimeout(() => rej(new Error("timeout")), 600)),
-        ]);
+        await Promise.race([el.requestFullscreen({ navigationUI: "hide" }), new Promise((_, rej) => setTimeout(() => rej(new Error("timeout")), 600))]);
         if (document.fullscreenElement === el) {
           setMode("native");
           await (screen.orientation as ScreenOrientation & { lock?: (o: string) => Promise<void> })?.lock?.("landscape").catch(() => {});
@@ -283,7 +280,11 @@ export function ProtectedPlayer({ src, onExpired }: { src: string; onExpired?: (
           </div>
 
           {!playing && !waiting && (
-            <button onClick={toggle} className="absolute inset-0 z-20 m-auto flex h-16 w-16 items-center justify-center rounded-full bg-black/50 text-white" aria-label="Ijro">
+            <button
+              onClick={toggle}
+              className="absolute inset-0 z-20 m-auto flex h-16 w-16 items-center justify-center rounded-full bg-black/50 text-white"
+              aria-label="Ijro"
+            >
               <Play size={30} fill="currentColor" />
             </button>
           )}

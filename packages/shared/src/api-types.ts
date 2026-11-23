@@ -15,9 +15,7 @@ export const meSchema = z.object({
   phone: z.string().nullable(),
   /** O'quvchi uchun: ota-ona ulanganmi */
   parentStatus: z.enum(["NONE", "PENDING", "APPROVED"]),
-  subscription: z
-    .object({ planName: z.string(), endsAt: z.string() })
-    .nullable(),
+  subscription: z.object({ planName: z.string(), endsAt: z.string() }).nullable(),
   /** Offline guruh a'zosi: obunasiz hamma narsa ochiq */
   offlineGroup: z.object({ name: z.string() }).nullable().default(null),
   /** Ustoz belgilagan kirish rejimi (o'quvchi uchun) */

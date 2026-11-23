@@ -3,5 +3,9 @@ import { AdminBillingController, AdminOfflineBillingController, BillingControlle
 import { BillingService } from "./billing.service";
 import { OfflineBillingService } from "./offline.service";
 
-@Module({ controllers: [BillingController, AdminBillingController, AdminOfflineBillingController], providers: [BillingService, OfflineBillingService], exports: [BillingService] })
+@Module({
+  controllers: [BillingController, AdminBillingController, AdminOfflineBillingController],
+  providers: [BillingService, OfflineBillingService],
+  exports: [BillingService],
+})
 export class BillingModule {}

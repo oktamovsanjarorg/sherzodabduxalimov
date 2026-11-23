@@ -2,7 +2,6 @@ import { BadRequestException, ConflictException, Inject, Injectable, NotFoundExc
 import { Prisma } from "@onatili/db";
 import {
   ATTENDANCE_STATUSES,
-  ESSAY_MAX_SCORE,
   NAME_MATCH_THRESHOLD,
   STAFF_ROLES,
   currentMonth,
@@ -129,8 +128,15 @@ export class StudentsService {
             offlinePayments: { where: paidNowWhere(), select: { id: true } },
           },
         },
-        subscriptions: { where: { status: "ACTIVE", startsAt: { lte: new Date() }, endsAt: { gt: new Date(Date.now() - AccessService.GRACE_MS) } }, take: 1, select: { id: true } },
-        parentLinks: { where: { status: { in: ["PENDING", "APPROVED"] } }, select: { student: { select: { user: { select: { firstName: true, lastName: true } } } } } },
+        subscriptions: {
+          where: { status: "ACTIVE", startsAt: { lte: new Date() }, endsAt: { gt: new Date(Date.now() - AccessService.GRACE_MS) } },
+          take: 1,
+          select: { id: true },
+        },
+        parentLinks: {
+          where: { status: { in: ["PENDING", "APPROVED"] } },
+          select: { student: { select: { user: { select: { firstName: true, lastName: true } } } } },
+        },
       },
     });
     return rows.map((u) => {
@@ -138,7 +144,14 @@ export class StudentsService {
       const approvedParents = s?.parents.length ?? 0;
       const paid = !!s?.offlinePayments.length || u.subscriptions.length > 0;
       const full = isFullAccess(s && { ...s, approvedParents, paid });
-      const waiting: AdminUserRow["waiting"] = full || u.role !== "STUDENT" ? [] : [...(s?.acceptedAt ? [] : ["TEACHER" as const]), ...(approvedParents ? [] : ["PARENT" as const]), ...(paid || !isTeacher ? [] : ["PAYMENT" as const])];
+      const waiting: AdminUserRow["waiting"] =
+        full || u.role !== "STUDENT"
+          ? []
+          : [
+              ...(s?.acceptedAt ? [] : ["TEACHER" as const]),
+              ...(approvedParents ? [] : ["PARENT" as const]),
+              ...(paid || !isTeacher ? [] : ["PAYMENT" as const]),
+            ];
       return {
         userId: u.id,
         studentId: s?.id ?? null,
@@ -192,7 +205,10 @@ export class StudentsService {
     const key = phoneKey(phone);
     // To'liq bo'lmagan raqam (9 raqamdan kam) boshqa o'quvchilarning raqami oxiriga tasodifan mos kelib qolmasin
     if (key.length < 9) return;
-    const same = await this.prisma.user.findFirst({ where: { role: "STUDENT", phone: { endsWith: key }, ...(exceptUserId ? { id: { not: exceptUserId } } : {}) }, select: { firstName: true, lastName: true } });
+    const same = await this.prisma.user.findFirst({
+      where: { role: "STUDENT", phone: { endsWith: key }, ...(exceptUserId ? { id: { not: exceptUserId } } : {}) },
+      select: { firstName: true, lastName: true },
+    });
     if (same) throw new ConflictException(`Bu telefon raqami bilan o'quvchi bor: ${fullName(same)}`);
   }
 
@@ -228,7 +244,10 @@ export class StudentsService {
   /** Har qatorda bitta o'quvchi. Telefoni bor-yo'qligi yoki takrorlanishi bo'yicha hisobot qaytaradi */
   async bulkCreate(actorId: string, groupId: string | null, text: string) {
     await this.mustGroup(groupId);
-    const lines = text.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
+    const lines = text
+      .split(/\r?\n/)
+      .map((l) => l.trim())
+      .filter(Boolean);
     if (!lines.length) throw new BadRequestException("Ro'yxat bo'sh");
     if (lines.length > 300) throw new BadRequestException("Bir martada ko'pi bilan 300 ta o'quvchi");
     const added: string[] = [];
@@ -269,11 +288,18 @@ export class StudentsService {
             this.prisma.studentProfile.update({
               where: { id: studentId },
               // Guruhga birinchi marta qo'shilganda o'qish boshlangan sana bugun (keyin ustoz o'zgartira oladi)
-              data: { groupId: d.groupId, mode: d.groupId ? "OFFLINE" : "ONLINE", acceptedAt: new Date(), ...(d.groupId && !sp.startedOn && !d.startedOn ? { startedOn: dateCol(tashkentToday()) } : {}) },
+              data: {
+                groupId: d.groupId,
+                mode: d.groupId ? "OFFLINE" : "ONLINE",
+                acceptedAt: new Date(),
+                ...(d.groupId && !sp.startedOn && !d.startedOn ? { startedOn: dateCol(tashkentToday()) } : {}),
+              },
             }),
           ]
         : []),
-      ...(d.startedOn !== undefined ? [this.prisma.studentProfile.update({ where: { id: studentId }, data: { startedOn: d.startedOn ? dateCol(d.startedOn) : null } })] : []),
+      ...(d.startedOn !== undefined
+        ? [this.prisma.studentProfile.update({ where: { id: studentId }, data: { startedOn: d.startedOn ? dateCol(d.startedOn) : null } })]
+        : []),
     ]);
     await this.prisma.auditLog.create({ data: { actorId, action: "student.update", entity: "StudentProfile", entityId: studentId, meta: d as object } });
     return this.detail(studentId, true);
@@ -284,7 +310,10 @@ export class StudentsService {
    * Botga kirgan o'quvchi uchun faqat ega (TEACHER) va aniq tasdiq bilan (force). U qayta kirsa, bo'sh hisob ochiladi.
    */
   async remove(actorId: string, studentId: string, opts: { force: boolean; isTeacher: boolean }) {
-    const sp = await this.prisma.studentProfile.findUnique({ where: { id: studentId }, include: { user: { select: { id: true, telegramId: true, firstName: true, lastName: true, role: true } } } });
+    const sp = await this.prisma.studentProfile.findUnique({
+      where: { id: studentId },
+      include: { user: { select: { id: true, telegramId: true, firstName: true, lastName: true, role: true } } },
+    });
     if (!sp) throw new NotFoundException("O'quvchi topilmadi");
     if (STAFF_ROLES.includes(sp.user.role)) throw new ConflictException("Xodimni bu yerdan o'chirib bo'lmaydi");
     // To'lov tarixi bor yoki botdan foydalanayotgan o'quvchini faqat ega, ismini yozib tasdiqlagach (force) o'chiradi.
@@ -333,7 +362,9 @@ export class StudentsService {
             photoUrl: true,
             isBlocked: true,
             nameLocked: true,
-            _count: { select: { lessonProgress: { where: { completedAt: { not: null } } }, attempts: { where: { status: { not: "IN_PROGRESS" } } }, essays: true } },
+            _count: {
+              select: { lessonProgress: { where: { completedAt: { not: null } } }, attempts: { where: { status: { not: "IN_PROGRESS" } } }, essays: true },
+            },
           },
         },
       },
@@ -369,7 +400,10 @@ export class StudentsService {
       _count: { select: { attendance: true } },
     } satisfies Prisma.StudentProfileSelect;
     const [bots, placeholders] = await Promise.all([
-      this.prisma.studentProfile.findMany({ where: { acceptedAt: { not: null }, user: { role: "STUDENT", telegramId: { not: null }, isBlocked: false } }, select: sel }),
+      this.prisma.studentProfile.findMany({
+        where: { acceptedAt: { not: null }, user: { role: "STUDENT", telegramId: { not: null }, isBlocked: false } },
+        select: sel,
+      }),
       this.prisma.studentProfile.findMany({ where: { user: { role: "STUDENT", telegramId: null, isBlocked: false } }, select: sel }),
     ]);
     const rows: (DuplicateRow & { score: number })[] = [];
@@ -429,7 +463,10 @@ export class StudentsService {
     });
     if (!sp) return null;
     const name = fullName(sp.user);
-    const [matchesFor, groups] = await Promise.all([this.placeholderMatcher(), this.prisma.group.findMany({ where: { isActive: true }, orderBy: { name: "asc" }, take: 6, select: { id: true, name: true } })]);
+    const [matchesFor, groups] = await Promise.all([
+      this.placeholderMatcher(),
+      this.prisma.group.findMany({ where: { isActive: true }, orderBy: { name: "asc" }, take: 6, select: { id: true, name: true } }),
+    ]);
     const matches = matchesFor(name);
     const parents = sp.parents.map((p) => `${fullName(p.parent)} (${p.status === "APPROVED" ? "tasdiqlangan" : "kutilmoqda"})`).join(", ");
     const text = [
@@ -464,11 +501,17 @@ export class StudentsService {
   /** Ustoz: botdan kirgan o'quvchi o'zi kiritgan yozuvdagi odam ekanini tasdiqladi */
   async linkToPlaceholder(actorId: string, studentId: string, placeholderStudentId: string) {
     const [real, placeholder] = await Promise.all(
-      [studentId, placeholderStudentId].map((id) => this.prisma.studentProfile.findUnique({ where: { id }, select: { user: { select: { id: true, role: true, telegramId: true, firstName: true, lastName: true } } } })),
+      [studentId, placeholderStudentId].map((id) =>
+        this.prisma.studentProfile.findUnique({
+          where: { id },
+          select: { user: { select: { id: true, role: true, telegramId: true, firstName: true, lastName: true } } },
+        }),
+      ),
     );
     if (!real || !placeholder) throw new NotFoundException("O'quvchi topilmadi");
     if (real.user.role !== "STUDENT" || real.user.telegramId === null) throw new BadRequestException("Bu o'quvchi botga kirmagan");
-    if (placeholder.user.role !== "STUDENT" || placeholder.user.telegramId !== null) throw new ConflictException("Bu yozuv allaqachon boshqa Telegram hisobiga ulangan");
+    if (placeholder.user.role !== "STUDENT" || placeholder.user.telegramId !== null)
+      throw new ConflictException("Bu yozuv allaqachon boshqa Telegram hisobiga ulangan");
     await this.mergeInto(placeholder.user.id, real.user.id, actorId);
     return { ok: true, name: fullName(placeholder.user) };
   }
@@ -501,7 +544,9 @@ export class StudentsService {
     const sp = await this.prisma.studentProfile.findUnique({ where: { id: studentId }, select: { userId: true } });
     if (!sp) throw new NotFoundException("O'quvchi topilmadi");
     await this.prisma.user.update({ where: { id: sp.userId }, data: { isBlocked: blocked, blockedReason: blocked ? reason : null } });
-    await this.prisma.auditLog.create({ data: { actorId, action: blocked ? "student.block" : "student.unblock", entity: "StudentProfile", entityId: studentId, meta: { reason } } });
+    await this.prisma.auditLog.create({
+      data: { actorId, action: blocked ? "student.block" : "student.unblock", entity: "StudentProfile", entityId: studentId, meta: { reason } },
+    });
     return this.detail(studentId, true);
   }
 
@@ -546,7 +591,12 @@ export class StudentsService {
         take: 50,
         include: { test: { select: { title: true, type: true } } },
       }),
-      this.prisma.essay.findMany({ where: { userId }, orderBy: { createdAt: "desc" }, take: 10, include: { reviews: { select: { source: true, totalScore: true } } } }),
+      this.prisma.essay.findMany({
+        where: { userId },
+        orderBy: { createdAt: "desc" },
+        take: 10,
+        include: { reviews: { select: { source: true, totalScore: true } } },
+      }),
       // Dars ochilganda updatedAt yangilanadi (content.service): oxirgi ochilgan darslar
       this.prisma.lessonProgress.findMany({
         where: { userId },
@@ -583,24 +633,48 @@ export class StudentsService {
       parentInviteUrl: `https://t.me/${this.env.BOT_USERNAME}?start=p_${sp.parentLinkCode}`,
       parentList: sp.parents.map((p) => ({ id: p.id, name: fullName(p.parent), phone: p.phone, relation: p.relation, status: p.status })),
       attendance: {
-        counts: Object.fromEntries(ATTENDANCE_STATUSES.map((s) => [s, counts.find((c) => c.status === s)?._count ?? 0])) as Record<AttendanceStatusName, number>,
-        recent: attendance.map((a) => ({ date: a.date.toISOString().slice(0, 10), status: a.status, grade: a.grade, note: a.note, groupName: a.group?.name ?? null })),
+        counts: Object.fromEntries(ATTENDANCE_STATUSES.map((s) => [s, counts.find((c) => c.status === s)?._count ?? 0])) as Record<
+          AttendanceStatusName,
+          number
+        >,
+        recent: attendance.map((a) => ({
+          date: a.date.toISOString().slice(0, 10),
+          status: a.status,
+          grade: a.grade,
+          note: a.note,
+          groupName: a.group?.name ?? null,
+        })),
       },
       billing: isTeacher
         ? {
             // Qo'shilgan oydan oldingilari ko'rsatilmaydi (o'shanda hali o'quvchi bo'lmagan)
             offlineMonths: sp.group
               ? months
-                  .filter((m) => m >= (sp.startedOn ? sp.startedOn.toISOString().slice(0, 7) : currentMonth(sp.createdAt)) || offline.some((x) => x.month === m))
+                  .filter(
+                    (m) => m >= (sp.startedOn ? sp.startedOn.toISOString().slice(0, 7) : currentMonth(sp.createdAt)) || offline.some((x) => x.month === m),
+                  )
                   .map((m) => {
-                  const p = pickPayment(offline, m);
-                  const e = p && effective(p);
-                  return { month: m, paid: !!p, amountUzs: p?.amountUzs ?? null, note: p?.note ?? null, paymentMonth: p?.month ?? null, period: e ? periodLabel(e.start, e.end) : null };
-                })
+                    const p = pickPayment(offline, m);
+                    const e = p && effective(p);
+                    return {
+                      month: m,
+                      paid: !!p,
+                      amountUzs: p?.amountUzs ?? null,
+                      note: p?.note ?? null,
+                      paymentMonth: p?.month ?? null,
+                      period: e ? periodLabel(e.start, e.end) : null,
+                    };
+                  })
               : [],
             groupFeeUzs: sp.group ? effectiveFee(sp.group.monthlyFeeUzs, await defaultMonthlyFee(this.prisma)) : null,
             subscription: sub ? { planName: sub.plan.name, endsAt: sub.endsAt.toISOString() } : null,
-            payments: payments.map((p) => ({ id: p.id, title: p.plan?.name ?? "Esse tekshiruvi", amountUzs: p.amountUzs, status: p.status, createdAt: p.createdAt.toISOString() })),
+            payments: payments.map((p) => ({
+              id: p.id,
+              title: p.plan?.name ?? "Esse tekshiruvi",
+              amountUzs: p.amountUzs,
+              status: p.status,
+              createdAt: p.createdAt.toISOString(),
+            })),
           }
         : null,
       stats: {
@@ -627,20 +701,29 @@ export class StudentsService {
   // ---------------- Telegram hisobini bog'lash ----------------
 
   /** Bot: o'quvchi shaxsiy havolani bosdi */
-  async claimByInvite(c: string, from: TelegramProfile): Promise<{ status: "claimed" | "staff" | "parent" | "used" | "invalid"; name?: string; groupName?: string }> {
+  async claimByInvite(
+    c: string,
+    from: TelegramProfile,
+  ): Promise<{ status: "claimed" | "staff" | "parent" | "used" | "invalid"; name?: string; groupName?: string }> {
     const sp = await this.prisma.studentProfile.findUnique({ where: { inviteCode: c }, include: { user: true, group: { select: { name: true } } } });
     if (!sp) return { status: "invalid" };
-    if (sp.user.telegramId !== null) return { status: sp.user.telegramId === BigInt(from.id) ? "claimed" : "used", name: fullName(sp.user), groupName: sp.group?.name };
+    if (sp.user.telegramId !== null)
+      return { status: sp.user.telegramId === BigInt(from.id) ? "claimed" : "used", name: fullName(sp.user), groupName: sp.group?.name };
     const existing = await this.prisma.user.findUnique({ where: { telegramId: BigInt(from.id) } });
     if (existing?.role === "PARENT") return { status: "parent" };
     if (existing && existing.role !== "STUDENT") return { status: "staff" };
     if (existing) await this.mergeInto(sp.userId, existing.id);
     else {
       const now = new Date();
-      await this.prisma.user.update({ where: { id: sp.userId }, data: { telegramId: BigInt(from.id), username: from.username ?? null, botJoinedAt: now, lastBotAt: now } });
+      await this.prisma.user.update({
+        where: { id: sp.userId },
+        data: { telegramId: BigInt(from.id), username: from.username ?? null, botJoinedAt: now, lastBotAt: now },
+      });
       await this.prisma.studentProfile.update({ where: { id: sp.id }, data: { inviteCode: null } });
     }
-    await this.staff.alertOwners(`🔗 Siz kiritgan <b>${esc(fullName(sp.user))}</b> botga ulandi (shaxsiy havola orqali)${sp.group ? ` · ${esc(sp.group.name)}` : ""}`);
+    await this.staff.alertOwners(
+      `🔗 Siz kiritgan <b>${esc(fullName(sp.user))}</b> botga ulandi (shaxsiy havola orqali)${sp.group ? ` · ${esc(sp.group.name)}` : ""}`,
+    );
     return { status: "claimed", name: fullName(sp.user), groupName: sp.group?.name };
   }
 

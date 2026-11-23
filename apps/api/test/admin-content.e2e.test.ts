@@ -73,7 +73,10 @@ describe("Admin: kontent (e2e)", () => {
       topicId: topic.id,
       type: "SINGLE",
       text: "Ot qaysi so'roqqa javob beradi?",
-      options: [{ text: "kim? nima?", isCorrect: false }, { text: "qanday?", isCorrect: false }],
+      options: [
+        { text: "kim? nima?", isCorrect: false },
+        { text: "qanday?", isCorrect: false },
+      ],
     });
     expect(noCorrect.statusCode).toBe(400);
     expect(noCorrect.json().message).toMatch(/to'g'ri javob/);
@@ -83,7 +86,10 @@ describe("Admin: kontent (e2e)", () => {
         topicId: topic.id,
         type: "SINGLE",
         text: "Ot qaysi so'roqqa javob beradi?",
-        options: [{ text: "kim? nima?", isCorrect: true }, { text: "qanday?", isCorrect: false }],
+        options: [
+          { text: "kim? nima?", isCorrect: true },
+          { text: "qanday?", isCorrect: false },
+        ],
       })
     ).json();
     const q2 = (await req("POST", "/admin/questions", { topicId: topic.id, type: "TEXT", text: "«Kitob» qaysi so'z turkumi?", correctText: "ot" })).json();
@@ -119,7 +125,10 @@ describe("Admin: kontent (e2e)", () => {
         topicId: topic.id,
         type: "SINGLE",
         text: "Ot qaysi so'roqlarga javob beradi?",
-        options: [{ id: keepId, text: "kim? nima? qayer?", isCorrect: true }, { text: "nima qildi?", isCorrect: false }],
+        options: [
+          { id: keepId, text: "kim? nima? qayer?", isCorrect: true },
+          { text: "nima qildi?", isCorrect: false },
+        ],
       })
     ).json();
     expect(edited.options[0].id).toBe(keepId);

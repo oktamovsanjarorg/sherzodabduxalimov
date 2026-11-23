@@ -52,7 +52,9 @@ export function SettingsPage() {
         <Moon size={18} className="text-brand" />
         <span className="flex-1 text-sm">
           <span className="block font-semibold">Rang rejimi (kunduzgi / tungi)</span>
-          <span className="block text-xs text-hint">Telegram mavzusiga moslashadi{tg?.colorScheme ? `: hozir ${tg.colorScheme === "dark" ? "tungi" : "kunduzgi"}` : ""}</span>
+          <span className="block text-xs text-hint">
+            Telegram mavzusiga moslashadi{tg?.colorScheme ? `: hozir ${tg.colorScheme === "dark" ? "tungi" : "kunduzgi"}` : ""}
+          </span>
         </span>
       </div>
 

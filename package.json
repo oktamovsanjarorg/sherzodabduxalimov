@@ -12,14 +12,28 @@
     "db:generate": "pnpm --filter @onatili/db generate",
     "db:seed": "pnpm --filter @onatili/db seed",
     "dev:init-data": "tsx --env-file=.env scripts/dev-init-data.ts",
-    "ui:audit": "tsx --env-file=.env scripts/ui-audit.ts"
+    "ui:audit": "tsx --env-file=.env scripts/ui-audit.ts",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "prepare": "husky"
   },
   "devDependencies": {
+    "@commitlint/cli": "21.2.4",
+    "@commitlint/config-conventional": "21.2.4",
+    "@eslint/js": "9.39.5",
     "@onatili/shared": "workspace:*",
     "axe-core": "4.10.3",
+    "eslint": "9.39.5",
+    "eslint-plugin-react-hooks": "7.1.1",
+    "globals": "17.14.0",
+    "husky": "9.1.7",
+    "lint-staged": "17.6.0",
     "playwright-core": "1.56.1",
-    "tsx": "^4.19.2",
-    "turbo": "^2.3.0",
-    "typescript": "^5.6.3"
+    "prettier": "3.10.1",
+    "tsx": "4.23.15",
+    "turbo": "2.11.10",
+    "typescript": "5.9.3",
+    "typescript-eslint": "8.73.0"
   }
 }

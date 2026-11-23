@@ -24,7 +24,9 @@ export const announceApi = {
     }),
   /** Rasm Authorization bilan olinadi (img src sarlavha yubora olmaydi) */
   photoUrl: async (fileId: string) => {
-    const res = await fetch(`/api/admin/announcements/photo/${encodeURIComponent(fileId)}`, { headers: { Authorization: `Bearer ${loadSession()?.token ?? ""}` } });
+    const res = await fetch(`/api/admin/announcements/photo/${encodeURIComponent(fileId)}`, {
+      headers: { Authorization: `Bearer ${loadSession()?.token ?? ""}` },
+    });
     if (!res.ok) throw new ApiError(res.status, "Rasm topilmadi");
     return URL.createObjectURL(await res.blob());
   },

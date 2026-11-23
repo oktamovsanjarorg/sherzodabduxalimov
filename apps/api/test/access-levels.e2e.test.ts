@@ -11,7 +11,21 @@ import { BOT_TOKEN, OWNER, createApp, login, parentTgId } from "./helpers";
 
 const prisma = new PrismaClient();
 const P = "e2e-access";
-const TG = { owner: 900001001, fresh: 900001002, accepted: 900001003, parentOnly: 900001004, full: 900001005, free: 900001006, visitor: 900001007, mom: 900001008, late: 900001009, placeholderMom: 900001010, unpaid: 900001011, subscriber: 900001012, hidden: 900001013 };
+const TG = {
+  owner: 900001001,
+  fresh: 900001002,
+  accepted: 900001003,
+  parentOnly: 900001004,
+  full: 900001005,
+  free: 900001006,
+  visitor: 900001007,
+  mom: 900001008,
+  late: 900001009,
+  placeholderMom: 900001010,
+  unpaid: 900001011,
+  subscriber: 900001012,
+  hidden: 900001013,
+};
 const ALL = [...Object.values(TG).map(BigInt), ...Object.values(TG).map(parentTgId)];
 const queue = new Queue<NotifyJob>(NOTIFY_QUEUE, { prefix: "onatili-e2e", connection: redisConnection(process.env.REDIS_URL ?? "redis://localhost:6381") });
 const jobs = async () => (await queue.getJobs(["waiting", "delayed", "prioritized"])).map((j) => j.data);
@@ -31,7 +45,8 @@ describe("Kirish darajalari (e2e)", () => {
   let ownerId: string;
   const req = (method: "GET" | "POST" | "PATCH" | "DELETE", url: string, headers: Record<string, string> = H, payload?: object) =>
     app.inject({ method, url: `/api${url}`, headers, payload });
-  const internal = (path: string, payload: object) => app.inject({ method: "POST", url: `/api/internal/${path}`, headers: { "x-internal-key": internalKey(BOT_TOKEN) }, payload });
+  const internal = (path: string, payload: object) =>
+    app.inject({ method: "POST", url: `/api/internal/${path}`, headers: { "x-internal-key": internalKey(BOT_TOKEN) }, payload });
   const tg = (id: number, first_name: string) => ({ id, first_name });
   const lesson = (n: number, h: Record<string, string>) => req("GET", `/lessons/${P}-l${n}`, h);
   const start = (id: string, h: Record<string, string>) => req("POST", `/tests/${P}-${id}/attempts`, h);
@@ -61,8 +76,15 @@ describe("Kirish darajalari (e2e)", () => {
         },
       },
     });
-    for (const [id, type] of [["t1", "TOPIC"], ["t2", "TOPIC"], ["m1", "MOCK"], ["m2", "MOCK"]] as const)
-      await prisma.test.create({ data: { id: `${P}-${id}`, type, title: id, isFree: true, isPublished: true, ...(type === "TOPIC" ? { topicId: `${P}-topic` } : {}) } });
+    for (const [id, type] of [
+      ["t1", "TOPIC"],
+      ["t2", "TOPIC"],
+      ["m1", "MOCK"],
+      ["m2", "MOCK"],
+    ] as const)
+      await prisma.test.create({
+        data: { id: `${P}-${id}`, type, title: id, isFree: true, isPublished: true, ...(type === "TOPIC" ? { topicId: `${P}-topic` } : {}) },
+      });
     app = await createApp();
     const owner = await login(app, TG.owner, "Ega", OWNER);
     H = owner.headers;
@@ -127,7 +149,16 @@ describe("Kirish darajalari (e2e)", () => {
     const g = await prisma.group.create({ data: { name: `${P}-tolov` } });
     expect((await req("POST", `/admin/students/${row.studentId}/accept`, H, { groupId: g.id })).statusCode).toBe(200);
     expect((await req("GET", "/me", s.headers)).json().trial.limited).toBe(true);
-    expect((await app.inject({ method: "PUT", url: "/api/admin/offline-payments", headers: H, payload: { studentId: row.studentId, month: currentMonth(), amountUzs: 100000 } })).statusCode).toBe(200);
+    expect(
+      (
+        await app.inject({
+          method: "PUT",
+          url: "/api/admin/offline-payments",
+          headers: H,
+          payload: { studentId: row.studentId, month: currentMonth(), amountUzs: 100000 },
+        })
+      ).statusCode,
+    ).toBe(200);
     expect((await req("GET", "/me", s.headers)).json().trial).toMatchObject({ limited: false, paid: true });
     expect((await req("GET", "/admin/users?q=Tolamagan")).json()[0]).toMatchObject({ full: true, waiting: [], paid: true, group: { id: g.id } });
     expect(await canUseTwice(s.headers)).toEqual([200, 200, 200]);
@@ -222,7 +253,11 @@ describe("Kirish darajalari (e2e)", () => {
 
   it("ota-ona ulanishi rad etilsa ikkalasiga, tasdiqlansa ikkalasiga xabar boradi", async () => {
     const sp = await prisma.studentProfile.findFirstOrThrow({ where: { user: { telegramId: BigInt(TG.free) } } });
-    await internal("parent-link", { code: sp.parentLinkCode, from: tg(TG.placeholderMom, "Rad"), contact: { phone_number: "998901234002", user_id: TG.placeholderMom } });
+    await internal("parent-link", {
+      code: sp.parentLinkCode,
+      from: tg(TG.placeholderMom, "Rad"),
+      contact: { phone_number: "998901234002", user_id: TG.placeholderMom },
+    });
     const link = await prisma.parentLink.findFirstOrThrow({ where: { studentId: sp.id } });
     await queue.obliterate({ force: true });
     expect((await req("POST", `/admin/parent-links/${link.id}/reject`, H, { reason: "Begona" })).statusCode).toBe(200);

@@ -58,7 +58,10 @@ export function isAnswerCorrect(q: GradableQuestion, a: GivenAnswer | undefined)
     case "TEXT": {
       if (!q.correctText || !a.textAnswer) return false;
       // Bir nechta to'g'ri variant "|" bilan ajratiladi: "oʻn besh|15"
-      const raw = q.correctText.split("|").map((v) => v.trim()).filter(Boolean);
+      const raw = q.correctText
+        .split("|")
+        .map((v) => v.trim())
+        .filter(Boolean);
       return raw.some((v) =>
         isPunctuationOnly(v) ? normalizePunctuation(v) === normalizePunctuation(a.textAnswer!) : normalizeUz(v) === normalizeUz(a.textAnswer!),
       );

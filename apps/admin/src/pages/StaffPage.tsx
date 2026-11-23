@@ -24,7 +24,14 @@ export function StaffPage() {
     },
     onError: (e) => toast(errMsg(e), "error"),
   });
-  const remove = useMutation({ mutationFn: (id: string) => api.removeStaff(id), onSuccess: () => { toast("Olib tashlandi"); refresh(); }, onError: (e) => toast(errMsg(e), "error") });
+  const remove = useMutation({
+    mutationFn: (id: string) => api.removeStaff(id),
+    onSuccess: () => {
+      toast("Olib tashlandi");
+      refresh();
+    },
+    onError: (e) => toast(errMsg(e), "error"),
+  });
   const removeInvite = useMutation({ mutationFn: (u: string) => api.removeInvite(u), onSuccess: refresh, onError: (e) => toast(errMsg(e), "error") });
 
   return (
@@ -67,7 +74,9 @@ export function StaffPage() {
           <input className="input" placeholder="@telegram_username" value={username} onChange={(e) => setUsername(e.target.value)} />
           <p className="mt-1 text-xs text-ink-3">U botga /admin deb yozib kiradi. Hali botga kirmagan bo'lsa ham qo'shsa bo'ladi.</p>
         </div>
-        <button className="btn-primary w-full sm:w-auto" disabled={!username.trim() || add.isPending}><UserPlus size={16} /> Qo'shish</button>
+        <button className="btn-primary w-full sm:w-auto" disabled={!username.trim() || add.isPending}>
+          <UserPlus size={16} /> Qo'shish
+        </button>
       </form>
 
       {staff.isPending && <Spinner className="text-ink-4" />}
@@ -76,22 +85,32 @@ export function StaffPage() {
           <div key={s.id} className="flex flex-wrap items-center gap-3 px-4 py-4 sm:px-5">
             <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brand text-sm font-bold text-white">{s.firstName[0]}</span>
             <div className="min-w-0 flex-1">
-              <p className="font-bold">{s.firstName} {s.lastName ?? ""} {s.id === me.id && <span className="text-xs font-semibold text-ink-4">(siz)</span>}</p>
+              <p className="font-bold">
+                {s.firstName} {s.lastName ?? ""} {s.id === me.id && <span className="text-xs font-semibold text-ink-4">(siz)</span>}
+              </p>
               <p className="text-xs text-ink-3">{s.username ? `@${s.username}` : "username yo'q"}</p>
             </div>
             <Badge tone={s.role === "TEACHER" ? "brand" : "blue"}>{s.isOwner ? "Ega" : ROLE_LABELS[s.role]}</Badge>
-            {!s.isOwner && s.id !== me.id && <ConfirmButton onConfirm={() => remove.mutate(s.id)} label="Olib tashlansinmi?">Olib tashlash</ConfirmButton>}
+            {!s.isOwner && s.id !== me.id && (
+              <ConfirmButton onConfirm={() => remove.mutate(s.id)} label="Olib tashlansinmi?">
+                Olib tashlash
+              </ConfirmButton>
+            )}
           </div>
         ))}
         {staff.data?.invites.map((i) => (
           <div key={i.username} className="flex flex-wrap items-center gap-3 px-4 py-4 sm:px-5">
-            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-surface-3 text-ink-4"><Clock size={18} /></span>
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-surface-3 text-ink-4">
+              <Clock size={18} />
+            </span>
             <div className="min-w-0 flex-1">
               <p className="font-bold">@{i.username}</p>
               <p className="text-xs text-ink-3">Taklif qilingan: botga hali kirmagan</p>
             </div>
             <Badge tone="amber">Kutilmoqda</Badge>
-            <ConfirmButton onConfirm={() => removeInvite.mutate(i.username)} label="Bekor qilinsinmi?">Bekor qilish</ConfirmButton>
+            <ConfirmButton onConfirm={() => removeInvite.mutate(i.username)} label="Bekor qilinsinmi?">
+              Bekor qilish
+            </ConfirmButton>
           </div>
         ))}
       </div>

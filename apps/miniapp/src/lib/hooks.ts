@@ -32,8 +32,7 @@ export function useCountdown(deadlineAt: string | null, serverNow: string | unde
     if (serverNow) offset.current = new Date(serverNow).getTime() - Date.now();
   }, [serverNow]);
 
-  const calc = () =>
-    deadlineAt ? Math.max(0, Math.round((new Date(deadlineAt).getTime() - (Date.now() + offset.current)) / 1000)) : null;
+  const calc = () => (deadlineAt ? Math.max(0, Math.round((new Date(deadlineAt).getTime() - (Date.now() + offset.current)) / 1000)) : null);
 
   const ref = useRef<HTMLSpanElement>(null);
   useEffect(() => {

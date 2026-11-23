@@ -41,7 +41,13 @@ export class StatsController {
 
     const students = await p.user.findMany({
       where: { role: "STUDENT", createdAt: { lt: to } },
-      select: { id: true, firstName: true, lastName: true, createdAt: true, student: { select: { id: true, groupId: true, group: { select: { name: true, isActive: true, monthlyFeeUzs: true } } } } },
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        createdAt: true,
+        student: { select: { id: true, groupId: true, group: { select: { name: true, isActive: true, monthlyFeeUzs: true } } } },
+      },
     });
     const byUser = new Map(students.map((s) => [s.id, s]));
     const offline = students.filter((s) => s.student?.groupId && s.student.group?.isActive);
@@ -53,7 +59,10 @@ export class StatsController {
         select: { id: true, userId: true, score: true, maxScore: true, test: { select: { gradingScale: true } } },
       }),
       p.essay.findMany({ where: { createdAt: { gte: from, lt: to }, status: { not: "DRAFT" }, user: { role: "STUDENT" } }, select: { userId: true } }),
-      p.attendance.findMany({ where: { date: { gte: monthDate(month), lt: monthDate(shiftMonth(month, 1)) } }, select: { groupId: true, studentId: true, date: true, status: true } }),
+      p.attendance.findMany({
+        where: { date: { gte: monthDate(month), lt: monthDate(shiftMonth(month, 1)) } },
+        select: { groupId: true, studentId: true, date: true, status: true },
+      }),
       p.group.findMany({ where: { isActive: true }, orderBy: { name: "asc" }, select: { id: true, name: true, _count: { select: { students: true } } } }),
       p.essayReview.findMany({ where: { createdAt: { gte: from, lt: to } }, select: { source: true, totalScore: true } }),
       p.essay.count({ where: { mode: "TEACHER", status: "SUBMITTED" } }),
@@ -144,7 +153,14 @@ export class StatsController {
       .map(([id, l]) => ({ id, avg: Math.round(l.reduce((s, x) => s + x, 0) / l.length), n: l.length }))
       .sort((a, b) => b.avg - a.avg || b.n - a.n)
       .slice(0, 5)
-      .map((x) => ({ userId: x.id, studentId: byUser.get(x.id)?.student?.id ?? null, name: byUser.get(x.id) ? name(byUser.get(x.id)!) : "—", group: byUser.get(x.id)?.student?.group?.name ?? null, avgPercent: x.avg, tests: x.n }));
+      .map((x) => ({
+        userId: x.id,
+        studentId: byUser.get(x.id)?.student?.id ?? null,
+        name: byUser.get(x.id) ? name(byUser.get(x.id)!) : "—",
+        group: byUser.get(x.id)?.student?.group?.name ?? null,
+        avgPercent: x.avg,
+        tests: x.n,
+      }));
 
     return {
       month,
@@ -165,7 +181,11 @@ export class StatsController {
         byGroup,
       },
       tests: { attempts: plain.length, avgPercent, weakTopics },
-      mocks: { attempts: milliyRows.length, avgTotal: totals.length ? Math.round((totals.reduce((s, x) => s + x, 0) / totals.length) * 10) / 10 : null, levels },
+      mocks: {
+        attempts: milliyRows.length,
+        avgTotal: totals.length ? Math.round((totals.reduce((s, x) => s + x, 0) / totals.length) * 10) / 10 : null,
+        levels,
+      },
       essays: {
         submitted: essays.length,
         checkedByTeacher: reviews.filter((r) => r.source === "TEACHER").length,
@@ -203,11 +223,19 @@ export class StatsController {
     const start = new Date(thisMonday - 7 * 7 * DAY);
     const [l, a, e] = await Promise.all([
       this.prisma.lessonProgress.findMany({ where: { completedAt: { gte: start }, user: { role: "STUDENT" } }, select: { completedAt: true } }),
-      this.prisma.attempt.findMany({ where: { finishedAt: { gte: start }, status: { in: [...FINISHED] }, user: { role: "STUDENT" } }, select: { finishedAt: true } }),
+      this.prisma.attempt.findMany({
+        where: { finishedAt: { gte: start }, status: { in: [...FINISHED] }, user: { role: "STUDENT" } },
+        select: { finishedAt: true },
+      }),
       this.prisma.essay.findMany({ where: { createdAt: { gte: start }, status: { not: "DRAFT" }, user: { role: "STUDENT" } }, select: { createdAt: true } }),
     ]);
     const idx = (d: Date) => Math.floor((d.getTime() - start.getTime()) / (7 * DAY));
-    const weeks = Array.from({ length: 8 }, (_, i) => ({ start: new Date(start.getTime() + i * 7 * DAY + TZ).toISOString().slice(0, 10), lessons: 0, tests: 0, essays: 0 }));
+    const weeks = Array.from({ length: 8 }, (_, i) => ({
+      start: new Date(start.getTime() + i * 7 * DAY + TZ).toISOString().slice(0, 10),
+      lessons: 0,
+      tests: 0,
+      essays: 0,
+    }));
     l.forEach((x) => weeks[idx(x.completedAt!)] && weeks[idx(x.completedAt!)].lessons++);
     a.forEach((x) => weeks[idx(x.finishedAt!)] && weeks[idx(x.finishedAt!)].tests++);
     e.forEach((x) => weeks[idx(x.createdAt)] && weeks[idx(x.createdAt)].essays++);
@@ -218,7 +246,10 @@ export class StatsController {
   private async income(month: string, offline: { student: { id: string; group: { monthlyFeeUzs: number | null } | null } | null }[]) {
     const months = Array.from({ length: 6 }, (_, i) => shiftMonth(month, i - 5));
     const [pays, off, paidNow] = await Promise.all([
-      this.prisma.payment.findMany({ where: { status: "APPROVED", createdAt: { gte: monthStart(months[0]), lt: monthStart(shiftMonth(month, 1)) } }, select: { amountUzs: true, createdAt: true, essayId: true } }),
+      this.prisma.payment.findMany({
+        where: { status: "APPROVED", createdAt: { gte: monthStart(months[0]), lt: monthStart(shiftMonth(month, 1)) } },
+        select: { amountUzs: true, createdAt: true, essayId: true },
+      }),
       this.prisma.offlinePayment.groupBy({ by: ["month"], where: { month: { in: months } }, _sum: { amountUzs: true } }),
       this.prisma.offlinePayment.findMany({ where: { month }, select: { studentId: true } }),
     ]);

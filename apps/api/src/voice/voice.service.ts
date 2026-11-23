@@ -58,7 +58,10 @@ export class VoiceService implements OnModuleDestroy {
 
   /** Mock essesi: ustoz baholagandan keyin */
   async forAttempt(actorId: string, attemptId: string, questionId: string, body: unknown, contentType: string | undefined): Promise<VoiceView> {
-    const a = await this.prisma.attemptAnswer.findUnique({ where: { attemptId_questionId: { attemptId, questionId } }, select: { points: true, question: { select: { type: true } } } });
+    const a = await this.prisma.attemptAnswer.findUnique({
+      where: { attemptId_questionId: { attemptId, questionId } },
+      select: { points: true, question: { select: { type: true } } },
+    });
     if (!a || a.question.type !== "ESSAY") throw new NotFoundException("Esse topilmadi");
     if (a.points === null) throw new ConflictException("Avval esseni baholang");
     const prev = await this.prisma.voiceNote.findUnique({ where: { attemptId_questionId: { attemptId, questionId } } });

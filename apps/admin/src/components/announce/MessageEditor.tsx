@@ -54,7 +54,12 @@ export function MessageEditor({
     <div className="space-y-2">
       <div className="flex flex-wrap gap-2">
         {TEMPLATES.map(([name, body]) => (
-          <button key={name} type="button" className="h-8 rounded-full bg-surface-3 px-3 text-xs font-bold text-ink-2 hover:bg-surface-4" onClick={() => onText(body)}>
+          <button
+            key={name}
+            type="button"
+            className="h-8 rounded-full bg-surface-3 px-3 text-xs font-bold text-ink-2 hover:bg-surface-4"
+            onClick={() => onText(body)}
+          >
             {name}
           </button>
         ))}
@@ -105,7 +110,12 @@ export function MessageEditor({
       {photo && (
         <div className="relative inline-block">
           <img src={photo} alt="Biriktirilgan rasm" className="h-24 rounded-lg border border-line object-cover" />
-          <button type="button" aria-label="Rasmni olib tashlash" className="absolute -right-2 -top-2 rounded-full bg-ink p-1 text-page" onClick={onRemovePhoto}>
+          <button
+            type="button"
+            aria-label="Rasmni olib tashlash"
+            className="absolute -right-2 -top-2 rounded-full bg-ink p-1 text-page"
+            onClick={onRemovePhoto}
+          >
             <X size={13} />
           </button>
         </div>

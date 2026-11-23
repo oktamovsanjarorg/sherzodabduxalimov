@@ -22,14 +22,23 @@ function unzip(buf: Buffer): Record<string, string> {
 
 describe("xlsx", () => {
   const file = buildXlsx([
-    { name: "O'quvchilar", columns: [{ header: "Ism" }, { header: "Summa" }], rows: [["Ali <Valiyev> & \u0007𝐘𝐚𝐬", 250000], [null, undefined]] },
+    {
+      name: "O'quvchilar",
+      columns: [{ header: "Ism" }, { header: "Summa" }],
+      rows: [
+        ["Ali <Valiyev> & \u0007𝐘𝐚𝐬", 250000],
+        [null, undefined],
+      ],
+    },
     { name: "Davomat/[1]", columns: [{ header: "Sana" }], rows: [] },
   ]);
   const parts = unzip(file);
 
   it("kerakli qismlar bor", () => {
     expect(file.subarray(0, 4).toString("hex")).toBe("504b0304");
-    expect(Object.keys(parts)).toEqual(expect.arrayContaining(["[Content_Types].xml", "xl/workbook.xml", "xl/styles.xml", "xl/worksheets/sheet1.xml", "xl/worksheets/sheet2.xml"]));
+    expect(Object.keys(parts)).toEqual(
+      expect.arrayContaining(["[Content_Types].xml", "xl/workbook.xml", "xl/styles.xml", "xl/worksheets/sheet1.xml", "xl/worksheets/sheet2.xml"]),
+    );
   });
 
   it("matn umumiy jadvalda (har qanday ko'ruvchi o'qiydi), qochiriladi; son son bo'lib qoladi", () => {

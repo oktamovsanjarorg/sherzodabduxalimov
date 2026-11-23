@@ -62,7 +62,10 @@ export class AttemptsService {
   async start(user: JwtUser, testId: string): Promise<AttemptState> {
     const test = await this.prisma.test.findFirst({
       // Yashirin kursdagi mavzu testi o'quvchiga ochilmaydi (ro'yxatda ham chiqmaydi)
-      where: { id: testId, ...(this.access.isStaff(user.role) ? {} : { isPublished: true, OR: [{ type: "MOCK" }, { topic: { course: { isPublished: true } } }] }) },
+      where: {
+        id: testId,
+        ...(this.access.isStaff(user.role) ? {} : { isPublished: true, OR: [{ type: "MOCK" }, { topic: { course: { isPublished: true } } }] }),
+      },
     });
     if (!test) throw new NotFoundException("Test topilmadi");
     this.access.assertAccess(test.isFree, await this.access.canAccessPaid(user));
@@ -203,7 +206,16 @@ export class AttemptsService {
         if (!g.given) continue;
         await tx.attemptAnswer.update({
           where: { attemptId_questionId: { attemptId: a.id, questionId: g.q.id } },
-          data: { isCorrect: g.ok, points: g.points, ...("special" in g && g.special ? { special: g.special, reviewComment: `${ESSAY_SPECIAL[g.special].label}: esse tekshirilmaydi (mezon bo'yicha ${ESSAY_SPECIAL[g.special].score} ball)` } : {}) },
+          data: {
+            isCorrect: g.ok,
+            points: g.points,
+            ...("special" in g && g.special
+              ? {
+                  special: g.special,
+                  reviewComment: `${ESSAY_SPECIAL[g.special].label}: esse tekshirilmaydi (mezon bo'yicha ${ESSAY_SPECIAL[g.special].score} ball)`,
+                }
+              : {}),
+          },
         });
       }
     });
@@ -255,12 +267,12 @@ export class AttemptsService {
         passage: q.passage ? { id: q.passage.id, title: q.passage.title, body: q.passage.body } : null,
         options: q.options.map((o) => ({ id: o.id, text: o.text })),
         correctOptionIds: q.options.filter((o) => o.isCorrect).map((o) => o.id),
-        correctText: q.type === "TEXT" ? q.correctText?.split("|")[0] ?? null : null,
+        correctText: q.type === "TEXT" ? (q.correctText?.split("|")[0] ?? null) : null,
         explanation: q.explanation,
         yourOptionIds: given?.optionIds ?? [],
         yourText: given?.textAnswer ?? null,
-        isCorrect: q.type === "ESSAY" ? (given?.points ?? 0) > 0 : given?.isCorrect ?? false,
-        points: pending ? null : given?.points ?? 0,
+        isCorrect: q.type === "ESSAY" ? (given?.points ?? 0) > 0 : (given?.isCorrect ?? false),
+        points: pending ? null : (given?.points ?? 0),
         maxPoints: q.points,
         pending,
         reviewComment: given?.reviewComment ?? null,

@@ -1,4 +1,17 @@
-import { BadRequestException, Body, Controller, Delete, Get, HttpCode, Inject, NotFoundException, Param, Post, Query, ServiceUnavailableException } from "@nestjs/common";
+import {
+  BadRequestException,
+  Body,
+  Controller,
+  Delete,
+  Get,
+  HttpCode,
+  Inject,
+  NotFoundException,
+  Param,
+  Post,
+  Query,
+  ServiceUnavailableException,
+} from "@nestjs/common";
 import { FOLLOW_UP_LABELS, formatSum, monthLabel, type DebtorRow, type FollowUpKindName, type PaymentInsights } from "@onatili/shared";
 import { z } from "zod";
 import { deepseekText } from "../ai/deepseek";
@@ -94,7 +107,14 @@ Markdown: faqat **qalin** va ro'yxat. 1200 belgidan oshmasin.`;
     const sp = await this.prisma.studentProfile.count({ where: { id: d.studentId } });
     if (!sp) throw new NotFoundException("O'quvchi topilmadi");
     const f = await this.prisma.paymentFollowUp.create({
-      data: { studentId: d.studentId, month: d.month, kind: d.kind, note: d.note || null, promisedAt: d.promisedAt ? new Date(`${d.promisedAt}T00:00:00Z`) : null, createdById: u.sub },
+      data: {
+        studentId: d.studentId,
+        month: d.month,
+        kind: d.kind,
+        note: d.note || null,
+        promisedAt: d.promisedAt ? new Date(`${d.promisedAt}T00:00:00Z`) : null,
+        createdById: u.sub,
+      },
     });
     return { id: f.id };
   }
@@ -132,11 +152,18 @@ Markdown: faqat **qalin** va ro'yxat. 1200 belgidan oshmasin.`;
         parents: { where: { status: "APPROVED" }, take: 1, select: { phone: true, parent: { select: { firstName: true, lastName: true, phone: true } } } },
       },
     });
-    const offPays = await p.offlinePayment.findMany({ where: { studentId: { in: offStudents.map((s) => s.id) }, month: { in: [...months6, shiftMonth(month, -6)] } }, select: { studentId: true, month: true, amountUzs: true } });
+    const offPays = await p.offlinePayment.findMany({
+      where: { studentId: { in: offStudents.map((s) => s.id) }, month: { in: [...months6, shiftMonth(month, -6)] } },
+      select: { studentId: true, month: true, amountUzs: true },
+    });
     const paidKey = new Set(offPays.map((x) => `${x.studentId}|${x.month}`));
     const attendance = await p.attendance.groupBy({
       by: ["studentId"],
-      where: { studentId: { in: offStudents.map((s) => s.id) }, date: { gte: monthDate(month), lt: monthDate(shiftMonth(month, 1)) }, status: { in: ["PRESENT", "LATE"] } },
+      where: {
+        studentId: { in: offStudents.map((s) => s.id) },
+        date: { gte: monthDate(month), lt: monthDate(shiftMonth(month, 1)) },
+        status: { in: ["PRESENT", "LATE"] },
+      },
       _count: true,
     });
     const came = new Map(attendance.map((a) => [a.studentId, a._count]));
@@ -171,11 +198,37 @@ Markdown: faqat **qalin** va ro'yxat. 1200 belgidan oshmasin.`;
     const offUserIds = new Set(offStudents.map((s) => s.user.id));
     const subs = await p.subscription.findMany({
       where: { status: { not: "CANCELLED" }, endsAt: { gte: from, lt: to }, user: { role: "STUDENT", isBlocked: false } },
-      select: { id: true, userId: true, endsAt: true, plan: { select: { name: true, priceUzs: true } }, user: { select: { id: true, firstName: true, lastName: true, phone: true, student: { select: { id: true, parents: { where: { status: "APPROVED" }, take: 1, select: { phone: true, parent: { select: { firstName: true, lastName: true, phone: true } } } } } } } } },
+      select: {
+        id: true,
+        userId: true,
+        endsAt: true,
+        plan: { select: { name: true, priceUzs: true } },
+        user: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            phone: true,
+            student: {
+              select: {
+                id: true,
+                parents: {
+                  where: { status: "APPROVED" },
+                  take: 1,
+                  select: { phone: true, parent: { select: { firstName: true, lastName: true, phone: true } } },
+                },
+              },
+            },
+          },
+        },
+      },
       orderBy: { endsAt: "asc" },
     });
     const dueSubs = subs.filter((s) => !offUserIds.has(s.userId));
-    const later = await p.subscription.findMany({ where: { userId: { in: dueSubs.map((s) => s.userId) }, status: "ACTIVE", endsAt: { gte: to } }, select: { userId: true, endsAt: true } });
+    const later = await p.subscription.findMany({
+      where: { userId: { in: dueSubs.map((s) => s.userId) }, status: "ACTIVE", endsAt: { gte: to } },
+      select: { userId: true, endsAt: true },
+    });
     const renewedUsers = new Set(later.map((l) => l.userId));
     const lastPerUser = new Map<string, (typeof dueSubs)[number]>();
     for (const s of dueSubs) if (!lastPerUser.has(s.userId) || lastPerUser.get(s.userId)!.endsAt < s.endsAt) lastPerUser.set(s.userId, s);
@@ -208,7 +261,14 @@ Markdown: faqat **qalin** va ro'yxat. 1200 belgidan oshmasin.`;
     const fuOf = (id: string) =>
       followUps
         .filter((f) => f.studentId === id)
-        .map((f) => ({ id: f.id, kind: f.kind as FollowUpKindName, note: f.note, promisedAt: f.promisedAt?.toISOString().slice(0, 10) ?? null, by: f.createdBy?.firstName ?? null, createdAt: f.createdAt.toISOString() }));
+        .map((f) => ({
+          id: f.id,
+          kind: f.kind as FollowUpKindName,
+          note: f.note,
+          promisedAt: f.promisedAt?.toISOString().slice(0, 10) ?? null,
+          by: f.createdBy?.firstName ?? null,
+          createdAt: f.createdAt.toISOString(),
+        }));
     const lastSeen = await this.lastActivity(lapsed.map((s) => s.userId));
     const parentOf = (ps: { phone: string | null; parent: { firstName: string; lastName: string | null; phone: string | null } }[] | undefined) =>
       ps?.[0] ? { name: name(ps[0].parent), phone: ps[0].phone ?? ps[0].parent.phone } : null;

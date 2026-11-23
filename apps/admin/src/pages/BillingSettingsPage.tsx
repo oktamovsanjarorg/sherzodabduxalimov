@@ -61,7 +61,11 @@ function CardForm() {
         <Spinner className="text-ink-4" />
       ) : (
         <>
-          {!q.data?.card && <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">Karta kiritilmaguncha o'quvchilar to'lov qila olmaydi.</p>}
+          {!q.data?.card && (
+            <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
+              Karta kiritilmaguncha o'quvchilar to'lov qila olmaydi.
+            </p>
+          )}
           <Field label="Karta raqami">
             <input
               className="input text-lg tabular-nums tracking-wider"
@@ -75,7 +79,13 @@ function CardForm() {
             <input className="input" placeholder="Ism Familiya" value={holder} maxLength={80} onChange={(e) => setHolder(e.target.value)} />
           </Field>
           <Field label="O'quvchiga ko'rsatma" hint="Ixtiyoriy. Masalan: “O'tkazmaga izoh sifatida ismingizni yozing”">
-            <textarea aria-label="O'quvchiga ko'rsatma" className="input min-h-[70px] py-2" value={note} maxLength={300} onChange={(e) => setNote(e.target.value)} />
+            <textarea
+              aria-label="O'quvchiga ko'rsatma"
+              className="input min-h-[70px] py-2"
+              value={note}
+              maxLength={300}
+              onChange={(e) => setNote(e.target.value)}
+            />
           </Field>
           <button className="btn-primary" disabled={digits.length !== 16 || holder.trim().length < 3 || save.isPending}>
             <Save size={16} /> Saqlash
@@ -199,10 +209,20 @@ function PlanModal({ plan, onClose }: { plan: AdminPlan | null; onClose: () => v
         </Field>
         <div className="grid grid-cols-2 gap-3">
           <Field label="Narx (so'm)">
-            <input className="input" inputMode="numeric" value={d.priceUzs} onChange={(e) => setD({ ...d, priceUzs: Number(e.target.value.replace(/\D/g, "")) })} />
+            <input
+              className="input"
+              inputMode="numeric"
+              value={d.priceUzs}
+              onChange={(e) => setD({ ...d, priceUzs: Number(e.target.value.replace(/\D/g, "")) })}
+            />
           </Field>
           <Field label="Muddat (kun)">
-            <input className="input" inputMode="numeric" value={d.durationDays} onChange={(e) => setD({ ...d, durationDays: Number(e.target.value.replace(/\D/g, "")) })} />
+            <input
+              className="input"
+              inputMode="numeric"
+              value={d.durationDays}
+              onChange={(e) => setD({ ...d, durationDays: Number(e.target.value.replace(/\D/g, "")) })}
+            />
           </Field>
         </div>
         <Field label="Qisqa izoh" hint="Ixtiyoriy. Masalan: “3 oy · 15% tejaysiz”">
@@ -211,7 +231,12 @@ function PlanModal({ plan, onClose }: { plan: AdminPlan | null; onClose: () => v
         <Field label="Tartib" hint="Kichik raqam ro'yxatda yuqorida turadi">
           <input className="input" type="number" value={d.sortOrder} onChange={(e) => setD({ ...d, sortOrder: Number(e.target.value) })} />
         </Field>
-        <Toggle checked={d.isActive} onChange={(v) => setD({ ...d, isActive: v })} label="O'quvchilarga ko'rinadi" hint="O'chirilsa yangi to'lovlar qabul qilinmaydi, mavjud obunalar ishlayveradi" />
+        <Toggle
+          checked={d.isActive}
+          onChange={(v) => setD({ ...d, isActive: v })}
+          label="O'quvchilarga ko'rinadi"
+          hint="O'chirilsa yangi to'lovlar qabul qilinmaydi, mavjud obunalar ishlayveradi"
+        />
       </div>
     </Modal>
   );

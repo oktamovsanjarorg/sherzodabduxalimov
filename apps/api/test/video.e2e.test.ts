@@ -46,7 +46,9 @@ describe("Video: yuklash va himoyalangan ko'rish (e2e)", () => {
         title: "E2E video kurs",
         isPublished: true,
         order: 998,
-        topics: { create: { id: `${P}-topic`, title: "Mavzu", lessons: { create: { id: `${P}-lesson`, title: "Video dars", content: "x", isPublished: true } } } },
+        topics: {
+          create: { id: `${P}-topic`, title: "Mavzu", lessons: { create: { id: `${P}-lesson`, title: "Video dars", content: "x", isPublished: true } } },
+        },
       },
     });
     await prisma.plan.create({ data: { id: `${P}-plan`, name: "E2E", priceUzs: 1 } });
@@ -153,7 +155,11 @@ describe("Video: yuklash va himoyalangan ko'rish (e2e)", () => {
     expect((await app.inject({ method: "GET", url: `/api/media/${v.id}/key?t=${encodeURIComponent(old)}` })).statusCode).toBe(403);
 
     // Path traversal: kalit faylini segment sifatida o'qib bo'lmaydi
-    for (const bad of [`/api/media-seg/${v.id}/720p/..%2F..%2Fenc.key`, `/api/media-seg/${v.id}/..%2F/enc.key`, `/api/media-seg/..%2F..%2Fetc/720p/seg_0000.ts`]) {
+    for (const bad of [
+      `/api/media-seg/${v.id}/720p/..%2F..%2Fenc.key`,
+      `/api/media-seg/${v.id}/..%2F/enc.key`,
+      `/api/media-seg/..%2F..%2Fetc/720p/seg_0000.ts`,
+    ]) {
       expect((await app.inject({ method: "GET", url: bad })).statusCode).toBe(404);
     }
 

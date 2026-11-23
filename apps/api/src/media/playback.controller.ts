@@ -55,12 +55,7 @@ export class PlaybackController {
 
   /** Variant pleylisti: kalit URI'si va segment manzillari shu yerda qayta yoziladi */
   @Get("media/:id/:variant/index.m3u8")
-  async variant(
-    @Param("id") id: string,
-    @Param("variant") variant: string,
-    @Query("t") t: string,
-    @Res({ passthrough: true }) res: FastifyReply,
-  ) {
+  async variant(@Param("id") id: string, @Param("variant") variant: string, @Query("t") t: string, @Res({ passthrough: true }) res: FastifyReply) {
     const v = await this.authorize(id, t);
     if (!isVariant(variant) || !v.variants.includes(variant)) throw new NotFoundException();
     const raw = await readFile(this.videos.paths.playlist(id, variant), "utf8");
@@ -87,12 +82,7 @@ export class PlaybackController {
 
   /** Dev uchun segmentlar. Prod'da ularni nginx beradi. Segmentlar shifrlangan, kalitsiz foydasiz. */
   @Get("media-seg/:id/:variant/:seg")
-  async segment(
-    @Param("id") id: string,
-    @Param("variant") variant: string,
-    @Param("seg") seg: string,
-    @Res({ passthrough: true }) res: FastifyReply,
-  ) {
+  async segment(@Param("id") id: string, @Param("variant") variant: string, @Param("seg") seg: string, @Res({ passthrough: true }) res: FastifyReply) {
     if (!isVideoId(id) || !isVariant(variant) || !isSegment(seg)) throw new NotFoundException();
     try {
       const buf = await readFile(this.videos.paths.segment(id, variant, seg));

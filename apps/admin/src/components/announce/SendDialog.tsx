@@ -7,7 +7,19 @@ import { Modal, Segmented } from "../ui";
 const toLocal = (d: Date) => new Date(d.getTime() - d.getTimezoneOffset() * 60_000).toISOString().slice(0, 16);
 
 /** Yuborishdan oldingi tasdiq: hozir yoki belgilangan vaqtda, nechta odamga */
-export function SendDialog({ preview, initial, busy, onClose, onSend }: { preview: AnnouncePreview; initial: string | null; busy: boolean; onClose: () => void; onSend: (at: string | null) => void }) {
+export function SendDialog({
+  preview,
+  initial,
+  busy,
+  onClose,
+  onSend,
+}: {
+  preview: AnnouncePreview;
+  initial: string | null;
+  busy: boolean;
+  onClose: () => void;
+  onSend: (at: string | null) => void;
+}) {
   const future = initial && new Date(initial).getTime() > Date.now();
   const [when, setWhen] = useState<"now" | "later">(future ? "later" : "now");
   const [at, setAt] = useState(() => toLocal(future ? new Date(initial!) : new Date(Date.now() + 3600_000)));
@@ -50,7 +62,8 @@ export function SendDialog({ preview, initial, busy, onClose, onSend }: { previe
         )}
         <p className="text-sm text-ink-2">
           Xabar <b>{preview.reachable} kishiga</b> boradi
-          {preview.noTelegram ? `, ${preview.noTelegram} kishi botga kirmagani uchun olmaydi` : ""}. Yuborilgandan keyin 48 soat ichida qaytarib olish (hammadan o'chirish) mumkin.
+          {preview.noTelegram ? `, ${preview.noTelegram} kishi botga kirmagani uchun olmaydi` : ""}. Yuborilgandan keyin 48 soat ichida qaytarib olish (hammadan
+          o'chirish) mumkin.
         </p>
       </div>
     </Modal>

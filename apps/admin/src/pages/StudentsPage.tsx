@@ -20,7 +20,12 @@ export function StudentsPage() {
   const [adding, setAdding] = useState<"one" | "bulk" | null>(null);
   const [managing, setManaging] = useState(params.get("groups") === "1");
   const groups = useQuery({ queryKey: ["groups"], queryFn: api.groups });
-  const roster = useQuery({ queryKey: ["roster", groupId, q.trim()], queryFn: () => api.roster(groupId, q.trim()), placeholderData: (p) => p, enabled: !!groupId });
+  const roster = useQuery({
+    queryKey: ["roster", groupId, q.trim()],
+    queryFn: () => api.roster(groupId, q.trim()),
+    placeholderData: (p) => p,
+    enabled: !!groupId,
+  });
   const isTeacher = loadSession()?.user.role === "TEACHER";
   const active = groups.data?.filter((g) => g.isActive) ?? [];
   const setGroup = (g: string) => setParams(g ? { group: g } : {}, { replace: true });
@@ -39,7 +44,12 @@ export function StudentsPage() {
         actions={
           <>
             {isTeacher && (
-              <button className="btn-secondary" disabled={exporting.isPending} onClick={() => exporting.mutate()} title="O'quvchilar, davomat, to'lovlar, ota-onalar va guruhlar: bitta Excel faylda">
+              <button
+                className="btn-secondary"
+                disabled={exporting.isPending}
+                onClick={() => exporting.mutate()}
+                title="O'quvchilar, davomat, to'lovlar, ota-onalar va guruhlar: bitta Excel faylda"
+              >
                 <Download size={16} /> {exporting.isPending ? "Tayyorlanmoqda…" : "Excel'ga yuklash"}
               </button>
             )}
@@ -81,7 +91,8 @@ export function StudentsPage() {
       {!!groupId && roster.isPending && <Spinner className="text-ink-4" />}
       {!!groupId && roster.data?.length === 0 && (
         <Empty
-          Icon={GraduationCap} title={q ? "Topilmadi" : "Bu yerda hali o'quvchi yo'q"}
+          Icon={GraduationCap}
+          title={q ? "Topilmadi" : "Bu yerda hali o'quvchi yo'q"}
           hint={q ? undefined : "«O'quvchi qo'shish» yoki «Ro'yxat bilan» tugmasi orqali kiriting."}
         />
       )}
@@ -113,7 +124,10 @@ export function StudentsPage() {
 
 function Chip({ on, onClick, children }: { on: boolean; onClick: () => void; children: React.ReactNode }) {
   return (
-    <button onClick={onClick} className={`h-9 shrink-0 whitespace-nowrap rounded-full px-4 text-sm font-bold ${on ? "bg-ink text-page" : "bg-surface-3 text-ink-2 hover:bg-surface-4"}`}>
+    <button
+      onClick={onClick}
+      className={`h-9 shrink-0 whitespace-nowrap rounded-full px-4 text-sm font-bold ${on ? "bg-ink text-page" : "bg-surface-3 text-ink-2 hover:bg-surface-4"}`}
+    >
       {children}
     </button>
   );
@@ -123,7 +137,10 @@ function Row({ r, isTeacher, showGroup }: { r: RosterRow; isTeacher: boolean; sh
   const navigate = useNavigate();
   const soon = r.subscriptionEndsAt && new Date(r.subscriptionEndsAt).getTime() < Date.now() + 5 * 86_400_000;
   return (
-    <button onClick={() => navigate(`/students/${r.studentId}`)} className="flex w-full flex-wrap items-center gap-x-3 gap-y-1 px-4 py-3 text-left hover:bg-surface-2">
+    <button
+      onClick={() => navigate(`/students/${r.studentId}`)}
+      className="flex w-full flex-wrap items-center gap-x-3 gap-y-1 px-4 py-3 text-left hover:bg-surface-2"
+    >
       <div className="min-w-0 basis-full sm:basis-0 sm:flex-1">
         <p className="truncate font-semibold">{r.name}</p>
         <p className="truncate text-xs text-ink-3">
@@ -131,7 +148,9 @@ function Row({ r, isTeacher, showGroup }: { r: RosterRow; isTeacher: boolean; sh
         </p>
         {(r.lastActiveAt || r.startedOn) && (
           <p className="truncate text-[11px] text-ink-4">
-            {[r.startedOn && `boshlagan ${fmtYmd(r.startedOn)}`, r.lastActiveAt && `oxirgi kirgan ${fmtShortDateTime(r.lastActiveAt)}`].filter(Boolean).join(" · ")}
+            {[r.startedOn && `boshlagan ${fmtYmd(r.startedOn)}`, r.lastActiveAt && `oxirgi kirgan ${fmtShortDateTime(r.lastActiveAt)}`]
+              .filter(Boolean)
+              .join(" · ")}
           </p>
         )}
       </div>
@@ -140,11 +159,15 @@ function Row({ r, isTeacher, showGroup }: { r: RosterRow; isTeacher: boolean; sh
         {r.accessMode === "FREE" && <Badge tone="blue">bepul ochiq</Badge>}
         {r.accessMode === "CLOSED" && <Badge tone="red">kirish yopiq</Badge>}
         {!r.telegramLinked && <Badge tone="amber">botga kirmagan</Badge>}
-        {r.parents.approved ? <Badge tone="green">ota-ona ✓</Badge> : r.parents.pending ? <Badge tone="blue">ota-ona kutilmoqda</Badge> : <Badge>ota-ona yo'q</Badge>}
-        {isTeacher && r.paidThisMonth !== null && (r.paidThisMonth ? <Badge tone="green">shu oy to'lagan</Badge> : <Badge tone="red">qarzdor</Badge>)}
-        {r.subscriptionEndsAt && (
-          <Badge tone={soon ? "amber" : "green"}>obuna {fmtDate(r.subscriptionEndsAt)} gacha</Badge>
+        {r.parents.approved ? (
+          <Badge tone="green">ota-ona ✓</Badge>
+        ) : r.parents.pending ? (
+          <Badge tone="blue">ota-ona kutilmoqda</Badge>
+        ) : (
+          <Badge>ota-ona yo'q</Badge>
         )}
+        {isTeacher && r.paidThisMonth !== null && (r.paidThisMonth ? <Badge tone="green">shu oy to'lagan</Badge> : <Badge tone="red">qarzdor</Badge>)}
+        {r.subscriptionEndsAt && <Badge tone={soon ? "amber" : "green"}>obuna {fmtDate(r.subscriptionEndsAt)} gacha</Badge>}
         {r.attendance30.total > 0 && (
           <Badge tone={r.attendance30.absent > r.attendance30.total / 3 ? "red" : "gray"}>
             davomat {r.attendance30.present}/{r.attendance30.total}
@@ -178,7 +201,14 @@ function AddOneModal({ groupId, onClose }: { groupId: string; onClose: () => voi
   const navigate = useNavigate();
   const [d, setD] = useState({ firstName: "", lastName: "", phone: "", groupId, startedOn: tashkentToday() });
   const save = useMutation({
-    mutationFn: () => api.createStudent({ firstName: d.firstName.trim(), lastName: d.lastName.trim() || null, phone: d.phone.trim() || null, groupId: d.groupId || null, startedOn: d.startedOn || null }),
+    mutationFn: () =>
+      api.createStudent({
+        firstName: d.firstName.trim(),
+        lastName: d.lastName.trim() || null,
+        phone: d.phone.trim() || null,
+        groupId: d.groupId || null,
+        startedOn: d.startedOn || null,
+      }),
     onSuccess: (r) => {
       toast("O'quvchi qo'shildi");
       qc.invalidateQueries({ queryKey: ["roster"] });

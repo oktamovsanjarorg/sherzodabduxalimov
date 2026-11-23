@@ -81,7 +81,10 @@ export function AdvisorPage() {
             {calm.map((a) => {
               const Icon = AREA_ICON[a];
               return (
-                <span key={a} className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-sm font-semibold text-emerald-800">
+                <span
+                  key={a}
+                  className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-sm font-semibold text-emerald-800"
+                >
                   <CheckCircle2 size={15} />
                   <Icon size={14} className="opacity-70" /> {ADVICE_AREA_LABELS[a]}
                 </span>

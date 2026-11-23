@@ -16,7 +16,13 @@ export class VoiceController {
 
   @Roles("TEACHER", "ASSISTANT")
   @Post("admin/essays/:attemptId/:questionId/voice")
-  attempt(@CurrentUser() u: JwtUser, @Param("attemptId") a: string, @Param("questionId") q: string, @Body() body: unknown, @Headers("content-type") ct?: string) {
+  attempt(
+    @CurrentUser() u: JwtUser,
+    @Param("attemptId") a: string,
+    @Param("questionId") q: string,
+    @Body() body: unknown,
+    @Headers("content-type") ct?: string,
+  ) {
     return this.svc.forAttempt(u.sub, a, q, body, ct);
   }
 

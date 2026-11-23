@@ -25,7 +25,10 @@ function Steps({ u }: { u: AdminUserRow }) {
       {steps.map((st) => {
         const wait = u.waiting.includes(st.key);
         return (
-          <span key={st.key} className={`inline-flex items-center gap-0.5 rounded-full px-2 py-0.5 text-[11px] font-bold ${wait ? "bg-surface-3 text-ink-3" : "bg-emerald-50 text-emerald-700"}`}>
+          <span
+            key={st.key}
+            className={`inline-flex items-center gap-0.5 rounded-full px-2 py-0.5 text-[11px] font-bold ${wait ? "bg-surface-3 text-ink-3" : "bg-emerald-50 text-emerald-700"}`}
+          >
             {wait ? <Clock size={11} /> : <Check size={11} strokeWidth={3} />} {st.label}
           </span>
         );
@@ -38,7 +41,14 @@ function Steps({ u }: { u: AdminUserRow }) {
 export function AllUsers({ q, groups, isTeacher }: { q: string; groups: AdminGroup[]; isTeacher: boolean }) {
   const users = useQuery({ queryKey: ["users", q], queryFn: () => api.users(q), placeholderData: (p) => p });
   if (users.isPending) return <Spinner className="text-ink-4" />;
-  if (!users.data?.length) return <Empty Icon={GraduationCap} title={q ? "Topilmadi" : "Hali hech kim kirmagan"} hint={q ? undefined : "Botda /start bosgan har bir kishi shu yerda ko'rinadi."} />;
+  if (!users.data?.length)
+    return (
+      <Empty
+        Icon={GraduationCap}
+        title={q ? "Topilmadi" : "Hali hech kim kirmagan"}
+        hint={q ? undefined : "Botda /start bosgan har bir kishi shu yerda ko'rinadi."}
+      />
+    );
   return (
     <>
       <p className="mb-2 text-xs text-ink-3">{users.data.length} ta foydalanuvchi</p>

@@ -26,8 +26,7 @@ export function ResultView({ result }: { result: AttemptResult }) {
   const m = result.milliy;
   const pct = m ? ((m.total ?? m.test.scaled) / 75) * 100 : result.percent;
   const tone = pct >= 80 ? "text-success" : result.percent >= 50 ? "text-brand" : "text-danger";
-  const verdict =
-    result.percent >= 86 ? "A'lo natija!" : result.percent >= 70 ? "Yaxshi natija" : result.percent >= 50 ? "Yomon emas" : "Mavzuni takrorlang";
+  const verdict = result.percent >= 86 ? "A'lo natija!" : result.percent >= 70 ? "Yaxshi natija" : result.percent >= 50 ? "Yomon emas" : "Mavzuni takrorlang";
 
   return (
     <FullPage
@@ -63,9 +62,7 @@ export function ResultView({ result }: { result: AttemptResult }) {
           </>
         )}
         <p className="text-sm text-hint">{result.testTitle}</p>
-        {result.status === "EXPIRED" && (
-          <p className="mt-2 rounded-full bg-danger/10 px-3 py-1 text-xs font-bold text-danger">Vaqt tugadi</p>
-        )}
+        {result.status === "EXPIRED" && <p className="mt-2 rounded-full bg-danger/10 px-3 py-1 text-xs font-bold text-danger">Vaqt tugadi</p>}
         {result.pendingPoints > 0 && (
           <p className="mt-3 rounded-xl bg-brand-soft px-3 py-2 text-xs font-semibold text-brand">
             Esse ({fmtPoints(result.pendingPoints)} ball) ustoz tomonidan tekshirilmoqda. Yakuniy natija bot orqali yuboriladi.
@@ -136,12 +133,15 @@ function MilliyCard({ m }: { m: MilliyBreakdown }) {
         ? row("Yozma ish (esse)", "tekshirilmoqda", "Ustoz baholagach bot orqali xabar keladi")
         : m.essay && row("Yozma ish (esse)", `${fmtPoints(m.essay.scaled)} / 75`, `${fmtPoints(m.essay.score24)} / 24 ball`)}
       {m.total !== null && row("Umumiy ball", `${fmtPoints(m.total)} / 75`, m.essay ? "Ikki qismning o'rtachasi" : undefined)}
-      {m.university && row("Oliygohga kirishda", `${fmtPoints(m.university.first)} · ${fmtPoints(m.university.second)}`, "Mutaxassislik bloki: 1-fan (max 93) · 2-fan (max 63)")}
+      {m.university &&
+        row(
+          "Oliygohga kirishda",
+          `${fmtPoints(m.university.first)} · ${fmtPoints(m.university.second)}`,
+          "Mutaxassislik bloki: 1-fan (max 93) · 2-fan (max 63)",
+        )}
     </div>
   );
 }
-
-const trim = (n: number) => (Number.isInteger(n) ? String(n) : n.toFixed(1));
 
 function Stat({ value, label }: { value: string; label: string }) {
   return (
@@ -260,11 +260,7 @@ function QuestionReview({ q, n, milliy }: { q: ResultQuestion; n: number; milliy
           {q.options.map((o, i) => {
             const correct = q.correctOptionIds.includes(o.id);
             const mine = q.yourOptionIds.includes(o.id);
-            const cls = correct
-              ? "bg-success/15 text-success font-bold"
-              : mine
-                ? "bg-danger/10 text-danger font-bold line-through decoration-2"
-                : "text-hint";
+            const cls = correct ? "bg-success/15 text-success font-bold" : mine ? "bg-danger/10 text-danger font-bold line-through decoration-2" : "text-hint";
             return (
               <div key={o.id} className={`flex items-center gap-2 rounded-xl px-3 py-2 text-sm ${cls}`}>
                 <span className="w-4 shrink-0 font-extrabold">{String.fromCharCode(65 + i)}</span>

@@ -47,7 +47,9 @@ export async function enqueuePending(prisma: PrismaClient, notify: Pick<Queue<No
     select: { id: true, chatId: true, user: { select: { firstName: true } } },
   });
   for (let i = 0; i < rows.length; i += 500) {
-    await notify.addBulk(rows.slice(i, i + 500).map((r) => ({ name: "send", data: { ...buildJob(a, r.chatId, r.user.firstName, appUrl), recipientId: r.id } })));
+    await notify.addBulk(
+      rows.slice(i, i + 500).map((r) => ({ name: "send", data: { ...buildJob(a, r.chatId, r.user.firstName, appUrl), recipientId: r.id } })),
+    );
   }
   return rows.length;
 }

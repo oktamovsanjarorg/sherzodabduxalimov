@@ -1,5 +1,17 @@
 import type { PrismaClient } from "@onatili/db";
-import { ESSAY_MAX_SCORE, ESSAY_SPECIAL, NO_ESSAY_ERROR, type EssayAnnotations, type PageAnnotations, type TextMark, countWords, isMostlyCyrillic, rubricScore, type EssaySpecialKey, formatScore } from "@onatili/shared";
+import {
+  ESSAY_MAX_SCORE,
+  ESSAY_SPECIAL,
+  NO_ESSAY_ERROR,
+  type EssayAnnotations,
+  type PageAnnotations,
+  type TextMark,
+  countWords,
+  isMostlyCyrillic,
+  rubricScore,
+  type EssaySpecialKey,
+  formatScore,
+} from "@onatili/shared";
 import type { AiEssayResult } from "../ai/deepseek";
 import type { SendFn } from "../billing/reminders";
 import { esc } from "../notify/telegram";
@@ -20,14 +32,26 @@ export async function aiAnnotations(
 ): Promise<EssayAnnotations | null> {
   if (!mistakes.length) return null;
   if (opts.pages.length && opts.locate) {
-    const found = await opts.locate(opts.pages, mistakes.map((m) => m.wrong)).catch(() => []);
+    const found = await opts
+      .locate(
+        opts.pages,
+        mistakes.map((m) => m.wrong),
+      )
+      .catch(() => []);
     if (!found.length) return null;
     const pages: PageAnnotations[] = opts.pages.map(() => ({ strokes: [], marks: [] }));
     for (const f of found) {
       const m = mistakes[f.i];
       const [ymin, xmin, ymax, xmax] = f.box.map((v) => v / 1000);
       const y = Math.min(1, ymax + 0.004);
-      pages[f.page].strokes.push({ tool: "pen", width: 0.003, points: [[xmin, y], [xmax, y]] });
+      pages[f.page].strokes.push({
+        tool: "pen",
+        width: 0.003,
+        points: [
+          [xmin, y],
+          [xmax, y],
+        ],
+      });
       pages[f.page].marks.push({ x: xmin, y: ymin, type: m.type, note: m.right.slice(0, 120) || null });
     }
     return { pages, text: [] };
@@ -53,17 +77,35 @@ export { NO_ESSAY_ERROR };
 /** Tekshirilmaydigan holatlar uchun tayyor tavsiyalar */
 const SPECIAL_TIPS: Partial<Record<EssaySpecialKey, AiEssayResult["tips"]>> = {
   TOO_SHORT: [
-    { focus: "parts", text: "Kamida 100 so'z yozing: kirish (2–3 gap), asosiy qism (ikki qarash va shaxsiy fikr, dalillar bilan) va xulosa (2–3 gap).", example: null },
+    {
+      focus: "parts",
+      text: "Kamida 100 so'z yozing: kirish (2–3 gap), asosiy qism (ikki qarash va shaxsiy fikr, dalillar bilan) va xulosa (2–3 gap).",
+      example: null,
+    },
     { focus: "evidence", text: "Har bir qarashni bitta hayotiy misol yoki dalil bilan asoslang — bu ham hajmni, ham mazmunni oshiradi.", example: null },
   ],
   CYRILLIC: [{ focus: "spelling", text: "Esse faqat lotin yozuvida yozilishi shart: to'liq kirillcha esse tekshirilmaydi va 0 ball oladi.", example: null }],
-  OFF_TOPIC: [{ focus: "views", text: "Topshiriqdagi vaziyatni diqqat bilan o'qing va asosiy qism hamda xulosada aynan shu vaziyat haqida fikr yuriting.", example: null }],
+  OFF_TOPIC: [
+    {
+      focus: "views",
+      text: "Topshiriqdagi vaziyatni diqqat bilan o'qing va asosiy qism hamda xulosada aynan shu vaziyat haqida fikr yuriting.",
+      example: null,
+    },
+  ],
   COPIED: [{ focus: "style", text: "Vaziyat matnini yoki boshqa manbani ko'chirmang: fikrlarni o'z so'zlaringiz bilan bayon qiling.", example: null }],
   ONLY_INTRO: [{ focus: "parts", text: "Kirishdan keyin asosiy qism (ikki qarash, shaxsiy fikr, dalillar) va xulosani ham yozing.", example: null }],
 };
 
 /** Bitta esseni AI bilan baholaydi va natijani saqlaydi. Worker chaqiradi; testda grade soxta bo'ladi. */
-export async function gradeEssayJob(prisma: PrismaClient, essayId: string, grade: GradeFn, send: SendFn, miniAppUrl: string | undefined, read?: ReadFn, locate?: LocateFn) {
+export async function gradeEssayJob(
+  prisma: PrismaClient,
+  essayId: string,
+  grade: GradeFn,
+  send: SendFn,
+  miniAppUrl: string | undefined,
+  read?: ReadFn,
+  locate?: LocateFn,
+) {
   const e = await prisma.essay.findUnique({ where: { id: essayId }, include: { user: { select: { telegramId: true } } } });
   if (!e || e.status !== "AI_CHECKING") return null; // o'chirilgan yoki allaqachon tekshirilgan
   const handwritten = e.imageUrls.length > 0;
@@ -110,7 +152,7 @@ export async function gradeEssayJob(prisma: PrismaClient, essayId: string, grade
         criteria,
         special,
         mistakes: r.mistakes,
-        tips: r.tips.length ? r.tips : (special ? SPECIAL_TIPS[special] : undefined) ?? undefined,
+        tips: r.tips.length ? r.tips : ((special ? SPECIAL_TIPS[special] : undefined) ?? undefined),
         annotations: annotations ?? undefined,
         totalScore: total,
         feedback: r.feedback || null,
@@ -119,11 +161,12 @@ export async function gradeEssayJob(prisma: PrismaClient, essayId: string, grade
     return true;
   });
   if (!saved) return null;
-  if (e.user.telegramId !== null) await send(
-    e.user.telegramId,
-    `🤖 <b>AI essengizni tekshirdi</b>\n«${esc(e.prompt.slice(0, 80))}»\nTaxminiy ball: <b>${formatScore(total)} / ${ESSAY_MAX_SCORE}</b>`,
-    miniAppUrl ? { text: "Natija va xatolarni ko'rish", webAppUrl: `${miniAppUrl.replace(/\/$/, "")}/essays/${essayId}` } : undefined,
-  );
+  if (e.user.telegramId !== null)
+    await send(
+      e.user.telegramId,
+      `🤖 <b>AI essengizni tekshirdi</b>\n«${esc(e.prompt.slice(0, 80))}»\nTaxminiy ball: <b>${formatScore(total)} / ${ESSAY_MAX_SCORE}</b>`,
+      miniAppUrl ? { text: "Natija va xatolarni ko'rish", webAppUrl: `${miniAppUrl.replace(/\/$/, "")}/essays/${essayId}` } : undefined,
+    );
   return total;
 }
 

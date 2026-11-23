@@ -119,7 +119,9 @@ export function AnnounceComposerPage() {
     mutationFn: async (at: string | null) => announceApi.send((await save()).id, at),
     onSuccess: (a) => {
       qc.invalidateQueries({ queryKey: ["announcements"] });
-      toast(a.status === "SCHEDULED" && a.scheduledAt && new Date(a.scheduledAt).getTime() > Date.now() + 60_000 ? "E'lon rejalashtirildi" : "E'lon yuborilmoqda");
+      toast(
+        a.status === "SCHEDULED" && a.scheduledAt && new Date(a.scheduledAt).getTime() > Date.now() + 60_000 ? "E'lon rejalashtirildi" : "E'lon yuborilmoqda",
+      );
       navigate(`/announcements/${a.id}`);
     },
     onError: (e) => toast(errMsg(e), "error"),
@@ -147,7 +149,11 @@ export function AnnounceComposerPage() {
 
   return (
     <>
-      <PageHeader title={id ? "E'lonni tahrirlash" : "Yangi e'lon"} subtitle="Xabar bot orqali har kimning Telegram'iga boradi" actions={<div className="hidden gap-2 md:flex">{actions()}</div>} />
+      <PageHeader
+        title={id ? "E'lonni tahrirlash" : "Yangi e'lon"}
+        subtitle="Xabar bot orqali har kimning Telegram'iga boradi"
+        actions={<div className="hidden gap-2 md:flex">{actions()}</div>}
+      />
       <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_380px]">
         <div className="space-y-5">
           <section className="card space-y-4 p-4 sm:p-5">
@@ -163,7 +169,13 @@ export function AnnounceComposerPage() {
           <section className="card space-y-4 p-4 sm:p-5">
             <h2 className="text-base font-extrabold">2. Xabar</h2>
             <Field label="Sarlavha (ixtiyoriy)" hint="Faqat ro'yxatda ko'rinadi, oluvchilarga yuborilmaydi">
-              <input className="input" value={f.title ?? ""} maxLength={120} placeholder="Masalan: Dekabr jadvali" onChange={(e) => set({ title: e.target.value })} />
+              <input
+                className="input"
+                value={f.title ?? ""}
+                maxLength={120}
+                placeholder="Masalan: Dekabr jadvali"
+                onChange={(e) => set({ title: e.target.value })}
+              />
             </Field>
             <MessageEditor
               text={f.text}
@@ -177,12 +189,23 @@ export function AnnounceComposerPage() {
           <section className="card space-y-4 p-4 sm:p-5">
             <h2 className="text-base font-extrabold">3. Qo'shimcha</h2>
             <ButtonEditor kind={kind} setKind={setKind} f={f} set={set} />
-            <Toggle checked={f.silent} onChange={(silent) => set({ silent })} label="Ovozsiz yuborish" hint="Telefonda tovush chiqmaydi (kechqurun yoki muhim bo'lmagan xabarlar uchun)" />
+            <Toggle
+              checked={f.silent}
+              onChange={(silent) => set({ silent })}
+              label="Ovozsiz yuborish"
+              hint="Telefonda tovush chiqmaydi (kechqurun yoki muhim bo'lmagan xabarlar uchun)"
+            />
           </section>
         </div>
         <aside className="space-y-3 lg:sticky lg:top-4 lg:self-start">
           <h2 className="text-xs font-bold uppercase tracking-[0.14em] text-ink-3">Ko'rinishi</h2>
-          <TelegramPreview text={f.text} photo={photo} buttonText={kind === "none" ? null : f.buttonText} buttonUrl={f.buttonUrl} name={preview.data?.sample[0]?.split(" ")[0]} />
+          <TelegramPreview
+            text={f.text}
+            photo={photo}
+            buttonText={kind === "none" ? null : f.buttonText}
+            buttonUrl={f.buttonUrl}
+            name={preview.data?.sample[0]?.split(" ")[0]}
+          />
           <Reach preview={preview.data} loading={preview.isFetching} silent={f.silent} />
         </aside>
       </div>
@@ -190,13 +213,29 @@ export function AnnounceComposerPage() {
         <div className="flex gap-2 [&>button]:min-w-0 [&>button]:flex-1 [&>button]:px-2">{actions(true)}</div>
       </MobileBar>
       {sending && preview.data && (
-        <SendDialog preview={preview.data} initial={existing.data?.scheduledAt ?? null} busy={send.isPending} onClose={() => setSending(false)} onSend={(at) => send.mutate(at)} />
+        <SendDialog
+          preview={preview.data}
+          initial={existing.data?.scheduledAt ?? null}
+          busy={send.isPending}
+          onClose={() => setSending(false)}
+          onSend={(at) => send.mutate(at)}
+        />
       )}
     </>
   );
 }
 
-function ButtonEditor({ kind, setKind, f, set }: { kind: ButtonKind; setKind: (k: ButtonKind) => void; f: AnnounceInput; set: (p: Partial<AnnounceInput>) => void }) {
+function ButtonEditor({
+  kind,
+  setKind,
+  f,
+  set,
+}: {
+  kind: ButtonKind;
+  setKind: (k: ButtonKind) => void;
+  f: AnnounceInput;
+  set: (p: Partial<AnnounceInput>) => void;
+}) {
   return (
     <div className="space-y-3">
       <Field label="Xabar ostida tugma">

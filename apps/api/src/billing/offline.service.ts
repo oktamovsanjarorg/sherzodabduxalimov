@@ -55,7 +55,10 @@ export class OfflineBillingService {
     const students = await this.prisma.studentProfile.findMany({
       where: { OR: [{ groupId }, { offlinePayments: { some: { groupId, month } } }] },
       // Davr o'quvchining o'z sanasidan: oy chegarasidan o'tadi, shuning uchun hamma to'lovlari olinadi (so'nggi 2 yil)
-      select: { ...studentSelect, offlinePayments: { orderBy: { month: "desc" }, take: 24, include: { markedBy: { select: { firstName: true, lastName: true } } } } },
+      select: {
+        ...studentSelect,
+        offlinePayments: { orderBy: { month: "desc" }, take: 24, include: { markedBy: { select: { firstName: true, lastName: true } } } },
+      },
     });
     const today = tashkentToday();
     const ref = referenceDate(month, today);
@@ -114,8 +117,14 @@ export class OfflineBillingService {
     return { ok: true };
   }
 
-  async mark(actorId: string, d: { studentId: string; month?: string; periodStart?: string; periodEnd?: string; paidOn?: string; amountUzs?: number; note: string | null }) {
-    const s = await this.prisma.studentProfile.findUnique({ where: { id: d.studentId }, select: { ...studentSelect, group: { select: { id: true, monthlyFeeUzs: true } } } });
+  async mark(
+    actorId: string,
+    d: { studentId: string; month?: string; periodStart?: string; periodEnd?: string; paidOn?: string; amountUzs?: number; note: string | null },
+  ) {
+    const s = await this.prisma.studentProfile.findUnique({
+      where: { id: d.studentId },
+      select: { ...studentSelect, group: { select: { id: true, monthlyFeeUzs: true } } },
+    });
     if (!s) throw new NotFoundException("O'quvchi topilmadi");
     const today = tashkentToday();
 
@@ -153,7 +162,13 @@ export class OfflineBillingService {
     });
     const late = Math.max(0, daysBetween(start, paidOn));
     await this.prisma.auditLog.create({
-      data: { actorId, action: "offline.paid", entity: "OfflinePayment", entityId: p.id, meta: { month: monthKey, periodStart: start, periodEnd: end, paidOn, lateDays: late, amountUzs } },
+      data: {
+        actorId,
+        action: "offline.paid",
+        entity: "OfflinePayment",
+        entityId: p.id,
+        meta: { month: monthKey, periodStart: start, periodEnd: end, paidOn, lateDays: late, amountUzs },
+      },
     });
     // Faqat birinchi belgilashda: ota-onaga "to'lov qabul qilindi"
     if (!existing) {
@@ -175,7 +190,15 @@ export class OfflineBillingService {
     const startedOn = s.startedOn ? ymdOf(s.startedOn) : null;
     const cov = coverage(s.offlinePayments, tashkentToday(), startedOn);
     const fee = s.group ? effectiveFee(s.group.monthlyFeeUzs, await defaultMonthlyFee(this.prisma)) : null;
-    return { name: fullName(s.user), approvedParents: s.parents.length, coveredUntil: cov.coveredUntil, nextPeriodStart: cov.nextPeriodStart, startedOn, feeUzs: fee, hasGroup: !!s.group };
+    return {
+      name: fullName(s.user),
+      approvedParents: s.parents.length,
+      coveredUntil: cov.coveredUntil,
+      nextPeriodStart: cov.nextPeriodStart,
+      startedOn,
+      feeUzs: fee,
+      hasGroup: !!s.group,
+    };
   }
 
   async unmark(actorId: string, studentId: string, month: string) {
@@ -198,7 +221,8 @@ export class OfflineBillingService {
     // Ustoz kiritgan karta bo'lsa, eslatmada ko'rsatamiz: kartaga o'tkazib to'lash mumkin
     const cardRow = await this.prisma.appSetting.findUnique({ where: { key: "billing" } });
     const c = cardRow?.value as { number?: string; holder?: string } | undefined;
-    const card = c?.number && c.holder ? `\n💳 Kartaga: <code>${formatCard(c.number)}</code> (${esc(c.holder)}). O'tkazgandan keyin chekni ustozga ko'rsating.` : "";
+    const card =
+      c?.number && c.holder ? `\n💳 Kartaga: <code>${formatCard(c.number)}</code> (${esc(c.holder)}). O'tkazgandan keyin chekni ustozga ko'rsating.` : "";
     const fee = l.group.monthlyFeeUzs ? ` (${formatSum(l.group.monthlyFeeUzs)} so'm)` : "";
     let messages = 0;
     for (const s of debtors) {
@@ -232,7 +256,9 @@ export class OfflineBillingService {
         },
       });
     }
-    await this.prisma.auditLog.create({ data: { actorId, action: "offline.remind", entity: "Group", entityId: `${groupId}:${month}`, meta: { students: debtors.length, messages } } });
+    await this.prisma.auditLog.create({
+      data: { actorId, action: "offline.remind", entity: "Group", entityId: `${groupId}:${month}`, meta: { students: debtors.length, messages } },
+    });
     return { students: debtors.length, messages };
   }
 

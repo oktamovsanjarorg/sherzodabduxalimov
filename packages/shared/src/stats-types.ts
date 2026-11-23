@@ -38,7 +38,13 @@ export interface TeacherStats {
   };
   essays: { submitted: number; checkedByTeacher: number; checkedByAi: number; avgScore: number | null; waiting: number };
   /** E'tibor kerak bo'lgan o'quvchilar (eng muhimlari birinchi) */
-  attention: { userId: string; /** O'quvchi sahifasi /students/:studentId */ studentId: string | null; name: string; group: string | null; reasons: string[] }[];
+  attention: {
+    userId: string;
+    /** O'quvchi sahifasi /students/:studentId */ studentId: string | null;
+    name: string;
+    group: string | null;
+    reasons: string[];
+  }[];
   /** Shu oyning eng yaxshilari (kamida 2 ta test) */
   top: { userId: string; studentId: string | null; name: string; group: string | null; avgPercent: number; tests: number }[];
   /** Oxirgi 8 hafta faolligi (eskidan yangiga) */

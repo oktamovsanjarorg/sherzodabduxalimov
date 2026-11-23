@@ -85,7 +85,10 @@ export function parseEssayTable(rows: string[][]): { rows: { name: string; score
   const share = (c: number, f: (s: string) => boolean) => filled.filter((r) => f(r[c] ?? "")).length / (filled.length || 1);
   const cols = Array.from({ length: width }, (_, c) => c);
   const scoreCol = cols.sort((a, b) => share(b, isNum) - share(a, isNum))[0] ?? 1;
-  const nameCol = Array.from({ length: width }, (_, c) => c).filter((c) => c !== scoreCol).sort((a, b) => share(b, (s) => /\p{L}{2}/u.test(s)) - share(a, (s) => /\p{L}{2}/u.test(s)))[0] ?? 0;
+  const nameCol =
+    Array.from({ length: width }, (_, c) => c)
+      .filter((c) => c !== scoreCol)
+      .sort((a, b) => share(b, (s) => /\p{L}{2}/u.test(s)) - share(a, (s) => /\p{L}{2}/u.test(s)))[0] ?? 0;
   const out: { name: string; score24: number }[] = [];
   const bad: string[] = [];
   for (const r of filled) {

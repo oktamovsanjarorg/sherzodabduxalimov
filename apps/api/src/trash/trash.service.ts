@@ -188,7 +188,9 @@ export class TrashService {
       return fresh;
     };
     const select = (t: string, col: string, values: string[]) =>
-      tx.$queryRawUnsafe<{ r: Row }[]>(`SELECT to_jsonb(x) AS r FROM ${q(t)} x WHERE x.${q(col)}::text = ANY($1::text[])`, values).then((rs) => rs.map((x) => x.r));
+      tx
+        .$queryRawUnsafe<{ r: Row }[]>(`SELECT to_jsonb(x) AS r FROM ${q(t)} x WHERE x.${q(col)}::text = ANY($1::text[])`, values)
+        .then((rs) => rs.map((x) => x.r));
 
     const queue: { table: string; rows: Row[] }[] = [{ table: rootTable, rows: add(rootTable, await select(rootTable, "id", [rootId])) }];
     const nulls: Snapshot["setNull"] = [];
@@ -196,7 +198,14 @@ export class TrashService {
       const { table, rows } = queue.shift()!;
       if (!rows.length) continue;
       for (const fk of fks.filter((f) => f.parent === table)) {
-        const values = [...new Set(rows.map((r) => r[fk.parentCol]).filter((v) => v !== null && v !== undefined).map(String))];
+        const values = [
+          ...new Set(
+            rows
+              .map((r) => r[fk.parentCol])
+              .filter((v) => v !== null && v !== undefined)
+              .map(String),
+          ),
+        ];
         if (!values.length) continue;
         const children = await select(fk.child, fk.childCol, values);
         if (fk.onDelete === "c") {
@@ -204,7 +213,8 @@ export class TrashService {
           if (fresh.length) queue.push({ table: fk.child, rows: fresh });
         } else if (fk.onDelete === "n") {
           const cols = pks.get(fk.child) ?? ["id"];
-          for (const c of children) nulls.push({ table: fk.child, pk: Object.fromEntries(cols.map((k) => [k, c[k]])), col: fk.childCol, value: c[fk.childCol] });
+          for (const c of children)
+            nulls.push({ table: fk.child, pk: Object.fromEntries(cols.map((k) => [k, c[k]])), col: fk.childCol, value: c[fk.childCol] });
         }
       }
     }

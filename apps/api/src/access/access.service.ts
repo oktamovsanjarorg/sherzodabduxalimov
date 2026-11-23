@@ -1,6 +1,6 @@
 import { ForbiddenException, Injectable } from "@nestjs/common";
 import { Prisma } from "@onatili/db";
-import { ERROR_CODES, STAFF_ROLES, currentMonth, type RoleName } from "@onatili/shared";
+import { ERROR_CODES, STAFF_ROLES, type RoleName } from "@onatili/shared";
 import type { JwtUser } from "../auth/decorators";
 import { paidNowWhere } from "../billing/offline-period";
 import { PrismaService } from "../prisma/prisma.service";

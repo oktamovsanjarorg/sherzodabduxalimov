@@ -56,7 +56,12 @@ function Runner({ state }: { state: AttemptState }) {
   const [answers, setAnswers] = useState<Record<string, Answer>>(() =>
     Object.fromEntries(state.answers.map((a) => [a.questionId, { optionIds: a.optionIds, textAnswer: a.textAnswer }])),
   );
-  const [index, setIndex] = useState(() => Math.max(0, qs.findIndex((q) => !state.answers.some((a) => a.questionId === q.id))));
+  const [index, setIndex] = useState(() =>
+    Math.max(
+      0,
+      qs.findIndex((q) => !state.answers.some((a) => a.questionId === q.id)),
+    ),
+  );
   const [showMap, setShowMap] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
@@ -100,9 +105,7 @@ function Runner({ state }: { state: AttemptState }) {
       if (submitting) return;
       if (!auto) {
         const left = qs.filter((q) => !isAnswered(answersRef.current[q.id])).length;
-        const ok = await confirmDialog(
-          left ? `${left} ta savolga javob berilmagan. Testni yakunlaysizmi?` : "Testni yakunlaysizmi?",
-        );
+        const ok = await confirmDialog(left ? `${left} ta savolga javob berilmagan. Testni yakunlaysizmi?` : "Testni yakunlaysizmi?");
         if (!ok) return;
       }
       setSubmitting(true);
@@ -143,12 +146,7 @@ function Runner({ state }: { state: AttemptState }) {
   function choose(optionId: string) {
     haptic();
     const prev = answers[q.id]?.optionIds ?? [];
-    const optionIds =
-      q.type === "MULTIPLE"
-        ? prev.includes(optionId)
-          ? prev.filter((x) => x !== optionId)
-          : [...prev, optionId]
-        : [optionId];
+    const optionIds = q.type === "MULTIPLE" ? (prev.includes(optionId) ? prev.filter((x) => x !== optionId) : [...prev, optionId]) : [optionId];
     const next = { optionIds, textAnswer: null };
     setAnswers((s) => ({ ...s, [q.id]: next }));
     persist(q.id, next);
@@ -213,7 +211,11 @@ function Runner({ state }: { state: AttemptState }) {
             <span ref={timerRef} className="data-[low=true]:text-danger" />
           </span>
         )}
-        <button className="tap flex h-10 w-10 items-center justify-center rounded-full bg-section" onClick={() => setShowMap(true)} aria-label="Savollar xaritasi">
+        <button
+          className="tap flex h-10 w-10 items-center justify-center rounded-full bg-section"
+          onClick={() => setShowMap(true)}
+          aria-label="Savollar xaritasi"
+        >
           <Grid3x3 size={18} />
         </button>
       </div>
@@ -317,7 +319,9 @@ function QuestionView({
                   <li key={r}>{r}</li>
                 ))}
               </ol>
-              <p className="mt-1 text-[12px] text-hint">100 so'zdan kam yoki mavzuga mos bo'lmasa — 2 ball; to'liq kirillcha yoki faqat kirish qismi — 0 ball.</p>
+              <p className="mt-1 text-[12px] text-hint">
+                100 so'zdan kam yoki mavzuga mos bo'lmasa — 2 ball; to'liq kirillcha yoki faqat kirish qismi — 0 ball.
+              </p>
             </details>
           )}
           <textarea

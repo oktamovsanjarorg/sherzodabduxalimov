@@ -4,5 +4,9 @@ import { AdminEssayLogController, AdminEssaySettingsController, AdminHwEssaysCon
 import { EssayStatsService } from "./essay-stats.service";
 import { EssaysService } from "./essays.service";
 
-@Module({ imports: [BillingModule], controllers: [EssaysController, AdminHwEssaysController, AdminEssaySettingsController, AdminEssayLogController], providers: [EssaysService, EssayStatsService] })
+@Module({
+  imports: [BillingModule],
+  controllers: [EssaysController, AdminHwEssaysController, AdminEssaySettingsController, AdminEssayLogController],
+  providers: [EssaysService, EssayStatsService],
+})
 export class EssaysModule {}
