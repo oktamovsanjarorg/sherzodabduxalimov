@@ -8,7 +8,6 @@ import type {
   AdminQuestion,
   AdminTestDetail,
   AdminTestRow,
-  AdminVideo,
   CourseInput,
   LessonInput,
   Paged,

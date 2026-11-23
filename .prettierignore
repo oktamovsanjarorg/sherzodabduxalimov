@@ -1,0 +1,12 @@
+dist
+node_modules
+coverage
+.turbo
+pnpm-lock.yaml
+**/migrations/**
+.playwright-mcp
+.ui-audit
+.media
+eval-data
+.claude
+eslint-suppressions.json

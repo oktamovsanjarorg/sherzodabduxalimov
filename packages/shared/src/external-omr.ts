@@ -22,12 +22,12 @@ const MARKS = /^Q\s*(\d+)\s*Marks$/i;
 const SECTION = /^Sertifikat\s*-\s*(\d+)\s*-\s*(\d+)$/i;
 
 export function isOmrExport(text: string): boolean {
-  const head = text.replace(/^﻿/, "").split(/\r?\n/, 1)[0] ?? "";
+  const head = text.replace(/^\uFEFF/, "").split(/\r?\n/, 1)[0] ?? "";
   return /(^|[,;\t])\s*Q\s*1\s*Marks\s*([,;\t]|$)/i.test(head);
 }
 
 export function parseOmrExport(text: string, takenAt: string | null): OmrParsed {
-  const lines = text.replace(/^﻿/, "").split(/\r?\n/).filter((l) => l.trim());
+  const lines = text.replace(/^\uFEFF/, "").split(/\r?\n/).filter((l) => l.trim());
   if (lines.length < 2) throw new Error("Faylda natija yo'q");
   const sep = lines[0].includes(";") ? ";" : lines[0].includes("\t") ? "\t" : ",";
   const head = splitCsv(lines[0], sep).map((h) => h.trim());

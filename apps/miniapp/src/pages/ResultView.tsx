@@ -141,8 +141,6 @@ function MilliyCard({ m }: { m: MilliyBreakdown }) {
   );
 }
 
-const trim = (n: number) => (Number.isInteger(n) ? String(n) : n.toFixed(1));
-
 function Stat({ value, label }: { value: string; label: string }) {
   return (
     <div>

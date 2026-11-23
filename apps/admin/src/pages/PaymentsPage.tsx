@@ -401,9 +401,10 @@ function GrantModal({ onClose }: { onClose: () => void }) {
   const plans = useQuery({ queryKey: ["plans"], queryFn: api.plans });
   const active = plans.data?.filter((p) => p.isActive) ?? [];
   const found = useQuery({ queryKey: ["student-search", search], queryFn: () => api.searchStudents(search), enabled: search.trim().length >= 2 });
+  const firstId = active[0]?.id;
   useEffect(() => {
-    if (!planId && active[0]) setPlanId(active[0].id);
-  }, [active, planId]);
+    if (!planId && firstId) setPlanId(firstId);
+  }, [firstId, planId]);
   const grant = useMutation({
     mutationFn: () => api.grantSubscription({ userId: student!.userId, planId, note: note.trim() || null }),
     onSuccess: (r) => {

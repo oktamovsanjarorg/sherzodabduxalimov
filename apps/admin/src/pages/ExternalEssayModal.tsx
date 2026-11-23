@@ -54,8 +54,10 @@ export function EssayModal({ t, onClose, onDone }: { t: ExternalTestDetail; onCl
     for (const l of paste.split(/\r?\n/).map((x) => x.trim()).filter(Boolean)) {
       const m = /^(.*?)[\s;,\t]+(\d+(?:[.,]\d)?)$/.exec(l);
       const id = m && byName.get(norm(m[1]));
-      if (m && id) (ok++, setV((p) => ({ ...p, [id]: m[2] })));
-      else miss.push(m?.[1] ?? l);
+      if (m && id) {
+        ok++;
+        setV((p) => ({ ...p, [id]: m[2] }));
+      } else miss.push(m?.[1] ?? l);
     }
     toast(miss.length ? `${ok} ta qo'yildi, topilmadi: ${miss.slice(0, 3).join(", ")}${miss.length > 3 ? "…" : ""}` : `${ok} ta qo'yildi`, miss.length ? "error" : undefined);
   };

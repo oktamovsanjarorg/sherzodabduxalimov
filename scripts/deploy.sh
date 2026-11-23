@@ -54,6 +54,8 @@ up() {
 if up && health; then
   echo "$NEW" > "$DIR/.deploy/current"
   docker image prune -f >/dev/null || true
+  # Build keshi har deploy'da o'sadi (2026-11 da 18 GB, disk 80%): oxirgi 3 GB qoladi, keyingi build tez
+  docker builder prune -f --keep-storage 3gb >/dev/null 2>&1 || true
   echo "=== $(date -Is) muvaffaqiyatli: ${NEW:0:7}"
   exit 0
 fi

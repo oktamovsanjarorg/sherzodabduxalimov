@@ -4,7 +4,15 @@ import { request } from "node:https";
  * Google Gemini: qo'lyozma varoq rasmlarini matnga aylantiradi (OCR).
  * Kalit aistudio.google.com dan bepul olinadi. IPv4 majburiy: serverda IPv6 ishlamaydi.
  */
-function call(method: "GET" | "POST", path: string, apiKey: string, body?: object, timeoutMs = 120_000): Promise<{ status: number; json: any }> {
+/** Gemini javobining biz o'qiydigan qismi */
+interface GeminiJson {
+  models?: { name: string; supportedGenerationMethods?: string[] }[];
+  candidates?: { finishReason?: string; content?: { parts?: { text?: string }[] } }[];
+  promptFeedback?: { blockReason?: string };
+  error?: { message?: string };
+}
+
+function call(method: "GET" | "POST", path: string, apiKey: string, body?: object, timeoutMs = 120_000): Promise<{ status: number; json: GeminiJson | null }> {
   const data = body ? JSON.stringify(body) : undefined;
   return new Promise((resolve, reject) => {
     const req = request(
@@ -60,7 +68,7 @@ async function pickModel(apiKey: string, preferred: string): Promise<string> {
 const FALLBACK_MODELS = ["gemini-3.7-flash", "gemini-3.5-flash", "gemini-flash-latest", "gemini-2.5-flash"];
 const RETRYABLE = new Set([404, 429, 500, 502, 503, 504]);
 
-const textOf = (j: any): string => (j?.candidates?.[0]?.content?.parts ?? []).map((p: { text?: string }) => p.text ?? "").join("").trim();
+const textOf = (j: GeminiJson | null): string => (j?.candidates?.[0]?.content?.parts ?? []).map((p: { text?: string }) => p.text ?? "").join("").trim();
 
 /** Gemini'ga so'rov: band bo'lsa (503/429) yoki model yo'q bo'lsa (404) navbatdagi modelga o'tiladi */
 async function generate(apiKey: string, preferred: string, body: object): Promise<string> {
@@ -68,7 +76,7 @@ async function generate(apiKey: string, preferred: string, body: object): Promis
   let last = "";
   const attempt = async (model: string) => {
     tried.add(model);
-    const r = await call("POST", `/v1beta/models/${encodeURIComponent(model)}:generateContent`, apiKey, body, 75_000).catch((e: Error) => ({ status: 504, json: { error: { message: e.message } } }));
+    const r = await call("POST", `/v1beta/models/${encodeURIComponent(model)}:generateContent`, apiKey, body, 75_000).catch((e: Error) => ({ status: 504, json: { error: { message: e.message } } as GeminiJson }));
     if (r.status === 200) {
       const text = textOf(r.json);
       if (!text) throw new Error(`Gemini bo'sh javob (${r.json?.candidates?.[0]?.finishReason ?? r.json?.promptFeedback?.blockReason ?? "?"})`);

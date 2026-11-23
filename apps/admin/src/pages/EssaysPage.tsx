@@ -109,7 +109,7 @@ function ReviewModal({ essay, onClose }: { essay: AdminEssay; onClose: () => voi
           : { points: value, comment: comment.trim() || null },
       );
     },
-    onSuccess: async (r) => {
+    onSuccess: async () => {
       if (voice) await api.uploadMockVoice(essay.attemptId, essay.questionId, voice).catch((e) => toast(`Baho saqlandi, lekin ovoz yuborilmadi: ${errMsg(e)}`, "error"));
       toast(`Saqlandi${voice ? " · ovozli izoh bilan" : ""}. O'quvchiga yuborildi`);
       qc.invalidateQueries({ queryKey: ["essays"] });

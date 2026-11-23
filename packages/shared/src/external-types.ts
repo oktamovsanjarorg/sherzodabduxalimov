@@ -167,7 +167,7 @@ export interface MyExternalResultDetail extends MyExternalResult {
  * Kataklar: 1 to'g'ri, 0 xato yoki bo'sh, bo'sh katak: savol yo'q.
  */
 export function parseTestMatrix(text: string): { questionCount: number; rows: ExternalRowInput[] } {
-  const lines = text.replace(/^﻿/, "").split(/\r?\n/).filter((l) => l.trim());
+  const lines = text.replace(/^\uFEFF/, "").split(/\r?\n/).filter((l) => l.trim());
   if (lines.length < 2) throw new Error("Faylda natija yo'q");
   const sep = lines[0].includes(";") ? ";" : lines[0].includes("\t") ? "\t" : ",";
   const head = splitCsv(lines[0], sep);
@@ -217,11 +217,17 @@ export function splitCsv(line: string, sep: string): string[] {
   for (let i = 0; i < line.length; i++) {
     const ch = line[i];
     if (q) {
-      if (ch === '"' && line[i + 1] === '"') (cur += '"'), i++;
+      if (ch === '"' && line[i + 1] === '"') {
+        cur += '"';
+        i++;
+      }
       else if (ch === '"') q = false;
       else cur += ch;
     } else if (ch === '"') q = true;
-    else if (ch === sep) out.push(cur), (cur = "");
+    else if (ch === sep) {
+      out.push(cur);
+      cur = "";
+    }
     else cur += ch;
   }
   out.push(cur);

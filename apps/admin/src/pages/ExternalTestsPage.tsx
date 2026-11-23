@@ -116,7 +116,9 @@ function ImportModal({ onClose, onDone }: { onClose: () => void; onDone: (id: st
           className="hidden"
           onChange={async (e) => {
             const f = e.target.files?.[0];
-            if (f) setFile({ fileName: f.name, content: await f.text() }), setPreview(null);
+            if (!f) return;
+            setFile({ fileName: f.name, content: await f.text() });
+            setPreview(null);
           }}
         />
         <button className="btn-secondary w-full" onClick={() => input.current?.click()}>

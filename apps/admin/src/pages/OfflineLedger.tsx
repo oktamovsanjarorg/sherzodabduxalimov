@@ -25,9 +25,10 @@ export function OfflineLedgerView({ q = "", onClearSearch }: { q?: string; onCle
   const [groupId, setGroupId] = useState(() => new URLSearchParams(window.location.search).get("group") ?? "");
   const [month, setMonth] = useState(currentMonth());
   const [paying, setPaying] = useState<OfflineLedgerRow | null>(null);
+  const firstId = active[0]?.id;
   useEffect(() => {
-    if (!groupId && active[0]) setGroupId(active[0].id);
-  }, [active, groupId]);
+    if (!groupId && firstId) setGroupId(firstId);
+  }, [firstId, groupId]);
 
   const ledger = useQuery({ queryKey: ["offline-ledger", groupId, month], queryFn: () => api.offlineLedger(groupId, month), enabled: !!groupId });
   const refresh = () => qc.invalidateQueries({ queryKey: ["offline-ledger"] });

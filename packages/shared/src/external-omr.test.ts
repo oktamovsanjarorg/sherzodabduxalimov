@@ -48,7 +48,10 @@ describe("parseOmrExport", () => {
     const p = parseOmrExport(file, null);
     expect(gradeMilliy(p.rows)).toMatchObject({ calibrated: false, n: 2 });
     expect(p.rows[1].scaledScore!).toBeGreaterThan(p.rows[0].scaledScore!);
-    for (const r of p.rows) expect(r.scaledScore).toBeGreaterThanOrEqual(0), expect(r.scaledScore).toBeLessThanOrEqual(75);
+    for (const r of p.rows) {
+      expect(r.scaledScore).toBeGreaterThanOrEqual(0);
+      expect(r.scaledScore).toBeLessThanOrEqual(75);
+    }
   });
 
   it("bo'lim ballari yig'indisi test baliga teng", () => {

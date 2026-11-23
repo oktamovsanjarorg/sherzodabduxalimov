@@ -2,7 +2,6 @@ import { BadRequestException, ConflictException, Inject, Injectable, NotFoundExc
 import { Prisma } from "@onatili/db";
 import {
   ATTENDANCE_STATUSES,
-  ESSAY_MAX_SCORE,
   NAME_MATCH_THRESHOLD,
   STAFF_ROLES,
   currentMonth,

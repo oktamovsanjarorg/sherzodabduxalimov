@@ -218,7 +218,10 @@ export class ExternalService {
       rasch: (t.rasch as unknown as ExternalRasch | null) ?? null,
       stats: { median, buckets, questions, sections },
       rows: rs.map((r, i) => {
-        if (r.percent !== prev) (rank = i + 1), (prev = r.percent);
+        if (r.percent !== prev) {
+          rank = i + 1;
+          prev = r.percent;
+        }
         return {
           id: r.id,
           rank,
