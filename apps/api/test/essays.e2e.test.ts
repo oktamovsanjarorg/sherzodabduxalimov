@@ -101,6 +101,9 @@ describe("Esse: AI (bepul) va ustoz (pullik, qo'lyozma) (e2e)", () => {
     // Muvaffaqiyatsiz bo'lsa limitga hisoblanmaydi va qayta urinish mumkin
     const f = (await req("POST", "/essays", { mode: "AI", prompt: "Ikkinchi", text: TEXT }, S)).json();
     await markEssayFailed(prisma, f.id, "timeout");
+    // Texnik sabab bazada qoladi (xodim ko'radi), o'quvchiga esa umumiy xabar
+    expect((await prisma.essay.findUniqueOrThrow({ where: { id: f.id } })).aiError).toBe("timeout");
+    expect((await req("GET", `/essays/${f.id}`, undefined, S)).json().error).not.toContain("timeout");
     expect((await req("GET", "/essays/config", undefined, S)).json().aiUsedToday).toBe(1);
     expect((await req("POST", `/essays/${f.id}/retry`, undefined, S)).json().status).toBe("AI_CHECKING");
 

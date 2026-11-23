@@ -83,7 +83,8 @@ function toAdminEssay(e: Prisma.EssayGetPayload<{ include: typeof adminInclude }
     text: e.text,
     pages: e.imageUrls.length,
     status: e.status,
-    error: e.error,
+    // Xodimga texnik sabab ham ko'rinadi (o'quvchiga emas)
+    error: e.error ?? (e.status === "AI_FAILED" ? e.aiError : null),
     createdAt: e.createdAt.toISOString(),
     reviews: e.reviews.map(toReviewView),
     voice: toVoiceView(e.voice),

@@ -161,6 +161,7 @@ export class EssayStatsService {
         text: true,
         imageUrls: true,
         error: true,
+        aiError: true,
         createdAt: true,
         user: { select: { id: true, firstName: true, lastName: true, username: true } },
         reviews: {
@@ -182,7 +183,7 @@ export class EssayStatsService {
         pages: e.imageUrls.length,
         ai: ai ? { score: ai.totalScore, special: ai.special ? specialLabel(ai.special) : null, provider: ai.provider } : null,
         teacher: t ? { score: t.totalScore, special: t.special ? specialLabel(t.special) : null, reviewer: t.reviewer ? fullName(t.reviewer) : null } : null,
-        error: e.error,
+        error: e.error ?? (e.status === "AI_FAILED" ? e.aiError : null),
         createdAt: e.createdAt.toISOString(),
       };
     });
