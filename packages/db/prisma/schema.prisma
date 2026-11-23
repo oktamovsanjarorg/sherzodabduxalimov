@@ -392,6 +392,8 @@ model Essay {
   imageUrls   String[] // MEDIA_DIR ichidagi nisbiy yo'llar: essays/<id>/<n>.jpg
   status      EssayStatus   @default(DRAFT)
   error       String?
+  /// AI tekshiruvi nega to'xtagani (texnik sabab, faqat xodimlarga ko'rinadi). Konteyner logi deploy'da o'chadi
+  aiError     String?
   priceUzs    Int? // ustoz tekshiruvi narxi (yuborilgan paytdagi)
   /// Ustozning belgilari: varoq rasmlari ustidagi chizgilar va xato yorliqlari, matndagi xatolar (vektor JSON)
   annotations Json?

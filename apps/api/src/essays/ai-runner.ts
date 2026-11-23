@@ -173,5 +173,5 @@ export async function gradeEssayJob(
 /** Barcha urinishlar tugadi: o'quvchi qayta urinishi mumkin (bugungi limitga hisoblanmaydi) */
 export async function markEssayFailed(prisma: PrismaClient, essayId: string, message: string) {
   console.error(`[essay-ai] ${essayId}: ${message}`);
-  await prisma.essay.updateMany({ where: { id: essayId, status: "AI_CHECKING" }, data: { status: "AI_FAILED", error: null } });
+  await prisma.essay.updateMany({ where: { id: essayId, status: "AI_CHECKING" }, data: { status: "AI_FAILED", error: null, aiError: message.slice(0, 500) } });
 }
