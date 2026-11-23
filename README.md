@@ -53,7 +53,8 @@ docker compose up -d --build     # postgres, redis, api, bot, web
 docker compose logs -f bot api
 ```
 
-- Tashqi trafik: `edge-caddy` (`/home/ubuntu/edge/Caddyfile`), keyin `sherzodabduxalimov.uzbek-talim.uz` → `onatili-web:80` (`mb-platform_default` tarmog'i orqali; tarmoq nomi eski serverdan qolgan).
+- Tashqi trafik: `edge-caddy` (`/home/ubuntu/edge/Caddyfile`), keyin `app.sherzodabduxalimov.uz` (Mini App) → `onatili-web:80` (`mb-platform_default` tarmog'i orqali; tarmoq nomi eski serverdan qolgan).
+- Admin panel: `https://admin.sherzodabduxalimov.uz/admin/` (o'sha `onatili-web`). `sherzodabduxalimov.uz` esa ustozning sayti (`ustoz-web`). Eski `sherzodabduxalimov.uzbek-talim.uz` faqat yo'naltiradi: `/admin*` adminga, qolgani `app.` ga.
 - `onatili-web` (nginx) Mini App statik fayllarini beradi va `/api/` ni `onatili-api:4100` ga yo'naltiradi.
 - Migratsiyalar API konteyneri ishga tushganda avtomatik qo'llanadi (`prisma migrate deploy`).
 - Caddyfile o'zgarganda: `docker exec edge-caddy caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile && docker exec edge-caddy caddy reload --config /etc/caddy/Caddyfile --adapter caddyfile`
