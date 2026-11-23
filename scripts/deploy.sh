@@ -33,6 +33,11 @@ fi
 echo "=== $(date -Is) deploy boshlandi: $TARGET"
 PREV="$(git rev-parse HEAD)"
 git fetch --quiet origin main
+# Serverda qo'lda o'zgartirilgan fayl checkout'ni to'xtatadi (2026-11-23: README). O'chirmaymiz, stash'ga olamiz
+if ! git diff --quiet; then
+  git stash push --quiet -m "deploy oldidan avtomatik: $(date -Is)"
+  echo "!!! Serverdagi qo'lda o'zgarishlar git stash'ga olindi: git stash list"
+fi
 git checkout --quiet --detach "$TARGET"
 NEW="$(git rev-parse HEAD)"
 echo "Avvalgi: ${PREV:0:7}  Yangi: ${NEW:0:7}"
