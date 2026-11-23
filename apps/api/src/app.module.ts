@@ -20,6 +20,7 @@ import { BackupsModule } from "./backups/backups.module";
 import { ExternalModule } from "./external/external.module";
 import { AdvisorModule } from "./advisor/advisor.module";
 import { AnnounceModule } from "./announce/announce.module";
+import { GoldModule } from "./gold/gold.module";
 import { StaffModule } from "./staff/staff.module";
 import { TestsModule } from "./tests/tests.module";
 import { ReviewModule } from "./review/review.module";
@@ -63,6 +64,7 @@ export class AppModule {
         ExternalModule,
         AdvisorModule,
         AnnounceModule,
+        GoldModule,
       ],
       controllers: [HealthController],
     };

@@ -279,7 +279,7 @@ export function TextAnnotator({ text, value, onChange }: { text: string; value: 
   return (
     <div>
       <div
-        className={`sticky top-0 z-10 mb-2 flex flex-wrap items-center gap-1.5 rounded-lg border p-2 ${sel ? "border-red-300 bg-red-50" : "border-line bg-surface"}`}
+        className={`sticky top-[calc(var(--safe-top)+3.5rem)] z-10 mb-2 flex flex-wrap md:top-0 items-center gap-1.5 rounded-lg border p-2 ${sel ? "border-red-300 bg-red-50" : "border-line bg-surface"}`}
       >
         {sel ? (
           <>

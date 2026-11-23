@@ -13,6 +13,7 @@ import { Bot, ChevronRight, ImageOff, Search, UserCheck } from "lucide-react";
 import { useState } from "react";
 import { Badge, Chips, Empty, Modal, Spinner } from "../components/ui";
 import { api } from "../lib/api";
+import { GoldAddButton } from "./GoldAdd";
 import { fmtDateTime, fmtShortDateTime } from "../lib/format";
 
 const PERIODS = [
@@ -388,7 +389,7 @@ function EssayDetailModal({ id, onClose }: { id: string; onClose: () => void }) 
   const ai = e?.reviews.find((r) => r.source === "AI");
   const teacher = e?.reviews.find((r) => r.source === "TEACHER");
   return (
-    <Modal wide title={e ? e.student.name : "Esse"} onClose={onClose}>
+    <Modal wide title={e ? e.student.name : "Esse"} onClose={onClose} footer={e && (e.pages > 0 || e.text) ? <GoldAddButton essayId={e.id} /> : undefined}>
       {q.isPending && <Spinner className="text-ink-4" />}
       {e && (
         <div className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">

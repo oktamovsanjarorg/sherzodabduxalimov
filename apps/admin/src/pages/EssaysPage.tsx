@@ -12,6 +12,7 @@ import { api, errMsg } from "../lib/api";
 import { fmtShortDateTime } from "../lib/format";
 import { useToast } from "../lib/toast";
 import { EssayLog, EssayStats } from "./EssayInsights";
+import { GoldSet } from "./GoldSet";
 import { HwEssays } from "./HwEssays";
 
 const SUBTITLES = {
@@ -19,6 +20,7 @@ const SUBTITLES = {
   mock: "Mock testlardagi esselar. Ball qo'yilgach, o'quvchiga umumiy natija va daraja bot orqali yuboriladi.",
   log: "Botda yuborilgan barcha esselar: kim yubordi, AI va ustoz qancha ball qo'ydi. Bosing: har band bo'yicha baho, xatolar va tavsiyalar.",
   stats: "Esselar soni, o'rtacha ball va o'quvchilar qaysi bandlarda zaif.",
+  gold: "AI tekshiruvi qanchalik to'g'riligini o'lchash uchun: aynan ko'chirilgan esselar va ikki ustozning mustaqil bahosi.",
 } as const;
 
 type Source = keyof typeof SUBTITLES;
@@ -46,10 +48,11 @@ export function EssaysPage() {
             ["mock", <>Mock{count(by?.mock)}</>],
             ["log", "Barcha esselar"],
             ["stats", "Statistika"],
+            ["gold", "Sinov to'plami"],
           ] as const
         }
       />
-      {source === "hw" ? <HwEssays /> : source === "mock" ? <MockEssays /> : source === "log" ? <EssayLog /> : <EssayStats />}
+      {source === "hw" ? <HwEssays /> : source === "mock" ? <MockEssays /> : source === "log" ? <EssayLog /> : source === "gold" ? <GoldSet /> : <EssayStats />}
     </>
   );
 }
