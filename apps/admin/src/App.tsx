@@ -8,6 +8,7 @@ import { DashboardPage } from "./pages/DashboardPage";
 import { StatsPage } from "./pages/StatsPage";
 import { TrashPage } from "./pages/TrashPage";
 import { EssaysPage } from "./pages/EssaysPage";
+import { GoldEssayPage } from "./pages/GoldEssayPage";
 import { ParentsPage } from "./pages/ParentsPage";
 import { LessonEditorPage } from "./pages/LessonEditorPage";
 import { LoginPage } from "./pages/LoginPage";
@@ -57,6 +58,7 @@ export function App() {
         <Route path="content" element={<ContentPage />} />
         <Route path="more" element={<MorePage />} />
         <Route path="essays" element={<EssaysPage />} />
+        <Route path="essays/gold/:id" element={<GoldEssayPage />} />
         <Route path="external" element={<ExternalTestsPage />} />
         <Route path="external/:id" element={<ExternalTestPage />} />
         <Route path="lessons/:id" element={<LessonEditorPage />} />

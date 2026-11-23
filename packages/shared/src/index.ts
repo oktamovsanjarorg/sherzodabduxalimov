@@ -17,3 +17,4 @@ export * from "./stats-types";
 export * from "./advisor-types";
 export * from "./period";
 export * from "./announce-types";
+export * from "./gold-types";

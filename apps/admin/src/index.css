@@ -10,10 +10,12 @@
     @apply bg-page font-sans text-ink antialiased;
     -webkit-tap-highlight-color: transparent;
   }
-  /* Bitta element ekrandan chiqib ketsa ham butun sahifa yonga surilmasin */
+  /* Bitta element ekrandan chiqib ketsa ham butun sahifa yonga surilmasin.
+     hidden emas, clip: hidden body'ni alohida surish qutisiga aylantiradi va sticky (tepa sarlavha,
+     saqlash paneli) ishlamay qoladi. clip esa faqat kesadi */
   html,
   body {
-    overflow-x: hidden;
+    overflow-x: clip;
   }
 }
 

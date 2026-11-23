@@ -47,27 +47,30 @@ model User {
   updatedAt     DateTime  @updatedAt
 
   student               StudentProfile?
-  parentLinks           ParentLink[]      @relation("ParentOf")
-  parentLinksReviewed   ParentLink[]      @relation("ParentLinkReviewer")
+  parentLinks           ParentLink[]            @relation("ParentOf")
+  parentLinksReviewed   ParentLink[]            @relation("ParentLinkReviewer")
   attempts              Attempt[]
   essays                Essay[]
-  essayReviews          EssayReview[]     @relation("Reviewer")
+  essayReviews          EssayReview[]           @relation("Reviewer")
   subscriptions         Subscription[]
   payments              Payment[]
-  paymentsReviewed      Payment[]         @relation("PaymentReviewer")
-  attendanceMarked      Attendance[]      @relation("AttendanceMarker")
-  externalTestsImported ExternalTest[]    @relation("ExternalTestImporter")
-  offlinePaymentsMarked OfflinePayment[]  @relation("OfflinePaymentMarker")
-  voiceNotes            VoiceNote[]       @relation("VoiceAuthor")
+  paymentsReviewed      Payment[]               @relation("PaymentReviewer")
+  attendanceMarked      Attendance[]            @relation("AttendanceMarker")
+  externalTestsImported ExternalTest[]          @relation("ExternalTestImporter")
+  offlinePaymentsMarked OfflinePayment[]        @relation("OfflinePaymentMarker")
+  voiceNotes            VoiceNote[]             @relation("VoiceAuthor")
   lessonProgress        LessonProgress[]
   auditLogs             AuditLog[]
   loginTokens           LoginToken[]
   videos                Video[]
   invitesSent           StaffInvite[]
-  followUpsWritten      PaymentFollowUp[] @relation("FollowUpAuthor")
+  followUpsWritten      PaymentFollowUp[]       @relation("FollowUpAuthor")
   trialUses             TrialUse[]
-  announcements         Announcement[]    @relation("AnnouncementAuthor")
+  announcements         Announcement[]          @relation("AnnouncementAuthor")
   announcementsReceived AnnouncementRecipient[]
+  goldCreated           GoldEssay[]             @relation("GoldCreator")
+  goldTranscribed       GoldEssay[]             @relation("GoldTranscriber")
+  goldRatings           GoldRating[]            @relation("GoldRater")
 }
 
 enum TrialKind {
@@ -717,26 +720,26 @@ enum ExternalSource {
 
 /// CSV orqali import qilingan test: natijalari tahlil qilinadi
 model ExternalTest {
-  id             String           @id @default(cuid())
-  source         ExternalSource
+  id            String           @id @default(cuid())
+  source        ExternalSource
   /// CSV fayldan olingan kod
-  code           String
-  title          String
-  subject        String?
-  questionCount  Int
+  code          String
+  title         String
+  subject       String?
+  questionCount Int
   /// Bo'limlar: [{title, fromQ, toQ, questions?}]; questions bo'lsa oraliq o'rniga shu savollar
-  sections       Json             @default("[]")
+  sections      Json             @default("[]")
   /// Milliy sertifikat: Rasch tahlili {calibrated, n, items: [{q, b, w, correctPct}]}; boshqa testlarda null
-  rasch          Json?
+  rasch         Json?
   /// Test o'tkazilgan payt (birinchi topshirish)
-  takenAt        DateTime?
-  importedById   String?
-  importedBy     User?            @relation("ExternalTestImporter", fields: [importedById], references: [id], onDelete: SetNull)
+  takenAt       DateTime?
+  importedById  String?
+  importedBy    User?            @relation("ExternalTestImporter", fields: [importedById], references: [id], onDelete: SetNull)
   /// O'quvchi va ota-onalarga "natija tayyor" xabari oxirgi marta yuborilgan payt
-  notifiedAt     DateTime?
-  results        ExternalResult[]
-  createdAt      DateTime         @default(now())
-  updatedAt      DateTime         @updatedAt
+  notifiedAt    DateTime?
+  results       ExternalResult[]
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
 
   @@unique([source, code])
 }
@@ -841,4 +844,45 @@ model AnnouncementRecipient {
 
   @@unique([announcementId, userId])
   @@index([announcementId, status])
+}
+
+/// Esse AI o'lchovi uchun sinov to'plami (docs/ESSAY_AI_EVAL.md): aynan ko'chirilgan matn + ikki ustozning mustaqil bahosi
+model GoldEssay {
+  id              String       @id @default(cuid())
+  /// Qaysi esseden olingan (botdagi esse). Qog'ozdagi esse yuklangan bo'lsa — null
+  essayId         String?      @unique
+  topic           String
+  /// MEDIA_DIR ichida: gold/<id>/<n>.jpg (asl esse o'chirilsa ham saqlanadi)
+  imageUrls       String[]
+  /// O'quvchi yozganini aynan ko'chirilgan matn
+  transcript      String?
+  /// Matndagi xatolar [{start,end,type,note}] — note: to'g'ri shakli
+  marks           Json         @default("[]")
+  transcribedById String?
+  transcribedBy   User?        @relation("GoldTranscriber", fields: [transcribedById], references: [id], onDelete: SetNull)
+  /// O'quvchi (yoki ota-onasi) ishidan o'lchov uchun foydalanishga rozi
+  consent         Boolean      @default(false)
+  createdById     String?
+  createdBy       User?        @relation("GoldCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  ratings         GoldRating[]
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  @@index([createdAt])
+}
+
+/// Bir ustozning bitta sinov essesiga bahosi. Boshqalarning bahosi o'zi baholamaguncha ko'rinmaydi
+model GoldRating {
+  id          String    @id @default(cuid())
+  goldEssayId String
+  goldEssay   GoldEssay @relation(fields: [goldEssayId], references: [id], onDelete: Cascade)
+  raterId     String
+  rater       User      @relation("GoldRater", fields: [raterId], references: [id], onDelete: Cascade)
+  /// {style: 1.5, views: 2, ...} — 12 band
+  scores      Json
+  special     String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@unique([goldEssayId, raterId])
 }
