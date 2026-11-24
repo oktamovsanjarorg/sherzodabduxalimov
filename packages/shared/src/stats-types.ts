@@ -64,21 +64,51 @@ const DAY_PREFIX: [string, number][] = [
 ];
 export const WEEKDAY_NAMES = ["yakshanba", "dushanba", "seshanba", "chorshanba", "payshanba", "juma", "shanba"];
 
+const CYRILLIC: Record<string, string> = Object.fromEntries(
+  "а:a б:b в:v г:g ғ:g д:d е:e ё:yo ж:j з:z и:i й:y к:k қ:q л:l м:m н:n о:o п:p р:r с:s т:t у:u ў:o ф:f х:x ҳ:h ч:ch ш:sh ъ: ь: э:e ю:yu я:ya"
+    .split(" ")
+    .map((x) => x.split(":") as [string, string]),
+);
+const toLatin = (s: string) => s.replace(/[\u0400-\u04ff]/g, (c) => CYRILLIC[c] ?? c);
+
+const ODD_DAYS = [1, 3, 5];
+const EVEN_DAYS = [2, 4, 6];
+
+/** "Du-Sha", "Dushanbadan jumagacha": hafta oralig'i bo'lsa kunlari, oddiy ro'yxat bo'lsa null */
+function rangeDays(text: string, found: number[]): number[] | null {
+  if (found.length !== 2) return null;
+  const [from, to] = found;
+  const spoken = /[a-z]dan\b.*[a-z]gacha\b/.test(text);
+  // "Se-Pay" odatda ikki alohida kun. Tire faqat dushanbadan juma/shanba/yakshanbagacha bo'lsa oraliq deb olinadi
+  const dashed = from === 1 && [5, 6, 0].includes(to) && /[a-z]\s*[-–—]\s*[a-z]/.test(text);
+  if (!spoken && !dashed) return null;
+  const length = ((to - from + 7) % 7) + 1;
+  return Array.from({ length }, (_, i) => (from + i) % 7);
+}
+
 /**
- * Guruh jadvali matnidan dars kunlari va vaqtini ajratadi: "Du/Chor/Ju 14:00", "Se, Pay, Sha 16:30", "Har kuni 9:00".
+ * Guruh jadvali matnidan dars kunlari va vaqtini ajratadi: "Du/Chor/Ju 14:00", "Se, Pay, Sha 16:30", "Har kuni 9:00",
+ * "Toq kunlar" (du-chor-ju), "Juft kunlar" (se-pay-sha), "Du-Shan 9:00", kirillcha yozuv ham.
  * Kunlar tushunilmasa days = null (ya'ni har kuni dars bo'lishi mumkin deb hisoblanadi).
  */
 export function parseSchedule(schedule: string | null | undefined): { days: number[] | null; minutes: number | null } {
   if (!schedule) return { days: null, minutes: null };
   const t = /(\d{1,2})[:.](\d{2})/.exec(schedule);
   const minutes = t ? Number(t[1]) * 60 + Number(t[2]) : null;
-  const text = schedule.toLowerCase().replace(/[ʻ'`’]/g, "");
+  const text = toLatin(schedule.toLowerCase()).replace(/[ʻʼ'`’‘]/g, "");
   if (/har\s*kun/.test(text)) return { days: [0, 1, 2, 3, 4, 5, 6], minutes };
+  const found: number[] = [];
   const days = new Set<number>();
   for (const w of text.split(/[^a-z]+/).filter(Boolean)) {
-    const hit = DAY_PREFIX.find(([p]) => w.startsWith(p));
-    if (hit) days.add(hit[1]);
+    // "juft" — "ju" (juma) bilan boshlanadi, shuning uchun kun nomlaridan oldin tekshiriladi
+    if (w.startsWith("juft")) EVEN_DAYS.forEach((d) => days.add(d));
+    else if (w.startsWith("toq")) ODD_DAYS.forEach((d) => days.add(d));
+    else {
+      const hit = DAY_PREFIX.find(([p]) => w.startsWith(p));
+      if (hit) found.push(hit[1]);
+    }
   }
+  (rangeDays(text, found) ?? found).forEach((d) => days.add(d));
   return { days: days.size ? [...days].sort() : null, minutes };
 }
 
