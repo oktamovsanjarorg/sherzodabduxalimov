@@ -1,7 +1,7 @@
 import { ADVICE_AREA_LABELS, type Advice, type AdviceArea } from "@onatili/shared";
 import { useQuery } from "@tanstack/react-query";
 import { CheckCircle2 } from "lucide-react";
-import { AREA_ICON, AdviceItem, LEVEL, useAdvice } from "../components/Advisor";
+import { AREA_ICON, AdviceItem, LEVEL, useAdvice, useReconcileAdvice } from "../components/Advisor";
 import { Spinner } from "../components/ui";
 import { api, errMsg } from "../lib/api";
 import { fmtDateTime } from "../lib/format";
@@ -16,6 +16,7 @@ const AREAS: AdviceArea[] = ["payments", "essays", "attendance", "learning", "ac
  */
 export function AdvisorPage() {
   const q = useQuery({ queryKey: ["advisor"], queryFn: api.advisor });
+  useReconcileAdvice(q.data?.advice, "platform");
   const adv = useAdvice(q.data?.advice ?? [], "platform");
   if (q.isPending) return <Spinner className="text-ink-4" />;
   if (q.isError) return <p className="text-sm text-red-600">{errMsg(q.error)}</p>;
@@ -36,7 +37,7 @@ export function AdvisorPage() {
         <p className="mt-2 text-sm text-ink-3">
           {adv.shown.length === 0
             ? "Hamma narsa joyida: hozir qiladigan ish yo'q."
-            : `${urgent.length ? `${urgent.length} ta shoshilinch` : "Shoshilinch ish yo'q"}${important ? `, ${important} ta muhim` : ""} ish bor. Bajarganingizni ✕ bilan yashiring: son oshsa yana chiqadi.`}
+            : `${urgent.length ? `${urgent.length} ta shoshilinch` : "Shoshilinch ish yo'q"}${important ? `, ${important} ta muhim` : ""} ish bor. ✕ bilan yashiring: son oshsa yoki 7 kunda hal bo'lmasa yana chiqadi.`}
         </p>
       </div>
 
@@ -81,7 +82,10 @@ export function AdvisorPage() {
             {calm.map((a) => {
               const Icon = AREA_ICON[a];
               return (
-                <span key={a} className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-sm font-semibold text-emerald-800">
+                <span
+                  key={a}
+                  className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-sm font-semibold text-emerald-800"
+                >
                   <CheckCircle2 size={15} />
                   <Icon size={14} className="opacity-70" /> {ADVICE_AREA_LABELS[a]}
                 </span>

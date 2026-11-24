@@ -1,4 +1,13 @@
-import { BadRequestException, ConflictException, ForbiddenException, Inject, Injectable, NotFoundException, OnModuleDestroy, ServiceUnavailableException } from "@nestjs/common";
+import {
+  BadRequestException,
+  ConflictException,
+  ForbiddenException,
+  Inject,
+  Injectable,
+  NotFoundException,
+  OnModuleDestroy,
+  ServiceUnavailableException,
+} from "@nestjs/common";
 import { Prisma } from "@onatili/db";
 import {
   ESSAY_CANCELLED,
@@ -18,11 +27,13 @@ import {
   type MyEssayDetail,
   type MyEssaySummary,
   type RoleName,
-  type TeacherEssayReviewInput, formatScore
+  type TeacherEssayReviewInput,
+  formatScore,
 } from "@onatili/shared";
 import { Queue } from "bullmq";
 import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
+import { essayAi } from "../ai/essay/setup";
 import { ESSAY_AI_QUEUE, type EssayAiJob } from "../ai/queue";
 import { BillingService, sniffImage } from "../billing/billing.service";
 import { AccessService } from "../access/access.service";
@@ -58,7 +69,11 @@ export function toReviewView(r: EssayWithReviews["reviews"][number]): EssayRevie
   };
 }
 
-const adminInclude = { ...reviewInclude, voice: true, user: { select: { id: true, firstName: true, lastName: true, username: true, phone: true } } } satisfies Prisma.EssayInclude;
+const adminInclude = {
+  ...reviewInclude,
+  voice: true,
+  user: { select: { id: true, firstName: true, lastName: true, username: true, phone: true } },
+} satisfies Prisma.EssayInclude;
 
 function toAdminEssay(e: Prisma.EssayGetPayload<{ include: typeof adminInclude }>): AdminHwEssay {
   return {
@@ -69,7 +84,8 @@ function toAdminEssay(e: Prisma.EssayGetPayload<{ include: typeof adminInclude }
     text: e.text,
     pages: e.imageUrls.length,
     status: e.status,
-    error: e.error,
+    // Xodimga texnik sabab ham ko'rinadi (o'quvchiga emas)
+    error: e.error ?? (e.status === "AI_FAILED" ? e.aiError : null),
     createdAt: e.createdAt.toISOString(),
     reviews: e.reviews.map(toReviewView),
     voice: toVoiceView(e.voice),
@@ -104,10 +120,10 @@ export class EssaysService implements OnModuleDestroy {
   }
 
   private get aiEnabled() {
-    return this.env.AI_PROVIDER === "deepseek" && !!this.env.DEEPSEEK_API_KEY;
+    return !!essayAi(this.env);
   }
   private get aiPhotoEnabled() {
-    return this.aiEnabled && !!this.env.GEMINI_API_KEY;
+    return !!essayAi(this.env)?.read;
   }
 
   // ---------------- Sozlama: ustoz tekshiruvi narxi ----------------
@@ -234,12 +250,15 @@ export class EssaysService implements OnModuleDestroy {
 
   private async assertAiLimit(userId: string) {
     if ((await this.aiUsedToday(userId)) >= AI_ESSAY_DAILY_LIMIT)
-      throw new ConflictException(`Bugungi bepul AI tekshiruvlar tugadi (kuniga ${AI_ESSAY_DAILY_LIMIT} ta). Ertaga yana urinib ko'ring yoki ustozga yuboring.`);
+      throw new ConflictException(
+        `Bugungi bepul AI tekshiruvlar tugadi (kuniga ${AI_ESSAY_DAILY_LIMIT} ta). Ertaga yana urinib ko'ring yoki ustozga yuboring.`,
+      );
   }
 
   /** Tugallanmagan qoralamalar to'planib qolmasin */
   private async assertFewDrafts(userId: string) {
-    if ((await this.prisma.essay.count({ where: { userId, status: "DRAFT" } })) >= 3) throw new ConflictException("Avval tugallanmagan esselaringizni yuboring yoki o'chiring");
+    if ((await this.prisma.essay.count({ where: { userId, status: "DRAFT" } })) >= 3)
+      throw new ConflictException("Avval tugallanmagan esselaringizni yuboring yoki o'chiring");
   }
 
   async retry(userId: string, id: string): Promise<MyEssayDetail> {
@@ -258,7 +277,10 @@ export class EssaysService implements OnModuleDestroy {
   /** AI tekshiruvini bekor qilish. Ishlayotgan vazifa natijasi yozilmaydi: ai-runner holatni AI_CHECKING deb tekshiradi */
   async cancel(userId: string, id: string): Promise<MyEssayDetail> {
     await this.own(userId, id);
-    const { count } = await this.prisma.essay.updateMany({ where: { id, userId, status: "AI_CHECKING" }, data: { status: "AI_FAILED", error: ESSAY_CANCELLED } });
+    const { count } = await this.prisma.essay.updateMany({
+      where: { id, userId, status: "AI_CHECKING" },
+      data: { status: "AI_FAILED", error: ESSAY_CANCELLED },
+    });
     if (!count) throw new ConflictException("Bu tekshiruvni bekor qilib bo'lmaydi");
     await this.queue.remove(id).catch(() => 0);
     return this.detail(userId, id);
@@ -269,7 +291,10 @@ export class EssaysService implements OnModuleDestroy {
     try {
       await this.queue.add("grade", { essayId }, { jobId });
     } catch {
-      await this.prisma.essay.updateMany({ where: { id: essayId, status: "AI_CHECKING" }, data: { status: "AI_FAILED", error: "Hozir tekshiruvga yuborib bo'lmadi. Birozdan keyin «Qayta urinish»ni bosing." } });
+      await this.prisma.essay.updateMany({
+        where: { id: essayId, status: "AI_CHECKING" },
+        data: { status: "AI_FAILED", error: "Hozir tekshiruvga yuborib bo'lmadi. Birozdan keyin «Qayta urinish»ni bosing." },
+      });
       throw new ServiceUnavailableException("Hozir AI tekshiruviga yuborib bo'lmadi, birozdan keyin qayta urinib ko'ring");
     }
   }
@@ -295,7 +320,9 @@ export class EssaysService implements OnModuleDestroy {
       pages: e.imageUrls.length,
       priceUzs: e.priceUzs,
       error: e.status === "AI_FAILED" ? (e.error ?? "AI hozir javob bermadi. Birozdan keyin qayta urinib ko'ring.") : null,
-      payment: p ? { id: p.id, planName: "Esse tekshiruvi", amountUzs: p.amountUzs, status: p.status, reviewNote: p.reviewNote, createdAt: p.createdAt.toISOString() } : null,
+      payment: p
+        ? { id: p.id, planName: "Esse tekshiruvi", amountUzs: p.amountUzs, status: p.status, reviewNote: p.reviewNote, createdAt: p.createdAt.toISOString() }
+        : null,
       reviews: e.reviews.map(toReviewView),
       voice: toVoiceView(e.voice),
       annotations: (e.annotations as EssayAnnotations | null) ?? null,
@@ -345,7 +372,9 @@ export class EssaysService implements OnModuleDestroy {
     await this.prisma.$transaction([
       // Qayta baholansa: eski ustoz bahosi almashtiriladi
       this.prisma.essayReview.deleteMany({ where: { essayId: id, source: "TEACHER" } }),
-      this.prisma.essayReview.create({ data: { essayId: id, source: "TEACHER", reviewerId: actorId, criteria, special: d.special, totalScore: total, feedback: d.feedback } }),
+      this.prisma.essayReview.create({
+        data: { essayId: id, source: "TEACHER", reviewerId: actorId, criteria, special: d.special, totalScore: total, feedback: d.feedback },
+      }),
       this.prisma.essay.update({ where: { id }, data: { status: "REVIEWED" } }),
     ]);
     await this.prisma.auditLog.create({ data: { actorId, action: "essay.review", entity: "Essay", entityId: id, meta: { total } } });
@@ -374,7 +403,14 @@ export class EssaysService implements OnModuleDestroy {
   private summary(e: EssayWithReviews): MyEssaySummary {
     // Ustoz bahosi bo'lsa u, aks holda AI bahosi
     const r = [...e.reviews].sort((a, b) => Number(a.source === "TEACHER") - Number(b.source === "TEACHER")).pop();
-    return { id: e.id, mode: e.mode, prompt: e.prompt, status: e.status, score: r ? { total: r.totalScore, max: ESSAY_MAX_SCORE } : null, createdAt: e.createdAt.toISOString() };
+    return {
+      id: e.id,
+      mode: e.mode,
+      prompt: e.prompt,
+      status: e.status,
+      score: r ? { total: r.totalScore, max: ESSAY_MAX_SCORE } : null,
+      createdAt: e.createdAt.toISOString(),
+    };
   }
 
   private async own(userId: string, id: string) {

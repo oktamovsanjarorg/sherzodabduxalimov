@@ -35,8 +35,18 @@ export class ReviewService {
     try {
       const open = kind === "st" ? await this.students.isAwaitingReview(id) : await this.parents.isAwaitingReview(id);
       if (!open) return DONE;
-      if (ask) return { toast: "Qaytarib bo'lmaydi: tekshirib tasdiqlang", keyboard: [[{ text: CONFIRM_PROMPT[`${kind}:${op}`] ?? "✅ Ha", data: action }, { text: "⬅️ Orqaga", data: `${kind}:v:${id}` }]] };
-      if (op === "v") return { toast: "", keyboard: kind === "st" ? ((await this.students.reviewCard(id))?.keyboard ?? null) : this.parents.reviewKeyboard(id) };
+      if (ask)
+        return {
+          toast: "Qaytarib bo'lmaydi: tekshirib tasdiqlang",
+          keyboard: [
+            [
+              { text: CONFIRM_PROMPT[`${kind}:${op}`] ?? "✅ Ha", data: action },
+              { text: "⬅️ Orqaga", data: `${kind}:v:${id}` },
+            ],
+          ],
+        };
+      if (op === "v")
+        return { toast: "", keyboard: kind === "st" ? ((await this.students.reviewCard(id))?.keyboard ?? null) : this.parents.reviewKeyboard(id) };
       const result = kind === "st" ? await this.student(actor.id, op, id, arg) : await this.parent(actor.id, op, id);
       return result ? { toast: "Bajarildi", result } : { toast: "Tugma eskirgan", keyboard: null };
     } catch (e) {

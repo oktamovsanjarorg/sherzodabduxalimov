@@ -14,15 +14,29 @@ export function buildMistakes(v: ReturnType<typeof verifiedQuotes>, seg: Segment
     wrong: e.wrong,
     right: e.right,
     type: e.type as ErrorTypeKey,
-    note: [e.type === "punctuation" && e.rule && e.rule in PUNCT_RULES ? `Punktuatsiya: ${PUNCT_RULES[e.rule as keyof typeof PUNCT_RULES]}` : null, e.note].filter(Boolean).join(". ") || null,
+    note:
+      [e.type === "punctuation" && e.rule && e.rule in PUNCT_RULES ? `Punktuatsiya: ${PUNCT_RULES[e.rule as keyof typeof PUNCT_RULES]}` : null, e.note]
+        .filter(Boolean)
+        .join(". ") || null,
   }));
-  const reg = { colloquial: "so'zlashuv uslubi", official: "rasmiy-idoraviy uslub (kanselyarizm)", scientific: "ilmiy uslub", artistic: "badiiy uslub" } as const;
+  const reg = {
+    colloquial: "so'zlashuv uslubi",
+    official: "rasmiy-idoraviy uslub (kanselyarizm)",
+    scientific: "ilmiy uslub",
+    artistic: "badiiy uslub",
+  } as const;
   const style = v.styleIssues
     .filter((x) => x.fix && norm(x.fix) !== norm(x.quote))
-    .map((x) => ({ at: order(x.s), wrong: x.quote, right: x.fix!, type: "style" as ErrorTypeKey, note: `Publitsistik uslubdan chekinish: ${reg[x.register]}` }));
+    .map((x) => ({
+      at: order(x.s),
+      wrong: x.quote,
+      right: x.fix ?? "",
+      type: "style" as ErrorTypeKey,
+      note: `Publitsistik uslubdan chekinish: ${reg[x.register]}`,
+    }));
   const purity = v.purity
     .filter((x) => x.fix && norm(x.fix) !== norm(x.quote))
-    .map((x) => ({ at: order(x.s), wrong: x.quote, right: x.fix!, type: "word" as ErrorTypeKey, note: `Til sofligi: ${x.kind}` }));
+    .map((x) => ({ at: order(x.s), wrong: x.quote, right: x.fix ?? "", type: "word" as ErrorTypeKey, note: `Til sofligi: ${x.kind}` }));
   return [...lit, ...style, ...purity]
     .sort((a, b) => a.at - b.at)
     .slice(0, 40)

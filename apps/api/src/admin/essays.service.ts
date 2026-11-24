@@ -13,7 +13,10 @@ const fullName = (u: { firstName: string; lastName: string | null }) => [u.first
 /** Esse tekshirish: ustoz ball va izoh qo'yadi, urinishning umumiy bali qayta hisoblanadi */
 @Injectable()
 export class EssaysService {
-  constructor(private readonly prisma: PrismaService, private readonly notify: NotifyService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly notify: NotifyService,
+  ) {}
 
   async list(status: "pending" | "reviewed"): Promise<AdminEssay[]> {
     const rows = await this.prisma.attemptAnswer.findMany({
@@ -25,7 +28,14 @@ export class EssaysService {
       },
       include: {
         question: { select: { text: true, tests: { select: { testId: true, points: true } } } },
-        attempt: { select: { testId: true, finishedAt: true, test: { select: { title: true, gradingScale: true } }, user: { select: { firstName: true, lastName: true, username: true } } } },
+        attempt: {
+          select: {
+            testId: true,
+            finishedAt: true,
+            test: { select: { title: true, gradingScale: true } },
+            user: { select: { firstName: true, lastName: true, username: true } },
+          },
+        },
       },
       orderBy: status === "pending" ? { answeredAt: "asc" } : { reviewedAt: "desc" },
       take: 200,
@@ -45,7 +55,8 @@ export class EssaysService {
         prompt: r.question.text,
         text: r.textAnswer!,
         words: words(r.textAnswer!),
-        maxPoints: r.attempt.test.gradingScale === "MILLIY_SERTIFIKAT" ? ESSAY_MAX_SCORE : (r.question.tests.find((t) => t.testId === r.attempt.testId)?.points ?? 0),
+        maxPoints:
+          r.attempt.test.gradingScale === "MILLIY_SERTIFIKAT" ? ESSAY_MAX_SCORE : (r.question.tests.find((t) => t.testId === r.attempt.testId)?.points ?? 0),
         points: r.points,
         reviewComment: r.reviewComment,
         milliy: r.attempt.test.gradingScale === "MILLIY_SERTIFIKAT",
@@ -60,12 +71,17 @@ export class EssaysService {
 
   /** Mock essesi matnidagi xatolarni belgilash */
   async saveMarks(actorId: string, attemptId: string, questionId: string, marks: TextMark[]) {
-    const a = await this.prisma.attemptAnswer.findUnique({ where: { attemptId_questionId: { attemptId, questionId } }, select: { textAnswer: true, question: { select: { type: true } } } });
+    const a = await this.prisma.attemptAnswer.findUnique({
+      where: { attemptId_questionId: { attemptId, questionId } },
+      select: { textAnswer: true, question: { select: { type: true } } },
+    });
     if (!a || a.question.type !== "ESSAY") throw new NotFoundException("Esse topilmadi");
     const len = a.textAnswer?.length ?? 0;
     if (marks.some((m) => m.end > len || m.start >= m.end)) throw new BadRequestException("Belgi chegarasi noto'g'ri");
     await this.prisma.attemptAnswer.update({ where: { attemptId_questionId: { attemptId, questionId } }, data: { annotations: marks } });
-    await this.prisma.auditLog.create({ data: { actorId, action: "essay.annotate", entity: "AttemptAnswer", entityId: `${attemptId}:${questionId}`, meta: { marks: marks.length } } });
+    await this.prisma.auditLog.create({
+      data: { actorId, action: "essay.annotate", entity: "AttemptAnswer", entityId: `${attemptId}:${questionId}`, meta: { marks: marks.length } },
+    });
     return { ok: true };
   }
 
@@ -90,7 +106,7 @@ export class EssaysService {
     const milliy = ans.attempt.test.gradingScale === "MILLIY_SERTIFIKAT";
     const max = milliy ? ESSAY_MAX_SCORE : (tq?.points ?? 0);
     const rubric = milliy ? rubricScore(d.special ?? null, d.criteria ?? []) : null;
-    if (milliy && !d.special && !(d.criteria?.length)) throw new BadRequestException("Mezonning 12 bandi bo'yicha ball qo'ying");
+    if (milliy && !d.special && !d.criteria?.length) throw new BadRequestException("Mezonning 12 bandi bo'yicha ball qo'ying");
     const p = rubric ? rubric.total : round1(Math.min(max, Math.max(0, d.points ?? 0)));
 
     const score = await this.prisma.$transaction(async (tx) => {
@@ -111,7 +127,9 @@ export class EssaysService {
       await tx.attempt.update({ where: { id: attemptId }, data: { score: total } });
       return total;
     });
-    await this.prisma.auditLog.create({ data: { actorId, action: "essay.review", entity: "AttemptAnswer", entityId: `${attemptId}:${questionId}`, meta: { points: p } } });
+    await this.prisma.auditLog.create({
+      data: { actorId, action: "essay.review", entity: "AttemptAnswer", entityId: `${attemptId}:${questionId}`, meta: { points: p } },
+    });
 
     const row = await this.prisma.attempt.findUniqueOrThrow({ where: { id: attemptId }, select: milliySelect });
     const m = milliyOf(row);
@@ -120,9 +138,7 @@ export class EssaysService {
       ans.attempt.user.telegramId,
       `📝 <b>${esc(ans.attempt.test.title)}</b>: esse tekshirildi.\nEsse: ${formatScore(p)} / ${formatScore(max)} ball${m?.essay ? ` → ${formatScore(m.essay.scaled)} / 75` : ""}${
         m ? level : `\nUmumiy natija: <b>${formatScore(score)}</b> / ${formatScore(ans.attempt.maxScore ?? 0)} ball`
-      }${
-        comment?.trim() ? `\n\nUstoz izohi: ${esc(comment.trim())}` : ""
-      }`,
+      }${comment?.trim() ? `\n\nUstoz izohi: ${esc(comment.trim())}` : ""}`,
       `/attempt/${attemptId}`,
       "Natijani ko'rish",
     );

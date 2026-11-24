@@ -38,7 +38,13 @@ export interface TeacherStats {
   };
   essays: { submitted: number; checkedByTeacher: number; checkedByAi: number; avgScore: number | null; waiting: number };
   /** E'tibor kerak bo'lgan o'quvchilar (eng muhimlari birinchi) */
-  attention: { userId: string; /** O'quvchi sahifasi /students/:studentId */ studentId: string | null; name: string; group: string | null; reasons: string[] }[];
+  attention: {
+    userId: string;
+    /** O'quvchi sahifasi /students/:studentId */ studentId: string | null;
+    name: string;
+    group: string | null;
+    reasons: string[];
+  }[];
   /** Shu oyning eng yaxshilari (kamida 2 ta test) */
   top: { userId: string; studentId: string | null; name: string; group: string | null; avgPercent: number; tests: number }[];
   /** Oxirgi 8 hafta faolligi (eskidan yangiga) */
@@ -58,21 +64,51 @@ const DAY_PREFIX: [string, number][] = [
 ];
 export const WEEKDAY_NAMES = ["yakshanba", "dushanba", "seshanba", "chorshanba", "payshanba", "juma", "shanba"];
 
+const CYRILLIC: Record<string, string> = Object.fromEntries(
+  "а:a б:b в:v г:g ғ:g д:d е:e ё:yo ж:j з:z и:i й:y к:k қ:q л:l м:m н:n о:o п:p р:r с:s т:t у:u ў:o ф:f х:x ҳ:h ч:ch ш:sh ъ: ь: э:e ю:yu я:ya"
+    .split(" ")
+    .map((x) => x.split(":") as [string, string]),
+);
+const toLatin = (s: string) => s.replace(/[\u0400-\u04ff]/g, (c) => CYRILLIC[c] ?? c);
+
+const ODD_DAYS = [1, 3, 5];
+const EVEN_DAYS = [2, 4, 6];
+
+/** "Du-Sha", "Dushanbadan jumagacha": hafta oralig'i bo'lsa kunlari, oddiy ro'yxat bo'lsa null */
+function rangeDays(text: string, found: number[]): number[] | null {
+  if (found.length !== 2) return null;
+  const [from, to] = found;
+  const spoken = /[a-z]dan\b.*[a-z]gacha\b/.test(text);
+  // "Se-Pay" odatda ikki alohida kun. Tire faqat dushanbadan juma/shanba/yakshanbagacha bo'lsa oraliq deb olinadi
+  const dashed = from === 1 && [5, 6, 0].includes(to) && /[a-z]\s*[-–—]\s*[a-z]/.test(text);
+  if (!spoken && !dashed) return null;
+  const length = ((to - from + 7) % 7) + 1;
+  return Array.from({ length }, (_, i) => (from + i) % 7);
+}
+
 /**
- * Guruh jadvali matnidan dars kunlari va vaqtini ajratadi: "Du/Chor/Ju 14:00", "Se, Pay, Sha 16:30", "Har kuni 9:00".
+ * Guruh jadvali matnidan dars kunlari va vaqtini ajratadi: "Du/Chor/Ju 14:00", "Se, Pay, Sha 16:30", "Har kuni 9:00",
+ * "Toq kunlar" (du-chor-ju), "Juft kunlar" (se-pay-sha), "Du-Shan 9:00", kirillcha yozuv ham.
  * Kunlar tushunilmasa days = null (ya'ni har kuni dars bo'lishi mumkin deb hisoblanadi).
  */
 export function parseSchedule(schedule: string | null | undefined): { days: number[] | null; minutes: number | null } {
   if (!schedule) return { days: null, minutes: null };
   const t = /(\d{1,2})[:.](\d{2})/.exec(schedule);
   const minutes = t ? Number(t[1]) * 60 + Number(t[2]) : null;
-  const text = schedule.toLowerCase().replace(/[ʻ'`’]/g, "");
+  const text = toLatin(schedule.toLowerCase()).replace(/[ʻʼ'`’‘]/g, "");
   if (/har\s*kun/.test(text)) return { days: [0, 1, 2, 3, 4, 5, 6], minutes };
+  const found: number[] = [];
   const days = new Set<number>();
   for (const w of text.split(/[^a-z]+/).filter(Boolean)) {
-    const hit = DAY_PREFIX.find(([p]) => w.startsWith(p));
-    if (hit) days.add(hit[1]);
+    // "juft" — "ju" (juma) bilan boshlanadi, shuning uchun kun nomlaridan oldin tekshiriladi
+    if (w.startsWith("juft")) EVEN_DAYS.forEach((d) => days.add(d));
+    else if (w.startsWith("toq")) ODD_DAYS.forEach((d) => days.add(d));
+    else {
+      const hit = DAY_PREFIX.find(([p]) => w.startsWith(p));
+      if (hit) found.push(hit[1]);
+    }
   }
+  (rangeDays(text, found) ?? found).forEach((d) => days.add(d));
   return { days: days.size ? [...days].sort() : null, minutes };
 }
 
@@ -81,6 +117,18 @@ export function dayLabel(isoDate: string): string {
   const d = new Date(`${isoDate.slice(0, 10)}T00:00:00Z`);
   const months = ["yanvar", "fevral", "mart", "aprel", "may", "iyun", "iyul", "avgust", "sentabr", "oktabr", "noyabr", "dekabr"];
   return `${d.getUTCDate()}-${months[d.getUTCMonth()]}, ${WEEKDAY_NAMES[d.getUTCDay()]}`;
+}
+
+/** Jadval matnini tizim qanday tushungani (admin formada ko'rsatiladi). ok=false — o'tib ketgan darslar eslatilmaydi */
+export function scheduleHint(schedule: string | null | undefined): { ok: boolean; text: string } {
+  if (!schedule?.trim()) return { ok: false, text: "Jadval yozilmasa, o'tib ketgan darslar eslatilmaydi" };
+  const { days, minutes } = parseSchedule(schedule);
+  if (!days) return { ok: false, text: "Kunlar tushunilmadi: o'tib ketgan darslar eslatilmaydi" };
+  // Hafta dushanbadan boshlanadi, yakshanba (0) oxirida
+  const week = [...days].sort((a, b) => ((a + 6) % 7) - ((b + 6) % 7));
+  const names = week.length === 7 ? "har kuni" : week.map((d) => WEEKDAY_NAMES[d]).join(", ");
+  const time = minutes === null ? "" : ` · ${String(Math.floor(minutes / 60)).padStart(2, "0")}:${String(minutes % 60).padStart(2, "0")}`;
+  return { ok: true, text: `Dars kunlari: ${names}${time}` };
 }
 
 // ---------------- To'lovlar tahlili (faqat ega) ----------------

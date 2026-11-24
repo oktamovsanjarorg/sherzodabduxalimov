@@ -11,9 +11,7 @@ export function Paywall({ title = "Bu dars obunachilar uchun" }: { title?: strin
       </span>
       <div>
         <p className="text-base font-extrabold">{title}</p>
-        <p className="mt-1 text-sm text-hint">
-          Obuna bilan barcha videodarslar, mavzu testlari va mock imtihonlar ochiladi.
-        </p>
+        <p className="mt-1 text-sm text-hint">Obuna bilan barcha videodarslar, mavzu testlari va mock imtihonlar ochiladi.</p>
       </div>
       <button className="btn-primary mt-1" onClick={() => navigate("/subscribe")}>
         Obuna bo'lish

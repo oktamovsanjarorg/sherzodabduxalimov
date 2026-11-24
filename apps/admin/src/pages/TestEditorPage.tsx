@@ -95,15 +95,28 @@ function Editor({ initial }: { initial: AdminTestDetail | null }) {
         subtitle={initial ? `${initial.attemptCount} marta topshirilgan` : undefined}
         actions={
           <>
-            {initial && <ConfirmButton onConfirm={() => del.mutate()} className="btn-danger" label="Test o'chirilsinmi?"><Trash2 size={16} /> O'chirish</ConfirmButton>}
-            <button className="btn-primary hidden md:inline-flex" onClick={() => { setErr(null); save.mutate(); }} disabled={save.isPending}>{save.isPending && <Spinner />} Saqlash</button>
+            {initial && (
+              <ConfirmButton onConfirm={() => del.mutate()} className="btn-danger" label="Test o'chirilsinmi?">
+                <Trash2 size={16} /> O'chirish
+              </ConfirmButton>
+            )}
+            <button
+              className="btn-primary hidden md:inline-flex"
+              onClick={() => {
+                setErr(null);
+                save.mutate();
+              }}
+              disabled={save.isPending}
+            >
+              {save.isPending && <Spinner />} Saqlash
+            </button>
           </>
         }
       />
       {items.some((i) => i.question.keyStatus) && (
         <p className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm font-semibold text-amber-800">
-          {items.filter((i) => i.question.keyStatus).length} ta savolning javob kaliti hali tasdiqlanmagan
-          ({items.filter((i) => i.question.keyStatus === "uncertain").length} tasi shubhali). Nashr qilishdan oldin har birini ochib tekshiring.
+          {items.filter((i) => i.question.keyStatus).length} ta savolning javob kaliti hali tasdiqlanmagan (
+          {items.filter((i) => i.question.keyStatus === "uncertain").length} tasi shubhali). Nashr qilishdan oldin har birini ochib tekshiring.
         </p>
       )}
       {err && <p className="mb-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm font-semibold text-red-700">{err}</p>}
@@ -117,12 +130,21 @@ function Editor({ initial }: { initial: AdminTestDetail | null }) {
             </select>
           </Field>
           <Field label="Nomi">
-            <input className="input" value={title} onChange={(e) => setTitle(e.target.value)} placeholder={type === "MOCK" ? "Mock: 1-variant" : "Fonetika: 1-test"} />
+            <input
+              className="input"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder={type === "MOCK" ? "Mock: 1-variant" : "Fonetika: 1-test"}
+            />
           </Field>
           <Field label={type === "TOPIC" ? "Mavzu" : "Mavzu (ixtiyoriy)"}>
             <select className="input" value={topicId} onChange={(e) => setTopicId(e.target.value)}>
               <option value="">—</option>
-              {topics.map((t) => <option key={t.id} value={t.id}>{t.title}</option>)}
+              {topics.map((t) => (
+                <option key={t.id} value={t.id}>
+                  {t.title}
+                </option>
+              ))}
             </select>
           </Field>
           <Field label="Vaqt (daqiqa)" hint="Bo'sh: vaqt cheklanmaydi">
@@ -132,7 +154,12 @@ function Editor({ initial }: { initial: AdminTestDetail | null }) {
             <textarea className="textarea min-h-[60px]" value={description} onChange={(e) => setDescription(e.target.value)} />
           </Field>
           {type === "MOCK" && (
-            <Toggle checked={milliy} onChange={setMilliy} label="Milliy sertifikat shkalasi" hint="Rasmiy tartib: test qismi Rasch modeli bilan (savollarga qo'lda ball qo'yilmaydi), esse 24 ballik mezon bilan baholanib 75 ballik shkalaga o'tkaziladi; umumiy ball — o'rtachasi; daraja va oliygoh bali chiqadi" />
+            <Toggle
+              checked={milliy}
+              onChange={setMilliy}
+              label="Milliy sertifikat shkalasi"
+              hint="Rasmiy tartib: test qismi Rasch modeli bilan (savollarga qo'lda ball qo'yilmaydi), esse 24 ballik mezon bilan baholanib 75 ballik shkalaga o'tkaziladi; umumiy ball — o'rtachasi; daraja va oliygoh bali chiqadi"
+            />
           )}
           <Toggle checked={shuffle} onChange={setShuffle} label="Aralashtirish" hint="Har bir o'quvchida savol va variantlar tartibi boshqacha" />
           <Toggle checked={isFree} onChange={setIsFree} label="Bepul" hint="Obunasiz ham ochiq" />
@@ -142,10 +169,16 @@ function Editor({ initial }: { initial: AdminTestDetail | null }) {
         <section className="card">
           <div className="flex flex-wrap items-center gap-2 border-b border-line px-4 py-4 sm:px-5">
             <h2 className="font-extrabold">Savollar</h2>
-            <Badge>{items.length} ta{milliy ? " · ball Rasch modeli bilan" : ` · ${total} ball`}</Badge>
+            <Badge>
+              {items.length} ta{milliy ? " · ball Rasch modeli bilan" : ` · ${total} ball`}
+            </Badge>
             <span className="flex-1" />
-            <button className="btn-secondary btn-sm" onClick={() => setCreating(true)}><Plus size={14} /> Yangi savol</button>
-            <button className="btn-primary btn-sm" onClick={() => setPicker(true)}><Plus size={14} /> Bankdan tanlash</button>
+            <button className="btn-secondary btn-sm" onClick={() => setCreating(true)}>
+              <Plus size={14} /> Yangi savol
+            </button>
+            <button className="btn-primary btn-sm" onClick={() => setPicker(true)}>
+              <Plus size={14} /> Bankdan tanlash
+            </button>
           </div>
           {items.length === 0 && <p className="px-5 py-10 text-center text-sm text-ink-3">Testga hali savol qo'shilmagan</p>}
           <ol className="divide-y divide-line">
@@ -162,22 +195,34 @@ function Editor({ initial }: { initial: AdminTestDetail | null }) {
                 </div>
                 {/* Telefonda: matn tagida alohida qator */}
                 <div className="ml-9 flex items-center gap-1 sm:ml-0">
-                {/* Milliy sertifikat: ballni Rasch modeli beradi, qo'lda ball qo'yilmaydi */}
-                {!milliy && <label className="flex items-center gap-1 text-xs font-bold text-ink-3">
-                  Ball
-                  <input
-                    className="input h-9 w-16 px-2"
-                    inputMode="decimal"
-                    value={it.points}
-                    onChange={(e) => {
-                      const v = Number(e.target.value.replace(",", "."));
-                      setItems((cur) => cur.map((c, j) => (j === i ? { ...c, points: Number.isFinite(v) && v > 0 ? v : 1 } : c)));
-                    }}
-                  />
-                </label>}
-                <button className="btn-ghost h-9 w-9 p-0" disabled={i === 0} onClick={() => moveItem(i, -1)} aria-label="Yuqoriga"><ArrowUp size={14} /></button>
-                <button className="btn-ghost h-9 w-9 p-0" disabled={i === items.length - 1} onClick={() => moveItem(i, 1)} aria-label="Pastga"><ArrowDown size={14} /></button>
-                <button className="btn-ghost h-9 w-9 p-0 text-ink-4 hover:text-red-600" onClick={() => setItems((cur) => cur.filter((_, j) => j !== i))} aria-label="Olib tashlash"><X size={16} /></button>
+                  {/* Milliy sertifikat: ballni Rasch modeli beradi, qo'lda ball qo'yilmaydi */}
+                  {!milliy && (
+                    <label className="flex items-center gap-1 text-xs font-bold text-ink-3">
+                      Ball
+                      <input
+                        className="input h-9 w-16 px-2"
+                        inputMode="decimal"
+                        value={it.points}
+                        onChange={(e) => {
+                          const v = Number(e.target.value.replace(",", "."));
+                          setItems((cur) => cur.map((c, j) => (j === i ? { ...c, points: Number.isFinite(v) && v > 0 ? v : 1 } : c)));
+                        }}
+                      />
+                    </label>
+                  )}
+                  <button className="btn-ghost h-9 w-9 p-0" disabled={i === 0} onClick={() => moveItem(i, -1)} aria-label="Yuqoriga">
+                    <ArrowUp size={14} />
+                  </button>
+                  <button className="btn-ghost h-9 w-9 p-0" disabled={i === items.length - 1} onClick={() => moveItem(i, 1)} aria-label="Pastga">
+                    <ArrowDown size={14} />
+                  </button>
+                  <button
+                    className="btn-ghost h-9 w-9 p-0 text-ink-4 hover:text-red-600"
+                    onClick={() => setItems((cur) => cur.filter((_, j) => j !== i))}
+                    aria-label="Olib tashlash"
+                  >
+                    <X size={16} />
+                  </button>
                 </div>
               </li>
             ))}
@@ -187,17 +232,42 @@ function Editor({ initial }: { initial: AdminTestDetail | null }) {
 
       {picker && <Picker defaultTopicId={topicId} exclude={items.map((i) => i.question.id)} onClose={() => setPicker(false)} onPick={add} />}
       {creating && <QuestionModal question={null} defaultTopicId={topicId || null} onClose={() => setCreating(false)} onSaved={(q) => add([q])} />}
-      <MobileBar><button className="btn-primary w-full" onClick={() => { setErr(null); save.mutate(); }} disabled={save.isPending}>{save.isPending && <Spinner />} Saqlash</button></MobileBar>
+      <MobileBar>
+        <button
+          className="btn-primary w-full"
+          onClick={() => {
+            setErr(null);
+            save.mutate();
+          }}
+          disabled={save.isPending}
+        >
+          {save.isPending && <Spinner />} Saqlash
+        </button>
+      </MobileBar>
     </>
   );
 }
 
-function Picker({ defaultTopicId, exclude, onClose, onPick }: { defaultTopicId: string; exclude: string[]; onClose: () => void; onPick: (q: AdminQuestion[]) => void }) {
+function Picker({
+  defaultTopicId,
+  exclude,
+  onClose,
+  onPick,
+}: {
+  defaultTopicId: string;
+  exclude: string[];
+  onClose: () => void;
+  onPick: (q: AdminQuestion[]) => void;
+}) {
   const topics = useTopics();
   const [topicId, setTopicId] = useState(defaultTopicId);
   const [search, setSearch] = useState("");
   const [sel, setSel] = useState<Map<string, AdminQuestion>>(new Map());
-  const qs = useQuery({ queryKey: ["questions", topicId, search, "picker"], queryFn: () => api.questions({ topicId: topicId || undefined, search: search || undefined }), placeholderData: (p) => p });
+  const qs = useQuery({
+    queryKey: ["questions", topicId, search, "picker"],
+    queryFn: () => api.questions({ topicId: topicId || undefined, search: search || undefined }),
+    placeholderData: (p) => p,
+  });
   const list = (qs.data?.items ?? []).filter((q) => !exclude.includes(q.id) && q.type !== "MATCHING");
 
   return (
@@ -208,22 +278,39 @@ function Picker({ defaultTopicId, exclude, onClose, onPick }: { defaultTopicId: 
       footer={
         <>
           <span className="mr-auto self-center text-sm font-semibold text-ink-3">{sel.size} ta tanlandi</span>
-          <button className="btn-secondary" onClick={onClose}>Bekor qilish</button>
-          <button className="btn-primary" disabled={sel.size === 0} onClick={() => { onPick([...sel.values()]); onClose(); }}>Qo'shish</button>
+          <button className="btn-secondary" onClick={onClose}>
+            Bekor qilish
+          </button>
+          <button
+            className="btn-primary"
+            disabled={sel.size === 0}
+            onClick={() => {
+              onPick([...sel.values()]);
+              onClose();
+            }}
+          >
+            Qo'shish
+          </button>
         </>
       }
     >
       <div className="mb-3 flex flex-wrap gap-2">
         <select className="input w-full sm:w-auto" value={topicId} onChange={(e) => setTopicId(e.target.value)}>
           <option value="">Barcha mavzular</option>
-          {topics.map((t) => <option key={t.id} value={t.id}>{t.title}</option>)}
+          {topics.map((t) => (
+            <option key={t.id} value={t.id}>
+              {t.title}
+            </option>
+          ))}
         </select>
         <div className="relative min-w-0 flex-1">
           <Search size={16} className="absolute left-3 top-3.5 text-ink-4 sm:top-3" />
           <input className="input pl-9" placeholder="Qidirish" value={search} onChange={(e) => setSearch(e.target.value)} />
         </div>
         {list.length > 0 && (
-          <button className="btn-ghost btn-sm" onClick={() => setSel(new Map(list.map((q) => [q.id, q])))}>Hammasini tanlash</button>
+          <button className="btn-ghost btn-sm" onClick={() => setSel(new Map(list.map((q) => [q.id, q])))}>
+            Hammasini tanlash
+          </button>
         )}
       </div>
       {qs.isPending && <Spinner className="text-ink-4" />}
@@ -232,16 +319,29 @@ function Picker({ defaultTopicId, exclude, onClose, onPick }: { defaultTopicId: 
         {list.map((q) => {
           const on = sel.has(q.id);
           return (
-            <label key={q.id} className={`flex cursor-pointer items-start gap-3 rounded-lg border p-3 ${on ? "border-brand bg-brand-soft/30" : "border-line hover:bg-surface-2"}`}>
+            <label
+              key={q.id}
+              className={`flex cursor-pointer items-start gap-3 rounded-lg border p-3 ${on ? "border-brand bg-brand-soft/30" : "border-line hover:bg-surface-2"}`}
+            >
               <input
                 type="checkbox"
                 className="mt-1 h-4 w-4 accent-brand"
                 checked={on}
-                onChange={() => setSel((m) => { const n = new Map(m); if (on) n.delete(q.id); else n.set(q.id, q); return n; })}
+                onChange={() =>
+                  setSel((m) => {
+                    const n = new Map(m);
+                    if (on) n.delete(q.id);
+                    else n.set(q.id, q);
+                    return n;
+                  })
+                }
               />
               <span className="min-w-0 flex-1">
                 <span className="line-clamp-2 text-sm font-semibold">{plainText(q.text)}</span>
-                <span className="mt-1 flex gap-1.5"><Badge tone="blue">{TYPE_LABELS[q.type]}</Badge>{q.topicTitle && <Badge>{q.topicTitle}</Badge>}</span>
+                <span className="mt-1 flex gap-1.5">
+                  <Badge tone="blue">{TYPE_LABELS[q.type]}</Badge>
+                  {q.topicTitle && <Badge>{q.topicTitle}</Badge>}
+                </span>
               </span>
             </label>
           );

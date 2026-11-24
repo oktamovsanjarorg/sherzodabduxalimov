@@ -41,11 +41,29 @@ function tiles(s: StudentDetail): { label: string; value: string; hint: string; 
   const avg = s.stats.averagePercent;
   const out: ReturnType<typeof tiles> = [
     a.total
-      ? { label: "Davomat (30 kun)", value: `${Math.round((a.present / a.total) * 100)}%`, hint: a.absent ? `${a.absent} marta kelmagan` : "Hammasiga kelgan", tone: a.absent >= 3 ? "bad" : a.absent ? "warn" : "good", tab: "attendance" }
+      ? {
+          label: "Davomat (30 kun)",
+          value: `${Math.round((a.present / a.total) * 100)}%`,
+          hint: a.absent ? `${a.absent} marta kelmagan` : "Hammasiga kelgan",
+          tone: a.absent >= 3 ? "bad" : a.absent ? "warn" : "good",
+          tab: "attendance",
+        }
       : { label: "Davomat (30 kun)", value: "—", hint: "Belgilanmagan", tone: "none", tab: "attendance" },
     ext
-      ? { label: "Oxirgi mock", value: ext.scaledScore != null ? `${formatScore(ext.scaledScore)} ball` : `${formatScore(ext.percent)}%`, hint: `${ext.grade ? `${ext.grade} · ` : ""}${ext.title}`, tone: ext.percent >= 60 ? "good" : ext.percent >= 40 ? "warn" : "bad", tab: "results" }
-      : { label: "Ilovadagi testlar", value: avg != null ? `${avg}%` : "—", hint: `${s.stats.testsTaken} ta test, ${s.stats.lessonsCompleted} ta dars`, tone: avg == null ? "none" : avg >= 70 ? "good" : avg >= 50 ? "warn" : "bad", tab: "results" },
+      ? {
+          label: "Oxirgi mock",
+          value: ext.scaledScore != null ? `${formatScore(ext.scaledScore)} ball` : `${formatScore(ext.percent)}%`,
+          hint: `${ext.grade ? `${ext.grade} · ` : ""}${ext.title}`,
+          tone: ext.percent >= 60 ? "good" : ext.percent >= 40 ? "warn" : "bad",
+          tab: "results",
+        }
+      : {
+          label: "Ilovadagi testlar",
+          value: avg != null ? `${avg}%` : "—",
+          hint: `${s.stats.testsTaken} ta test, ${s.stats.lessonsCompleted} ta dars`,
+          tone: avg == null ? "none" : avg >= 70 ? "good" : avg >= 50 ? "warn" : "bad",
+          tab: "results",
+        },
   ];
   if (s.billing) out.push(billingTile(s));
   const p = s.parents;
@@ -62,7 +80,9 @@ function tiles(s: StudentDetail): { label: string; value: string; hint: string; 
 function billingTile(s: StudentDetail): ReturnType<typeof tiles>[number] {
   if (s.group) {
     if (!s.startedOn) return { label: "To'lov", value: "Sana yo'q", hint: "Boshlagan sanani kiriting", tone: "warn", tab: "settings" };
-    return s.paidThisMonth ? { label: "To'lov", value: "To'langan", hint: "Joriy davr", tone: "good", tab: "billing" } : { label: "To'lov", value: "To'lanmagan", hint: "Joriy davr", tone: "bad", tab: "billing" };
+    return s.paidThisMonth
+      ? { label: "To'lov", value: "To'langan", hint: "Joriy davr", tone: "good", tab: "billing" }
+      : { label: "To'lov", value: "To'lanmagan", hint: "Joriy davr", tone: "bad", tab: "billing" };
   }
   const ends = s.subscriptionEndsAt;
   if (ends && new Date(ends) > new Date()) return { label: "Obuna", value: "Faol", hint: `${fmtDate(ends)} gacha`, tone: "good", tab: "billing" };
@@ -71,13 +91,16 @@ function billingTile(s: StudentDetail): ReturnType<typeof tiles>[number] {
 
 function ConnectCard({ s }: { s: StudentDetail }) {
   const qc = useQueryClient();
-  const reset = useMutation({ mutationFn: () => api.resetStudentInvite(s.studentId), onSuccess: () => qc.invalidateQueries({ queryKey: ["student", s.studentId] }) });
+  const reset = useMutation({
+    mutationFn: () => api.resetStudentInvite(s.studentId),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["student", s.studentId] }),
+  });
   return (
     <div className="card border-amber-300 bg-amber-50 p-4 sm:p-5">
       <p className="font-bold">O'quvchi hali botga kirmagan</p>
       <p className="mt-1 text-sm text-ink-2">
-        Davomat va to'lovlarni hozirdan belgilayverishingiz mumkin. Ilovadan foydalanishi uchun u botga kirib <b>telefon raqamini ulashsa</b> ({s.phone ?? "raqam kiritilmagan"}) yoki quyidagi{" "}
-        <b>shaxsiy havolani</b> bossa, hisobi shu yozuvga avtomatik bog'lanadi.
+        Davomat va to'lovlarni hozirdan belgilayverishingiz mumkin. Ilovadan foydalanishi uchun u botga kirib <b>telefon raqamini ulashsa</b> (
+        {s.phone ?? "raqam kiritilmagan"}) yoki quyidagi <b>shaxsiy havolani</b> bossa, hisobi shu yozuvga avtomatik bog'lanadi.
       </p>
       {s.inviteUrl ? (
         <div className="mt-3">

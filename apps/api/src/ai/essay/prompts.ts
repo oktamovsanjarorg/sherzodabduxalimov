@@ -6,6 +6,10 @@ import type { Segmented } from "./text";
 const handNote = (handwritten: boolean) =>
   handwritten ? "\nEslatma: matn qo'lyozmadan avtomatik o'qilgan. [?] — o'qib bo'lmagan so'z: uni xato deb hisoblama va iqtibos qilma." : "";
 
+/** Ustoz mezoni: publitsistik uslubdan chekinish belgilari (tahlilchi ham, qayta tekshiruvchi ham shunga tayanadi) */
+const STYLE_RULES = `   So'zlashuv belgilari: kundalik nutq qoliplari ("hozirgi kunda", "ko'p odamlar o'ylaydiki", "buning yomon tomoni ham bor", "xullas", "bilasizmi"), "juda-juda", "zo'r", "rosa", "-da", "-ku", "-yu" yuklamalari, o'quvchiga gapirgandek murojaat, aniq bo'lmagan umumiy gaplar.
+   Kanselyarizm (ENG KO'P uchraydigan xato, "jiddiy yozaman" deb o'tib ketiladi): "tegishli chora-tadbirlar", "maqsadga muvofiqdir", "joriy etilishi", "ta'minlash yuzasidan", "mazkur", hisobot/bayonnoma tili.`;
+
 export function analysisPrompt(topic: string, seg: Segmented, handwritten: boolean) {
   const system = `Sen Bilim va malakalarni baholash agentligining ona tili va adabiyot fanidan eng tajribali, talabchan fan ekspertisan. Milliy sertifikat imtihonidagi esseni RASMIY MEZON va ustozning talablari bo'yicha CHUQUR tahlil qilasan.
 Bu bosqichda BALL QO'YMAYSAN: har bir xatboshi va gapni o'qib, dalil to'playsan. Ballni server sening dalillaring asosida hisoblaydi, shuning uchun har bir da'vo matndan AYNAN ko'chirilgan iqtibos bilan bo'lsin. Yuzaki "umuman yaxshi" degan xulosa qilma: har bir xatboshini alohida tekshir.
@@ -24,8 +28,7 @@ TEKSHIRISH TARTIBI:
    "body.level": asosiy qism umuman — full (qarashlar dalillangan), shallow (yuza), missing.
 5) XULOSA (yo'riqnoma talabi): yoqlanayotgan qarashning JAMIYAT HAYOTIGA ta'siri yoritilishi shart ("societyImpact"). Faqat yuqoridagi fikrlar takrori bo'lsa — "repeatsOnly": true va "shallow". Kuchli xulosa: keng qamrov (soha muammosidan jamiyat/millat darajasiga), muvozanat, yakuniy hukm ("finalVerdict" iqtibosi).
 6) USLUB ("styleIssues") — HAR BIR gapni tekshir. Publitsistik uslubdan chekingan har bir gapni alohida yoz: "s", "register" (colloquial — so'zlashuv; official — rasmiy-idoraviy, kanselyarizm; scientific — ilmiy; artistic — badiiy), "quote" — o'sha gapdan chekinishni ko'rsatuvchi 2–8 so'zli AYNAN iqtibos, "fix" — shu qismning publitsistik varianti.
-   So'zlashuv belgilari: kundalik nutq qoliplari ("hozirgi kunda", "ko'p odamlar o'ylaydiki", "buning yomon tomoni ham bor", "xullas", "bilasizmi"), "juda-juda", "zo'r", "rosa", "-da", "-ku", "-yu" yuklamalari, o'quvchiga gapirgandek murojaat, aniq bo'lmagan umumiy gaplar.
-   Kanselyarizm (ENG KO'P uchraydigan xato, "jiddiy yozaman" deb o'tib ketiladi): "tegishli chora-tadbirlar", "maqsadga muvofiqdir", "joriy etilishi", "ta'minlash yuzasidan", "mazkur", hisobot/bayonnoma tili.
+${STYLE_RULES}
    Ilmiy: o'ta murakkab, quruq atamalar zanjiri. Badiiy: obrazli hikoya, tasviriy bayon esse o'rnida.
    Namuna: ❌ "Hozirgi kunda bu muammo juda muhim bo'lib qoldi." → ✅ "Bugun ushbu masala kun tartibidagi eng dolzarb muammoga aylandi."
    Publitsistik gap (jamoatchilikka qaratilgan, ta'sirchan, aniq, umumlashtiruvchi) — yozilmaydi. "dominantRegister" — matnning umumiy uslubi.
@@ -56,7 +59,9 @@ JAVOB faqat JSON:
 }
 
 export function literacyPrompt(seg: Segmented, handwritten: boolean) {
-  const rules = Object.entries(PUNCT_RULES).map(([k, v]) => `${k} — ${v}`).join("; ");
+  const rules = Object.entries(PUNCT_RULES)
+    .map(([k, v]) => `${k} — ${v}`)
+    .join("; ");
   const system = `Sen o'zbek adabiy tili me'yorlarini mukammal biladigan korrektor va ona tili fan ekspertisan. Vazifang — esse matnini GAPMA-GAP, so'zma-so'z tekshirib, BARCHA savodxonlik xatolarini topish. Hech bir gapni o'tkazib yuborma: har bir [x.y] gapni alohida o'qi.
 
 Xato turlari ("type"):
@@ -81,19 +86,31 @@ Xato bo'lmasa: {"errors": []}. Izohlar o'zbek tilida (lotin).`;
 export function verifyPrompt(cands: Candidate[], seg: Segmented) {
   const sent = (id: string | null) => (id ? seg.sentences.find((s) => s.id === id)?.text : undefined);
   const list = cands
-    .map((c, i) => `#${i} [${c.kind}${c.kind === "literacy" ? `/${c.type}` : ""}] gap ${c.s ?? "?"}: «${sent(c.s) ?? "—"}»\n   da'vo: «${c.wrong}» → «${c.right}»${c.note ? ` (${c.note})` : ""}`)
+    .map(
+      (c, i) =>
+        `#${i} [${c.kind}${c.kind === "literacy" ? `/${c.type}` : ""}] gap ${c.s ?? "?"}: «${sent(c.s) ?? "—"}»\n   da'vo: «${c.wrong}» → «${c.right}»${c.note ? ` (${c.note})` : ""}`,
+    )
     .join("\n");
   const system = `Sen ikkinchi, mustaqil ekspertsan (taqrizchi). Birinchi ekspert esse matnida quyidagi xatolarni topgan. Sening vazifang — HAR BIRINI qat'iy qayta tekshirish: o'zbek adabiy tili me'yori bo'yicha bu haqiqatan xatomi?
 - literacy: imlo, tinish belgisi, qo'shimcha yoki so'z qo'llash xatosi haqiqatan bormi va "right" to'g'rimi? Me'yorda ikki xil yozilishi mumkin bo'lsa, faqat uslubiy afzallik bo'lsa yoki gapda aslida xato bo'lmasa — valid: false.
-- style: shu qism haqiqatan publitsistik uslubdan chekinganmi (so'zlashuv, kanselyarizm, ilmiy yoki badiiy)? Oddiy publitsistik gap bo'lsa — valid: false.
+- style: shu qism haqiqatan publitsistik uslubdan chekinganmi (so'zlashuv, kanselyarizm, ilmiy yoki badiiy)? Oddiy publitsistik gap bo'lsa — valid: false. Ustoz mezoni bo'yicha quyidagilar chekinish HISOBLANADI (uslubiy afzallik deb rad etma):
+${STYLE_RULES}
 - purity: haqiqatan sheva, vulgarizm, varvarizm yoki parazit so'zmi?
-"right" — tuzatilgan to'g'ri variant (agar birinchi ekspertniki noto'g'ri bo'lsa, o'zingnikini yoz; to'g'ri bo'lsa o'shani qoldir).
+"right" — FAQAT da'vodagi qismning to'g'ri varianti, butun gap emas (agar birinchi ekspertniki noto'g'ri bo'lsa, o'zingnikini yoz; to'g'ri bo'lsa o'shani qoldir).
 JAVOB faqat JSON: {"checks": [{"i": 0, "valid": true, "right": "...", "note": "qisqa sabab"}]} — ro'yxatdagi HAR BIR # uchun bittadan.`;
   return { system, user: `Ro'yxat:\n${list}` };
 }
 
-export function writerPrompt(topic: string, seg: Segmented, a: Analysis, scored: Scored, mistakes: { wrong: string; right: string; type: string; note: string | null }[]) {
-  const bands = ESSAY_RUBRIC.map((c) => `- ${c.key} (${c.label}): ${scored.scores[c.key]} ball — "${levelText(c.key, scored.scores[c.key])}". Dalil: ${scored.facts[c.key]}`).join("\n");
+export function writerPrompt(
+  topic: string,
+  seg: Segmented,
+  a: Analysis,
+  scored: Scored,
+  mistakes: { wrong: string; right: string; type: string; note: string | null }[],
+) {
+  const bands = ESSAY_RUBRIC.map(
+    (c) => `- ${c.key} (${c.label}): ${scored.scores[c.key]} ball — "${levelText(c.key, scored.scores[c.key])}". Dalil: ${scored.facts[c.key]}`,
+  ).join("\n");
   const notes = [
     `Kirish: ${a.intro.note ?? ""}${a.intro.thesis ? ` Tezis: «${a.intro.thesis}»` : " Tezis yo'q."}`,
     `Yoqlovchi qarash: ${a.pro.position ?? "—"}. Da'vo: ${a.pro.claim ? `«${a.pro.claim}»` : "yo'q"}; dalil: ${a.pro.evidence ? `«${a.pro.evidence}»` : "yo'q"}; tahlil: ${a.pro.analysis ? `«${a.pro.analysis}»` : "yo'q"}. ${a.pro.note ?? ""}`,
@@ -102,7 +119,9 @@ export function writerPrompt(topic: string, seg: Segmented, a: Analysis, scored:
     `Xulosa: ${a.conclusion.note ?? ""} Jamiyatga ta'siri: ${a.conclusion.societyImpact ? "bor" : "yo'q"}${a.conclusion.repeatsOnly ? "; faqat takror" : ""}.`,
     a.structureIssues.length ? `Mantiqiy qurilish: ${a.structureIssues.map((x) => `${x.where ?? ""} — ${x.issue}`).join("; ")}` : "",
     a.repetitions.length ? `Fikr takrori: ${a.repetitions.map((x) => `«${x.quote}» (${x.s.join(", ")})`).join("; ")}` : "",
-  ].filter(Boolean).join("\n");
+  ]
+    .filter(Boolean)
+    .join("\n");
   const errs = mistakes.length ? mistakes.map((m) => `- [${m.type}] «${m.wrong}» → «${m.right}»${m.note ? ` — ${m.note}` : ""}`).join("\n") : "- topilmadi";
   const system = `Sen ona tili va adabiyot fanidan tajribali fan eksperti va mehribon, lekin talabchan ustozsan. Esse allaqachon chuqur tahlil qilingan va mezon bo'yicha baholangan. Ballar YAKUNIY — ularni o'zgartirma va ularga zid gap yozma. Endi o'quvchi uchun izoh, taqriz va tavsiyalar yozasan.
 

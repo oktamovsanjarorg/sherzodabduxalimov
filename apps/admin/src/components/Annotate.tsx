@@ -125,7 +125,8 @@ export function PageAnnotator({ src, value, onChange }: { src: string; value: Pa
     if (!draft) return;
     const points = simplify(draft);
     setDraft(null);
-    if (tool === "pen" || tool === "marker") commit({ ...value, strokes: [...value.strokes, { tool, width, points: points.length > 1 ? points : [points[0], points[0]] } as Stroke] });
+    if (tool === "pen" || tool === "marker")
+      commit({ ...value, strokes: [...value.strokes, { tool, width, points: points.length > 1 ? points : [points[0], points[0]] } as Stroke] });
   };
 
   const live = useMemo<PageAnnotations>(
@@ -155,7 +156,13 @@ export function PageAnnotator({ src, value, onChange }: { src: string; value: Pa
           </button>
         ))}
         <span className="mx-1 h-6 w-px bg-surface-4" />
-        <button type="button" className="btn-ghost h-9 w-9 p-0" disabled={!history.length} onClick={() => (onChange(history[history.length - 1]), setHistory((h) => h.slice(0, -1)))} aria-label="Bekor qilish">
+        <button
+          type="button"
+          className="btn-ghost h-9 w-9 p-0"
+          disabled={!history.length}
+          onClick={() => (onChange(history[history.length - 1]), setHistory((h) => h.slice(0, -1)))}
+          aria-label="Bekor qilish"
+        >
           <Undo2 size={16} />
         </button>
         <button type="button" className="btn-ghost h-9 w-9 p-0" onClick={() => setZoom((z) => Math.max(1, z - 0.5))} aria-label="Kichraytirish">
@@ -181,17 +188,33 @@ export function PageAnnotator({ src, value, onChange }: { src: string; value: Pa
               {t.label}
             </button>
           ))}
-          <input className="input h-8 w-56 text-xs" placeholder="To'g'risi / izoh (ixtiyoriy)" value={note} onChange={(e) => setNote(e.target.value)} maxLength={120} />
+          <input
+            className="input h-8 w-56 text-xs"
+            placeholder="To'g'risi / izoh (ixtiyoriy)"
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+            maxLength={120}
+          />
           <span className="text-xs text-ink-3">so'ng xato ustiga bosing</span>
         </div>
       )}
       <div className="min-h-0 flex-1 overflow-auto bg-surface-3 p-2">
         <div ref={box} className="relative mx-auto select-none" style={{ width: `${zoom * 100}%`, maxWidth: zoom === 1 ? 900 : undefined }}>
-          <img src={src} alt="" draggable={false} className="block w-full" onLoad={(e) => setRatio(e.currentTarget.naturalHeight / e.currentTarget.naturalWidth || 1.4)} />
+          <img
+            src={src}
+            alt=""
+            draggable={false}
+            className="block w-full"
+            onLoad={(e) => setRatio(e.currentTarget.naturalHeight / e.currentTarget.naturalWidth || 1.4)}
+          />
           <AnnotationOverlay a={live} ratio={ratio} />
           <div
             className="absolute inset-0"
-            style={{ touchAction: tool === "hand" ? "auto" : "none", cursor: tool === "hand" ? "grab" : tool === "erase" ? "cell" : "crosshair", pointerEvents: tool === "hand" ? "none" : "auto" }}
+            style={{
+              touchAction: tool === "hand" ? "auto" : "none",
+              cursor: tool === "hand" ? "grab" : tool === "erase" ? "cell" : "crosshair",
+              pointerEvents: tool === "hand" ? "none" : "auto",
+            }}
             onPointerDown={down}
             onPointerMove={move}
             onPointerUp={up}
@@ -255,22 +278,40 @@ export function TextAnnotator({ text, value, onChange }: { text: string; value: 
   };
   return (
     <div>
-      <div className={`sticky top-0 z-10 mb-2 flex flex-wrap items-center gap-1.5 rounded-lg border p-2 ${sel ? "border-red-300 bg-red-50" : "border-line bg-surface"}`}>
+      <div
+        className={`sticky top-[calc(var(--safe-top)+3.5rem)] z-10 mb-2 flex flex-wrap md:top-0 items-center gap-1.5 rounded-lg border p-2 ${sel ? "border-red-300 bg-red-50" : "border-line bg-surface"}`}
+      >
         {sel ? (
           <>
             <span className="text-xs font-bold text-red-700">«{text.slice(sel.start, sel.end).slice(0, 40)}» —</span>
             {ERROR_TYPES.map((t) => (
-              <button key={t.key} type="button" className="rounded-full bg-red-600 px-2.5 py-1 text-xs font-bold text-white hover:bg-red-700" onClick={() => add(t.key)}>
+              <button
+                key={t.key}
+                type="button"
+                className="rounded-full bg-red-600 px-2.5 py-1 text-xs font-bold text-white hover:bg-red-700"
+                onClick={() => add(t.key)}
+              >
                 {t.label}
               </button>
             ))}
-            <input className="input h-7 w-44 text-xs" placeholder="To'g'risi (ixtiyoriy)" value={note} onChange={(e) => setNote(e.target.value)} maxLength={120} />
+            <input
+              className="input h-7 w-44 text-xs"
+              placeholder="To'g'risi (ixtiyoriy)"
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+              maxLength={120}
+            />
           </>
         ) : (
           <span className="text-xs text-ink-3">Xato so'z yoki qismni belgilang, so'ng turini tanlang. Belgini o'chirish uchun ustiga bosing.</span>
         )}
       </div>
-      <div ref={ref} onMouseUp={pick} onTouchEnd={() => setTimeout(pick, 50)} className="whitespace-pre-wrap rounded-xl border border-line bg-surface p-4 text-[15px] leading-[2.1]">
+      <div
+        ref={ref}
+        onMouseUp={pick}
+        onTouchEnd={() => setTimeout(pick, 50)}
+        className="whitespace-pre-wrap rounded-xl border border-line bg-surface p-4 text-[15px] leading-[2.1]"
+      >
         {segments(text, value).map((s, i) =>
           s.mark ? (
             <span

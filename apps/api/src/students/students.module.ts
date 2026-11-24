@@ -4,5 +4,10 @@ import { StudentNameController, StudentsController, StudentsInternalController }
 import { StudentsService } from "./students.service";
 
 @Global()
-@Module({ imports: [UsersModule], controllers: [StudentsController, StudentNameController, StudentsInternalController], providers: [StudentsService], exports: [StudentsService] })
+@Module({
+  imports: [UsersModule],
+  controllers: [StudentsController, StudentNameController, StudentsInternalController],
+  providers: [StudentsService],
+  exports: [StudentsService],
+})
 export class StudentsModule {}

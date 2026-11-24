@@ -5,10 +5,24 @@ const coverage = z.enum(["full", "partial", "none"]).catch("none");
 const fit = z.enum(["fit", "partlyUnfit", "unfit", "none"]).catch("none");
 const str = z.string().nullish().catch(null);
 const sid = z.coerce.string().nullish().catch(null);
-const arr = <T extends z.ZodTypeAny>(t: T) => z.array(t.nullable().catch(null)).catch([]).default([]).transform((a) => a.filter((x): x is NonNullable<z.output<T>> => x != null));
+const arr = <T extends z.ZodTypeAny>(t: T) =>
+  z
+    .array(t.nullable().catch(null))
+    .catch([])
+    .default([])
+    .transform((a) => a.filter((x): x is NonNullable<z.output<T>> => x != null));
 
 const view = z
-  .object({ position: str, paragraphs: z.array(z.coerce.number()).catch([]).default([]), coverage, claim: str, evidence: str, analysis: str, evidenceFit: fit, note: str })
+  .object({
+    position: str,
+    paragraphs: z.array(z.coerce.number()).catch([]).default([]),
+    coverage,
+    claim: str,
+    evidence: str,
+    analysis: str,
+    evidenceFit: fit,
+    note: str,
+  })
   .catch({ position: null, paragraphs: [], coverage: "none", claim: null, evidence: null, analysis: null, evidenceFit: "none", note: null });
 
 export const analysisSchema = z.object({
@@ -16,18 +30,25 @@ export const analysisSchema = z.object({
   paragraphsSplit: z.boolean().catch(true).default(true),
   paragraphs: arr(z.object({ n: z.coerce.number(), role: z.string().catch("other"), summary: str })),
   intro: z
-    .object({ level, topicOpened: z.boolean().catch(false), viewsHinted: z.boolean().catch(false), thesis: str, copiedFromPrompt: z.boolean().catch(false), note: str })
+    .object({
+      level,
+      topicOpened: z.boolean().catch(false),
+      viewsHinted: z.boolean().catch(false),
+      thesis: str,
+      copiedFromPrompt: z.boolean().catch(false),
+      note: str,
+    })
     .catch({ level: "missing", topicOpened: false, viewsHinted: false, thesis: null, copiedFromPrompt: false, note: null }),
   pro: view,
   con: view,
-  personal: z
-    .object({ coverage, stance: str, solution: str, note: str })
-    .catch({ coverage: "none", stance: null, solution: null, note: null }),
+  personal: z.object({ coverage, stance: str, solution: str, note: str }).catch({ coverage: "none", stance: null, solution: null, note: null }),
   body: z.object({ level, note: str }).catch({ level: "missing", note: null }),
   conclusion: z
     .object({ level, societyImpact: z.boolean().catch(false), repeatsOnly: z.boolean().catch(false), finalVerdict: str, note: str })
     .catch({ level: "missing", societyImpact: false, repeatsOnly: false, finalVerdict: null, note: null }),
-  styleIssues: arr(z.object({ s: sid, register: z.enum(["colloquial", "official", "scientific", "artistic"]).catch("colloquial"), quote: z.string(), fix: str })),
+  styleIssues: arr(
+    z.object({ s: sid, register: z.enum(["colloquial", "official", "scientific", "artistic"]).catch("colloquial"), quote: z.string(), fix: str }),
+  ),
   dominantRegister: z.enum(["publicistic", "colloquial", "official", "scientific", "artistic"]).catch("publicistic").default("publicistic"),
   structureIssues: arr(z.object({ where: str, issue: z.string(), quote: str })),
   repetitions: arr(z.object({ s: z.array(z.coerce.string()).catch([]).default([]), quote: z.string(), note: str })),

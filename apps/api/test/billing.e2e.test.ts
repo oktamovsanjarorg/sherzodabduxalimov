@@ -67,7 +67,9 @@ describe("Qo'lda to'lov va obuna (e2e)", () => {
     expect((await req("POST", "/admin/plans", { name: `${TAG} arzon`, priceUzs: 5, durationDays: 30 })).statusCode).toBe(400);
 
     expect((await req("PUT", "/admin/billing-settings", { number: "8600 12", holder: "Sherzod" })).statusCode).toBe(400);
-    const card = (await req("PUT", "/admin/billing-settings", { number: "8600 1234 5678 9012", holder: "Sherzod Abduxalimov", note: "Izohga ismingizni yozing" })).json();
+    const card = (
+      await req("PUT", "/admin/billing-settings", { number: "8600 1234 5678 9012", holder: "Sherzod Abduxalimov", note: "Izohga ismingizni yozing" })
+    ).json();
     expect(card.number).toBe("8600123456789012");
 
     expect((await req("GET", "/admin/payments", undefined, A)).statusCode).toBe(403);

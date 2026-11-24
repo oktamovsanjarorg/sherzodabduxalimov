@@ -22,7 +22,10 @@ export const strokeSchema = z.object({
   tool: z.enum(["pen", "marker"]),
   /** Chiziq qalinligi (rasm kengligiga nisbatan) */
   width: z.number().min(0.0005).max(0.05),
-  points: z.array(z.tuple([coord, coord])).min(1).max(4000),
+  points: z
+    .array(z.tuple([coord, coord]))
+    .min(1)
+    .max(4000),
 });
 export const markSchema = z.object({
   x: coord,

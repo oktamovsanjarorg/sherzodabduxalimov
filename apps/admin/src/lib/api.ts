@@ -57,12 +57,16 @@ import type {
 import { clearSession, loadSession } from "./session";
 
 export class ApiError extends Error {
-  constructor(public status: number, message: string, public body: Record<string, unknown> = {}) {
+  constructor(
+    public status: number,
+    message: string,
+    public body: Record<string, unknown> = {},
+  ) {
     super(message);
   }
 }
 
-async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
+export async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   const token = loadSession()?.token;
   const res = await fetch(`/api${path}`, {
     ...init,
@@ -83,7 +87,7 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   return res.json() as Promise<T>;
 }
 
-const json = (method: string, body?: unknown): RequestInit => ({ method, body: body === undefined ? undefined : JSON.stringify(body) });
+export const json = (method: string, body?: unknown): RequestInit => ({ method, body: body === undefined ? undefined : JSON.stringify(body) });
 
 export interface AdminDashboard {
   pendingParents: number;
@@ -116,14 +120,17 @@ export interface StaffList {
 
 export const api = {
   users: (q: string) => request<AdminUserRow[]>(`/admin/users?${new URLSearchParams(q ? { q } : {})}`),
-  roster: (groupId: string, q: string) => request<RosterRow[]>(`/admin/roster?${new URLSearchParams({ ...(groupId ? { groupId } : {}), ...(q ? { q } : {}) })}`),
+  roster: (groupId: string, q: string) =>
+    request<RosterRow[]>(`/admin/roster?${new URLSearchParams({ ...(groupId ? { groupId } : {}), ...(q ? { q } : {}) })}`),
   student: (id: string) => request<StudentDetail>(`/admin/students/${id}`),
   createStudent: (d: StudentCreateInput) => request<{ studentId: string }>("/admin/students", json("POST", d)),
-  bulkStudents: (groupId: string | null, text: string) => request<{ added: number; skipped: { line: string; reason: string }[] }>("/admin/students/bulk", json("POST", { groupId, text })),
+  bulkStudents: (groupId: string | null, text: string) =>
+    request<{ added: number; skipped: { line: string; reason: string }[] }>("/admin/students/bulk", json("POST", { groupId, text })),
   updateStudent: (id: string, d: Partial<StudentCreateInput>) => request<StudentDetail>(`/admin/students/${id}`, json("PATCH", d)),
   deleteStudent: (id: string, force = false) => request(`/admin/students/${id}${force ? "?force=1" : ""}`, json("DELETE")),
   setStudentAccess: (id: string, mode: "AUTO" | "FREE" | "CLOSED") => request<StudentDetail>(`/admin/students/${id}/access`, json("PATCH", { mode })),
-  blockStudent: (id: string, blocked: boolean, reason: string | null) => request<StudentDetail>(`/admin/students/${id}/block`, json("POST", { blocked, reason })),
+  blockStudent: (id: string, blocked: boolean, reason: string | null) =>
+    request<StudentDetail>(`/admin/students/${id}/block`, json("POST", { blocked, reason })),
   deleteParentLink: (id: string) => request(`/admin/parent-links/${id}`, json("DELETE")),
   resetStudentInvite: (id: string) => request<{ inviteUrl: string }>(`/admin/students/${id}/invite`, json("POST")),
   payments: (status: PaymentStatusName) => request<AdminPayment[]>(`/admin/payments?status=${status}`),
@@ -149,13 +156,19 @@ export const api = {
   externalTests: () => request<{ tests: ExternalTestSummary[] }>("/admin/external-tests"),
   externalTest: (id: string) => request<ExternalTestDetail>(`/admin/external-tests/${id}`),
   externalRanking: (days: number) => request<ExternalRankingRow[]>(`/admin/external-tests/ranking?days=${days}`),
-  externalCsvPreview: (d: { fileName: string; content: string; title: string | null }) => request<ExternalPreview>("/admin/external-tests/csv/preview", json("POST", d)),
+  externalCsvPreview: (d: { fileName: string; content: string; title: string | null }) =>
+    request<ExternalPreview>("/admin/external-tests/csv/preview", json("POST", d)),
   externalCsvImport: (d: { fileName: string; content: string; title: string | null }) =>
     request<{ id: string; created: number; updated: number; matched: number }>("/admin/external-tests/csv/import", json("POST", d)),
-  externalLink: (testId: string, resultId: string, studentId: string | null) => request(`/admin/external-tests/${testId}/results/${resultId}`, json("PATCH", { studentId })),
-  externalEssays: (id: string, items: { resultId: string; score: number | null }[]) => request<{ updated: number }>(`/admin/external-tests/${id}/essays`, json("POST", { items })),
+  externalLink: (testId: string, resultId: string, studentId: string | null) =>
+    request(`/admin/external-tests/${testId}/results/${resultId}`, json("PATCH", { studentId })),
+  externalEssays: (id: string, items: { resultId: string; score: number | null }[]) =>
+    request<{ updated: number }>(`/admin/external-tests/${id}/essays`, json("POST", { items })),
   externalEssayFile: (id: string, d: { fileName: string; base64: string }) =>
-    request<{ items: { resultId: string; name: string; fileName: string; score24: number }[]; unmatched: string[]; missing: number; bad: string[] }>(`/admin/external-tests/${id}/essays/file`, json("POST", d)),
+    request<{ items: { resultId: string; name: string; fileName: string; score24: number }[]; unmatched: string[]; missing: number; bad: string[] }>(
+      `/admin/external-tests/${id}/essays/file`,
+      json("POST", d),
+    ),
   externalNotify: (id: string) => request<{ students: number; parents: number }>(`/admin/external-tests/${id}/notify`, json("POST")),
   externalDelete: (id: string) => request(`/admin/external-tests/${id}`, { method: "DELETE" }),
   /**
@@ -180,22 +193,45 @@ export const api = {
   },
   subscriptions: () => request<AdminSubscriptions>("/admin/subscriptions"),
   offlineLedger: (groupId: string, month: string) => request<OfflineLedger>(`/admin/offline-payments?groupId=${groupId}&month=${month}`),
-  markOffline: (d: { studentId: string; month?: string; periodStart?: string; periodEnd?: string; paidOn?: string; amountUzs?: number; note?: string | null }) =>
-    request<{ ok: true; lateDays: number }>("/admin/offline-payments", json("PUT", d)),
+  markOffline: (d: {
+    studentId: string;
+    month?: string;
+    periodStart?: string;
+    periodEnd?: string;
+    paidOn?: string;
+    amountUzs?: number;
+    note?: string | null;
+  }) => request<{ ok: true; lateDays: number }>("/admin/offline-payments", json("PUT", d)),
   offlineNextPeriod: (studentId: string) =>
-    request<{ name: string; approvedParents: number; coveredUntil: string | null; nextPeriodStart: string; startedOn: string | null; feeUzs: number | null; hasGroup: boolean }>(`/admin/offline-payments/student/${studentId}`),
+    request<{
+      name: string;
+      approvedParents: number;
+      coveredUntil: string | null;
+      nextPeriodStart: string;
+      startedOn: string | null;
+      feeUzs: number | null;
+      hasGroup: boolean;
+    }>(`/admin/offline-payments/student/${studentId}`),
   unmarkOffline: (studentId: string, month: string) => request(`/admin/offline-payments/${studentId}/${month}`, json("DELETE")),
   setGroupFee: (groupId: string, monthlyFeeUzs: number | null) => request(`/admin/offline-payments/groups/${groupId}/fee`, json("PATCH", { monthlyFeeUzs })),
-  remindDebtors: (groupId: string, month: string) => request<{ students: number; messages: number }>("/admin/offline-payments/remind", json("POST", { groupId, month })),
-  grantSubscription: (d: { userId: string; planId: string; note: string | null }) => request<{ ok: true; endsAt: string }>("/admin/subscriptions", json("POST", d)),
+  remindDebtors: (groupId: string, month: string) =>
+    request<{ students: number; messages: number }>("/admin/offline-payments/remind", json("POST", { groupId, month })),
+  grantSubscription: (d: { userId: string; planId: string; note: string | null }) =>
+    request<{ ok: true; endsAt: string }>("/admin/subscriptions", json("POST", d)),
   cancelSubscription: (id: string) => request(`/admin/subscriptions/${id}/cancel`, json("POST")),
-  saveHwAnnotations: (id: string, a: EssayAnnotations) => request<{ ok: true; counts: Record<string, number> }>(`/admin/hw-essays/${id}/annotations`, json("PUT", a)),
-  saveMockMarks: (attemptId: string, questionId: string, marks: TextMark[]) => request(`/admin/essays/${attemptId}/${questionId}/annotations`, json("PUT", marks)),
+  saveHwAnnotations: (id: string, a: EssayAnnotations) =>
+    request<{ ok: true; counts: Record<string, number> }>(`/admin/hw-essays/${id}/annotations`, json("PUT", a)),
+  saveMockMarks: (attemptId: string, questionId: string, marks: TextMark[]) =>
+    request(`/admin/essays/${attemptId}/${questionId}/annotations`, json("PUT", marks)),
   /** Ovozli izoh: xom audio (Content-Type — yozuv formati) */
   uploadHwVoice: (id: string, audio: Blob) =>
     request<VoiceView>(`/admin/hw-essays/${id}/voice`, { method: "POST", body: audio, headers: { "Content-Type": audio.type || "audio/webm" } }),
   uploadMockVoice: (attemptId: string, questionId: string, audio: Blob) =>
-    request<VoiceView>(`/admin/essays/${attemptId}/${questionId}/voice`, { method: "POST", body: audio, headers: { "Content-Type": audio.type || "audio/webm" } }),
+    request<VoiceView>(`/admin/essays/${attemptId}/${questionId}/voice`, {
+      method: "POST",
+      body: audio,
+      headers: { "Content-Type": audio.type || "audio/webm" },
+    }),
   voiceBlob: async (id: string) => {
     const res = await fetch(`/api/voice/${id}`, { headers: { Authorization: `Bearer ${loadSession()?.token}` } });
     if (!res.ok) throw new ApiError(res.status, "Ovozni yuklab bo'lmadi");
@@ -239,7 +275,11 @@ export const api = {
   reorder: (kind: "course" | "topic" | "lesson", ids: string[]) => request("/admin/reorder", json("POST", { kind, ids })),
 
   questions: (p: { topicId?: string; search?: string; page?: number }) => {
-    const q = new URLSearchParams(Object.entries(p).filter(([, v]) => v !== undefined && v !== "").map(([k, v]) => [k, String(v)]));
+    const q = new URLSearchParams(
+      Object.entries(p)
+        .filter(([, v]) => v !== undefined && v !== "")
+        .map(([k, v]) => [k, String(v)]),
+    );
     return request<Paged<AdminQuestion>>(`/admin/questions?${q}`);
   },
   createQuestion: (d: QuestionInput) => request<AdminQuestion>("/admin/questions", json("POST", d)),
@@ -252,8 +292,7 @@ export const api = {
   updateTest: (id: string, d: TestInput) => request<AdminTestDetail>(`/admin/tests/${id}`, json("PATCH", d)),
   deleteTest: (id: string) => request(`/admin/tests/${id}`, json("DELETE")),
 
-  createVideo: (filename: string, size: number) =>
-    request<AdminVideo & { chunkSize: number }>("/admin/videos", json("POST", { filename, size })),
+  createVideo: (filename: string, size: number) => request<AdminVideo & { chunkSize: number }>("/admin/videos", json("POST", { filename, size })),
   video: (id: string) => request<AdminVideo>(`/admin/videos/${id}`),
   uploadChunk: (id: string, offset: number, chunk: Blob, signal?: AbortSignal) =>
     request<AdminVideo>(`/admin/videos/${id}/chunk?offset=${offset}`, {
@@ -271,7 +310,8 @@ export const api = {
   trash: () => request<TrashRow[]>("/admin/trash"),
   restoreTrash: (id: string) => request<{ ok: true; kind: string; entityId: string }>(`/admin/trash/${id}/restore`, json("POST")),
   purgeTrash: (id: string) => request(`/admin/trash/${id}`, json("DELETE")),
-  linkStudent: (id: string, placeholderStudentId: string) => request<{ ok: true; name: string }>(`/admin/students/${id}/link`, json("POST", { placeholderStudentId })),
+  linkStudent: (id: string, placeholderStudentId: string) =>
+    request<{ ok: true; name: string }>(`/admin/students/${id}/link`, json("POST", { placeholderStudentId })),
   acceptStudent: (id: string, groupId: string | null) => request(`/admin/students/${id}/accept`, json("POST", { groupId })),
   createGroup: (d: GroupInput) => request<AdminGroup>("/admin/groups", json("POST", d)),
   updateGroup: (id: string, d: Partial<GroupInput>) => request<AdminGroup>(`/admin/groups/${id}`, json("PATCH", d)),
@@ -283,8 +323,7 @@ export const api = {
   attendanceDay: (groupId: string, date: string) => request<AttendanceDay>(`/admin/groups/${groupId}/attendance?date=${date}`),
   saveAttendance: (groupId: string, d: AttendanceSaveInput) =>
     request<{ saved: number; changed: number }>(`/admin/groups/${groupId}/attendance`, json("PUT", d)),
-  notifyAttendance: (groupId: string, date: string) =>
-    request<AttendanceNotifyResult>(`/admin/groups/${groupId}/attendance/notify`, json("POST", { date })),
+  notifyAttendance: (groupId: string, date: string) => request<AttendanceNotifyResult>(`/admin/groups/${groupId}/attendance/notify`, json("POST", { date })),
   attendanceMonth: (groupId: string, month: string) => request<AttendanceMonth>(`/admin/groups/${groupId}/attendance/month?month=${month}`),
 
   parentLinks: (status: "PENDING" | "APPROVED" | "REJECTED") => request<AdminParentLink[]>(`/admin/parent-links?status=${status}`),
@@ -305,8 +344,11 @@ export const api = {
   updatePassage: (id: string, d: Partial<PassageInput>) => request(`/admin/passages/${id}`, json("PATCH", d)),
   deletePassage: (id: string) => request(`/admin/passages/${id}`, json("DELETE")),
   essays: (status: "pending" | "reviewed") => request<AdminEssay[]>(`/admin/essays?status=${status}`),
-  reviewEssay: (attemptId: string, questionId: string, d: { points?: number; special?: string | null; criteria?: { key: string; score: number }[]; comment: string | null }) =>
-    request<{ points: number; score: number }>(`/admin/essays/${attemptId}/${questionId}`, json("POST", d)),
+  reviewEssay: (
+    attemptId: string,
+    questionId: string,
+    d: { points?: number; special?: string | null; criteria?: { key: string; score: number }[]; comment: string | null },
+  ) => request<{ points: number; score: number }>(`/admin/essays/${attemptId}/${questionId}`, json("POST", d)),
   staff: () => request<StaffList>("/admin/staff"),
   addStaff: (username: string) => request<{ status: "added" | "invited" }>("/admin/staff", json("POST", { username })),
   removeStaff: (id: string) => request(`/admin/staff/${id}`, json("DELETE")),

@@ -1,4 +1,13 @@
-import { ESSAY_PROMPT_MAX, ESSAY_REQUIREMENTS, ESSAY_STATUS_LABELS, MAX_ESSAY_PAGES, formatSum, type EssayModeName, type MyEssaySummary, formatScore } from "@onatili/shared";
+import {
+  ESSAY_PROMPT_MAX,
+  ESSAY_REQUIREMENTS,
+  ESSAY_STATUS_LABELS,
+  MAX_ESSAY_PAGES,
+  formatSum,
+  type EssayModeName,
+  type MyEssaySummary,
+  formatScore,
+} from "@onatili/shared";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Bot, ChevronRight, GraduationCap, Info, Loader2, PenLine, Plus } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
@@ -37,7 +46,11 @@ export function EssaysPage() {
         <Plus size={18} /> Yangi esse
       </button>
       {list.isPending && <div className="skeleton mt-4 h-40" />}
-      {list.data?.length === 0 && <div className="mt-4"><Empty Icon={PenLine} title="Hali esse yozmagansiz" hint="Mavzu tanlang, qog'ozga yozib suratga oling: AI bir necha daqiqada baholaydi." /></div>}
+      {list.data?.length === 0 && (
+        <div className="mt-4">
+          <Empty Icon={PenLine} title="Hali esse yozmagansiz" hint="Mavzu tanlang, qog'ozga yozib suratga oling: AI bir necha daqiqada baholaydi." />
+        </div>
+      )}
       <div className="mt-4 space-y-2">
         {list.data?.map((e) => (
           <EssayRow key={e.id} e={e} />
@@ -205,7 +218,8 @@ export function NewEssayPage() {
                 ))}
               </ol>
               <p className="mt-2 text-xs text-hint">
-                12 ta band bo'yicha baholanadi: uslub, qarashlar, dalillar, tuzilish, mantiq, imlo, punktuatsiya, qo'shimcha va so'z qo'llash, lug'at boyligi. 100 so'zdan kam yoki mavzuga mos bo'lmasa — 2 ball.
+                12 ta band bo'yicha baholanadi: uslub, qarashlar, dalillar, tuzilish, mantiq, imlo, punktuatsiya, qo'shimcha va so'z qo'llash, lug'at boyligi.
+                100 so'zdan kam yoki mavzuga mos bo'lmasa — 2 ball.
               </p>
             </details>
           )}
@@ -261,7 +275,9 @@ export function NewEssayPage() {
                 placeholder="Esse matnini shu yerga yozing"
                 className="min-h-[45vh] w-full resize-y rounded-card border-2 border-transparent bg-section px-4 py-3 text-[16px] leading-relaxed outline-none focus:border-brand"
               />
-              <p className={`mt-1 px-1 text-xs ${n < 30 ? "text-hint" : "text-success"}`}>{n} ta so'z{n < 30 ? " (kamida 30)" : n < 100 ? " · 100 tadan kam bo'lsa mezon bo'yicha 2 ball" : ""}</p>
+              <p className={`mt-1 px-1 text-xs ${n < 30 ? "text-hint" : "text-success"}`}>
+                {n} ta so'z{n < 30 ? " (kamida 30)" : n < 100 ? " · 100 tadan kam bo'lsa mezon bo'yicha 2 ball" : ""}
+              </p>
             </>
           )}
 
@@ -273,7 +289,9 @@ export function NewEssayPage() {
             </button>
           )}
           {mode === "TEACHER" && !c.staffPreview && (
-            <p className="mt-2 px-1 text-center text-xs text-hint">Keyingi qadamda to'lov chekini yuborasiz. Tasdiqlangach ustoz tekshiradi, natija bot orqali keladi.</p>
+            <p className="mt-2 px-1 text-center text-xs text-hint">
+              Keyingi qadamda to'lov chekini yuborasiz. Tasdiqlangach ustoz tekshiradi, natija bot orqali keladi.
+            </p>
           )}
           {c.staffPreview && <p className="mt-2 px-1 text-center text-xs text-hint">Siz xodimsiz: sinov uchun ustoz tekshiruvi to'lovsiz.</p>}
         </>

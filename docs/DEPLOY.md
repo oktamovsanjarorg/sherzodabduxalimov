@@ -5,6 +5,7 @@ Avval o'zgarishni staging'da sinang: [STAGING.md](STAGING.md).
 Production serveri: AWS `t4g.medium` (ARM, 2 vCPU, 4 GB), `eu-central-1`, `63.186.202.165`.
 
 ## Qanday ishlaydi
+
 1. `main` ga push bo'ladi. GitHub Actions faqat tekshiradi (build, typecheck, testlar, docker image), serverga ulanmaydi.
 2. Serverdagi cron har 2 daqiqada `~/.onatili/auto-deploy.sh` ni ishga tushiradi. U `origin/main` ni tekshiradi. Yangi commit bo'lsa, GitHub API orqali CI natijasini so'raydi: "Build, typecheck, test" va "Docker images" ikkalasi yashil bo'lsagina `scripts/deploy.sh` ni chaqiradi. CI hali ishlayotgan bo'lsa, kutadi. CI qizil bo'lsa, commit o'tkazib yuboriladi (`.deploy/auto.log` da yoziladi).
 3. `scripts/deploy.sh` ish tartibi (`/home/ubuntu/onatili-prod`):
@@ -19,6 +20,7 @@ Bitta commit ikkinchi marta urinilmaydi, hatto muvaffaqiyatsiz bo'lsa ham. Keyin
 Production faqat `/home/ubuntu/onatili-prod` dan ishga tushiriladi. Dev papkasidan `docker compose up` qilmang.
 
 ## Git'da yo'q server fayllari
+
 - `docker-compose.override.yml`: worker CPU limiti, tashqi media volume, log limitlari.
 - `~/edge/`: `edge-caddy` (HTTPS, reverse proxy). Nusxasi repo'da: `infra/edge/`. Serverda o'zgartirsangiz, repo'dagini ham yangilang.
 - `~/ustoz-site/`: landing (`sherzodabduxalimov.uz`). Fayllari repo'da: `sites/landing/`.
@@ -26,9 +28,11 @@ Production faqat `/home/ubuntu/onatili-prod` dan ishga tushiriladi. Dev papkasid
 - `~/onatili-backups/backup.sh`: amaldagi zaxira skripti (`scripts/backup.sh` dan farq qiladi).
 
 ## Zaxira
+
 Har kuni 22:00 UTC (Toshkent 03:00): baza va media `~/onatili-backups` ga (14 kun) va S3 ga (90 kun) yoziladi. Xato bo'lsa, egalarga Telegram orqali ogohlantirish keladi. Jurnal: `~/onatili-backups/backup.log`.
 
 ## Qo'lda deploy
+
 ```bash
 /home/ubuntu/onatili-prod/scripts/deploy.sh          # origin/main
 /home/ubuntu/onatili-prod/scripts/deploy.sh <sha>    # aniq commit (orqaga qaytarish uchun ham)

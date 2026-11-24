@@ -84,9 +84,27 @@ describe("mezon bo'yicha ball (server hisoblaydi)", () => {
   });
   it("uslub: chekingan gaplar ulushi (uchdan bir / uchdan ikki)", () => {
     expect(styleScore([], 9)).toBe(2);
-    expect(styleScore([{ s: "1.1", register: "colloquial" }, { s: "1.1", register: "colloquial" }], 9)).toBe(1.5);
-    expect(styleScore([1, 2, 3, 4, 5].map((i) => ({ s: `1.${i}`, register: "official" })), 9)).toBe(1);
-    expect(styleScore([1, 2, 3, 4, 5, 6, 7].map((i) => ({ s: `1.${i}`, register: "colloquial" })), 9)).toBe(0);
+    expect(
+      styleScore(
+        [
+          { s: "1.1", register: "colloquial" },
+          { s: "1.1", register: "colloquial" },
+        ],
+        9,
+      ),
+    ).toBe(1.5);
+    expect(
+      styleScore(
+        [1, 2, 3, 4, 5].map((i) => ({ s: `1.${i}`, register: "official" })),
+        9,
+      ),
+    ).toBe(1);
+    expect(
+      styleScore(
+        [1, 2, 3, 4, 5, 6, 7].map((i) => ({ s: `1.${i}`, register: "colloquial" })),
+        9,
+      ),
+    ).toBe(0);
   });
 });
 
@@ -95,7 +113,13 @@ describe("to'liq hisob: AI dalili → ball", () => {
   const a = analysisSchema.parse({
     paragraphsSplit: true,
     intro: { level: "full", topicOpened: true, viewsHinted: true, thesis: "bu masala muvozanatni talab etadi", copiedFromPrompt: false },
-    pro: { coverage: "full", claim: "ma'lumot olishni tezlashtiradi", evidence: "onlayn kutubxonalardan foydalanadi", analysis: "vaqtni tejaydi", evidenceFit: "fit" },
+    pro: {
+      coverage: "full",
+      claim: "ma'lumot olishni tezlashtiradi",
+      evidence: "onlayn kutubxonalardan foydalanadi",
+      analysis: "vaqtni tejaydi",
+      evidenceFit: "fit",
+    },
     con: { coverage: "full", claim: "telefon zarar qiladi", evidence: null, evidenceFit: "none" },
     personal: { coverage: "full", stance: "qo'llab-quvvatlayman", solution: null },
     body: { level: "full" },
@@ -143,7 +167,10 @@ describe("to'liq hisob: AI dalili → ball", () => {
   });
   it("xatolar ro'yxati matn tartibida, uslub tuzatishi bilan", () => {
     const m = buildMistakes(v, seg);
-    expect(m.map((x) => [x.type, x.wrong])).toEqual([["punctuation", "Albatta bu"], ["style", "ko'p odamlar o'ylaydiki"]]);
+    expect(m.map((x) => [x.type, x.wrong])).toEqual([
+      ["punctuation", "Albatta bu"],
+      ["style", "ko'p odamlar o'ylaydiki"],
+    ]);
     expect(m[0].note).toContain("kirish so'z");
   });
 });

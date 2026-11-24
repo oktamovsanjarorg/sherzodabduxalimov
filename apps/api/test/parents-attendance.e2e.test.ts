@@ -59,7 +59,10 @@ describe("Ota-ona va davomat (e2e)", () => {
   it("o'quvchi o'z raqamini ulashadi: boshqaning kontakti qabul qilinmaydi", async () => {
     const foreign = await internal("user-phone", { from: tgUser(TG.student, "Aziz"), contact: { phone_number: "998901112233", user_id: TG.mom } });
     expect(foreign.json().status).toBe("not_own_contact");
-    const own = await internal("user-phone", { from: tgUser(TG.student, "Aziz", "aziz_e2e"), contact: { phone_number: "998 90 111 22 33", user_id: TG.student } });
+    const own = await internal("user-phone", {
+      from: tgUser(TG.student, "Aziz", "aziz_e2e"),
+      contact: { phone_number: "998 90 111 22 33", user_id: TG.student },
+    });
     expect(own.json().status).toBe("saved");
     expect((await req("GET", "/me", undefined, S.headers)).json().phone).toBe("+998901112233");
   });
@@ -104,7 +107,9 @@ describe("Ota-ona va davomat (e2e)", () => {
     expect((await req("GET", "/courses", undefined, S.headers)).statusCode).toBe(200);
 
     // Takroriy so'rov
-    expect((await internal("parent-link", { code, from: tgUser(TG.mom, "Malika"), contact: { phone_number: "998935556677", user_id: TG.mom } })).json().status).toBe("exists");
+    expect(
+      (await internal("parent-link", { code, from: tgUser(TG.mom, "Malika"), contact: { phone_number: "998935556677", user_id: TG.mom } })).json().status,
+    ).toBe("exists");
 
     // "Ota": aslida o'quvchining ikkinchi akkaunti, ilovada test yechgan va raqami o'quvchiniki bilan bir xil
     // Tasdiqlanmagan ikkinchi akkaunt (tasdiqlangan o'quvchi umuman ota-ona bo'la olmaydi: "is_student")
@@ -118,11 +123,16 @@ describe("Ota-ona va davomat (e2e)", () => {
 
     // Tasdiqlangan sinfdosh havolani ochsa: hisobi ota-onaga aylanmaydi, guruhdan chiqmaydi
     const mate = await login(app, TG.classmate, "Sinfdosh");
-    expect((await internal("parent-link", { code, from: tgUser(TG.classmate, "Sinfdosh"), contact: { phone_number: "998935550000", user_id: TG.classmate } })).json().status).toBe("is_student");
+    expect(
+      (await internal("parent-link", { code, from: tgUser(TG.classmate, "Sinfdosh"), contact: { phone_number: "998935550000", user_id: TG.classmate } })).json()
+        .status,
+    ).toBe("is_student");
     expect((await prisma.user.findUniqueOrThrow({ where: { id: mate.userId } })).role).toBe("STUDENT");
 
     // 2 ta faol so'rov bor: uchinchisi qabul qilinmaydi
-    expect((await internal("parent-link", { code, from: tgUser(TG.third, "Boshqa"), contact: { phone_number: "998977777777", user_id: TG.third } })).json().status).toBe("limit");
+    expect(
+      (await internal("parent-link", { code, from: tgUser(TG.third, "Boshqa"), contact: { phone_number: "998977777777", user_id: TG.third } })).json().status,
+    ).toBe("limit");
 
     // O'quvchiga xabar navbatga qo'yilgan
     expect((await jobs()).some((j) => j.chatId === String(TG.student) && j.text.includes("Malika"))).toBe(true);
@@ -146,7 +156,9 @@ describe("Ota-ona va davomat (e2e)", () => {
     expect(j.some((x) => x.chatId === String(TG.student) && x.text.includes("Raqam o'quvchiniki"))).toBe(true);
 
     // Rad etilgan akkaunt qayta so'rov yubora olmaydi
-    expect((await internal("parent-link", { code, from: tgUser(TG.sneaky, "Dadam"), contact: { phone_number: "998901112233", user_id: TG.sneaky } })).json().status).toBe("rejected_before");
+    expect(
+      (await internal("parent-link", { code, from: tgUser(TG.sneaky, "Dadam"), contact: { phone_number: "998901112233", user_id: TG.sneaky } })).json().status,
+    ).toBe("rejected_before");
   });
 
   it("davomat: faqat tasdiqlangan ota-onaga xabar; takror saqlash xabar yubormaydi; o'zgarsa 'Tuzatish'", async () => {
@@ -170,11 +182,15 @@ describe("Ota-ona va davomat (e2e)", () => {
     expect((await req("PUT", `/admin/groups/${group.id}/attendance`, { date: "2099-01-01", items: [{ studentId, status: "PRESENT" }] })).statusCode).toBe(400);
 
     // Baho 1–5 oralig'ida bo'lishi shart
-    expect((await req("PUT", `/admin/groups/${group.id}/attendance`, { date: today, items: [{ studentId, status: "PRESENT", grade: 6 }] })).statusCode).toBe(400);
+    expect((await req("PUT", `/admin/groups/${group.id}/attendance`, { date: today, items: [{ studentId, status: "PRESENT", grade: 6 }] })).statusCode).toBe(
+      400,
+    );
     // Eski holatlar (Kechikdi/Sababli) endi belgilanmaydi
     expect((await req("PUT", `/admin/groups/${group.id}/attendance`, { date: today, items: [{ studentId, status: "LATE" }] })).statusCode).toBe(400);
 
-    const first = (await req("PUT", `/admin/groups/${group.id}/attendance`, { date: today, items: [{ studentId, status: "PRESENT", grade: 4, note: "Faol edi" }] })).json();
+    const first = (
+      await req("PUT", `/admin/groups/${group.id}/attendance`, { date: today, items: [{ studentId, status: "PRESENT", grade: 4, note: "Faol edi" }] })
+    ).json();
     expect(first).toEqual({ saved: 1, changed: 1 });
     // Saqlash xabar yubormaydi
     let j = await jobs();
@@ -193,12 +209,16 @@ describe("Ota-ona va davomat (e2e)", () => {
     // Ikkinchi marta bosilsa, qayta yuborilmaydi
     const again = (await req("POST", `/admin/groups/${group.id}/attendance/notify`, { date: today })).json();
     expect(again.notified).toBe(0);
-    const same = (await req("PUT", `/admin/groups/${group.id}/attendance`, { date: today, items: [{ studentId, status: "PRESENT", grade: 4, note: "Faol edi" }] })).json();
+    const same = (
+      await req("PUT", `/admin/groups/${group.id}/attendance`, { date: today, items: [{ studentId, status: "PRESENT", grade: 4, note: "Faol edi" }] })
+    ).json();
     expect(same.changed).toBe(0);
 
     // Worker xabarni yuborgan deb belgilaymiz, keyin holatni o'zgartiramiz
     await queue.obliterate({ force: true });
-    const changed = (await req("PUT", `/admin/groups/${group.id}/attendance`, { date: today, items: [{ studentId, status: "ABSENT", grade: 5, note: "Kasal" }] })).json();
+    const changed = (
+      await req("PUT", `/admin/groups/${group.id}/attendance`, { date: today, items: [{ studentId, status: "ABSENT", grade: 5, note: "Kasal" }] })
+    ).json();
     expect(changed.changed).toBe(1);
     expect(await jobs()).toHaveLength(0);
     expect((await prisma.attendance.findFirstOrThrow({ where: { studentId } })).grade).toBeNull(); // kelmaganga baho yo'q

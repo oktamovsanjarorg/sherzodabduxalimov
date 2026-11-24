@@ -77,7 +77,15 @@ export class EssayStatsService {
 
     const students = new Map<string, { id: string; name: string; username: string | null; essays: number; ai: number[]; teacher: number[]; lastAt: Date }>();
     for (const e of essays) {
-      const s = students.get(e.user.id) ?? { id: e.user.id, name: fullName(e.user), username: e.user.username, essays: 0, ai: [], teacher: [], lastAt: e.createdAt };
+      const s = students.get(e.user.id) ?? {
+        id: e.user.id,
+        name: fullName(e.user),
+        username: e.user.username,
+        essays: 0,
+        ai: [],
+        teacher: [],
+        lastAt: e.createdAt,
+      };
       s.essays++;
       if (e.createdAt > s.lastAt) s.lastAt = e.createdAt;
       for (const r of e.reviews) (r.source === "AI" ? s.ai : s.teacher).push(r.totalScore);
@@ -114,7 +122,15 @@ export class EssayStatsService {
       topStudents: [...students.values()]
         .sort((a, b) => b.essays - a.essays || b.lastAt.getTime() - a.lastAt.getTime())
         .slice(0, 15)
-        .map((s) => ({ id: s.id, name: s.name, username: s.username, essays: s.essays, aiAvg: avgOf(s.ai), teacherAvg: avgOf(s.teacher), lastAt: s.lastAt.toISOString() })),
+        .map((s) => ({
+          id: s.id,
+          name: s.name,
+          username: s.username,
+          essays: s.essays,
+          aiAvg: avgOf(s.ai),
+          teacherAvg: avgOf(s.teacher),
+          lastAt: s.lastAt.toISOString(),
+        })),
       daily: [...daily].map(([date, v]) => ({ date, ...v })),
     };
   }
@@ -145,6 +161,7 @@ export class EssayStatsService {
         text: true,
         imageUrls: true,
         error: true,
+        aiError: true,
         createdAt: true,
         user: { select: { id: true, firstName: true, lastName: true, username: true } },
         reviews: {
@@ -166,7 +183,7 @@ export class EssayStatsService {
         pages: e.imageUrls.length,
         ai: ai ? { score: ai.totalScore, special: ai.special ? specialLabel(ai.special) : null, provider: ai.provider } : null,
         teacher: t ? { score: t.totalScore, special: t.special ? specialLabel(t.special) : null, reviewer: t.reviewer ? fullName(t.reviewer) : null } : null,
-        error: e.error,
+        error: e.error ?? (e.status === "AI_FAILED" ? e.aiError : null),
         createdAt: e.createdAt.toISOString(),
       };
     });

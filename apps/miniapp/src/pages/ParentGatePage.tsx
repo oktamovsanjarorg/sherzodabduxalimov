@@ -100,11 +100,27 @@ export function ParentGatePage() {
   );
 }
 
-function Step({ n, title, hint, done, disabled, children }: { n: number; title: string; hint: string; done: boolean; disabled?: boolean; children?: React.ReactNode }) {
+function Step({
+  n,
+  title,
+  hint,
+  done,
+  disabled,
+  children,
+}: {
+  n: number;
+  title: string;
+  hint: string;
+  done: boolean;
+  disabled?: boolean;
+  children?: React.ReactNode;
+}) {
   return (
     <div className={`card mb-3 ${disabled ? "opacity-50" : ""}`}>
       <div className="flex items-start gap-3">
-        <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm font-extrabold ${done ? "bg-success text-white" : "bg-brand-soft text-brand"}`}>
+        <span
+          className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm font-extrabold ${done ? "bg-success text-white" : "bg-brand-soft text-brand"}`}
+        >
           {done ? <CheckCircle2 size={18} /> : n}
         </span>
         <div className="min-w-0 flex-1">

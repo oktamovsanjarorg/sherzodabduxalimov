@@ -79,9 +79,17 @@ const phone = z
 
 export const studentCreateInput = z.object({
   firstName: z.string().trim().min(2, "Ismini yozing").max(60),
-  lastName: z.string().trim().max(60).nullish().transform((v) => v || null),
+  lastName: z
+    .string()
+    .trim()
+    .max(60)
+    .nullish()
+    .transform((v) => v || null),
   phone,
-  groupId: z.string().nullish().transform((v) => v || null),
+  groupId: z
+    .string()
+    .nullish()
+    .transform((v) => v || null),
   /** O'qishni boshlagan sana (YYYY-MM-DD). Bo'sh qoldirilsa: bugun */
   startedOn: z
     .string()
@@ -99,7 +107,13 @@ const realName = (message: string) =>
     .trim()
     // NFKC: «𝐘𝐚𝐬𝐦𝐢𝐧𝐚» kabi bezakli harflar oddiy «Yasmina» bo'ladi (qidiruv va moslashtirish ishlashi uchun)
     .transform((v) => v.normalize("NFKC").replace(/\s+/g, " "))
-    .pipe(z.string().min(2, message).max(60).regex(/^[\p{L}\p{M}'’‘ʻʼ`\- ]+$/u, "Faqat harflar bilan yozing"));
+    .pipe(
+      z
+        .string()
+        .min(2, message)
+        .max(60)
+        .regex(/^[\p{L}\p{M}'’‘ʻʼ`\- ]+$/u, "Faqat harflar bilan yozing"),
+    );
 
 /** O'quvchi ilovada o'zi yozadigan ism-familiya */
 export const studentNameInput = z.object({ firstName: realName("Ismingizni yozing"), lastName: realName("Familiyangizni yozing") });
@@ -107,7 +121,10 @@ export type StudentNameInput = z.infer<typeof studentNameInput>;
 
 /** Ro'yxatni bir yo'la kiritish: har qatorda "Ism Familiya, telefon" */
 export const studentBulkInput = z.object({
-  groupId: z.string().nullish().transform((v) => v || null),
+  groupId: z
+    .string()
+    .nullish()
+    .transform((v) => v || null),
   text: z.string().max(20_000),
 });
 
@@ -117,7 +134,10 @@ export function parseStudentLine(line: string): { firstName: string; lastName: s
   if (!t) return null;
   const m = t.match(/(\+?\d[\d\s()-]{6,}\d)/);
   const phone = m ? m[1] : null;
-  const name = (m ? t.replace(m[1], "") : t).replace(/[,;\t|]+/g, " ").replace(/\s+/g, " ").trim();
+  const name = (m ? t.replace(m[1], "") : t)
+    .replace(/[,;\t|]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
   if (name.length < 2) return null;
   const [firstName, ...rest] = name.split(" ");
   return { firstName, lastName: rest.join(" ") || null, phone };
@@ -133,7 +153,15 @@ export function normUzPhone(p: string | null | undefined): string | null {
 }
 
 export const studentAccessInput = z.object({ mode: z.enum(["AUTO", "FREE", "CLOSED"]) });
-export const studentBlockInput = z.object({ blocked: z.boolean(), reason: z.string().trim().max(300).nullish().transform((v) => v || null) });
+export const studentBlockInput = z.object({
+  blocked: z.boolean(),
+  reason: z
+    .string()
+    .trim()
+    .max(300)
+    .nullish()
+    .transform((v) => v || null),
+});
 
 /** Botdan o'zi kirgan, ustoz hali ko'rib chiqmagan o'quvchi */
 export interface NewcomerRow {

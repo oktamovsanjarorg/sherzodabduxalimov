@@ -21,12 +21,7 @@ export class InitDataError extends Error {}
  * Telegram Mini App initData'ni HMAC-SHA256 orqali tekshiradi.
  * https://core.telegram.org/bots/webapps#validating-data-received-via-the-mini-app
  */
-export function validateInitData(
-  initData: string,
-  botToken: string,
-  maxAgeSec = 86400,
-  now: Date = new Date(),
-): ValidatedInitData {
+export function validateInitData(initData: string, botToken: string, maxAgeSec = 86400, now: Date = new Date()): ValidatedInitData {
   const params = new URLSearchParams(initData);
   const hash = params.get("hash");
   if (!hash) throw new InitDataError("hash yo'q");
@@ -64,10 +59,7 @@ export function validateInitData(
 }
 
 /** Testlar va lokal dev uchun: imzolangan initData yasaydi */
-export function signInitData(
-  fields: Record<string, string>,
-  botToken: string,
-): string {
+export function signInitData(fields: Record<string, string>, botToken: string): string {
   const dataCheckString = Object.entries(fields)
     .sort(([a], [b]) => a.localeCompare(b))
     .map(([k, v]) => `${k}=${v}`)

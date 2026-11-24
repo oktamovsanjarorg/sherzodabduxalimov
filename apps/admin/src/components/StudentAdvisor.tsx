@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { ArrowRight } from "lucide-react";
 import { Link } from "react-router-dom";
 import { api, errMsg } from "../lib/api";
-import { AdviceList } from "./Advisor";
+import { AdviceList, useReconcileAdvice } from "./Advisor";
 import { Spinner } from "./ui";
 
 const bar = (p: number) => (p >= 75 ? "bg-emerald-500" : p >= 55 ? "bg-amber-400" : "bg-red-500");
@@ -10,6 +10,7 @@ const bar = (p: number) => (p >= 75 ? "bg-emerald-500" : p >= 55 ? "bg-amber-400
 /** O'quvchi sahifasi: kuchli/zaif tomonlar, tavsiyalar, keyingi qadamlar va AI reja */
 export function StudentAdvisor({ id }: { id: string }) {
   const q = useQuery({ queryKey: ["student-advisor", id], queryFn: () => api.studentAdvisor(id) });
+  useReconcileAdvice(q.data?.advice, `student:${id}`);
   if (q.isPending) return <Spinner className="text-ink-4" />;
   if (q.isError) return <p className="text-sm text-red-600">{errMsg(q.error)}</p>;
   const d = q.data;
@@ -44,7 +45,13 @@ export function StudentAdvisor({ id }: { id: string }) {
             {d.next.map((n) => (
               <li key={n.label} className="flex items-center gap-2">
                 <ArrowRight size={14} className="shrink-0 text-brand" />
-                {n.to ? <Link to={n.to} className="font-semibold text-brand hover:underline">{n.label}</Link> : n.label}
+                {n.to ? (
+                  <Link to={n.to} className="font-semibold text-brand hover:underline">
+                    {n.label}
+                  </Link>
+                ) : (
+                  n.label
+                )}
               </li>
             ))}
           </ul>

@@ -109,9 +109,12 @@ bot.command("start", async (ctx) => {
   // Ism-familiyasi hali yo'q: darhol so'raymiz. Ota-onalar botga faqat farzandining havolasi orqali keladi, ularga bu yerda izoh kerak emas
   if (visit.needsName) {
     nameFlow.set(ctx.from.id, { at: Date.now() });
-    await ctx.reply("Assalomu alaykum! 👋\n\nUstoz sizni tanishi uchun <b>ism va familiyangizni</b> yozing, hujjatdagidek.\n\nMasalan: <i>Dilnura Allayarova</i>", {
-      parse_mode: "HTML",
-    });
+    await ctx.reply(
+      "Assalomu alaykum! 👋\n\nUstoz sizni tanishi uchun <b>ism va familiyangizni</b> yozing, hujjatdagidek.\n\nMasalan: <i>Dilnura Allayarova</i>",
+      {
+        parse_mode: "HTML",
+      },
+    );
     return;
   }
 
@@ -169,9 +172,7 @@ bot.on("message:contact", async (ctx) => {
 
 Ustoz yoki yordamchi tasdiqlagach, sizga xabar keladi.`,
         exists:
-          r.linkStatus === "APPROVED"
-            ? "Siz allaqachon ulangansiz va tasdiqlangansiz ✅"
-            : "So'rovingiz allaqachon yuborilgan, tasdiqlanishini kuting ⏳",
+          r.linkStatus === "APPROVED" ? "Siz allaqachon ulangansiz va tasdiqlangansiz ✅" : "So'rovingiz allaqachon yuborilgan, tasdiqlanishini kuting ⏳",
         invalid_code: "Havola noto'g'ri yoki eskirgan. Farzandingizdan havolani qayta yuborishini so'rang.",
         self: "Bu sizning shaxsiy havolangiz. Uni ota-onangizga yuboring: o'zingizni ulab bo'lmaydi.",
         limit: "Bu o'quvchiga allaqachon 2 ta ota-ona ulangan.",
@@ -311,9 +312,7 @@ bot.on("callback_query:data", async (ctx) => {
   }
 });
 
-bot.command("help", (ctx) =>
-  ctx.reply("Savollar bo'lsa, ustozning yordamchisiga yozing. Ilovani ochish uchun /start bosing."),
-);
+bot.command("help", (ctx) => ctx.reply("Savollar bo'lsa, ustozning yordamchisiga yozing. Ilovani ochish uchun /start bosing."));
 
 // Xato xabarlarida URL bilan birga bot tokeni chiqmasligi uchun uni yashiramiz
 const redact = (e: unknown) => String(e instanceof Error ? e.message : e).replace(/bot\d+:[\w-]+/g, "bot***");

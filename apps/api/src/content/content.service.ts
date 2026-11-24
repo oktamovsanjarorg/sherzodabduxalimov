@@ -40,13 +40,7 @@ export class ContentService {
       where: { id: userId },
       select: { firstName: true, lastName: true, phone: true, telegramId: true },
     });
-    const watermark = [
-      [u?.firstName, u?.lastName].filter(Boolean).join(" "),
-      `ID ${u?.telegramId ?? ""}`,
-      u?.phone ?? null,
-    ]
-      .filter(Boolean)
-      .join(" · ");
+    const watermark = [[u?.firstName, u?.lastName].filter(Boolean).join(" "), `ID ${u?.telegramId ?? ""}`, u?.phone ?? null].filter(Boolean).join(" · ");
     if (video.status !== "READY") return { status: "PROCESSING", hlsUrl: null, watermark };
     const t = signMediaToken(this.env.JWT_SECRET, video.id, userId);
     return { status: "READY", hlsUrl: `/api/media/${video.id}/master.m3u8?t=${encodeURIComponent(t)}`, watermark };
@@ -62,9 +56,7 @@ export class ContentService {
     return tests.map((t) => {
       const mine = attempts.filter((a) => a.testId === t.id);
       const finished = mine.filter((a) => a.status !== "IN_PROGRESS" && a.maxScore);
-      const best = finished.length
-        ? Math.max(...finished.map((a) => Math.round(((a.score ?? 0) / a.maxScore!) * 100)))
-        : null;
+      const best = finished.length ? Math.max(...finished.map((a) => Math.round(((a.score ?? 0) / a.maxScore!) * 100))) : null;
       return {
         id: t.id,
         title: t.title,
@@ -255,16 +247,12 @@ export class ContentService {
         include: { lesson: { include: { topic: true } } },
       }),
     ]);
-    const avg = attempts.length
-      ? Math.round((attempts.reduce((s, a) => s + (a.score ?? 0) / a.maxScore!, 0) / attempts.length) * 100)
-      : null;
+    const avg = attempts.length ? Math.round((attempts.reduce((s, a) => s + (a.score ?? 0) / a.maxScore!, 0) / attempts.length) * 100) : null;
     return {
       lessonsCompleted,
       testsTaken: attempts.length,
       averagePercent: avg,
-      lastLesson: last
-        ? { id: last.lesson.id, title: last.lesson.title, topicTitle: last.lesson.topic.title }
-        : null,
+      lastLesson: last ? { id: last.lesson.id, title: last.lesson.title, topicTitle: last.lesson.topic.title } : null,
     };
   }
 }

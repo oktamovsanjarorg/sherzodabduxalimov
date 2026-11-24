@@ -8,6 +8,7 @@ import { DashboardPage } from "./pages/DashboardPage";
 import { StatsPage } from "./pages/StatsPage";
 import { TrashPage } from "./pages/TrashPage";
 import { EssaysPage } from "./pages/EssaysPage";
+import { GoldEssayPage } from "./pages/GoldEssayPage";
 import { ParentsPage } from "./pages/ParentsPage";
 import { LessonEditorPage } from "./pages/LessonEditorPage";
 import { LoginPage } from "./pages/LoginPage";
@@ -22,6 +23,9 @@ import { StudentDetailPage } from "./pages/StudentDetailPage";
 import { StudentsPage } from "./pages/StudentsPage";
 import { TestEditorPage } from "./pages/TestEditorPage";
 import { TestsPage } from "./pages/TestsPage";
+import { AnnouncementsPage } from "./pages/AnnouncementsPage";
+import { AnnounceComposerPage } from "./pages/AnnounceComposerPage";
+import { AnnounceDetailPage } from "./pages/AnnounceDetailPage";
 
 function RequireAuth({ children, teacher }: { children: JSX.Element; teacher?: boolean }) {
   const s = loadSession();
@@ -54,6 +58,7 @@ export function App() {
         <Route path="content" element={<ContentPage />} />
         <Route path="more" element={<MorePage />} />
         <Route path="essays" element={<EssaysPage />} />
+        <Route path="essays/gold/:id" element={<GoldEssayPage />} />
         <Route path="external" element={<ExternalTestsPage />} />
         <Route path="external/:id" element={<ExternalTestPage />} />
         <Route path="lessons/:id" element={<LessonEditorPage />} />
@@ -86,6 +91,38 @@ export function App() {
           element={
             <RequireAuth teacher>
               <StaffPage />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="announcements"
+          element={
+            <RequireAuth teacher>
+              <AnnouncementsPage />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="announcements/new"
+          element={
+            <RequireAuth teacher>
+              <AnnounceComposerPage />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="announcements/:id/edit"
+          element={
+            <RequireAuth teacher>
+              <AnnounceComposerPage />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="announcements/:id"
+          element={
+            <RequireAuth teacher>
+              <AnnounceDetailPage />
             </RequireAuth>
           }
         />

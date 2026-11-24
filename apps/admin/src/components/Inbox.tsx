@@ -35,55 +35,60 @@ export function Inbox({ groups }: { groups: AdminGroup[] }) {
       <button type="button" onClick={toggle} aria-expanded={open} className="flex w-full flex-wrap items-center gap-x-2 gap-y-1 px-4 py-3 text-left sm:px-5">
         <InboxIcon size={18} className="text-amber-800" />
         <span className="font-extrabold text-ink">Ko'rib chiqish kerak</span>
-        <span className="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-red-600 px-1.5 text-[11px] font-extrabold text-white">{n + p + d}</span>
+        <span className="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-red-600 px-1.5 text-[11px] font-extrabold text-white">
+          {n + p + d}
+        </span>
         {/* Telefonda izoh alohida qatorda: sarlavha yonida siqilib «yangi kirganla…» bo'lib qolmasin */}
         <span className="order-last w-full text-xs text-ink-2 sm:order-none sm:w-auto sm:min-w-0 sm:flex-1 sm:truncate">{parts}</span>
         <span className="flex-1 sm:hidden" />
         <ChevronDown size={18} className={`shrink-0 text-ink-3 transition-transform ${open ? "rotate-180" : ""}`} />
       </button>
       {open && (
-      <div className="max-h-[60vh] overflow-y-auto border-t border-amber-200 px-4 pb-4 sm:px-5">
-      {d > 0 && (
-        <>
-          <p className="mb-2 mt-3 text-sm font-bold text-ink-2">Bitta o'quvchi ikki marta ({d})</p>
-          <p className="mb-3 text-xs text-ink-2">
-            Chapda — botga kirgan hisob, o'ngda — siz qo'lda kiritgan yozuv. Bitta odam bo'lsa, birlashtiring: ism, guruh, davomat va to'lovlar botdagi hisobga o'tadi, ortiqcha yozuv yo'qoladi.
-          </p>
-          <div className="space-y-2">
-            {dups.data!.map((r) => (
-              <Duplicate key={r.placeholder.id} r={r} />
-            ))}
-          </div>
-        </>
-      )}
-      {n > 0 && (
-        <>
-          <p className="mb-2 mt-3 text-sm font-bold text-ink-2">Botdan yangi kirganlar ({n})</p>
-          <p className="mb-3 text-xs text-ink-2">O'quvchingiz bo'lsa — guruhiga qo'shing yoki online o'quvchi deb belgilang. Begona bo'lsa — bloklang yoki o'chiring.</p>
-          <div className="space-y-2">
-            {news.data!.map((s) => (
-              <Newcomer key={s.studentId} s={s} groups={groups.filter((g) => g.isActive)} />
-            ))}
-          </div>
-        </>
-      )}
-      {p > 0 && (
-        <>
-          <p className="mb-2 mt-5 flex items-center justify-between text-sm font-bold text-ink-2">
-            <span>Ota-ona so'rovlari ({p})</span>
-            <Link to="/parents" className="text-xs font-bold text-brand hover:underline">
-              Tasdiqlangan va rad etilganlar →
-            </Link>
-          </p>
-          <p className="mb-3 text-xs text-ink-2">Raqamga qo'ng'iroq qilib, haqiqatan ota-onasi ekanini tekshiring.</p>
-          <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
-            {parents.data!.map((l) => (
-              <LinkCard key={l.id} link={l} />
-            ))}
-          </div>
-        </>
-      )}
-      </div>
+        <div className="max-h-[60vh] overflow-y-auto border-t border-amber-200 px-4 pb-4 sm:px-5">
+          {d > 0 && (
+            <>
+              <p className="mb-2 mt-3 text-sm font-bold text-ink-2">Bitta o'quvchi ikki marta ({d})</p>
+              <p className="mb-3 text-xs text-ink-2">
+                Chapda — botga kirgan hisob, o'ngda — siz qo'lda kiritgan yozuv. Bitta odam bo'lsa, birlashtiring: ism, guruh, davomat va to'lovlar botdagi
+                hisobga o'tadi, ortiqcha yozuv yo'qoladi.
+              </p>
+              <div className="space-y-2">
+                {dups.data!.map((r) => (
+                  <Duplicate key={r.placeholder.id} r={r} />
+                ))}
+              </div>
+            </>
+          )}
+          {n > 0 && (
+            <>
+              <p className="mb-2 mt-3 text-sm font-bold text-ink-2">Botdan yangi kirganlar ({n})</p>
+              <p className="mb-3 text-xs text-ink-2">
+                O'quvchingiz bo'lsa — guruhiga qo'shing yoki online o'quvchi deb belgilang. Begona bo'lsa — bloklang yoki o'chiring.
+              </p>
+              <div className="space-y-2">
+                {news.data!.map((s) => (
+                  <Newcomer key={s.studentId} s={s} groups={groups.filter((g) => g.isActive)} />
+                ))}
+              </div>
+            </>
+          )}
+          {p > 0 && (
+            <>
+              <p className="mb-2 mt-5 flex items-center justify-between text-sm font-bold text-ink-2">
+                <span>Ota-ona so'rovlari ({p})</span>
+                <Link to="/parents" className="text-xs font-bold text-brand hover:underline">
+                  Tasdiqlangan va rad etilganlar →
+                </Link>
+              </p>
+              <p className="mb-3 text-xs text-ink-2">Raqamga qo'ng'iroq qilib, haqiqatan ota-onasi ekanini tekshiring.</p>
+              <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
+                {parents.data!.map((l) => (
+                  <LinkCard key={l.id} link={l} />
+                ))}
+              </div>
+            </>
+          )}
+        </div>
       )}
     </section>
   );
@@ -153,10 +158,22 @@ function Newcomer({ s, groups }: { s: NewcomerRow; groups: AdminGroup[] }) {
           </p>
           <p className="mt-0.5 flex flex-wrap items-center gap-2 text-[11px] text-ink-3">
             {!s.nameConfirmed && <Badge tone="amber">ismini hali yozmagan</Badge>}
-            {s.parentStatus === "APPROVED" ? <Badge tone="green">ota-ona ✓</Badge> : s.parentStatus === "PENDING" ? <Badge tone="blue">ota-ona kutilmoqda</Badge> : <Badge>ota-ona yo'q</Badge>}
-            <span className="inline-flex items-center gap-0.5"><BookOpen size={11} /> {act.lessons}</span>
-            <span className="inline-flex items-center gap-0.5"><ClipboardList size={11} /> {act.tests}</span>
-            <span className="inline-flex items-center gap-0.5"><FileText size={11} /> {act.essays}</span>
+            {s.parentStatus === "APPROVED" ? (
+              <Badge tone="green">ota-ona ✓</Badge>
+            ) : s.parentStatus === "PENDING" ? (
+              <Badge tone="blue">ota-ona kutilmoqda</Badge>
+            ) : (
+              <Badge>ota-ona yo'q</Badge>
+            )}
+            <span className="inline-flex items-center gap-0.5">
+              <BookOpen size={11} /> {act.lessons}
+            </span>
+            <span className="inline-flex items-center gap-0.5">
+              <ClipboardList size={11} /> {act.tests}
+            </span>
+            <span className="inline-flex items-center gap-0.5">
+              <FileText size={11} /> {act.essays}
+            </span>
           </p>
         </div>
       </Link>
@@ -167,7 +184,12 @@ function Newcomer({ s, groups }: { s: NewcomerRow; groups: AdminGroup[] }) {
             {s.matches.map((m) => {
               const who = `${m.name}${m.groupName ? ` · ${m.groupName}` : ""}`;
               return isTeacher ? (
-                <ConfirmButton key={m.studentId} label={`${m.name} bilan birlashtirilsinmi?`} className="btn-secondary btn-sm h-9" onConfirm={() => link.mutate(m.studentId)}>
+                <ConfirmButton
+                  key={m.studentId}
+                  label={`${m.name} bilan birlashtirilsinmi?`}
+                  className="btn-secondary btn-sm h-9"
+                  onConfirm={() => link.mutate(m.studentId)}
+                >
                   <Link2 size={14} /> {who}
                 </ConfirmButton>
               ) : (
@@ -180,7 +202,12 @@ function Newcomer({ s, groups }: { s: NewcomerRow; groups: AdminGroup[] }) {
       <div className="flex flex-wrap items-center gap-2">
         {groups.length > 0 && (
           <div className="flex">
-            <select className="input h-9 rounded-r-none border-r-0 py-0 text-sm" value={groupId} onChange={(e) => setGroupId(e.target.value)} aria-label="Guruh">
+            <select
+              className="input h-9 rounded-r-none border-r-0 py-0 text-sm"
+              value={groupId}
+              onChange={(e) => setGroupId(e.target.value)}
+              aria-label="Guruh"
+            >
               {groups.map((g) => (
                 <option key={g.id} value={g.id}>
                   {g.name}
@@ -230,14 +257,20 @@ function Duplicate({ r }: { r: DuplicateRow }) {
       <Link to={`/students/${s.id}`} className="min-w-0 flex-1 basis-56">
         <p className="truncate font-bold">{s.name}</p>
         <p className="truncate text-xs text-ink-3">{[s.username && `@${s.username}`, s.phone, s.groupName ?? "guruhsiz"].filter(Boolean).join(" · ")}</p>
-        <p className="mt-0.5 text-[11px]">{s.parentStatus === "APPROVED" ? <Badge tone="green">ota-ona ✓</Badge> : s.parentStatus === "PENDING" ? <Badge tone="blue">ota-ona kutilmoqda</Badge> : <Badge>ota-ona yo'q</Badge>}</p>
+        <p className="mt-0.5 text-[11px]">
+          {s.parentStatus === "APPROVED" ? (
+            <Badge tone="green">ota-ona ✓</Badge>
+          ) : s.parentStatus === "PENDING" ? (
+            <Badge tone="blue">ota-ona kutilmoqda</Badge>
+          ) : (
+            <Badge>ota-ona yo'q</Badge>
+          )}
+        </p>
       </Link>
       <ArrowLeftRight size={16} className="shrink-0 text-ink-4" />
       <Link to={`/students/${ph.id}`} className="min-w-0 flex-1 basis-56">
         <p className="truncate font-bold">{ph.name}</p>
-        <p className="truncate text-xs text-ink-3">
-          {[ph.groupName ?? "guruhsiz", "botga kirmagan", `davomat: ${ph.attendance}`].join(" · ")}
-        </p>
+        <p className="truncate text-xs text-ink-3">{[ph.groupName ?? "guruhsiz", "botga kirmagan", `davomat: ${ph.attendance}`].join(" · ")}</p>
         {moves && <p className="mt-0.5 text-[11px] font-semibold text-amber-700">Guruhi boshqa: birlashtirilsa {ph.groupName} guruhiga o'tadi</p>}
       </Link>
       <ConfirmButton label="Bitta odammi? Birlashtirilsinmi?" className="btn-primary btn-sm h-9" onConfirm={() => !link.isPending && link.mutate()}>

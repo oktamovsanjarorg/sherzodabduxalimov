@@ -1,5 +1,12 @@
-export interface Sentence { id: string; text: string }
-export interface Segmented { paragraphs: Sentence[][]; sentences: Sentence[]; numbered: string }
+export interface Sentence {
+  id: string;
+  text: string;
+}
+export interface Segmented {
+  paragraphs: Sentence[][];
+  sentences: Sentence[];
+  numbered: string;
+}
 
 export function segment(text: string): Segmented {
   const paras = text
@@ -59,4 +66,26 @@ export function copiedShare(prompt: string, text: string) {
   const t = grams(words(text));
   if (!t.length || !p.size) return 0;
   return t.filter((g) => p.has(g)).length / t.length;
+}
+
+/** O'zbek lotin matniga begona so'zlar (boshqa alifbo yoki boshqa til harflari); o'quvchi matnida bor so'z begona emas */
+export function foreignWords(s: string, source: string): string[] {
+  const src = source.toLowerCase();
+  const words = s.match(/[\p{L}\p{M}ʻʼ]+/gu) ?? [];
+  return words.filter((w) => /[^a-zA-Zʻʼ]/u.test(w) && !src.includes(w.toLowerCase()));
+}
+
+/**
+ * Model ba'zan o'zbekcha yozayotib boshqa tilga (mo'g'ul, qozoq, turk) o'tib ketadi. Bunday satr bo'sh satrga almashtiriladi:
+ * o'quvchi buzilgan matnni ko'rmasin, buzilgan iqtibos esa ballga kirmasin.
+ */
+export function scrub<T>(value: T, source: string): { value: T; dropped: number } {
+  let dropped = 0;
+  const walk = (v: unknown): unknown => {
+    if (typeof v === "string") return foreignWords(v, source).length ? (dropped++, "") : v;
+    if (Array.isArray(v)) return v.map(walk);
+    if (v && typeof v === "object") return Object.fromEntries(Object.entries(v).map(([k, x]) => [k, walk(x)]));
+    return v;
+  };
+  return { value: walk(value) as T, dropped };
 }

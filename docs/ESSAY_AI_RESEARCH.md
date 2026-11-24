@@ -7,11 +7,13 @@ Sana: 2026-11-21. Branch: `feat/essay-ai-deep`.
 Esse tekshiruvi platformaning asosiy maqsadlaridan biri. Qarorlar faqat real, o'lchangan ma'lumotga asoslanadi: sun'iy yoki soxta ma'lumot asosida xulosa chiqarilmaydi.
 
 **Savol:** qo'lyozma esse uchun qaysi yo'l eng sifatli?
+
 1. Bitta model rasmni olib, o'zi baholaydi.
 2. Rasm modeli matnga o'giradi, matn modeli baholaydi.
 3. Boshqa, yaxshiroq usul.
 
 **Usul.** Taxminan 18 ta manbaning matni o'qildi, yana 10 ga yaqinidan qidiruv parchalari olindi. Belgilar:
+
 - belgisiz fakt — manba matnidan o'qilgan;
 - **(parcha)** — faqat qidiruv parchasidan, to'liq matn ochilmagan;
 - **(ikkilamchi)** — asl manba emas, unga havola qilgan boshqa manbadan;
@@ -31,6 +33,7 @@ Esse tekshiruvi platformaning asosiy maqsadlaridan biri. Qarorlar faqat real, o'
 ## Hozirgi tizim (2026-11-21)
 
 Oqim:
+
 1. **O'qish.** Gemini qo'lyozmani matnga o'giradi (`apps/api/src/ai/gemini.ts`). Odatiy model `gemini-3.8-flash` (`apps/api/src/config/env.ts:39`). Prompt imlo xatolarini tuzatmaslikni talab qiladi (`apps/api/src/ai/gemini.ts:37`).
 2. **Baholash.** DeepSeek-V4-Pro yuqori fikrlash rejimida ishlaydi (`apps/api/src/config/env.ts:35-36`). Bosqichlar:
    - A: tahlil va B: savodxonlik, parallel;
@@ -40,6 +43,7 @@ Oqim:
 4. **Belgilash.** Gemini xatolarning varoqdagi joyini topadi va u yerga belgi qo'yiladi.
 
 Avvaldan to'g'ri qilingan narsalar:
+
 - AI dalil yig'adi, ballni server hisoblaydi.
 - `[?]` (o'qib bo'lmagan so'z) xato deb sanalmaydi (`apps/api/src/ai/essay/prompts.ts:7`).
 - Ba'zi holatlarni server o'zi aniqlaydi: to'liq kirillcha, 100 so'zdan kam (`apps/api/src/essays/ai-runner.ts:85`) va vaziyat matnidan ≥50% ko'chirilgan esse (`apps/api/src/ai/essay/grade.ts:24`). Bu Texas tizimidagi "condition code" (maxsus holat belgisi) amaliyotiga o'xshaydi.
@@ -107,44 +111,60 @@ Avvaldan to'g'ri qilingan narsalar:
 
     Ya'ni bu bizning sozlamamiz emas: bizda u yuqori fikrlash rejimida ishlaydi. 1 501 savoldan 30 tasi javobsiz qolgan. Leaderboard raqamlari saqlangan javoblardan qayta hisoblandi va aynan mos keldi: 0.6396 va Gemini 4 Carbon 0.8448. Juft solishtirishda Gemini 4 Carbon 355 ta savolda yolg'iz to'g'ri, DeepSeek esa 47 tasida (McNemar p ≈ 1e-59).
 
-| Model | Umumiy | To'g'ri so'z (imlo) |
-|---|---|---|
-| Gemini 4 Carbon | 0.8522 | 0.8448 |
-| Gemini 3 Pro | 0.8264 | 0.8215 |
-| Gemini 3.7 Flash | 0.8092 | 0.8061 |
-| GPT-6 Luna | 0.8087 | 0.8101 |
-| Claude Sonnet 5.5 | 0.7813 | 0.7861 |
-| Claude Opus 5.5 | 0.7743 | 0.7668 |
-| DeepSeek V4.1 Flash | 0.7480 | 0.7548 |
-| DeepSeek-V4-Flash | 0.7088 | 0.7222 |
-| **DeepSeek-V4-Pro (bizdagi)** | **0.6464** | **0.6396** |
-| Telegram so'rovnomasidagi odamlar | 0.5894 | 0.6054 |
+| Model                             | Umumiy     | To'g'ri so'z (imlo) |
+| --------------------------------- | ---------- | ------------------- |
+| Gemini 4 Carbon                   | 0.8522     | 0.8448              |
+| Gemini 3 Pro                      | 0.8264     | 0.8215              |
+| Gemini 3.7 Flash                  | 0.8092     | 0.8061              |
+| GPT-6 Luna                        | 0.8087     | 0.8101              |
+| Claude Sonnet 5.5                 | 0.7813     | 0.7861              |
+| Claude Opus 5.5                   | 0.7743     | 0.7668              |
+| DeepSeek V4.1 Flash               | 0.7480     | 0.7548              |
+| DeepSeek-V4-Flash                 | 0.7088     | 0.7222              |
+| **DeepSeek-V4-Pro (bizdagi)**     | **0.6464** | **0.6396**          |
+| Telegram so'rovnomasidagi odamlar | 0.5894     | 0.6054              |
 
-  Cheklovlar:
-  - Bu variantli test. Esse ichidan xato topish boshqa vazifa.
-  - Biz DeepSeek'ni yuqori fikrlash rejimida ishlatamiz, benchmark esa boshqa sozlamada o'tkazilgan bo'lishi mumkin. Shuning uchun uni o'z sozlamamiz bilan qayta o'tkazish kerak.
-  - `gemini-3.8-flash` jadvalda yo'q.
+Cheklovlar:
+
+- Bu variantli test. Esse ichidan xato topish boshqa vazifa.
+- Biz DeepSeek'ni yuqori fikrlash rejimida ishlatamiz, benchmark esa boshqa sozlamada o'tkazilgan bo'lishi mumkin. Shuning uchun uni o'z sozlamamiz bilan qayta o'tkazish kerak.
+- `gemini-3.8-flash` jadvalda yo'q.
 - **Bizning o'lchovimiz (2026-11-21, `pnpm eval:uzlib`).** 1 501 savoldan teng taqsimlab olingan 200 ta savol, prompt asl skript bilan bir xil:
 
-  | Sozlama | To'g'ri | 95% oraliq | 200 savol narxi | Mediana vaqt |
-  |---|---|---|---|---|
-  | DeepSeek-V4-Pro, fikrlashsiz | 63,0% | 56–69% | $0.08 | 2,5 s |
-  | **DeepSeek-V4-Pro, fikrlash `high` (bizdagi)** | **77,0%** | 71–82% | $1.46 | 9,2 s |
-  | DeepSeek-V4.1-Flash, fikrlash `high` | 78,5% | 72–84% | $0.23 | 3,0 s |
-  | Gemini 4 Carbon (leaderboard, shu 200 savol) | 83,5% | — | — | — |
-
+  | Sozlama                                        | To'g'ri   | 95% oraliq | 200 savol narxi | Mediana vaqt |
+  | ---------------------------------------------- | --------- | ---------- | --------------- | ------------ |
+  | DeepSeek-V4-Pro, fikrlashsiz                   | 63,0%     | 56–69%     | $0.08           | 2,5 s        |
+  | **DeepSeek-V4-Pro, fikrlash `high` (bizdagi)** | **77,0%** | 71–82%     | $1.46           | 9,2 s        |
+  | DeepSeek-V4.1-Flash, fikrlash `high`           | 78,5%     | 72–84%     | $0.23           | 3,0 s        |
+  | Gemini 4 Carbon (leaderboard, shu 200 savol)   | 83,5%     | —          | —               | —            |
   - **Sinov to'g'riligi.** Fikrlashsiz V4-Pro shu 200 savolda leaderboard bilan bir xil natija berdi: 63,0% va 63,5%, McNemar p = 1,0.
   - **Fikrlash rejimi katta farq beradi.** V4-Pro fikrlash bilan leaderboard'dagi o'zidan ancha yaxshi: 280 ta bir xil savolda 60 ta savolni faqat u to'g'ri topdi, 8 tasini faqat leaderboard (p ≈ 6e-11).
   - **Pro va Flash.** Fikrlash yoqilganda ular orasidagi farq tasodif darajasida (p = 0,68), lekin Flash ~6 marta arzon va ~3 marta tez.
   - **Gemini 4 Carbon hali ham oldinda.** 200 savolda 8 ta savolni faqat bizdagi model to'g'ri topdi, 21 tasini faqat Carbon (p = 0,024).
   - **To'liq sinov tugamadi.** Balans tugadi (402 Insufficient Balance): V4-Pro 280 tasini, Flash 479 tasini bajardi. 200 dan keyingilari ro'yxat boshidan ketma-ket olingan, tasodifiy emas, shuning uchun mutlaq raqam sifatida faqat 200 talik tanlov ishlatiladi.
   - **Cheklov.** Bu variantli test: esse ichidan xato topishni sinov to'plami o'lchaydi.
+
+- **GPT-6 Luna o'lchovi (2026-11-24, o'sha 200 ta savol).** Qaror: Google modellari o'rniga OpenAI + DeepSeek Flash juftligi ko'rib chiqiladi. Sabablardan biri narx: Carbon 2026-12-01 dan $4 / $20 (1M token kirish / chiqish), Luna $0.10 / $0.50.
+
+  | Sozlama                                      | To'g'ri | 95% oraliq | 200 savol narxi | Mediana vaqt |
+  | -------------------------------------------- | ------- | ---------- | --------------- | ------------ |
+  | GPT-6 Luna, `medium` (leaderboard sozlamasi) | 82,0%   | 76–87%     | $0.017          | 3,5 s        |
+  | GPT-6 Luna, `high`                           | 82,0%   | 76–87%     | $0.024          | 3,2 s        |
+  | Gemini 4 Carbon (leaderboard, shu 200 savol) | 83,5%   | 78–88%     | —               | —            |
+  - **Sinov to'g'riligi.** `medium` leaderboard'dagi Luna bilan mos: 82,0% va 82,5%, faqat bizda 4, faqat unda 5 (p = 1,0).
+  - **Fikrlash darajasi farq bermadi.** `high` va `medium`: 5 ga 5 (p = 1,0).
+  - **V4-Pro'dan ustun:** 15 ga 5 (p = 0,041).
+  - **Flash'dan ustunligi shu tanlovda isbotlanmadi:** 16 ga 9 (p = 0,23).
+  - **Carbon bilan farq shu tanlovda ko'rinmadi:** 10 ga 13 (p = 0,68). To'liq 1 501 savolda (leaderboard) Carbon oldinda: 116 ga 64 (p = 0,0001).
+  - **Luna (`medium`) + DeepSeek Flash.** 200 savoldan 173 tasida bir xil javob berdi, shundan 148 tasi to'g'ri (85,5%, 79,5–90,0%). 27 tasida kelishmadi: Luna 16 tasida, Flash 9 tasida to'g'ri, 2 tasida hech biri. Ya'ni kelishmovchilik Luna'ning 36 ta xatosidan 11 tasini (31%) ko'rsatadi, qolgan 25 tasida ikkalasi bir xil xato qiladi. Ikkinchi model hamma xatoni tutmaydi.
+
 - **O'zbek tili uchun vositalar:**
   - `hunspell-uz` (Debian paketi);
   - `uzmorph` (~122 ming o'zak, MIT);
   - `UzMorphAnalyser` (arXiv 2405.14179).
 
   Bular imlo xatosi uchun qo'shimcha signal bo'lishi mumkin, lekin yakuniy hakam bo'la olmaydi: agglyutinativ tilda kam uchraydigan to'g'ri shakllar va ismlar xato deb chiqishi mumkin. **(parcha)**
+
 - **Bosma o'zbek matni uchun ishlar:**
   - `uzocr-8b` — LoRA bilan moslashtirilgan mahalliy multimodal model (Zenodo 24140067). Qo'lyozma sinalgani aytilmagan.
   - ByT5 bilan OCR'dan keyingi tuzatish (arXiv 2611.13609): CER 5,78% dan 3,69% ga tushgan. Taqqoslangan Qwen2.5-7B esa 1 132 ta yangi xato qo'shgan, ya'ni LLM bilan tuzatish yangi xato ham qo'shadi.
@@ -163,15 +183,16 @@ Avvaldan to'g'ri qilingan narsalar:
   - LLM qisqa esselarga ortiqcha ball bergan, uzun esselarni esa mayda imlo va grammatika xatolari uchun jazolagan.
 - **EssayJudge.** Kompyuterda yozilgan esselar, mavzuga rasm qo'shilgan. GPT-4o va inson mosligi (QWK):
 
-  | Band | GPT-4o | Inson |
-  |---|---|---|
-  | Lug'at aniqligi | 0,89 | 0,91 |
-  | Grammatika | 0,85 | 0,93 |
-  | Tinish belgilari | 0,65 | 0,86 |
-  | Argument aniqligi | 0,30 | 0,72 |
+  | Band              | GPT-4o | Inson |
+  | ----------------- | ------ | ----- |
+  | Lug'at aniqligi   | 0,89   | 0,91  |
+  | Grammatika        | 0,85   | 0,93  |
+  | Tinish belgilari  | 0,65   | 0,86  |
+  | Argument aniqligi | 0,30   | 0,72  |
 
   Haqiqiy baho ikki ekspertning o'rtachasi sifatida olingan, ular 1 dan ko'p farq qilsa, uchinchi ekspert hal qilgan.
   **(xulosam)** Mazmun bandlarida AI eng zaif, ustoz ko'rigi aynan shu bandlarga qaratilishi kerak.
+
 - **Kortemeyer va boshq. (2025), GPT-5, 342 ta qo'lyozma imtihon:**
   - Filtrsiz R² ≈ 0,85, AI o'rtacha ~1 ball saxiyroq baholagan.
   - Inson darajasidagi aniqlikka yetish uchun ~70% ishni insonga yuborishga to'g'ri kelgan.
@@ -290,3 +311,22 @@ Avvaldan to'g'ri qilingan narsalar:
 - hunspell-uz: https://packages.debian.org/sid/hunspell-uz
 - uzmorph: https://pypi.org/project/uzmorph/
 - UzMorphAnalyser: https://arxiv.org/abs/2405.14179
+
+## GPT + DeepSeek: ishga tushirilgan sxema (2026-11-24)
+
+Qaror: OpenAI (`gpt-6-luna`, medium) va DeepSeek (`deepseek-flash`, high). Kalit bo'yicha yoqiladi: `OPENAI_API_KEY` bo'lmasa hammasini DeepSeek bajaradi.
+
+| Bosqich                                     | Model  |
+| ------------------------------------------- | ------ |
+| Qo'lyozmani o'qish, xato joyini ko'rsatish  | Luna   |
+| A tahlil, B savodxonlik                     | Luna   |
+| C har bir xatoni qayta tekshirish, D taqriz | Flash  |
+| Ball                                        | server |
+
+Ishga tushirishdan oldingi texnik sinov (o'zimiz yozgan bitta esse, o'quvchi ma'lumoti emas; **sifat o'lchovi emas**):
+
+- **Luna o'zbekcha uzun taqrizda boshqa tilga (mo'g'ul, turk) o'tib ketadi**: medium 2/6, low 5/6; Flash 0/12 (low va off). Shu sabab taqrizni Flash yozadi, har bir AI matnida begona so'zlar esa serverda tashlanadi (`scrub`).
+- Ataylab qo'yilgan 7 xatoning hammasi topildi. Flash ustozning uslub ro'yxatini bilmaganda to'g'ri da'volarni rad etdi, ro'yxat unga ham berildi.
+- **O'qishda xato yo'qoladi**: kursiv shriftda terilgan sahifada 7 xatodan o'rtacha 5,5 tasi saqlandi (Luna medium, 4 urinish; avvalgi ko'rsatma bilan 4,75). Flash ham shunday (5–6). Haqiqiy qo'lyozmada o'lchanmagan.
+- Xato ramkalari (5 ta) haqiqiy joyiga mos keldi.
+- Bir esse uch urinishda 18,5–21,5 ball oldi (orada ko'rsatmalar o'zgargan): ball hali barqaror deb bo'lmaydi.

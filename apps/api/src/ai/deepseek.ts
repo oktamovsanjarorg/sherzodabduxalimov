@@ -1,6 +1,7 @@
 import { ERROR_TYPES, ESSAY_RUBRIC, type ErrorTypeKey } from "@onatili/shared";
-import { request } from "node:https";
 import { z } from "zod";
+import { type AskModel, parseFirstJson } from "./ask";
+import { postJson, RETRY_STATUS, sleep } from "./http";
 
 export interface AiEssayResult {
   /** Esse tekshirilmaydigan holat (AI aniqlaydi): mavzuga mos emas, ko'chirilgan, faqat kirish qismi */
@@ -10,39 +11,10 @@ export interface AiEssayResult {
   mistakes: { wrong: string; right: string; note: string | null; type: ErrorTypeKey }[];
   /** Aniq tavsiyalar: eng zaif bandlar bo'yicha, o'quvchining o'z jumlasi yaxshilangan namunasi bilan */
   tips: { focus: string | null; text: string; example: string | null }[];
+  /** Bazaga yoziladigan provayder nomi; AI ishlatilmagan bo'lsa — yo'q */
+  provider?: string;
   /** Chuqur tahlil (xatboshilar xaritasi, dalillar, bosqichlar vaqti) — ustoz va tekshiruv uchun saqlanadi */
   analysis?: unknown;
-}
-
-/** DeepSeek (OpenAI bilan mos API). IPv4 majburiy: serverda IPv6 ishlamaydi. */
-function postJson(host: string, path: string, apiKey: string, body: object, timeoutMs: number): Promise<{ status: number; json: unknown }> {
-  const data = JSON.stringify(body);
-  return new Promise((resolve, reject) => {
-    const req = request(
-      {
-        host,
-        path,
-        method: "POST",
-        family: 4,
-        timeout: timeoutMs,
-        headers: { "content-type": "application/json", "content-length": Buffer.byteLength(data), authorization: `Bearer ${apiKey}` },
-      },
-      (res) => {
-        let raw = "";
-        res.on("data", (c) => (raw += c));
-        res.on("end", () => {
-          try {
-            resolve({ status: res.statusCode ?? 0, json: JSON.parse(raw) });
-          } catch {
-            resolve({ status: res.statusCode ?? 0, json: null });
-          }
-        });
-      },
-    );
-    req.on("timeout", () => req.destroy(new Error("AI timeout")));
-    req.on("error", reject);
-    req.end(data);
-  });
 }
 
 const resultSchema = z.object({
@@ -50,7 +22,10 @@ const resultSchema = z.object({
   criteria: z.array(z.object({ key: z.string(), score: z.coerce.number(), comment: z.string().nullish() })).default([]),
   feedback: z.string().default(""),
   mistakes: z.array(z.object({ wrong: z.string(), right: z.string(), note: z.string().nullish(), type: z.string().nullish() })).default([]),
-  tips: z.array(z.object({ focus: z.string().nullish(), text: z.string(), example: z.string().nullish() })).default([]).catch([]),
+  tips: z
+    .array(z.object({ focus: z.string().nullish(), text: z.string(), example: z.string().nullish() }))
+    .default([])
+    .catch([]),
 });
 
 const TYPE_KEYS = ERROR_TYPES.map((t) => t.key as string);
@@ -67,16 +42,23 @@ function mistakeType(type: string | null | undefined, note: string | null | unde
 }
 
 export type Effort = "off" | "low" | "high" | "max";
-export interface DeepSeekOpts { apiKey: string; model: string; effort?: Effort }
-
-const RETRY = new Set([429, 500, 502, 503, 504]);
-const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+export interface DeepSeekOpts {
+  apiKey: string;
+  model: string;
+  effort?: Effort;
+}
 
 /**
  * JSON javob so'rovi. Fikrlash rejimida (effort != off) model avval o'ylab oladi — chuqur tahlil uchun shart.
  * Band (429/5xx), bo'sh yoki buzilgan JSON javobda bir marta qayta uriniladi.
  */
-export async function deepseekJson<S extends z.ZodTypeAny>(opts: DeepSeekOpts, system: string, user: string, schema: S, maxTokens = 8000): Promise<z.output<S>> {
+export async function deepseekJson<S extends z.ZodTypeAny>(
+  opts: DeepSeekOpts,
+  system: string,
+  user: string,
+  schema: S,
+  maxTokens = 8000,
+): Promise<z.output<S>> {
   const thinking = !!opts.effort && opts.effort !== "off";
   const body = {
     model: opts.model,
@@ -102,7 +84,7 @@ export async function deepseekJson<S extends z.ZodTypeAny>(opts: DeepSeekOpts, s
     const j = r.json as { choices?: { message?: { content?: string } }[]; error?: { message?: string } } | null;
     if (r.status !== 200) {
       last = new Error(`DeepSeek ${r.status}: ${j?.error?.message ?? "javob yo'q"}`);
-      if (RETRY.has(r.status)) continue;
+      if (RETRY_STATUS.has(r.status)) continue;
       throw last;
     }
     const content = j?.choices?.[0]?.message?.content;
@@ -119,30 +101,12 @@ export async function deepseekJson<S extends z.ZodTypeAny>(opts: DeepSeekOpts, s
   throw last;
 }
 
-/**
- * Model ba'zan JSON'dan keyin (yoki oldin) qo'shimcha matn yozadi: birinchi to'liq {...} obyektini ajratib olamiz.
- * Satr ichidagi qavslar va qochirilgan qo'shtirnoqlar hisobga olinadi.
- */
-export function parseFirstJson(raw: string): unknown {
-  try {
-    return JSON.parse(raw);
-  } catch {
-    const start = raw.indexOf("{");
-    if (start < 0) throw new Error("AI javobida JSON yo'q");
-    let depth = 0;
-    let inStr = false;
-    for (let i = start; i < raw.length; i++) {
-      const ch = raw[i];
-      if (inStr) {
-        if (ch === "\\") i++;
-        else if (ch === '"') inStr = false;
-      } else if (ch === '"') inStr = true;
-      else if (ch === "{") depth++;
-      else if (ch === "}" && --depth === 0) return JSON.parse(raw.slice(start, i + 1));
-    }
-    throw new Error("AI javobidagi JSON to'liq emas");
-  }
-}
+export const deepseekModel = (opts: DeepSeekOpts): AskModel => ({
+  provider: "deepseek",
+  model: opts.model,
+  effort: opts.effort ?? "off",
+  ask: (system, user, schema) => deepseekJson(opts, system, user, schema),
+});
 
 /** Mezon kalitlari va ball qadamlari bizning jadval bo'yicha tekshiriladi (AI'ga to'liq ishonilmaydi) */
 export function normalize(raw: z.input<typeof resultSchema>): AiEssayResult {

@@ -9,8 +9,7 @@ import { confirmDialog, haptic } from "../lib/telegram";
 export function TestCard({ test }: { test: TestSummary }) {
   const navigate = useNavigate();
   const start = useMutation({
-    mutationFn: () =>
-      test.inProgressAttemptId ? Promise.resolve({ id: test.inProgressAttemptId }) : api.startTest(test.id),
+    mutationFn: () => (test.inProgressAttemptId ? Promise.resolve({ id: test.inProgressAttemptId }) : api.startTest(test.id)),
     onSuccess: (a) => navigate(`/attempt/${a.id}`),
     onError: async (e) => {
       if (e instanceof ApiError && e.code === "SUBSCRIPTION_REQUIRED") navigate("/subscribe");

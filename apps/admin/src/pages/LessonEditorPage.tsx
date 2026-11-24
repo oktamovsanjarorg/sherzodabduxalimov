@@ -19,7 +19,16 @@ export function LessonEditorPage() {
 
   if (lesson.isPending) return <Spinner className="text-ink-4" />;
   if (lesson.isError) return <p className="text-sm text-red-600">{errMsg(lesson.error)}</p>;
-  return <Editor key={lesson.data.id} lesson={lesson.data} onChanged={() => { qc.invalidateQueries({ queryKey: ["lesson", id] }); qc.invalidateQueries({ queryKey: ["courses"] }); }} />;
+  return (
+    <Editor
+      key={lesson.data.id}
+      lesson={lesson.data}
+      onChanged={() => {
+        qc.invalidateQueries({ queryKey: ["lesson", id] });
+        qc.invalidateQueries({ queryKey: ["courses"] });
+      }}
+    />
+  );
 }
 
 function Editor({ lesson, onChanged }: { lesson: AdminLesson; onChanged: () => void }) {
@@ -43,7 +52,7 @@ function Editor({ lesson, onChanged }: { lesson: AdminLesson; onChanged: () => v
         videoUrl: f.videoUrl.trim() || null,
         isFree: f.isFree,
         isPublished: f.isPublished,
-        durationSec: f.durationMin ? Math.round(Number(f.durationMin) * 60) : lesson.video?.durationSec ?? null,
+        durationSec: f.durationMin ? Math.round(Number(f.durationMin) * 60) : (lesson.video?.durationSec ?? null),
       }),
     onSuccess: () => {
       toast("Dars saqlandi");
@@ -99,7 +108,12 @@ function Editor({ lesson, onChanged }: { lesson: AdminLesson; onChanged: () => v
             <p className="mb-3 text-xs text-ink-3">
               Formatlash: <code># Sarlavha</code>, <code>- ro'yxat</code>, <code>**qalin**</code>, <code>*kursiv*</code>
             </p>
-            <textarea className="textarea min-h-[280px] font-mono text-[13px]" value={f.content} onChange={(e) => set("content", e.target.value)} placeholder="Dars bo'yicha qisqacha konspekt…" />
+            <textarea
+              className="textarea min-h-[280px] font-mono text-[13px]"
+              value={f.content}
+              onChange={(e) => set("content", e.target.value)}
+              placeholder="Dars bo'yicha qisqacha konspekt…"
+            />
           </section>
         </div>
 
@@ -124,9 +138,11 @@ function Editor({ lesson, onChanged }: { lesson: AdminLesson; onChanged: () => v
           </section>
         </aside>
       </div>
-      <MobileBar><button className="btn-primary w-full" onClick={() => save.mutate()} disabled={save.isPending}>
-              {save.isPending && <Spinner />} Saqlash
-            </button></MobileBar>
+      <MobileBar>
+        <button className="btn-primary w-full" onClick={() => save.mutate()} disabled={save.isPending}>
+          {save.isPending && <Spinner />} Saqlash
+        </button>
+      </MobileBar>
     </>
   );
 }
@@ -202,7 +218,9 @@ function VideoSection({ lesson, onChanged }: { lesson: AdminLesson; onChanged: (
       <div className="rounded-xl border border-line p-4">
         <div className="mb-2 flex items-center justify-between text-sm">
           <span className="truncate font-semibold">{progress.video.originalName}</span>
-          <button className="btn-ghost btn-sm" onClick={() => abort.current?.abort()}><X size={14} /> To'xtatish</button>
+          <button className="btn-ghost btn-sm" onClick={() => abort.current?.abort()}>
+            <X size={14} /> To'xtatish
+          </button>
         </div>
         <div className="h-2 overflow-hidden rounded-full bg-surface-3">
           <div className="h-full rounded-full bg-brand transition-all" style={{ width: `${pct}%` }} />
@@ -221,13 +239,21 @@ function VideoSection({ lesson, onChanged }: { lesson: AdminLesson; onChanged: (
     <div className="space-y-3">
       {v && (
         <div className="flex items-center gap-3 rounded-xl border border-line p-4">
-          {v.status === "READY" ? <CheckCircle2 className="text-emerald-600" /> : v.status === "FAILED" ? <AlertTriangle className="text-red-600" /> : <Spinner className="text-amber-600" />}
+          {v.status === "READY" ? (
+            <CheckCircle2 className="text-emerald-600" />
+          ) : v.status === "FAILED" ? (
+            <AlertTriangle className="text-red-600" />
+          ) : (
+            <Spinner className="text-amber-600" />
+          )}
           <div className="min-w-0 flex-1">
             <p className="truncate text-sm font-bold">{v.originalName}</p>
             <p className="text-xs text-ink-3">
-              {v.status === "READY" && `Tayyor · ${v.durationSec ? `${Math.floor(v.durationSec / 60)}:${String(v.durationSec % 60).padStart(2, "0")}` : ""} · ${formatBytes(v.sizeBytes)}`}
+              {v.status === "READY" &&
+                `Tayyor · ${v.durationSec ? `${Math.floor(v.durationSec / 60)}:${String(v.durationSec % 60).padStart(2, "0")}` : ""} · ${formatBytes(v.sizeBytes)}`}
               {v.status === "PROCESSING" && `Tayyorlanmoqda: ${v.processingPct ?? 0}% (shifrlash va sifatlarga ajratish)`}
-              {v.status === "UPLOADING" && `Yuklash tugallanmagan: ${formatBytes(v.receivedBytes)} / ${formatBytes(v.sizeBytes)}. Davom ettirish uchun xuddi shu faylni qayta tanlang.`}
+              {v.status === "UPLOADING" &&
+                `Yuklash tugallanmagan: ${formatBytes(v.receivedBytes)} / ${formatBytes(v.sizeBytes)}. Davom ettirish uchun xuddi shu faylni qayta tanlang.`}
               {v.status === "FAILED" && `Xato: ${v.error ?? "noma'lum"}`}
             </p>
             {v.status === "PROCESSING" && (
@@ -237,14 +263,21 @@ function VideoSection({ lesson, onChanged }: { lesson: AdminLesson; onChanged: (
             )}
           </div>
           {v.status === "FAILED" && (
-            <button className="btn-secondary btn-sm" onClick={() => retry.mutate()}><RefreshCw size={14} /> Qayta urinish</button>
+            <button className="btn-secondary btn-sm" onClick={() => retry.mutate()}>
+              <RefreshCw size={14} /> Qayta urinish
+            </button>
           )}
-          <ConfirmButton onConfirm={() => detach.mutate()} label="Video o'chirilsinmi?"><Trash2 size={14} /></ConfirmButton>
+          <ConfirmButton onConfirm={() => detach.mutate()} label="Video o'chirilsinmi?">
+            <Trash2 size={14} />
+          </ConfirmButton>
         </div>
       )}
 
       <div
-        onDragOver={(e) => { e.preventDefault(); setDrag(true); }}
+        onDragOver={(e) => {
+          e.preventDefault();
+          setDrag(true);
+        }}
         onDragLeave={() => setDrag(false)}
         onDrop={(e) => {
           e.preventDefault();

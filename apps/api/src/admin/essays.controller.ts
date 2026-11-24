@@ -14,7 +14,12 @@ export class EssaysController {
     return this.svc.list(status === "reviewed" ? "reviewed" : "pending");
   }
 
-  @Put(":attemptId/:questionId/annotations") annotate(@CurrentUser() u: JwtUser, @Param("attemptId") a: string, @Param("questionId") q: string, @Body() b: unknown) {
+  @Put(":attemptId/:questionId/annotations") annotate(
+    @CurrentUser() u: JwtUser,
+    @Param("attemptId") a: string,
+    @Param("questionId") q: string,
+    @Body() b: unknown,
+  ) {
     return this.svc.saveMarks(u.sub, a, q, parse(z.array(textMarkSchema).max(500), b));
   }
 

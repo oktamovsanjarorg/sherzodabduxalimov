@@ -18,14 +18,29 @@ export function MobileBar({ children }: { children: ReactNode }) {
   return (
     <>
       <div className="h-16 md:hidden" />
-      <div className="fixed inset-x-0 z-20 border-t border-line bg-surface/95 px-4 py-2.5 backdrop-blur md:hidden" style={{ bottom: "calc(4rem + env(safe-area-inset-bottom, 0px))" }}>
+      <div
+        className="fixed inset-x-0 z-20 border-t border-line bg-surface/95 px-4 py-2.5 backdrop-blur md:hidden"
+        style={{ bottom: "calc(4rem + var(--safe-bottom))" }}
+      >
         {children}
       </div>
     </>
   );
 }
 
-export function Modal({ title, onClose, children, footer, wide }: { title: string; onClose: () => void; children: ReactNode; footer?: ReactNode; wide?: boolean }) {
+export function Modal({
+  title,
+  onClose,
+  children,
+  footer,
+  wide,
+}: {
+  title: string;
+  onClose: () => void;
+  children: ReactNode;
+  footer?: ReactNode;
+  wide?: boolean;
+}) {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
     window.addEventListener("keydown", onKey);
@@ -40,7 +55,7 @@ export function Modal({ title, onClose, children, footer, wide }: { title: strin
         className={`flex h-full w-full flex-col bg-surface shadow-xl sm:h-auto sm:rounded-2xl sm:border sm:border-line ${wide ? "sm:max-w-4xl" : "sm:max-w-xl"}`}
         onMouseDown={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between border-b border-line px-4 py-3 sm:px-5 sm:py-4" style={{ paddingTop: "max(12px, env(safe-area-inset-top, 0px))" }}>
+        <div className="flex items-center justify-between border-b border-line px-4 py-3 sm:px-5 sm:py-4" style={{ paddingTop: "max(12px, var(--safe-top))" }}>
           <h2 className="text-lg font-extrabold">{title}</h2>
           <button className="btn-ghost h-10 w-10 p-0" onClick={onClose} aria-label="Yopish">
             <X size={20} />
@@ -48,7 +63,7 @@ export function Modal({ title, onClose, children, footer, wide }: { title: strin
         </div>
         <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4 sm:max-h-[70vh] sm:flex-none sm:px-5">{children}</div>
         {footer && (
-          <div className="flex flex-wrap justify-end gap-2 border-t border-line px-4 py-3 sm:px-5" style={{ paddingBottom: "max(12px, env(safe-area-inset-bottom, 0px))" }}>
+          <div className="flex flex-wrap justify-end gap-2 border-t border-line px-4 py-3 sm:px-5" style={{ paddingBottom: "max(12px, var(--safe-bottom))" }}>
             {footer}
           </div>
         )}
@@ -88,7 +103,9 @@ const tones = {
 export function Badge({ tone = "gray", children }: { tone?: keyof typeof tones; children: ReactNode }) {
   // Telefonda uzun yorliq ekrandan chiqib ketmasin: kerak bo'lsa keyingi qatorga o'tadi
   return (
-    <span className={`inline-flex max-w-full items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-bold leading-tight [overflow-wrap:anywhere] sm:shrink-0 sm:whitespace-nowrap ${tones[tone]}`}>
+    <span
+      className={`inline-flex max-w-full items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-bold leading-tight [overflow-wrap:anywhere] sm:shrink-0 sm:whitespace-nowrap ${tones[tone]}`}
+    >
       {children}
     </span>
   );
@@ -96,7 +113,19 @@ export function Badge({ tone = "gray", children }: { tone?: keyof typeof tones; 
 
 /** Ikki bosqichli o'chirish tugmasi: birinchi bosishda tasdiq so'raydi */
 /** title: faqat ikonkali tugma uchun ekran o'quvchiga nom (standart "O'chirish") */
-export function ConfirmButton({ onConfirm, children, label = "O'chirilsinmi?", className = "btn-danger btn-sm", title = "O'chirish" }: { onConfirm: () => void; children: ReactNode; label?: string; className?: string; title?: string }) {
+export function ConfirmButton({
+  onConfirm,
+  children,
+  label = "O'chirilsinmi?",
+  className = "btn-danger btn-sm",
+  title = "O'chirish",
+}: {
+  onConfirm: () => void;
+  children: ReactNode;
+  label?: string;
+  className?: string;
+  title?: string;
+}) {
   const [ask, setAsk] = useState(false);
   useEffect(() => {
     if (!ask) return;
@@ -106,7 +135,13 @@ export function ConfirmButton({ onConfirm, children, label = "O'chirilsinmi?", c
   return ask ? (
     <span className="inline-flex items-center gap-1">
       <span className="text-xs font-bold text-red-600">{label}</span>
-      <button className="btn-sm btn bg-red-600 text-white hover:bg-red-700" onClick={() => { setAsk(false); onConfirm(); }}>
+      <button
+        className="btn-sm btn bg-red-600 text-white hover:bg-red-700"
+        onClick={() => {
+          setAsk(false);
+          onConfirm();
+        }}
+      >
         Ha
       </button>
       <button className="btn-ghost btn-sm" onClick={() => setAsk(false)}>
@@ -140,7 +175,8 @@ export function Empty({ title, hint, action, Icon = Inbox }: { title: string; hi
 export function Field({ label, children, hint }: { label: string; children: ReactNode; hint?: string }) {
   // Yorliq maydonga bog'lanadi (bosilsa maydon fokuslanadi, ekran o'quvchi nomini o'qiydi): bitta input/select/textarea bo'lsa
   const auto = useId();
-  const one = isValidElement(children) && ["input", "select", "textarea"].includes(children.type as string) ? (children as ReactElement<{ id?: string }>) : null;
+  const one =
+    isValidElement(children) && ["input", "select", "textarea"].includes(children.type as string) ? (children as ReactElement<{ id?: string }>) : null;
   const id = one ? (one.props.id ?? auto) : undefined;
   return (
     <div>
@@ -157,7 +193,17 @@ export function Field({ label, children, hint }: { label: string; children: Reac
  * Sahifaning asosiy ko'rinishlarini almashtirish (masalan: Kunlik / Oylik, Umumiy / To'lovlar tahlili).
  * Ro'yxatni saralash uchun Chips ishlatiladi — admin panel bo'ylab bitta qoida.
  */
-export function Segmented<T extends string>({ value, onChange, options, className = "" }: { value: T; onChange: (v: T) => void; options: readonly (readonly [T, ReactNode])[]; className?: string }) {
+export function Segmented<T extends string>({
+  value,
+  onChange,
+  options,
+  className = "",
+}: {
+  value: T;
+  onChange: (v: T) => void;
+  options: readonly (readonly [T, ReactNode])[];
+  className?: string;
+}) {
   return (
     <div className={`max-w-full overflow-x-auto ${className}`}>
       <div className="inline-flex rounded-lg border border-line bg-surface p-1 text-sm font-bold">
@@ -178,7 +224,17 @@ export function Segmented<T extends string>({ value, onChange, options, classNam
 }
 
 /** Ro'yxat filtri: yumaloq tugmalar (guruh, holat, tur) */
-export function Chips<T extends string>({ value, onChange, options, className = "" }: { value: T; onChange: (v: T) => void; options: readonly (readonly [T, ReactNode])[]; className?: string }) {
+export function Chips<T extends string>({
+  value,
+  onChange,
+  options,
+  className = "",
+}: {
+  value: T;
+  onChange: (v: T) => void;
+  options: readonly (readonly [T, ReactNode])[];
+  className?: string;
+}) {
   return (
     <div className={`flex gap-2 overflow-x-auto pb-1 ${className}`}>
       {options.map(([k, l]) => (
@@ -196,13 +252,38 @@ export function Chips<T extends string>({ value, onChange, options, className = 
 }
 
 /** Ro'yxat ustidagi qidiruv maydoni (tozalash tugmasi bilan) */
-export function SearchBox({ value, onChange, placeholder = "Ism, @username yoki telefon", className = "" }: { value: string; onChange: (v: string) => void; placeholder?: string; className?: string }) {
+export function SearchBox({
+  value,
+  onChange,
+  placeholder = "Ism, @username yoki telefon",
+  className = "",
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  placeholder?: string;
+  className?: string;
+}) {
   return (
     <div className={`relative w-full sm:w-80 ${className}`}>
       <Search size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-ink-4" />
-      <input type="text" role="searchbox" inputMode="search" enterKeyHint="search" autoComplete="off" className="input pl-9 pr-9" placeholder={placeholder} value={value} onChange={(e) => onChange(e.target.value)} />
+      <input
+        type="text"
+        role="searchbox"
+        inputMode="search"
+        enterKeyHint="search"
+        autoComplete="off"
+        className="input pl-9 pr-9"
+        placeholder={placeholder}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+      />
       {value && (
-        <button type="button" onClick={() => onChange("")} className="absolute right-1 top-1/2 grid h-9 w-9 -translate-y-1/2 place-items-center text-ink-4 hover:text-ink" aria-label="Tozalash">
+        <button
+          type="button"
+          onClick={() => onChange("")}
+          className="absolute right-1 top-1/2 grid h-9 w-9 -translate-y-1/2 place-items-center text-ink-4 hover:text-ink"
+          aria-label="Tozalash"
+        >
           <X size={15} />
         </button>
       )}
@@ -212,5 +293,15 @@ export function SearchBox({ value, onChange, placeholder = "Ism, @username yoki 
 
 /** Qidiruv natijasi bo'sh bo'lganda */
 export function NoMatch({ q, onClear }: { q: string; onClear: () => void }) {
-  return <Empty title="Hech narsa topilmadi" hint={`«${q.trim()}» bo'yicha natija yo'q`} action={<button className="btn-secondary btn-sm" onClick={onClear}>Qidiruvni tozalash</button>} />;
+  return (
+    <Empty
+      title="Hech narsa topilmadi"
+      hint={`«${q.trim()}» bo'yicha natija yo'q`}
+      action={
+        <button className="btn-secondary btn-sm" onClick={onClear}>
+          Qidiruvni tozalash
+        </button>
+      }
+    />
+  );
 }

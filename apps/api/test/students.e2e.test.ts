@@ -9,12 +9,23 @@ import { NOTIFY_QUEUE, type NotifyJob } from "../src/notify/notify.service";
 import { BOT_TOKEN, OWNER, createApp, login } from "./helpers";
 
 const prisma = new PrismaClient();
-const TG = { owner: 900001001, assistant: 900001002, phoneUser: 900001003, linkUser: 900001004, existing: 900001005, managed: 900001006, newbie: 900001007, stranger: 900001008 };
+const TG = {
+  owner: 900001001,
+  assistant: 900001002,
+  phoneUser: 900001003,
+  linkUser: 900001004,
+  existing: 900001005,
+  managed: 900001006,
+  newbie: 900001007,
+  stranger: 900001008,
+};
 const TAG = "E2E-roster";
 const PHONES = ["+998901110001", "+998901110002", "+998901110003", "+998901110004", "+998901110009"];
 
 async function cleanup() {
-  await prisma.user.deleteMany({ where: { OR: [{ telegramId: { in: Object.values(TG).map(BigInt) } }, { phone: { in: PHONES } }, { firstName: { startsWith: TAG } }] } });
+  await prisma.user.deleteMany({
+    where: { OR: [{ telegramId: { in: Object.values(TG).map(BigInt) } }, { phone: { in: PHONES } }, { firstName: { startsWith: TAG } }] },
+  });
   await prisma.group.deleteMany({ where: { name: { startsWith: TAG } } });
 }
 
@@ -88,7 +99,10 @@ describe("O'quvchilar: botsiz kiritish, ro'yxat, karta, hisobni bog'lash (e2e)",
 
   it("davomat va to'lov botsiz o'quvchiga ham yoziladi; karta hammasini ko'rsatadi", async () => {
     const aziz = (await req("GET", `/admin/roster?q=${TAG}Aziz`)).json()[0];
-    await req("PUT", `/admin/groups/${groupId}/attendance`, { date: new Date().toISOString().slice(0, 10), items: [{ studentId: aziz.studentId, status: "PRESENT" }] });
+    await req("PUT", `/admin/groups/${groupId}/attendance`, {
+      date: new Date().toISOString().slice(0, 10),
+      items: [{ studentId: aziz.studentId, status: "PRESENT" }],
+    });
     await req("PUT", "/admin/offline-payments", { studentId: aziz.studentId, month: currentMonth(), amountUzs: 300000 });
 
     const d = (await req("GET", `/admin/students/${aziz.studentId}`)).json();
@@ -107,7 +121,10 @@ describe("O'quvchilar: botsiz kiritish, ro'yxat, karta, hisobni bog'lash (e2e)",
 
   it("o'quvchi botda telefonini ulashsa, qo'lda kiritilgan yozuv uning hisobiga o'tadi", async () => {
     const before = (await req("GET", `/admin/roster?q=${TAG}Aziz`)).json()[0];
-    const r = await internal("user-phone", { from: { id: TG.phoneUser, first_name: "aziz_tg" }, contact: { phone_number: "998901110001", user_id: TG.phoneUser } });
+    const r = await internal("user-phone", {
+      from: { id: TG.phoneUser, first_name: "aziz_tg" },
+      contact: { phone_number: "998901110001", user_id: TG.phoneUser },
+    });
     expect(r.json().status).toBe("merged");
     const after = (await req("GET", `/admin/roster?groupId=${groupId}`)).json().filter((x: { phone: string }) => x.phone === "+998901110001");
     expect(after).toHaveLength(1); // ikki nusxa emas
@@ -125,7 +142,10 @@ describe("O'quvchilar: botsiz kiritish, ro'yxat, karta, hisobni bog'lash (e2e)",
   it("shaxsiy havola: yangi Telegram hisobi bog'lanadi; ishlatilgan havola boshqaga ishlamaydi", async () => {
     const madina = (await req("GET", `/admin/roster?q=${TAG}Madina`)).json()[0];
     const code = (await req("GET", `/admin/students/${madina.studentId}`)).json().inviteUrl.split("s_")[1];
-    expect((await internal("claim-student", { code, from: { id: TG.linkUser, first_name: "M" } })).json()).toMatchObject({ status: "claimed", groupName: `${TAG} 1-guruh` });
+    expect((await internal("claim-student", { code, from: { id: TG.linkUser, first_name: "M" } })).json()).toMatchObject({
+      status: "claimed",
+      groupName: `${TAG} 1-guruh`,
+    });
     expect((await internal("claim-student", { code, from: { id: TG.existing, first_name: "X" } })).json().status).toBe("invalid"); // kod o'chirildi
     const linked = (await req("GET", `/admin/students/${madina.studentId}`)).json();
     expect(linked).toMatchObject({ telegramLinked: true, studentId: madina.studentId });
@@ -154,7 +174,14 @@ describe("O'quvchilar: botsiz kiritish, ro'yxat, karta, hisobni bog'lash (e2e)",
   it("boshqaruv: kirish rejimi, bloklash (token darhol ishlamaydi), ota-onani bekor qilish/qayta tasdiqlash, o'chirish", async () => {
     const M = (await login(app, TG.managed, "Boshqariladigan")).headers;
     const sp = await prisma.studentProfile.findFirstOrThrow({ where: { user: { telegramId: BigInt(TG.managed) } } });
-    const course = await prisma.course.create({ data: { title: `${TAG} kurs`, isPublished: true, topics: { create: { title: "M", lessons: { create: { title: "Pullik", isPublished: true, isFree: false } } } } }, include: { topics: { include: { lessons: true } } } });
+    const course = await prisma.course.create({
+      data: {
+        title: `${TAG} kurs`,
+        isPublished: true,
+        topics: { create: { title: "M", lessons: { create: { title: "Pullik", isPublished: true, isFree: false } } } },
+      },
+      include: { topics: { include: { lessons: true } } },
+    });
     const lessonId = course.topics[0].lessons[0].id;
     try {
       // Kirish rejimi: faqat ega; FREE -> ochiq, CLOSED -> yopiq, AUTO -> obunasiz yopiq
@@ -315,7 +342,10 @@ describe("O'quvchilar: botsiz kiritish, ro'yxat, karta, hisobni bog'lash (e2e)",
       const from = { id: TG3.stranger, first_name: "✈️🛫" };
       expect((await internal("visit", from)).json()).toMatchObject({ needsName: true });
       expect((await internal("student-name", { from, firstName: ".", lastName: "て" })).json().status).toBe("invalid");
-      expect((await internal("student-name", { from, firstName: "𝐘𝐚𝐬𝐦𝐢𝐧𝐚", lastName: "𝐗𝐨𝐥𝐢𝐪𝐨𝐯𝐚" })).json()).toMatchObject({ status: "saved", name: "Yasmina Xoliqova" });
+      expect((await internal("student-name", { from, firstName: "𝐘𝐚𝐬𝐦𝐢𝐧𝐚", lastName: "𝐗𝐨𝐥𝐢𝐪𝐨𝐯𝐚" })).json()).toMatchObject({
+        status: "saved",
+        name: "Yasmina Xoliqova",
+      });
       expect((await jobs()).some((j) => j.text.includes("Yangi o'quvchi: Yasmina Xoliqova"))).toBe(true);
       expect((await internal("visit", from)).json()).toMatchObject({ needsName: false });
       expect((await internal("student-name", { from, firstName: "Boshqa", lastName: "Odam" })).json().status).toBe("locked");

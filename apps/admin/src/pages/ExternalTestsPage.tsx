@@ -33,18 +33,38 @@ export function ExternalTestsPage() {
           </button>
         }
       />
-      <Segmented className="mb-4" value={tab} onChange={setTab} options={[["tests", "Testlar"], ["ranking", "Reyting"]] as const} />
+      <Segmented
+        className="mb-4"
+        value={tab}
+        onChange={setTab}
+        options={
+          [
+            ["tests", "Testlar"],
+            ["ranking", "Reyting"],
+          ] as const
+        }
+      />
       {tab === "ranking" ? (
         <Ranking />
       ) : (
         <>
           {q.isPending && <Spinner className="text-ink-4" />}
-          {q.data?.tests.length === 0 && <Empty Icon={FileSpreadsheet} title="Hali import qilinmagan" hint="«Import qilish» tugmasini bosing: skaner eksporti yoki matrix.csv fayli bilan." />}
+          {q.data?.tests.length === 0 && (
+            <Empty
+              Icon={FileSpreadsheet}
+              title="Hali import qilinmagan"
+              hint="«Import qilish» tugmasini bosing: skaner eksporti yoki matrix.csv fayli bilan."
+            />
+          )}
           {!!q.data?.tests.length && <SearchBox className="mb-3" value={find} onChange={setFind} placeholder="Test nomi, kodi yoki sanasi" />}
           {!!q.data?.tests.length && !tests.length && <NoMatch q={find} onClear={() => setFind("")} />}
           <div className="space-y-2">
             {tests.map((t) => (
-              <button key={t.id} onClick={() => navigate(`/external/${t.id}`)} className="card flex w-full items-center gap-3 p-4 text-left transition hover:border-brand">
+              <button
+                key={t.id}
+                onClick={() => navigate(`/external/${t.id}`)}
+                className="card flex w-full items-center gap-3 p-4 text-left transition hover:border-brand"
+              >
                 <div className="min-w-0 flex-1">
                   <p className="truncate font-bold">{t.title}</p>
                   <p className="truncate text-xs text-ink-3">
@@ -116,13 +136,18 @@ function ImportModal({ onClose, onDone }: { onClose: () => void; onDone: (id: st
           className="hidden"
           onChange={async (e) => {
             const f = e.target.files?.[0];
-            if (f) setFile({ fileName: f.name, content: await f.text() }), setPreview(null);
+            if (!f) return;
+            setFile({ fileName: f.name, content: await f.text() });
+            setPreview(null);
           }}
         />
         <button className="btn-secondary w-full" onClick={() => input.current?.click()}>
           <FileUp size={16} /> {file ? file.fileName : "CSV faylni tanlang"}
         </button>
-        <Field label="Test nomi" hint="Ikki xil fayl qabul qilinadi: skaner eksporti (Q 1 Marks… va «Sertifikat» bo'limlari bilan: Milliy sertifikat bali va darajasi hisoblanadi) yoki natijalar saytidagi «Matritsa (CSV)» (faqat to'g'ri/xato). Bo'sh qoldirsangiz, nom fayldan olinadi.">
+        <Field
+          label="Test nomi"
+          hint="Ikki xil fayl qabul qilinadi: skaner eksporti (Q 1 Marks… va «Sertifikat» bo'limlari bilan: Milliy sertifikat bali va darajasi hisoblanadi) yoki natijalar saytidagi «Matritsa (CSV)» (faqat to'g'ri/xato). Bo'sh qoldirsangiz, nom fayldan olinadi."
+        >
           <input className="input" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Masalan: Mock #3, 15-noyabr" />
         </Field>
       </div>
@@ -136,11 +161,17 @@ function ImportModal({ onClose, onDone }: { onClose: () => void; onDone: (id: st
             </p>
             {preview.test.sections.length > 0 && (
               <p className="mt-1 text-ink-3">
-                Bo'limlar: {preview.test.sections.map((s) => `${s.title} (${s.toQ - s.fromQ + 1} katak)`).join(", ")}. Ball Milliy sertifikat shkalasida (Rasch, 75 dan)
-                {preview.test.participants < RASCH_MIN_SAMPLE ? `: qatnashchi ${RASCH_MIN_SAMPLE} tadan kam, shuning uchun savollar qiyinligi hisobga olinmaydi` : ""}; esse bu faylda yo'q, daraja faqat test qismidan.
+                Bo'limlar: {preview.test.sections.map((s) => `${s.title} (${s.toQ - s.fromQ + 1} katak)`).join(", ")}. Ball Milliy sertifikat shkalasida (Rasch,
+                75 dan)
+                {preview.test.participants < RASCH_MIN_SAMPLE
+                  ? `: qatnashchi ${RASCH_MIN_SAMPLE} tadan kam, shuning uchun savollar qiyinligi hisobga olinmaydi`
+                  : ""}
+                ; esse bu faylda yo'q, daraja faqat test qismidan.
               </p>
             )}
-            {preview.test.alreadyImported && <p className="mt-1 text-ink-3">Bu test oldin import qilingan: natijalar yangilanadi, qo'lda bog'laganlaringiz saqlanadi.</p>}
+            {preview.test.alreadyImported && (
+              <p className="mt-1 text-ink-3">Bu test oldin import qilingan: natijalar yangilanadi, qo'lda bog'laganlaringiz saqlanadi.</p>
+            )}
           </div>
           <ul className="max-h-72 divide-y divide-line overflow-y-auto rounded-lg border border-line text-sm">
             {preview.rows.map((r) => (
@@ -149,7 +180,13 @@ function ImportModal({ onClose, onDone }: { onClose: () => void; onDone: (id: st
                   {r.name}
                   {r.username && <span className="text-ink-4"> @{r.username}</span>}
                 </span>
-                {r.match ? <span className="truncate text-xs text-emerald-700">→ {r.match.name} ({HOW[r.match.how]})</span> : <span className="text-xs text-amber-700">topilmadi</span>}
+                {r.match ? (
+                  <span className="truncate text-xs text-emerald-700">
+                    → {r.match.name} ({HOW[r.match.how]})
+                  </span>
+                ) : (
+                  <span className="text-xs text-amber-700">topilmadi</span>
+                )}
                 {r.scaledScore != null && (
                   <span className="w-20 shrink-0 text-right text-xs text-ink-3">
                     {formatScore(r.scaledScore)} ball{r.grade ? ` · ${r.grade}` : ""}
@@ -174,7 +211,18 @@ function Ranking() {
   return (
     <>
       <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <Chips value={days} onChange={setDays} options={[["30", "30 kun"], ["90", "90 kun"], ["365", "1 yil"], ["0", "Hammasi"]] as const} />
+        <Chips
+          value={days}
+          onChange={setDays}
+          options={
+            [
+              ["30", "30 kun"],
+              ["90", "90 kun"],
+              ["365", "1 yil"],
+              ["0", "Hammasi"],
+            ] as const
+          }
+        />
         <SearchBox value={find} onChange={setFind} placeholder="O'quvchi yoki guruh" />
       </div>
       {q.isPending && <Spinner className="text-ink-4" />}
@@ -184,7 +232,9 @@ function Ranking() {
         <div className="card divide-y divide-line">
           {ranked.map(({ r, i }) => (
             <Link key={r.studentId} to={`/students/${r.studentId}`} className="flex items-center gap-3 px-4 py-3 hover:bg-surface-2">
-              <span className={`w-7 text-center font-extrabold ${i < 3 ? "text-amber-700" : "text-ink-3"}`}>{i < 3 ? <Trophy size={16} className="mx-auto" /> : i + 1}</span>
+              <span className={`w-7 text-center font-extrabold ${i < 3 ? "text-amber-700" : "text-ink-3"}`}>
+                {i < 3 ? <Trophy size={16} className="mx-auto" /> : i + 1}
+              </span>
               <div className="min-w-0 flex-1">
                 <p className="truncate font-semibold">{r.name}</p>
                 <p className="text-xs text-ink-3">
@@ -211,7 +261,10 @@ export function ExternalTestPage() {
   const refresh = () => (qc.invalidateQueries({ queryKey: ["external"] }), qc.invalidateQueries({ queryKey: ["external", id] }));
   const notify = useMutation({
     mutationFn: () => api.externalNotify(id),
-    onSuccess: (r) => (toast(r.students + r.parents ? `Xabar yuborildi: ${r.students} o'quvchi, ${r.parents} ota-ona` : "Hammaga allaqachon yuborilgan"), refresh()),
+    onSuccess: (r) => (
+      toast(r.students + r.parents ? `Xabar yuborildi: ${r.students} o'quvchi, ${r.parents} ota-ona` : "Hammaga allaqachon yuborilgan"),
+      refresh()
+    ),
     onError: (e) => toast(errMsg(e), "error"),
   });
   const remove = useMutation({ mutationFn: () => api.externalDelete(id), onSuccess: () => (refresh(), navigate("/external")) });
@@ -224,7 +277,10 @@ export function ExternalTestPage() {
   // Milliy sertifikat bahosi bor (skaner eksporti): daraja taqsimoti foizdan muhimroq
   const scaled = t.rows.map((r) => r.scaledScore).filter((x): x is number => x != null);
   const milliy = scaled.length > 0;
-  const levels = [...MILLIY_LEVELS.map((l) => l.code), null].map((code) => ({ label: code ?? "Sertifikatsiz", value: t.rows.filter((r) => r.grade === code).length }));
+  const levels = [...MILLIY_LEVELS.map((l) => l.code), null].map((code) => ({
+    label: code ?? "Sertifikatsiz",
+    value: t.rows.filter((r) => r.grade === code).length,
+  }));
   return (
     <div className="space-y-4">
       <Link to="/external" className="tap inline-flex items-center gap-1 text-sm font-semibold text-ink-3 hover:text-ink">
@@ -240,7 +296,12 @@ export function ExternalTestPage() {
                 <PenLine size={15} /> Esse ballari{essays ? ` (${essays}/${t.participants})` : ""}
               </button>
             )}
-            <button className="btn-primary" disabled={!waiting || notify.isPending} onClick={() => notify.mutate()} title="Natija matnda bo'lmaydi: ilovani ochishga chaqiradi">
+            <button
+              className="btn-primary"
+              disabled={!waiting || notify.isPending}
+              onClick={() => notify.mutate()}
+              title="Natija matnda bo'lmaydi: ilovani ochishga chaqiradi"
+            >
               <Send size={15} /> Xabar yuborish{waiting ? ` (${waiting})` : ""}
             </button>
             <ConfirmButton label="O'chirilsinmi?" onConfirm={() => remove.mutate()}>
@@ -251,9 +312,17 @@ export function ExternalTestPage() {
       />
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <Tile label="Qatnashchi" value={t.participants} hint={`${t.matched} tasi platformada topilgan`} />
-        <Tile label="O'rtacha" value={t.avgPercent != null ? `${formatScore(t.avgPercent)}%` : "—"} hint={t.stats.median != null ? `mediana ${formatScore(t.stats.median)}%` : undefined} />
+        <Tile
+          label="O'rtacha"
+          value={t.avgPercent != null ? `${formatScore(t.avgPercent)}%` : "—"}
+          hint={t.stats.median != null ? `mediana ${formatScore(t.stats.median)}%` : undefined}
+        />
         {milliy ? (
-          <Tile label="O'rtacha ball" value={formatScore(Math.round((scaled.reduce((s, x) => s + x, 0) / scaled.length) * 10) / 10)} hint={`75 dan · sertifikat olgan: ${t.rows.filter((r) => r.grade).length} ta`} />
+          <Tile
+            label="O'rtacha ball"
+            value={formatScore(Math.round((scaled.reduce((s, x) => s + x, 0) / scaled.length) * 10) / 10)}
+            hint={`75 dan · sertifikat olgan: ${t.rows.filter((r) => r.grade).length} ta`}
+          />
         ) : (
           <Tile label="Eng yuqori" value={t.rows[0] ? `${formatScore(t.rows[0].percent)}%` : "—"} hint={t.rows[0]?.name} />
         )}
@@ -304,7 +373,11 @@ export function ExternalTestPage() {
         <p className="mb-3 text-xs text-ink-3">Qizil: yarmidan kami to'g'ri yechgan. Shu savollar mavzusini darsda qayta ko'ring</p>
         <div className="grid grid-cols-[repeat(auto-fill,minmax(52px,1fr))] gap-1.5">
           {t.stats.questions.map((x) => (
-            <div key={x.q} title={`${x.q}-savol: ${x.correctPct}% to'g'ri, ${x.blankPct}% bo'sh`} className={`rounded-md px-1 py-1.5 text-center text-xs ${x.correctPct < 50 ? "bg-red-100 text-red-700" : x.correctPct < 75 ? "bg-amber-100 text-amber-800" : "bg-emerald-100 text-emerald-800"}`}>
+            <div
+              key={x.q}
+              title={`${x.q}-savol: ${x.correctPct}% to'g'ri, ${x.blankPct}% bo'sh`}
+              className={`rounded-md px-1 py-1.5 text-center text-xs ${x.correctPct < 50 ? "bg-red-100 text-red-700" : x.correctPct < 75 ? "bg-amber-100 text-amber-800" : "bg-emerald-100 text-emerald-800"}`}
+            >
               <p className="text-[10px] text-ink-4">{x.q}</p>
               <b>{Math.round(x.correctPct)}%</b>
             </div>
@@ -339,20 +412,33 @@ function Results({ t, onChanged }: { t: ExternalTestDetail; onChanged: () => voi
       <div className="flex flex-wrap items-center gap-2 px-4 pt-4 sm:px-5">
         <h2 className="flex-1 font-extrabold">Natijalar</h2>
         {t.participants > t.matched && (
-          <button className={`btn-sm btn ${showUnmatched ? "border border-amber-300 bg-amber-100 text-amber-800" : "btn-secondary"}`} onClick={() => setShowUnmatched(!showUnmatched)}>
+          <button
+            className={`btn-sm btn ${showUnmatched ? "border border-amber-300 bg-amber-100 text-amber-800" : "btn-secondary"}`}
+            onClick={() => setShowUnmatched(!showUnmatched)}
+          >
             Topilmaganlar ({t.participants - t.matched})
           </button>
         )}
         <SearchBox className="sm:w-64" value={find} onChange={setFind} placeholder="Ism yoki @username" />
       </div>
-      {find.trim() && !rows.length && <div className="p-4"><NoMatch q={find} onClear={() => setFind("")} /></div>}
+      {find.trim() && !rows.length && (
+        <div className="p-4">
+          <NoMatch q={find} onClear={() => setFind("")} />
+        </div>
+      )}
       <ul className="mt-3 divide-y divide-line border-t border-line">
         {rows.map((r) => (
           <li key={r.id} className="flex flex-wrap items-center gap-x-2 gap-y-1 px-4 py-3 sm:flex-nowrap sm:gap-3 sm:px-5">
             <span className="w-6 shrink-0 text-center font-extrabold text-ink-3 sm:w-7">{r.rank}</span>
             <div className="min-w-0 flex-1">
               <p className="break-words font-semibold sm:truncate">
-                {r.student ? <Link to={`/students/${r.student.id}`} className="hover:underline">{r.student.name}</Link> : r.name}
+                {r.student ? (
+                  <Link to={`/students/${r.student.id}`} className="hover:underline">
+                    {r.student.name}
+                  </Link>
+                ) : (
+                  r.name
+                )}
                 {r.student && r.student.name !== r.name && <span className="ml-1.5 text-xs font-normal text-ink-4">testda: {r.name}</span>}
               </p>
               <p className="text-xs text-ink-3 sm:truncate">
@@ -366,12 +452,22 @@ function Results({ t, onChanged }: { t: ExternalTestDetail; onChanged: () => voi
             {/* Telefonda amallar alohida qatorda, yozuvi bilan: ism uchun joy qoladi */}
             <div className="order-last flex w-full gap-1 pl-7 sm:order-none sm:w-auto sm:pl-0">
               {t.rasch && (
-                <button className="btn-ghost btn-sm gap-1.5 px-2 sm:h-9 sm:w-9 sm:p-0" onClick={() => setCard(r)} title="Natija kartasi" aria-label="Natija kartasi">
+                <button
+                  className="btn-ghost btn-sm gap-1.5 px-2 sm:h-9 sm:w-9 sm:p-0"
+                  onClick={() => setCard(r)}
+                  title="Natija kartasi"
+                  aria-label="Natija kartasi"
+                >
                   <FileText size={14} />
                   <span className="sm:hidden">Natija kartasi</span>
                 </button>
               )}
-              <button className="btn-ghost btn-sm gap-1.5 px-2 sm:h-9 sm:w-9 sm:p-0" onClick={() => setLinking(r)} title="O'quvchiga bog'lash" aria-label="O'quvchiga bog'lash">
+              <button
+                className="btn-ghost btn-sm gap-1.5 px-2 sm:h-9 sm:w-9 sm:p-0"
+                onClick={() => setLinking(r)}
+                title="O'quvchiga bog'lash"
+                aria-label="O'quvchiga bog'lash"
+              >
                 <Link2 size={14} />
                 <span className="sm:hidden">Bog'lash</span>
               </button>
@@ -404,7 +500,11 @@ function LinkModal({ testId, row, onClose, onDone }: { testId: string; row: Exte
       <ul className="divide-y divide-line">
         {list.map((s) => (
           <li key={s.studentId}>
-            <button className="flex w-full items-center gap-3 px-2 py-2.5 text-left hover:bg-surface-2" disabled={save.isPending} onClick={() => save.mutate(s.studentId)}>
+            <button
+              className="flex w-full items-center gap-3 px-2 py-2.5 text-left hover:bg-surface-2"
+              disabled={save.isPending}
+              onClick={() => save.mutate(s.studentId)}
+            >
               <span className="min-w-0 flex-1 truncate font-semibold">{s.name}</span>
               <span className="text-xs text-ink-3">{s.group?.name ?? "online"}</span>
             </button>
@@ -426,7 +526,9 @@ function Tile({ label, value, hint }: { label: string; value: string | number; h
   return (
     <div className="card p-4">
       <p className="text-xs font-bold uppercase tracking-wide text-ink-3">{label}</p>
-      <p className={`mt-1 break-words font-extrabold leading-tight tracking-tight sm:truncate ${wordy ? "text-sm sm:text-2xl" : "text-xl sm:text-2xl"}`}>{value}</p>
+      <p className={`mt-1 break-words font-extrabold leading-tight tracking-tight sm:truncate ${wordy ? "text-sm sm:text-2xl" : "text-xl sm:text-2xl"}`}>
+        {value}
+      </p>
       {hint && <p className="mt-0.5 line-clamp-2 text-xs text-ink-3 sm:truncate">{hint}</p>}
     </div>
   );

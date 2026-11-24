@@ -49,8 +49,29 @@ describe("Ustoz yordamchisi (e2e)", () => {
     testId = (
       await prisma.externalTest.create({
         data: {
-          source: "CSV", code: CODE, title: `${TAG} mock`, questionCount: 6, takenAt: new Date(), sections, rasch: { calibrated: false, n: 1, items },
-          results: { create: { key: "name:e2e", name: `${TAG} Qoldiruvchi`, studentId, correct: 3, wrong: 3, blank: 0, score: 3, maxScore: 6, percent: 50, scaledScore: 48, testScore: 48, answers: "wwwccc" } },
+          source: "CSV",
+          code: CODE,
+          title: `${TAG} mock`,
+          questionCount: 6,
+          takenAt: new Date(),
+          sections,
+          rasch: { calibrated: false, n: 1, items },
+          results: {
+            create: {
+              key: "name:e2e",
+              name: `${TAG} Qoldiruvchi`,
+              studentId,
+              correct: 3,
+              wrong: 3,
+              blank: 0,
+              score: 3,
+              maxScore: 6,
+              percent: 50,
+              scaledScore: 48,
+              testScore: 48,
+              answers: "wwwccc",
+            },
+          },
         },
       })
     ).id;
@@ -80,7 +101,11 @@ describe("Ustoz yordamchisi (e2e)", () => {
     expect(noStart.why).toContain(`${TAG} Qoldiruvchi`);
     expect(noStart.action.to).toBe(`/students/${studentId}?tab=settings`);
 
-    const sp = await prisma.studentProfile.update({ where: { id: studentId }, data: { startedOn: new Date(Date.now() - 20 * 86_400_000) }, select: { groupId: true } });
+    const sp = await prisma.studentProfile.update({
+      where: { id: studentId },
+      data: { startedOn: new Date(Date.now() - 20 * 86_400_000) },
+      select: { groupId: true },
+    });
     const debt = await by(`payments:debtors:${sp.groupId}`);
     expect(debt).toMatchObject({ level: "urgent", area: "payments", action: { to: `/payments?tab=OFFLINE&group=${sp.groupId}` } });
     expect(debt.why).toMatch(new RegExp(`${TAG} Qoldiruvchi \\(\\d+ kun\\)`));
@@ -105,7 +130,12 @@ describe("Ustoz yordamchisi (e2e)", () => {
   });
 
   it("botga kirmagan o'quvchi: «ilovani ochmagan» takrorlanmaydi (sahifada «botga kirmagan» kartasi bor)", async () => {
-    const res = await app.inject({ method: "POST", url: "/api/admin/students", headers: H, payload: { firstName: `${TAG} Qo'lda`, lastName: null, phone: null, groupId: null, startedOn: null } });
+    const res = await app.inject({
+      method: "POST",
+      url: "/api/admin/students",
+      headers: H,
+      payload: { firstName: `${TAG} Qo'lda`, lastName: null, phone: null, groupId: null, startedOn: null },
+    });
     expect(res.statusCode).toBeLessThan(300);
     const sp = await prisma.studentProfile.findFirstOrThrow({ where: { user: { firstName: `${TAG} Qo'lda` } }, select: { id: true, userId: true } });
     const keys = (await get(`/admin/students/${sp.id}/advisor`)).json().advice.map((a: { key: string }) => a.key);

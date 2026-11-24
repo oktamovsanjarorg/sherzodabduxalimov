@@ -27,13 +27,15 @@ export function BackupsPage() {
       <div className="mb-4 flex gap-3 rounded-xl border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">
         <ShieldAlert size={18} className="mt-0.5 shrink-0" />
         <p>
-          Baza faylida barcha o'quvchilar, telefonlar va to'lovlar bor. Faqat o'zingizning ishonchli qurilmangizga yuklang va hech kimga yubormang. Har bir yuklab olish
-          jurnalga yoziladi.
+          Baza faylida barcha o'quvchilar, telefonlar va to'lovlar bor. Faqat o'zingizning ishonchli qurilmangizga yuklang va hech kimga yubormang. Har bir
+          yuklab olish jurnalga yoziladi.
         </p>
       </div>
       {q.isPending && <Spinner className="text-ink-4" />}
       {q.isError && <Empty title="Ro'yxatni olib bo'lmadi" hint={errMsg(q.error)} />}
-      {q.data && !q.data.enabled && <Empty title="Zaxira papkasi ulanmagan" hint="Serverda API'ga zaxira papkasi (BACKUP_DIR) ulanmagan. Bu odatda staging'da shunday." />}
+      {q.data && !q.data.enabled && (
+        <Empty title="Zaxira papkasi ulanmagan" hint="Serverda API'ga zaxira papkasi (BACKUP_DIR) ulanmagan. Bu odatda staging'da shunday." />
+      )}
       {q.data?.enabled && q.data.files.length === 0 && <Empty Icon={Archive} title="Hali zaxira yo'q" />}
       <div className="space-y-3">
         {[...days].map(([day, files]) => (

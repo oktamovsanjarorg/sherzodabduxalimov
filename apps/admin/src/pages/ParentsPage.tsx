@@ -28,24 +28,32 @@ export function ParentsPage() {
         subtitle="O'quvchi yuborgan havola orqali ota-ona botda o'z raqamini ulashadi. Raqamga qo'ng'iroq qilib, haqiqatan ota-onasi ekanini tekshiring."
       />
       <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-      <Chips
-        value={tab}
-        onChange={setTab}
-        options={[
-          ["PENDING", `Kutilmoqda${pendingCount ? ` (${pendingCount})` : ""}`],
-          ["APPROVED", "Tasdiqlangan"],
-          ["REJECTED", "Rad etilgan"],
-        ] as const}
-      />
-      <SearchBox value={q} onChange={setQ} placeholder="O'quvchi yoki ota-ona: ism, telefon" />
+        <Chips
+          value={tab}
+          onChange={setTab}
+          options={
+            [
+              ["PENDING", `Kutilmoqda${pendingCount ? ` (${pendingCount})` : ""}`],
+              ["APPROVED", "Tasdiqlangan"],
+              ["REJECTED", "Rad etilgan"],
+            ] as const
+          }
+        />
+        <SearchBox value={q} onChange={setQ} placeholder="O'quvchi yoki ota-ona: ism, telefon" />
       </div>
       {links.isPending && <Spinner className="text-ink-4" />}
       {links.data?.length === 0 && (
-        <Empty Icon={Users} title={tab === "PENDING" ? "Tekshiriladigan so'rov yo'q" : "Ro'yxat bo'sh"} hint={tab === "PENDING" ? "Yangi so'rovlar shu yerda paydo bo'ladi." : undefined} />
+        <Empty
+          Icon={Users}
+          title={tab === "PENDING" ? "Tekshiriladigan so'rov yo'q" : "Ro'yxat bo'sh"}
+          hint={tab === "PENDING" ? "Yangi so'rovlar shu yerda paydo bo'ladi." : undefined}
+        />
       )}
       {!!links.data?.length && !!q.trim() && !shown.length && <NoMatch q={q} onClear={() => setQ("")} />}
       <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
-        {shown.map((l) => <LinkCard key={l.id} link={l} />)}
+        {shown.map((l) => (
+          <LinkCard key={l.id} link={l} />
+        ))}
       </div>
     </>
   );
@@ -178,7 +186,11 @@ function RejectModal({ link, onClose, onDone }: { link: AdminParentLink; onClose
       </p>
       <div className="mb-3 flex flex-wrap gap-2">
         {REASONS.map((r) => (
-          <button key={r} className={`btn-sm btn border ${reason === r ? "border-red-300 bg-red-50 text-red-700" : "border-line text-ink-2"}`} onClick={() => setReason(r)}>
+          <button
+            key={r}
+            className={`btn-sm btn border ${reason === r ? "border-red-300 bg-red-50 text-red-700" : "border-line text-ink-2"}`}
+            onClick={() => setReason(r)}
+          >
             {r}
           </button>
         ))}

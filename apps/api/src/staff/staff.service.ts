@@ -119,6 +119,16 @@ export class StaffService {
   /** Bot /admin: xodim uchun bir martalik kirish havolasi. Xodim bo'lmasa null. */
   async createLoginLink(tg: TelegramProfile): Promise<string | null> {
     const user = await this.upsertTelegramUser(tg);
+    return this.issueLoginLink(user);
+  }
+
+  /** Mini App: xodim ilovani ochganda o'quvchi sahifasi o'rniga admin panelga o'tadi (/admin buyrug'isiz) */
+  async loginLinkFor(userId: string): Promise<string | null> {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    return user ? this.issueLoginLink(user) : null;
+  }
+
+  private async issueLoginLink(user: { id: string; role: RoleName; isBlocked: boolean }): Promise<string | null> {
     if (user.isBlocked || !STAFF_ROLES.includes(user.role)) return null;
     const token = randomBytes(32).toString("base64url");
     await this.prisma.loginToken.create({

@@ -69,7 +69,8 @@ export function calibrate(matrix: (0 | 1)[][]): Calibration {
     for (let it = 0; it < 300; it++) {
       let maxChange = 0;
       for (const n of persons) {
-        let e = 0, v = 0;
+        let e = 0,
+          v = 0;
         for (const i of items) {
           const p = P(theta[n], b[i]);
           e += p;
@@ -83,7 +84,8 @@ export function calibrate(matrix: (0 | 1)[][]): Calibration {
         maxChange = Math.max(maxChange, Math.abs(step));
       }
       for (const i of items) {
-        let e = 0, v = 0;
+        let e = 0,
+          v = 0;
         for (const n of persons) {
           const p = P(theta[n], b[i]);
           e += p;

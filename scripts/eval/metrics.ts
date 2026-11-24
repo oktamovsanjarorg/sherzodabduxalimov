@@ -4,7 +4,11 @@
  */
 
 export type GoldType = "spelling" | "punctuation" | "affix" | "word";
-export interface GoldError { type: GoldType; wrong: string; right: string }
+export interface GoldError {
+  type: GoldType;
+  wrong: string;
+  right: string;
+}
 
 const TYPE: Record<string, GoldType> = { I: "spelling", P: "punctuation", Q: "affix", S: "word" };
 
@@ -24,7 +28,12 @@ export function parseTranscript(marked: string): { text: string; errors: GoldErr
 }
 
 export const norm = (s: string) =>
-  s.toLowerCase().replace(/[ʻʼ‘’`´']/g, "'").replace(/[«»“”„"]/g, '"').replace(/\s+/g, " ").trim();
+  s
+    .toLowerCase()
+    .replace(/[ʻʼ‘’`´']/g, "'")
+    .replace(/[«»“”„"]/g, '"')
+    .replace(/\s+/g, " ")
+    .trim();
 
 /** Levenshtein masofasi (xotira O(m)) */
 export function levenshtein<T>(a: T[], b: T[]) {
@@ -70,7 +79,10 @@ export function ocrErrorFidelity(errors: GoldError[], ocr: string) {
   return { kept, corrected, unclear };
 }
 
-export interface Detected { type: string; wrong: string }
+export interface Detected {
+  type: string;
+  wrong: string;
+}
 
 /**
  * AI topgan xatolarni ustoz xatolari bilan moslash (savodxonlik turlari bo'yicha).

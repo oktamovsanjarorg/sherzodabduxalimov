@@ -1,9 +1,10 @@
 import { useQuery } from "@tanstack/react-query";
-import { lazy, Suspense, useState } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
 import { AppLayout } from "./components/AppLayout";
+import { STAFF_ROLES } from "@onatili/shared";
 import { api, ApiError } from "./lib/api";
-import { getInitData } from "./lib/telegram";
+import { getInitData, prepareAdminWindow, telegramLaunchParams } from "./lib/telegram";
 import { HomePage } from "./pages/HomePage";
 import { LessonsPage } from "./pages/LessonsPage";
 import { ProfilePage } from "./pages/ProfilePage";
@@ -78,6 +79,8 @@ export function App() {
       />
     );
   if (session.isError) return <FullScreen title="Kirishda xatolik" text={session.error.message} />;
+  // Ustoz va yordamchi: o'quvchi sahifasi emas, to'g'ridan-to'g'ri admin panel
+  if (user && STAFF_ROLES.includes(user.role)) return <StaffRedirect />;
   // Ota-ona havolasi orqali kelgan: raqam ilovaning o'zida so'raladi
   if (user?.pendingParentInvite && !phoneSkipped)
     return (
@@ -139,6 +142,40 @@ function FullScreen({ title, text }: { title: string; text: string }) {
     <div className="flex h-full flex-col items-center justify-center gap-2 p-8 text-center">
       <h1 className="text-lg font-bold">{title}</h1>
       <p className="text-sm text-hint">{text}</p>
+    </div>
+  );
+}
+
+/** Xodim: bir martalik havola olib, admin panelni shu oynaning o'zida ochadi */
+function StaffRedirect() {
+  const link = useQuery({ queryKey: ["admin-link"], queryFn: api.adminLink, staleTime: Infinity, gcTime: 0, retry: 1 });
+  // Havola olinayotganda oynani tayyorlaymiz (fullscreen'dan chiqish, ranglar): ikkalasi tugagach o'tamiz
+  const [windowReady, setWindowReady] = useState(false);
+  useEffect(() => {
+    void prepareAdminWindow().then(() => setWindowReady(true));
+  }, []);
+  useEffect(() => {
+    if (!link.data?.url || !windowReady) return;
+    const extra = telegramLaunchParams();
+    window.location.replace(extra ? `${link.data.url}&${extra}` : link.data.url);
+  }, [link.data, windowReady]);
+  // Admin panelning kirish sahifasi bilan bir xil to'q yashil fon: o'tish paytida ekran "sakramaydi"
+  return (
+    <div className="fixed inset-0 flex flex-col items-center justify-center gap-4 bg-[#0b3b36] p-6 text-center text-white">
+      {link.isError ? (
+        <>
+          <p className="text-lg font-extrabold">Admin panelni ochib bo'lmadi</p>
+          <p className="text-sm text-white/70">{link.error.message}. Botga /admin deb yozib ham kirishingiz mumkin.</p>
+          <button className="rounded-xl bg-white px-5 py-3 font-bold text-[#0b3b36]" onClick={() => link.refetch()}>
+            Qayta urinish
+          </button>
+        </>
+      ) : (
+        <>
+          <div className="h-10 w-10 animate-spin rounded-full border-4 border-white/20 border-t-white" />
+          <p className="text-sm text-white/70">Admin panel ochilmoqda…</p>
+        </>
+      )}
     </div>
   );
 }

@@ -7,7 +7,12 @@ const fmt = (s: number) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "
 
 /** Ustozning ovozli izohi: M4A (iPhone va Android'da bir xil ijro etiladi) */
 export function VoiceNote({ voice }: { voice: VoiceView }) {
-  const q = useQuery({ queryKey: ["voice", voice.id, voice.status], queryFn: () => api.voiceBlob(voice.id), enabled: voice.status !== "FAILED", staleTime: Infinity });
+  const q = useQuery({
+    queryKey: ["voice", voice.id, voice.status],
+    queryFn: () => api.voiceBlob(voice.id),
+    enabled: voice.status !== "FAILED",
+    staleTime: Infinity,
+  });
   if (voice.status === "FAILED") return null;
   return (
     <div className="card flex flex-col gap-2 border border-brand/30">

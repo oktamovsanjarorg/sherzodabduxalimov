@@ -221,12 +221,7 @@ export function milliyBreakdown(p: {
     essayPending: p.essayPending,
     total,
     level: total === null ? null : milliyLevel(total),
-    university:
-      total === null || total < 46
-        ? null
-        : total >= 65
-          ? { first: 93, second: 63 }
-          : { first: r2((total * 93) / 65), second: r2((total * 63) / 65) },
+    university: total === null || total < 46 ? null : total >= 65 ? { first: 93, second: 63 } : { first: r2((total * 93) / 65), second: r2((total * 63) / 65) },
   };
 }
 

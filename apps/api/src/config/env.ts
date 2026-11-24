@@ -31,10 +31,15 @@ const schema = z.object({
   DEEPSEEK_API_KEY: z.preprocess((v) => (typeof v === "string" ? v.split("#")[0].trim() || undefined : v), z.string().optional()),
   // Hisobotlar uchun tezkor model ("deepseek-chat" nomi 2026-07-24 da o'chirilgan)
   DEEPSEEK_MODEL: z.preprocess(noComment, z.string().default("deepseek-flash")),
-  // Esse tekshiruvi: kuchli model fikrlash rejimida (off | low | high | max)
-  DEEPSEEK_ESSAY_MODEL: z.preprocess(noComment, z.string().default("deepseek-v4-pro")),
+  // Esse: OpenAI kaliti bo'lsa GPT qo'lyozmani o'qiydi, tahlil qiladi va xato topadi; DeepSeek qayta tekshiradi va taqriz yozadi.
+  // Kalit bo'lmasa hammasini DeepSeek bajaradi (GPT'ni o'chirish uchun kalitni olib tashlash yetadi).
+  OPENAI_API_KEY: z.preprocess(noComment, z.string().optional()),
+  OPENAI_MODEL: z.preprocess(noComment, z.string().default("gpt-6-luna")),
+  OPENAI_ESSAY_EFFORT: z.preprocess(noComment, z.enum(["none", "low", "medium", "high", "xhigh", "max"]).catch("medium").default("medium")),
+  // Esse uchun DeepSeek modeli, fikrlash rejimida (off | low | high | max)
+  DEEPSEEK_ESSAY_MODEL: z.preprocess(noComment, z.string().default("deepseek-flash")),
   DEEPSEEK_ESSAY_EFFORT: z.preprocess(noComment, z.enum(["off", "low", "high", "max"]).catch("high").default("high")),
-  // Qo'lyozma esseni o'qish (rasm -> matn). Bo'lmasa AI faqat yozilgan matnni tekshiradi
+  // OpenAI kaliti bo'lmagandagina ishlatiladi: qo'lyozma esseni o'qish. Ikkala kalit ham bo'lmasa AI faqat yozilgan matnni tekshiradi
   GEMINI_API_KEY: z.preprocess((v) => (typeof v === "string" ? v.split("#")[0].trim() || undefined : v), z.string().optional()),
   GEMINI_MODEL: z.string().default("gemini-3.8-flash"),
   // Mini App manzili: bot xabaridagi "Obunani uzaytirish" tugmasi uchun (bo'lmasa tugmasiz yuboriladi)

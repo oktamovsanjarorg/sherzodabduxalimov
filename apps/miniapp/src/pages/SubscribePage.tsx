@@ -65,7 +65,9 @@ export function SubscribePage() {
           {accessMode === "FREE" ? (
             <p className="card mt-4 text-center text-sm font-semibold text-success">Ustoz siz uchun barcha darslar va testlarni bepul ochib bergan.</p>
           ) : accessMode === "CLOSED" ? (
-            <p className="card mt-4 text-center text-sm font-semibold text-danger">Ustoz kirishingizni vaqtincha yopgan. Savol bo'lsa, ustozga murojaat qiling.</p>
+            <p className="card mt-4 text-center text-sm font-semibold text-danger">
+              Ustoz kirishingizni vaqtincha yopgan. Savol bo'lsa, ustozga murojaat qiling.
+            </p>
           ) : b.offline ? null : isStaff ? (
             <p className="card mt-4 text-center text-sm text-hint">Siz xodimsiz: barcha kontent obunasiz ochiq. To'lov formasi o'quvchilarga ko'rinadi.</p>
           ) : b.pending ? (
@@ -158,9 +160,12 @@ function PayForm({ b }: { b: BillingView }) {
   const [err, setErr] = useState<string | null>(null);
   const plan = b.plans.find((p) => p.id === planId);
 
-  useEffect(() => () => {
-    if (file) URL.revokeObjectURL(file.url);
-  }, [file]);
+  useEffect(
+    () => () => {
+      if (file) URL.revokeObjectURL(file.url);
+    },
+    [file],
+  );
 
   const send = useMutation({
     mutationFn: () => api.submitPayment({ planId }, file!.blob, note.trim()),
@@ -207,7 +212,9 @@ function PayForm({ b }: { b: BillingView }) {
               }}
               className={`card tap flex w-full items-center gap-3 border-2 text-left ${on ? "border-brand" : "border-transparent"}`}
             >
-              <span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2 ${on ? "border-brand bg-brand text-white" : "border-hint/40"}`}>
+              <span
+                className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2 ${on ? "border-brand bg-brand text-white" : "border-hint/40"}`}
+              >
                 {on && <Check size={14} strokeWidth={3} />}
               </span>
               <span className="min-w-0 flex-1">
@@ -237,7 +244,14 @@ function PayForm({ b }: { b: BillingView }) {
       </div>
 
       <p className="mb-2 mt-6 px-1 text-sm font-bold text-hint">3. Chek rasmini yuklang</p>
-      <input ref={fileRef} type="file" accept="image/*" aria-label="To'lov cheki rasmi" className="sr-only" onChange={(e) => pick(e.target.files?.[0]).finally(() => (e.target.value = ""))} />
+      <input
+        ref={fileRef}
+        type="file"
+        accept="image/*"
+        aria-label="To'lov cheki rasmi"
+        className="sr-only"
+        onChange={(e) => pick(e.target.files?.[0]).finally(() => (e.target.value = ""))}
+      />
       {file ? (
         <div className="card">
           <img src={file.url} alt="Chek" className="max-h-80 w-full rounded-xl object-contain" />
@@ -246,7 +260,10 @@ function PayForm({ b }: { b: BillingView }) {
           </button>
         </div>
       ) : (
-        <button onClick={() => fileRef.current?.click()} className="card tap flex w-full flex-col items-center gap-2 border-2 border-dashed border-hint/30 py-8 text-hint">
+        <button
+          onClick={() => fileRef.current?.click()}
+          className="card tap flex w-full flex-col items-center gap-2 border-2 border-dashed border-hint/30 py-8 text-hint"
+        >
           <ImagePlus size={32} />
           <span className="text-sm font-semibold">To'lov chekining skrinshotini tanlang</span>
         </button>

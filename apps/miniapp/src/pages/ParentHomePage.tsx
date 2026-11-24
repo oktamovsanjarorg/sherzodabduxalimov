@@ -67,7 +67,9 @@ export function ParentHomePage() {
                             {t.correct}/{t.questionCount} to'g'ri · {t.rank}-o'rin / {t.participants}
                           </span>
                         </span>
-                        <span className={`rounded-full px-2.5 py-1 text-xs font-extrabold ${t.percent >= 80 ? "bg-success/15 text-success" : t.percent >= 50 ? "bg-brand-soft text-brand" : "bg-danger/15 text-danger"}`}>
+                        <span
+                          className={`rounded-full px-2.5 py-1 text-xs font-extrabold ${t.percent >= 80 ? "bg-success/15 text-success" : t.percent >= 50 ? "bg-brand-soft text-brand" : "bg-danger/15 text-danger"}`}
+                        >
                           {Math.round(t.percent)}%
                         </span>
                       </li>

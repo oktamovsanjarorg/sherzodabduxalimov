@@ -30,9 +30,7 @@ export function essayFacts(reviews: ReviewRow[]) {
     .map(([key, v]) => ({ key, label: ESSAY_RUBRIC.find((x) => x.key === key)?.label ?? key, percent: pct(v.got, v.max) }))
     .sort((a, b) => a.percent - b.percent);
   const totalMistakes = [...types.values()].reduce((s, x) => s + x, 0);
-  const mistakes = [...types.entries()]
-    .map(([type, n]) => ({ type, label: errorTypeLabel(type), n, share: pct(n, totalMistakes) }))
-    .sort((a, b) => b.n - a.n);
+  const mistakes = [...types.entries()].map(([type, n]) => ({ type, label: errorTypeLabel(type), n, share: pct(n, totalMistakes) })).sort((a, b) => b.n - a.n);
   return { criteria, mistakes, totalMistakes };
 }
 
@@ -42,7 +40,11 @@ export async function topicAccuracy(prisma: PrismaService, where: { userId?: str
     where: {
       isCorrect: { not: null },
       question: { topicId: { not: null }, type: { not: "ESSAY" } },
-      attempt: { status: { in: ["SUBMITTED", "EXPIRED"] }, finishedAt: { gte: where.since }, ...(where.userId ? { userId: where.userId } : { user: { role: "STUDENT" } }) },
+      attempt: {
+        status: { in: ["SUBMITTED", "EXPIRED"] },
+        finishedAt: { gte: where.since },
+        ...(where.userId ? { userId: where.userId } : { user: { role: "STUDENT" } }),
+      },
     },
     select: { isCorrect: true, question: { select: { topicId: true, topic: { select: { title: true } } } } },
   });

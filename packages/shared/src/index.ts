@@ -15,4 +15,7 @@ export * from "./rasch";
 export * from "./annotation-types";
 export * from "./stats-types";
 export * from "./advisor-types";
+export * from "./dismiss";
 export * from "./period";
+export * from "./announce-types";
+export * from "./gold-types";

@@ -47,7 +47,11 @@ export interface MyAttendance {
 }
 
 export class ApiError extends Error {
-  constructor(public status: number, message: string, public code?: string) {
+  constructor(
+    public status: number,
+    message: string,
+    public code?: string,
+  ) {
     super(message);
   }
 }
@@ -88,7 +92,10 @@ function refreshToken() {
 async function authFetch(path: string, init: RequestInit = {}) {
   const res = await send(path, init);
   if (res.status !== 401 || path === "/auth/telegram") return res;
-  const body = await res.clone().json().catch(() => ({}));
+  const body = await res
+    .clone()
+    .json()
+    .catch(() => ({}));
   if (body.code === "BLOCKED" || !(await refreshToken())) return res;
   return send(path, init);
 }
@@ -104,11 +111,12 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   return res.json() as Promise<T>;
 }
 
-const post = <T>(path: string, body?: unknown) =>
-  request<T>(path, { method: "POST", body: body === undefined ? undefined : JSON.stringify(body) });
+const post = <T>(path: string, body?: unknown) => request<T>(path, { method: "POST", body: body === undefined ? undefined : JSON.stringify(body) });
 
 export const api = {
   loginTelegram: (initData: string) => post<AuthResponse>("/auth/telegram", { initData }),
+  /** Xodim uchun bir martalik admin panel havolasi */
+  adminLink: () => post<{ url: string }>("/me/admin-link"),
   me: () => request<Me>("/me"),
   setMyName: (d: { firstName: string; lastName: string }) => post<Me>("/me/name", d),
   myParents: () => request<MyParents>("/me/parents"),

@@ -17,12 +17,22 @@ export const topicInput = z.object({ title });
 export const lessonInput = z.object({
   title,
   content: z.string().max(50_000).nullable().optional(),
-  videoUrl: z.string().trim().url("Havola noto'g'ri").max(1000).nullable().optional().or(z.literal("").transform(() => null)),
+  videoUrl: z
+    .string()
+    .trim()
+    .url("Havola noto'g'ri")
+    .max(1000)
+    .nullable()
+    .optional()
+    .or(z.literal("").transform(() => null)),
   videoId: z.string().nullable().optional(),
   durationSec: z.number().int().min(0).max(36_000).nullable().optional(),
   isFree: z.boolean().optional(),
   isPublished: z.boolean().optional(),
-  attachments: z.array(z.object({ name: z.string().min(1).max(200), url: z.string().url() })).max(20).optional(),
+  attachments: z
+    .array(z.object({ name: z.string().min(1).max(200), url: z.string().url() }))
+    .max(20)
+    .optional(),
 });
 export type LessonInput = z.infer<typeof lessonInput>;
 
@@ -69,10 +79,8 @@ export const questionInput = z
       return;
     }
     if (q.options.length < 2) ctx.addIssue({ code: "custom", path: ["options"], message: "Kamida 2 ta variant kerak" });
-    if (q.type === "SINGLE" && correct !== 1)
-      ctx.addIssue({ code: "custom", path: ["options"], message: "Bitta to'g'ri javob belgilang" });
-    if (q.type === "MULTIPLE" && correct < 1)
-      ctx.addIssue({ code: "custom", path: ["options"], message: "Kamida bitta to'g'ri javob belgilang" });
+    if (q.type === "SINGLE" && correct !== 1) ctx.addIssue({ code: "custom", path: ["options"], message: "Bitta to'g'ri javob belgilang" });
+    if (q.type === "MULTIPLE" && correct < 1) ctx.addIssue({ code: "custom", path: ["options"], message: "Kamida bitta to'g'ri javob belgilang" });
   });
 export type QuestionInput = z.input<typeof questionInput>;
 
@@ -81,7 +89,13 @@ export const testInput = z.object({
   title,
   description: optText,
   topicId: z.string().nullable().optional(),
-  timeLimitSec: z.number().int().min(60).max(4 * 3600).nullable().optional(),
+  timeLimitSec: z
+    .number()
+    .int()
+    .min(60)
+    .max(4 * 3600)
+    .nullable()
+    .optional(),
   shuffle: z.boolean().optional(),
   gradingScale: z.enum(["NONE", "MILLIY_SERTIFIKAT"]).optional(),
   isFree: z.boolean().optional(),

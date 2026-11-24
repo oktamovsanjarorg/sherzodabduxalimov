@@ -59,6 +59,18 @@ describe("Xodimlar va admin kirishi (e2e)", () => {
     expect(second.statusCode).toBe(401);
   });
 
+  it("Mini App: xodim o'z tokeni bilan admin havolasini oladi, o'quvchi olmaydi", async () => {
+    const owner = await login(app, 900000201, "Ega", OWNER);
+    const res = await inject({ method: "POST", url: "/api/me/admin-link", headers: owner.headers });
+    expect(res.statusCode).toBe(200);
+    const token = res.json().url.split("#t=")[1];
+    const auth = await inject({ method: "POST", url: "/api/auth/admin-link", payload: { token } });
+    expect(auth.json().user.role).toBe("TEACHER");
+
+    const student = await login(app, 900000203, "O'quvchi");
+    expect((await inject({ method: "POST", url: "/api/me/admin-link", headers: student.headers })).statusCode).toBe(403);
+  });
+
   it("muddati o'tgan havola ishlamaydi", async () => {
     const { url } = (await internal({ id: 900000201, first_name: "Ega", username: OWNER })).json();
     const token = url.split("#t=")[1];
@@ -77,9 +89,7 @@ describe("Xodimlar va admin kirishi (e2e)", () => {
 
     // Yordamchi xodimlar ro'yxatini ko'ra olmaydi va qo'sha olmaydi
     expect((await inject({ method: "GET", url: "/api/admin/staff", headers: helper.headers })).statusCode).toBe(403);
-    expect(
-      (await inject({ method: "POST", url: "/api/admin/staff", headers: helper.headers, payload: { username: "e2e_nobody" } })).statusCode,
-    ).toBe(403);
+    expect((await inject({ method: "POST", url: "/api/admin/staff", headers: helper.headers, payload: { username: "e2e_nobody" } })).statusCode).toBe(403);
 
     // Yordamchi ham admin panel havolasini oladi
     expect((await internal({ id: 900000202, first_name: "Yordamchi", username: ASSISTANT })).json().url).toBeTruthy();

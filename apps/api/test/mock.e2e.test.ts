@@ -55,7 +55,10 @@ describe("Milliy sertifikat formatidagi mock (e2e)", () => {
         passageId: passage.id,
         type: "SINGLE",
         text: `${TAG} Matnga mos **to'g'ri** javob?`,
-        options: [{ text: "Eng katta sayyora", isCorrect: false }, { text: "Eng kichik sayyora", isCorrect: true }],
+        options: [
+          { text: "Eng katta sayyora", isCorrect: false },
+          { text: "Eng kichik sayyora", isCorrect: true },
+        ],
       })
     ).json();
     qMcq = mcq.id;
@@ -81,7 +84,11 @@ describe("Milliy sertifikat formatidagi mock (e2e)", () => {
         gradingScale: "MILLIY_SERTIFIKAT",
         isFree: true,
         isPublished: true,
-        questions: [{ questionId: qMcq, points: 1.7 }, { questionId: qPunct, points: 2.5 }, { questionId: qEssay, points: 24 }],
+        questions: [
+          { questionId: qMcq, points: 1.7 },
+          { questionId: qPunct, points: 2.5 },
+          { questionId: qEssay, points: 24 },
+        ],
       })
     ).json();
     testId = t.id;
@@ -119,7 +126,9 @@ describe("Milliy sertifikat formatidagi mock (e2e)", () => {
     expect((await req("POST", `/admin/essays/${e.attemptId}/${qEssay}`, { points: 30, comment: "x" })).statusCode).toBe(400);
     const keys = ["style", "views", "evidence", "parts", "structure", "coherence", "spelling", "punctuation", "affixes", "wordUsage", "lexicon", "purity"];
     expect((await req("POST", `/admin/essays/${e.attemptId}/${qEssay}`, { criteria: [{ key: "style", score: 9 }] })).statusCode).toBe(400); // 2 dan ko'p emas
-    const res = (await req("POST", `/admin/essays/${e.attemptId}/${qEssay}`, { criteria: keys.map((key) => ({ key, score: 2 })), comment: "Juda yaxshi" })).json();
+    const res = (
+      await req("POST", `/admin/essays/${e.attemptId}/${qEssay}`, { criteria: keys.map((key) => ({ key, score: 2 })), comment: "Juda yaxshi" })
+    ).json();
     expect(res.points).toBe(24);
 
     const r = (await req("GET", `/attempts/${e.attemptId}`, undefined, S)).json();
@@ -135,17 +144,26 @@ describe("Milliy sertifikat formatidagi mock (e2e)", () => {
 
     // Matndagi xatolarni belgilash: chegaradan tashqari rad etiladi; natijada o'quvchiga ko'rinadi
     expect((await req("PUT", `/admin/essays/${e.attemptId}/${qEssay}/annotations`, [{ start: 0, end: 99999, type: "spelling" }])).statusCode).toBe(400);
-    expect((await req("PUT", `/admin/essays/${e.attemptId}/${qEssay}/annotations`, [{ start: 0, end: 7, type: "spelling", note: "Reklama," }])).statusCode).toBe(200);
+    expect(
+      (await req("PUT", `/admin/essays/${e.attemptId}/${qEssay}/annotations`, [{ start: 0, end: 7, type: "spelling", note: "Reklama," }])).statusCode,
+    ).toBe(200);
     const marked = (await req("GET", `/attempts/${e.attemptId}`, undefined, S)).json();
     expect(marked.questions.find((q: { id: string }) => q.id === qEssay).textMarks).toEqual([{ start: 0, end: 7, type: "spelling", note: "Reklama," }]);
 
     // Ovozli izoh mock essesiga ham (baholangandan keyin); natijada ko'rinadi
     const audio = Buffer.concat([Buffer.from([0x1a, 0x45, 0xdf, 0xa3]), Buffer.alloc(4000, 3)]);
-    const v = await app.inject({ method: "POST", url: `/api/admin/essays/${e.attemptId}/${qEssay}/voice`, headers: { ...H, "content-type": "audio/webm" }, payload: audio });
+    const v = await app.inject({
+      method: "POST",
+      url: `/api/admin/essays/${e.attemptId}/${qEssay}/voice`,
+      headers: { ...H, "content-type": "audio/webm" },
+      payload: audio,
+    });
     expect(v.statusCode).toBe(201);
     const withVoice = (await req("GET", `/attempts/${e.attemptId}`, undefined, S)).json();
     expect(withVoice.questions.find((q: { id: string }) => q.id === qEssay).voice).toMatchObject({ id: v.json().id, status: "PROCESSING" });
-    expect((await req("GET", "/admin/essays?status=reviewed")).json().find((x: { attemptId: string }) => x.attemptId === e.attemptId).voice.id).toBe(v.json().id);
+    expect((await req("GET", "/admin/essays?status=reviewed")).json().find((x: { attemptId: string }) => x.attemptId === e.attemptId).voice.id).toBe(
+      v.json().id,
+    );
 
     // O'quvchi esse baholay olmaydi
     expect((await req("POST", `/admin/essays/${e.attemptId}/${qEssay}`, { points: 1 }, S)).statusCode).toBe(403);
@@ -198,7 +216,12 @@ describe("Milliy sertifikat formatidagi mock (e2e)", () => {
           testId,
           status: "SUBMITTED",
           finishedAt: new Date(),
-          answers: { create: [{ questionId: qMcq, isCorrect: easy, optionIds: [] }, { questionId: qPunct, isCorrect: hard, optionIds: [] }] },
+          answers: {
+            create: [
+              { questionId: qMcq, isCorrect: easy, optionIds: [] },
+              { questionId: qPunct, isCorrect: hard, optionIds: [] },
+            ],
+          },
         },
       });
     }

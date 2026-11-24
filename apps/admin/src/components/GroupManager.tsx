@@ -1,54 +1,22 @@
-import type { AdminGroup, AdminStudent } from "@onatili/shared";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Clock, Plus, Search, ShieldAlert, ShieldCheck, Trash2, UserPlus, X } from "lucide-react";
+import type { AdminGroup } from "@onatili/shared";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { Pencil, Trash2 } from "lucide-react";
 import { useState } from "react";
-import { Badge, ConfirmButton, Field, Modal, SearchBox, Spinner } from "./ui";
-import { matches } from "../lib/search";
+import { EditGroupForm, NewGroupForm, ScheduleHint } from "./GroupForms";
+import { GroupMembers } from "./GroupMembers";
+import { Badge, ConfirmButton, Modal } from "./ui";
 import { api, errMsg } from "../lib/api";
 import { useToast } from "../lib/toast";
 
 /** Offline guruhlar: yaratish, nomi va jadvali, o'quvchilar, o'chirish */
 export function GroupManager({ groups, onClose }: { groups: AdminGroup[]; onClose: () => void }) {
-  const toast = useToast();
   const qc = useQueryClient();
   const [sel, setSel] = useState<string>(groups[0]?.id ?? "");
-  const [name, setName] = useState("");
-  const [schedule, setSchedule] = useState("");
-  const [search, setSearch] = useState("");
-  const [memberQ, setMemberQ] = useState("");
+  // Guruh nomi va jadvali davomat eslatmalari (dashboard) hamda o'quvchilar ro'yxatida ham ko'rinadi
   const refresh = () => {
-    qc.invalidateQueries({ queryKey: ["groups"] });
-    qc.invalidateQueries({ queryKey: ["group-students"] });
-    qc.invalidateQueries({ queryKey: ["attendance"] });
+    for (const k of ["groups", "group-students", "attendance", "dashboard", "roster"]) qc.invalidateQueries({ queryKey: [k] });
   };
-
-  const create = useMutation({
-    mutationFn: () => api.createGroup({ name, schedule: schedule || null }),
-    onSuccess: (g) => {
-      setName("");
-      setSchedule("");
-      setSel(g.id);
-      refresh();
-      toast("Guruh yaratildi");
-    },
-    onError: (e) => toast(errMsg(e), "error"),
-  });
-  const students = useQuery({ queryKey: ["group-students", sel], queryFn: () => api.groupStudents(sel), enabled: Boolean(sel) });
-  const found = useQuery({ queryKey: ["student-search", search], queryFn: () => api.searchStudents(search), enabled: search.trim().length >= 2 });
-  const add = useMutation({ mutationFn: (id: string) => api.addToGroup(sel, [id]), onSuccess: refresh, onError: (e) => toast(errMsg(e), "error") });
-  const remove = useMutation({ mutationFn: (id: string) => api.removeFromGroup(sel, id), onSuccess: refresh, onError: (e) => toast(errMsg(e), "error") });
-  const toggle = useMutation({
-    mutationFn: (g: AdminGroup) => api.updateGroup(g.id, { isActive: !g.isActive }),
-    onSuccess: refresh,
-    onError: (e) => toast(errMsg(e), "error"),
-  });
-  const del = useMutation({ mutationFn: (id: string) => api.deleteGroup(id), onSuccess: () => {
-      setSel("");
-      refresh();
-      toast("Guruh o'chirildi. Korzinkadan 30 kun ichida tiklash mumkin");
-    }, onError: (e) => toast(errMsg(e), "error") });
   const current = groups.find((g) => g.id === sel);
-  const inGroup = new Set(students.data?.map((s) => s.studentId));
 
   return (
     <Modal title="Guruhlar" wide onClose={onClose}>
@@ -56,96 +24,34 @@ export function GroupManager({ groups, onClose }: { groups: AdminGroup[]; onClos
         <div className="space-y-3">
           <div className="space-y-1">
             {groups.map((g) => (
-              <button key={g.id} onClick={() => setSel(g.id)} className={`flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm ${sel === g.id ? "bg-brand-soft font-bold text-brand-light" : "hover:bg-surface-2"}`}>
+              <button
+                key={g.id}
+                onClick={() => setSel(g.id)}
+                className={`flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm ${sel === g.id ? "bg-brand-soft font-bold text-brand-light" : "hover:bg-surface-2"}`}
+              >
                 <span className="min-w-0 flex-1 truncate">{g.name}</span>
                 {!g.isActive && <Badge>faol emas</Badge>}
                 <span className="text-xs text-ink-4">{g.studentCount}</span>
               </button>
             ))}
           </div>
-          <form
-            className="space-y-2 rounded-xl border border-dashed border-line-strong p-3"
-            onSubmit={(e) => {
-              e.preventDefault();
-              if (name.trim()) create.mutate();
+          <NewGroupForm
+            onCreated={(g) => {
+              setSel(g.id);
+              refresh();
             }}
-          >
-            <Field label="Yangi guruh">
-              <input className="input" placeholder="Masalan: 1-guruh (ertalab)" value={name} onChange={(e) => setName(e.target.value)} />
-            </Field>
-            <input className="input" placeholder="Jadval: Du/Chor/Ju 14:00" value={schedule} onChange={(e) => setSchedule(e.target.value)} />
-            <button className="btn-primary w-full" disabled={!name.trim() || create.isPending}>
-              <Plus size={16} /> Yaratish
-            </button>
-          </form>
+          />
         </div>
 
         <div className="min-w-0">
           {!current ? (
             <p className="text-sm text-ink-3">Guruhni tanlang yoki yarating</p>
           ) : (
-            <>
-              <div className="mb-3 flex flex-wrap items-center gap-2">
-                <div className="min-w-0 flex-1">
-                  <p className="font-extrabold">{current.name}</p>
-                  {current.schedule && <p className="text-xs text-ink-3">{current.schedule}</p>}
-                </div>
-                <button className="btn-secondary btn-sm" onClick={() => toggle.mutate(current)}>
-                  {current.isActive ? "Faolsizlantirish" : "Faollashtirish"}
-                </button>
-                <ConfirmButton onConfirm={() => del.mutate(current.id)} label="O'chirilsinmi?">
-                  <Trash2 size={14} />
-                </ConfirmButton>
-              </div>
-
-              <div className="relative mb-2">
-                <Search size={16} className="absolute left-3 top-3.5 text-ink-4 sm:top-3" />
-                <input className="input pl-9" placeholder="Qidirib qo'shish (botga kirganlar): ism, @username, telefon" value={search} onChange={(e) => setSearch(e.target.value)} />
-              </div>
-              {search.trim().length >= 2 && (
-                <div className="mb-4 max-h-56 space-y-1 overflow-y-auto rounded-xl border border-line p-2">
-                  {found.isPending && <Spinner className="text-ink-4" />}
-                  {found.data?.length === 0 && <p className="p-2 text-sm text-ink-3">Topilmadi</p>}
-                  {found.data?.map((s) => (
-                    <div key={s.studentId} className="flex items-center gap-2 rounded-lg px-2 py-1.5 hover:bg-surface-2">
-                      <div className="min-w-0 flex-1">
-                        <p className="truncate text-sm font-semibold">{s.name}</p>
-                        <p className="truncate text-xs text-ink-3">
-                          {[s.username && `@${s.username}`, s.phone, s.groupName && `guruh: ${s.groupName}`].filter(Boolean).join(" · ")}
-                        </p>
-                      </div>
-                      {inGroup.has(s.studentId) ? (
-                        <Badge tone="green">guruhda</Badge>
-                      ) : (
-                        <button className="btn-secondary btn-sm" onClick={() => add.mutate(s.studentId)}>
-                          <UserPlus size={14} /> Qo'shish
-                        </button>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-                <p className="label mb-0">Guruhdagi o'quvchilar ({students.data?.length ?? 0})</p>
-                {(students.data?.length ?? 0) > 8 && <SearchBox className="sm:w-56" value={memberQ} onChange={setMemberQ} placeholder="Guruhdan qidirish" />}
-              </div>
-              <ul className="divide-y divide-line rounded-xl border border-line">
-                {students.data?.length === 0 && <li className="p-3 text-sm text-ink-3">Hali o'quvchi yo'q</li>}
-                {!!students.data?.length && memberQ.trim() && !students.data.some((s) => matches(memberQ, s.name, s.username, s.phone)) && <li className="p-3 text-sm text-ink-3">«{memberQ.trim()}» bo'yicha topilmadi</li>}
-                {students.data?.filter((s) => matches(memberQ, s.name, s.username, s.phone)).map((s) => (
-                  <li key={s.studentId} className="flex items-center gap-2 px-3 py-2">
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-semibold">{s.name}</p>
-                      <ParentState s={s} />
-                    </div>
-                    <button className="btn-ghost h-9 w-9 p-0 text-ink-4 hover:text-red-600" onClick={() => remove.mutate(s.studentId)} aria-label="Guruhdan chiqarish">
-                      <X size={16} />
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            </>
+            // key: boshqa guruh tanlansa tahrir formasi va qidiruvlar tozalanadi
+            <div key={current.id}>
+              <GroupHeader group={current} refresh={refresh} onDeleted={() => setSel("")} />
+              <GroupMembers groupId={current.id} refresh={refresh} />
+            </div>
           )}
         </div>
       </div>
@@ -153,10 +59,51 @@ export function GroupManager({ groups, onClose }: { groups: AdminGroup[]; onClos
   );
 }
 
-/** O'quvchining ota-onasi holati (qisqa belgi) */
-export function ParentState({ s }: { s: AdminStudent }) {
-  const approved = s.parents.filter((p) => p.status === "APPROVED");
-  if (approved.length) return <span title={approved.map((p) => p.name).join(", ")} className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-700"><ShieldCheck size={13} /> Ota-ona</span>;
-  if (s.parents.length) return <span className="inline-flex items-center gap-1 text-xs font-semibold text-amber-700"><Clock size={13} /> Tekshirilmoqda</span>;
-  return <span className="inline-flex items-center gap-1 text-xs font-semibold text-red-600"><ShieldAlert size={13} /> Ota-ona yo'q</span>;
+/** Guruh nomi, jadvali va amallar; «Tahrirlash» bosilsa o'rnida forma ochiladi */
+function GroupHeader({ group, refresh, onDeleted }: { group: AdminGroup; refresh: () => void; onDeleted: () => void }) {
+  const toast = useToast();
+  const [editing, setEditing] = useState(false);
+  const toggle = useMutation({
+    mutationFn: () => api.updateGroup(group.id, { isActive: !group.isActive }),
+    onSuccess: refresh,
+    onError: (e) => toast(errMsg(e), "error"),
+  });
+  const del = useMutation({
+    mutationFn: () => api.deleteGroup(group.id),
+    onSuccess: () => {
+      onDeleted();
+      refresh();
+      toast("Guruh o'chirildi. Korzinkadan 30 kun ichida tiklash mumkin");
+    },
+    onError: (e) => toast(errMsg(e), "error"),
+  });
+  if (editing)
+    return (
+      <EditGroupForm
+        group={group}
+        onCancel={() => setEditing(false)}
+        onSaved={() => {
+          setEditing(false);
+          refresh();
+        }}
+      />
+    );
+  return (
+    <div className="mb-3 flex flex-wrap items-center gap-2">
+      <div className="min-w-0 flex-1 basis-full sm:basis-0">
+        <p className="font-extrabold [overflow-wrap:anywhere]">{group.name}</p>
+        {group.schedule && <p className="text-xs text-ink-3 [overflow-wrap:anywhere]">{group.schedule}</p>}
+        <ScheduleHint schedule={group.schedule} />
+      </div>
+      <button className="btn-secondary btn-sm" onClick={() => setEditing(true)}>
+        <Pencil size={14} /> Tahrirlash
+      </button>
+      <button className="btn-secondary btn-sm" onClick={() => toggle.mutate()} disabled={toggle.isPending}>
+        {group.isActive ? "Faolsizlantirish" : "Faollashtirish"}
+      </button>
+      <ConfirmButton onConfirm={() => del.mutate()} label="O'chirilsinmi?">
+        <Trash2 size={14} />
+      </ConfirmButton>
+    </div>
+  );
 }

@@ -5,7 +5,15 @@ import { norm, quoteFound, type Segmented } from "./text";
 /** Mezondagi "N o'rinda" bandlari: 0 → 2; 1–2 → 1,5; 3–4 → 1; 5–6 → 0,5; 7+ → 0 */
 export const countScore = (n: number) => (n <= 0 ? 2 : n <= 2 ? 1.5 : n <= 4 ? 1 : n <= 6 ? 0.5 : 0);
 
-export interface Candidate { kind: "literacy" | "style" | "purity"; s: string | null; type: string; wrong: string; right: string; note: string | null; rule?: string | null }
+export interface Candidate {
+  kind: "literacy" | "style" | "purity";
+  s: string | null;
+  type: string;
+  wrong: string;
+  right: string;
+  note: string | null;
+  rule?: string | null;
+}
 
 /** AI topgan, lekin matnda yo'q (to'qib chiqarilgan) iqtiboslarni va o'qilmagan [?] so'zlarni olib tashlaydi */
 export function verifiedQuotes(a: Analysis, lit: LiteracyError[], seg: Segmented) {
@@ -39,7 +47,10 @@ export function countErrors(errors: LiteracyError[]) {
   const spelling = uniqBy(of("spelling"), (e) => norm(e.wrong)).length;
   const punct = of("punctuation");
   const known = new Set(punct.map((e) => e.rule ?? "boshqa").filter((r) => r !== "boshqa" && r in PUNCT_RULES));
-  const other = uniqBy(punct.filter((e) => !known.has(e.rule ?? "boshqa")), (e) => norm(e.wrong)).length;
+  const other = uniqBy(
+    punct.filter((e) => !known.has(e.rule ?? "boshqa")),
+    (e) => norm(e.wrong),
+  ).length;
   const affixes = uniqBy(of("affix"), (e) => `${norm(e.wrong)}|${norm(e.right)}`).length;
   const wordUsage = uniqBy(of("word"), (e) => `${norm(e.wrong)}|${norm(e.right)}`).length;
   return { spelling, punctuation: known.size + other, affixes, wordUsage };

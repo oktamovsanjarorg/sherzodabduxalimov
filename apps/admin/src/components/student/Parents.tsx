@@ -46,7 +46,15 @@ export function StudentParents({ s }: { s: StudentDetail }) {
                     </a>
                   )}
                 </div>
-                <span className="shrink-0 whitespace-nowrap">{p.status === "APPROVED" ? <Badge tone="green">tasdiqlangan</Badge> : p.status === "PENDING" ? <Badge tone="blue">kutilmoqda</Badge> : <Badge tone="red">rad etilgan</Badge>}</span>
+                <span className="shrink-0 whitespace-nowrap">
+                  {p.status === "APPROVED" ? (
+                    <Badge tone="green">tasdiqlangan</Badge>
+                  ) : p.status === "PENDING" ? (
+                    <Badge tone="blue">kutilmoqda</Badge>
+                  ) : (
+                    <Badge tone="red">rad etilgan</Badge>
+                  )}
+                </span>
               </div>
               <div className="mt-2 flex flex-wrap gap-1.5">
                 {p.status !== "APPROVED" && (
@@ -65,8 +73,19 @@ export function StudentParents({ s }: { s: StudentDetail }) {
               </div>
               {rejecting === p.id && (
                 <div className="mt-2 flex gap-2">
-                  <input aria-label="Rad etish sababi" className="input h-10 flex-1 text-sm sm:h-9" autoFocus placeholder="Sabab (o'quvchiga boradi)" value={reason} onChange={(e) => setReason(e.target.value)} />
-                  <button className="btn-danger btn-sm" disabled={reason.trim().length < 3 || act.isPending} onClick={() => act.mutate({ kind: "reject", id: p.id, reason: reason.trim() })}>
+                  <input
+                    aria-label="Rad etish sababi"
+                    className="input h-10 flex-1 text-sm sm:h-9"
+                    autoFocus
+                    placeholder="Sabab (o'quvchiga boradi)"
+                    value={reason}
+                    onChange={(e) => setReason(e.target.value)}
+                  />
+                  <button
+                    className="btn-danger btn-sm"
+                    disabled={reason.trim().length < 3 || act.isPending}
+                    onClick={() => act.mutate({ kind: "reject", id: p.id, reason: reason.trim() })}
+                  >
                     Saqlash
                   </button>
                   <button className="btn-ghost btn-sm" onClick={() => setRejecting(null)} aria-label="Bekor qilish">

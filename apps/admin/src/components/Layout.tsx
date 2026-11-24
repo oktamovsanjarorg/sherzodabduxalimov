@@ -4,8 +4,10 @@ import { BookOpen, ClipboardCheck, GraduationCap, Home, LogOut, MoreHorizontal, 
 import { useEffect, useRef } from "react";
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { api } from "../lib/api";
-import { useDismissed } from "../lib/dismiss";
+import { useDismissed, useReconcileDismissed } from "../lib/dismiss";
+import { COUNT_KEYS, todoCounts } from "../lib/todo";
 import { clearSession, loadSession } from "../lib/session";
+import { useTelegramBackButton } from "../lib/telegram";
 
 interface NavGroup {
   to: string;
@@ -28,6 +30,7 @@ export function useNavGroups(): NavGroup[] {
   const dash = useQuery({ queryKey: ["dashboard"], queryFn: api.dashboard, refetchInterval: 30_000 });
   // Bosh sahifada yashirilgan xabar menyuda ham raqam bilan chiqmaydi (yangi ish qo'shilsa qaytadi)
   const { hidden } = useDismissed();
+  useReconcileDismissed(dash.data && todoCounts(dash.data), (k) => COUNT_KEYS.has(k));
   const shown = (key: string, n?: number) => (n && !hidden(key, n) ? n : 0);
   const essays = shown("essays", dash.data?.pendingEssays);
   const people = shown("newStudents", dash.data?.newStudents) + shown("parents", dash.data?.pendingParents);
@@ -72,30 +75,31 @@ export function useNavGroups(): NavGroup[] {
       to: "/students",
       label: "O'quvchilar",
       Icon: GraduationCap,
-      match: /^\/(students|attendance|parents)/,
+      match: /^\/(students|attendance|parents|announcements)/,
       // Yangi kelganlar va ota-ona so'rovlari O'quvchilar sahifasining tepasida ko'rib chiqiladi
       badge: people || undefined,
       sub: [
         { to: "/students", label: "O'quvchilar", match: /^\/(students|parents)/, badge: people || undefined },
         { to: "/attendance", label: "Davomat", match: /^\/attendance/ },
+        ...(isTeacher ? [{ to: "/announcements", label: "E'lonlar", match: /^\/announcements/ }] : []),
       ],
     },
     // Telefonda «Ko'proq»: bo'limlar ro'yxati va chiqish. Pul va xodimlar faqat egada
     isTeacher
       ? {
-            to: "/more",
-            label: "Ko'proq",
-            Icon: MoreHorizontal,
-            match: /^\/(more|staff|payments|billing|trash|backups)/,
-            badge: payments || undefined,
-            sub: [
-              { to: "/payments", label: "To'lovlar", match: /^\/payments/, badge: payments || undefined },
-              { to: "/billing", label: "Tariflar", match: /^\/billing/ },
-              { to: "/staff", label: "Xodimlar", match: /^\/staff/ },
-              { to: "/trash", label: "Korzinka", match: /^\/trash/ },
-              { to: "/backups", label: "Zaxira", match: /^\/backups/ },
-            ],
-          }
+          to: "/more",
+          label: "Ko'proq",
+          Icon: MoreHorizontal,
+          match: /^\/(more|staff|payments|billing|trash|backups)/,
+          badge: payments || undefined,
+          sub: [
+            { to: "/payments", label: "To'lovlar", match: /^\/payments/, badge: payments || undefined },
+            { to: "/billing", label: "Tariflar", match: /^\/billing/ },
+            { to: "/staff", label: "Xodimlar", match: /^\/staff/ },
+            { to: "/trash", label: "Korzinka", match: /^\/trash/ },
+            { to: "/backups", label: "Zaxira", match: /^\/backups/ },
+          ],
+        }
       : { to: "/more", label: "Ko'proq", Icon: MoreHorizontal, match: /^\/more/, mobileOnly: true },
   ];
 }
@@ -117,6 +121,7 @@ export function Layout() {
     navigate("/login");
   };
   const groups = useNavGroups();
+  useTelegramBackButton();
   const s = loadSession()!;
   const current = groups.find((g) => g.match.test(pathname)) ?? groups[0];
   // Telefonda faol bo'lim tugmasi ko'rinib tursin (Korzinka, Zaxira kabi oxirgilari ekran chetida qolmasin)
@@ -135,42 +140,44 @@ export function Layout() {
           <span className="font-display text-[15px] font-medium tracking-tight text-white">Ona tili</span>
         </div>
         <nav className="flex-1 space-y-4 overflow-y-auto px-3 pb-4">
-          {groups.filter((g) => !g.sidebarIn && !g.mobileOnly).map((g) => {
-            const extra = groups.filter((x) => x.sidebarIn === g.to).map((x) => ({ to: x.to, label: x.label, match: x.match, badge: x.badge }));
-            const items = [...(g.sub ?? [{ to: g.to, label: g.label, match: g.match, badge: g.badge }]), ...extra];
-            return (
-              <div key={g.to}>
-                {g.sub && (
-                  <p className="mb-1 flex items-center gap-2 px-3 text-[11px] font-bold uppercase tracking-[0.14em] text-gold-hi/80">
-                    <g.Icon size={13} /> {g.label}
-                  </p>
-                )}
-                <ul className="space-y-0.5">
-                  {items.map((t) => {
-                    const active = t.match.test(pathname);
-                    return (
-                      <li key={t.to}>
-                        <NavLink
-                          to={t.to}
-                          className={`relative flex h-9 items-center gap-2.5 rounded-lg px-3 text-sm font-semibold transition ${
-                            active ? "bg-white/15 text-white" : "text-mist/80 hover:bg-navy-light hover:text-white"
-                          }`}
-                        >
-                          {!g.sub && <g.Icon size={16} />}
-                          <span className="min-w-0 flex-1 truncate">{t.label}</span>
-                          {t.badge ? (
-                            <span className="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-red-600 px-1.5 text-[11px] font-extrabold text-white">
-                              {t.badge > 99 ? "99+" : t.badge}
-                            </span>
-                          ) : null}
-                        </NavLink>
-                      </li>
-                    );
-                  })}
-                </ul>
-              </div>
-            );
-          })}
+          {groups
+            .filter((g) => !g.sidebarIn && !g.mobileOnly)
+            .map((g) => {
+              const extra = groups.filter((x) => x.sidebarIn === g.to).map((x) => ({ to: x.to, label: x.label, match: x.match, badge: x.badge }));
+              const items = [...(g.sub ?? [{ to: g.to, label: g.label, match: g.match, badge: g.badge }]), ...extra];
+              return (
+                <div key={g.to}>
+                  {g.sub && (
+                    <p className="mb-1 flex items-center gap-2 px-3 text-[11px] font-bold uppercase tracking-[0.14em] text-gold-hi/80">
+                      <g.Icon size={13} /> {g.label}
+                    </p>
+                  )}
+                  <ul className="space-y-0.5">
+                    {items.map((t) => {
+                      const active = t.match.test(pathname);
+                      return (
+                        <li key={t.to}>
+                          <NavLink
+                            to={t.to}
+                            className={`relative flex h-9 items-center gap-2.5 rounded-lg px-3 text-sm font-semibold transition ${
+                              active ? "bg-white/15 text-white" : "text-mist/80 hover:bg-navy-light hover:text-white"
+                            }`}
+                          >
+                            {!g.sub && <g.Icon size={16} />}
+                            <span className="min-w-0 flex-1 truncate">{t.label}</span>
+                            {t.badge ? (
+                              <span className="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-red-600 px-1.5 text-[11px] font-extrabold text-white">
+                                {t.badge > 99 ? "99+" : t.badge}
+                              </span>
+                            ) : null}
+                          </NavLink>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
+              );
+            })}
         </nav>
         <div className="flex items-center gap-2 border-t border-navy-line px-5 py-3 text-xs leading-tight">
           <div className="min-w-0 flex-1">
@@ -184,7 +191,7 @@ export function Layout() {
       </aside>
 
       {/* Telefon/planshet: yuqorida faqat guruh ichidagi bo'limlar (qaysi guruhdaligi pastki menyuda ko'rinadi) */}
-      <header className="sticky top-0 z-30 bg-navy text-white shadow-sm md:hidden" style={{ paddingTop: "env(safe-area-inset-top, 0px)" }}>
+      <header className="sticky top-0 z-30 bg-navy text-white shadow-sm md:hidden" style={{ paddingTop: "var(--safe-top)" }}>
         {chips ? (
           <div ref={tabs} className="no-scrollbar flex gap-1.5 overflow-x-auto px-4 py-2.5">
             {chips.map((t) => {
@@ -199,7 +206,11 @@ export function Layout() {
                   }`}
                 >
                   {t.label}
-                  {t.badge ? <span className="ml-1.5 inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-red-600 px-1.5 align-middle text-[11px] font-extrabold leading-none text-white">{t.badge}</span> : null}
+                  {t.badge ? (
+                    <span className="ml-1.5 inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-red-600 px-1.5 align-middle text-[11px] font-extrabold leading-none text-white">
+                      {t.badge}
+                    </span>
+                  ) : null}
                 </NavLink>
               );
             })}
@@ -219,16 +230,16 @@ export function Layout() {
       </div>
 
       {/* Telefon/planshet: pastki navigatsiya */}
-      <nav
-        className="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-surface/95 backdrop-blur md:hidden"
-        style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
-      >
+      <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-surface/95 backdrop-blur md:hidden" style={{ paddingBottom: "var(--safe-bottom)" }}>
         <ul className="grid grid-cols-5">
           {groups.map((g) => {
             const active = g.match.test(pathname);
             return (
               <li key={g.to}>
-                <NavLink to={g.to} className={`flex h-16 flex-col items-center justify-center gap-1 text-[11px] font-bold ${active ? "text-brand" : "text-ink-4"}`}>
+                <NavLink
+                  to={g.to}
+                  className={`flex h-16 flex-col items-center justify-center gap-1 text-[11px] font-bold ${active ? "text-brand" : "text-ink-4"}`}
+                >
                   <span className={`relative flex h-8 w-12 items-center justify-center rounded-full ${active ? "bg-brand-soft" : ""}`}>
                     <g.Icon size={21} strokeWidth={active ? 2.4 : 2} />
                     <Badge n={g.badge} />

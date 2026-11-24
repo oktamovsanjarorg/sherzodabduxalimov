@@ -47,14 +47,20 @@ describe("Offline guruh: kirish va oylik to'lov; online obuna eslatmalari (e2e)"
     ON = (await login(app, TG.online, "Online", undefined, { paid: false })).headers;
     await login(app, TG.paid, "Tolagan", undefined, { paid: false });
     // Ota-onalarni tasdiqlaymiz: eslatmalar faqat tasdiqlangan ota-onaga boradi
-    await prisma.parentLink.updateMany({ where: { parent: { telegramId: { in: [parentTgId(TG.offline), parentTgId(TG.paid)] } } }, data: { status: "APPROVED" } });
+    await prisma.parentLink.updateMany({
+      where: { parent: { telegramId: { in: [parentTgId(TG.offline), parentTgId(TG.paid)] } } },
+      data: { status: "APPROVED" },
+    });
 
     const course = await prisma.course.create({ data: { title: `${TAG} kurs`, isPublished: true } });
     const topic = await prisma.topic.create({ data: { courseId: course.id, title: "Mavzu" } });
     lessonId = (await prisma.lesson.create({ data: { topicId: topic.id, title: "Pullik dars", isPublished: true, isFree: false } })).id;
 
     groupId = (await req("POST", "/admin/groups", { name: `${TAG} 1-guruh` })).json().id;
-    const sp = await prisma.studentProfile.findMany({ where: { user: { telegramId: { in: [BigInt(TG.offline), BigInt(TG.paid)] } } }, include: { user: true } });
+    const sp = await prisma.studentProfile.findMany({
+      where: { user: { telegramId: { in: [BigInt(TG.offline), BigInt(TG.paid)] } } },
+      include: { user: true },
+    });
     offlineStudentId = sp.find((s) => s.user.telegramId === BigInt(TG.offline))!.id;
     paidStudentId = sp.find((s) => s.user.telegramId === BigInt(TG.paid))!.id;
   });
@@ -123,11 +129,19 @@ describe("Offline guruh: kirish va oylik to'lov; online obuna eslatmalari (e2e)"
     const clash = await req("PUT", "/admin/offline-payments", { studentId: offlineStudentId, periodStart: addDays(start, 5), amountUzs: 300000 });
     expect(clash.statusCode).toBe(409);
     // To'lov sanasi kelajakda bo'lmaydi; davr oxiri boshidan oldin bo'lmaydi
-    expect((await req("PUT", "/admin/offline-payments", { studentId: offlineStudentId, periodStart: addDays(end, 1), paidOn: addDays(today, 3), amountUzs: 1 })).statusCode).toBe(400);
-    expect((await req("PUT", "/admin/offline-payments", { studentId: offlineStudentId, periodStart: addDays(end, 1), periodEnd: end, amountUzs: 1 })).statusCode).toBe(400);
+    expect(
+      (await req("PUT", "/admin/offline-payments", { studentId: offlineStudentId, periodStart: addDays(end, 1), paidOn: addDays(today, 3), amountUzs: 1 }))
+        .statusCode,
+    ).toBe(400);
+    expect(
+      (await req("PUT", "/admin/offline-payments", { studentId: offlineStudentId, periodStart: addDays(end, 1), periodEnd: end, amountUzs: 1 })).statusCode,
+    ).toBe(400);
 
     // Davr tugagach qarzdor, necha kun o'tgani ko'rinadi (davr oxirini o'tgan sanaga surib sinaymiz)
-    await prisma.offlinePayment.updateMany({ where: { studentId: offlineStudentId }, data: { periodStart: dateCol(addDays(today, -40)), periodEnd: dateCol(addDays(today, -10)) } });
+    await prisma.offlinePayment.updateMany({
+      where: { studentId: offlineStudentId },
+      data: { periodStart: dateCol(addDays(today, -40)), periodEnd: dateCol(addDays(today, -10)) },
+    });
     const late = (await ledger()).rows.find((r: { studentId: string }) => r.studentId === offlineStudentId);
     expect(late.paid).toBeNull();
     expect(late.overdueDays).toBe(10);
@@ -164,7 +178,12 @@ describe("Offline guruh: kirish va oylik to'lov; online obuna eslatmalari (e2e)"
 
     // Offline o'quvchi obuna sotib olishi shart emas
     const plan = (await req("POST", "/admin/plans", { name: `${TAG} oy`, priceUzs: 100000, durationDays: 30 })).json();
-    const up = await app.inject({ method: "POST", url: `/api/billing/payments?planId=${plan.id}`, headers: { ...OFF, "content-type": "image/jpeg" }, payload: Buffer.from([0xff, 0xd8, 0xff, 0xe0, 1, 2, 3]) });
+    const up = await app.inject({
+      method: "POST",
+      url: `/api/billing/payments?planId=${plan.id}`,
+      headers: { ...OFF, "content-type": "image/jpeg" },
+      payload: Buffer.from([0xff, 0xd8, 0xff, 0xe0, 1, 2, 3]),
+    });
     expect(up.statusCode).toBe(409);
 
     // Guruhdan chiqqan o'quvchining to'lovini tahrirlash (avval 500 xato berardi) va boshqa guruhda ikki marta hisoblanmasligi
@@ -213,9 +232,17 @@ describe("Offline guruh: kirish va oylik to'lov; online obuna eslatmalari (e2e)"
     await req("DELETE", `/admin/groups/${g3}`);
 
     expect((await req("POST", "/admin/payment-followups", { studentId: offlineStudentId, month, kind: "PROMISE" })).statusCode).toBe(400); // sana kerak
-    const f = await req("POST", "/admin/payment-followups", { studentId: offlineStudentId, month, kind: "PROMISE", promisedAt: `${month}-20`, note: "Otasi oylikdan keyin" });
+    const f = await req("POST", "/admin/payment-followups", {
+      studentId: offlineStudentId,
+      month,
+      kind: "PROMISE",
+      promisedAt: `${month}-20`,
+      note: "Otasi oylikdan keyin",
+    });
     expect(f.statusCode).toBe(201);
-    const again = (await req("GET", `/admin/stats/payments?month=${month}`)).json().debtors.find((x: { studentId: string }) => x.studentId === offlineStudentId);
+    const again = (await req("GET", `/admin/stats/payments?month=${month}`))
+      .json()
+      .debtors.find((x: { studentId: string }) => x.studentId === offlineStudentId);
     expect(again.followUps[0]).toMatchObject({ kind: "PROMISE", promisedAt: `${month}-20`, note: "Otasi oylikdan keyin" });
     expect((await req("DELETE", `/admin/payment-followups/${f.json().id}`)).statusCode).toBe(200);
     const bot = again.followUps.find((x: { kind: string }) => x.kind === "BOT");
@@ -228,7 +255,9 @@ describe("Offline guruh: kirish va oylik to'lov; online obuna eslatmalari (e2e)"
 
     const user = await prisma.user.findUniqueOrThrow({ where: { telegramId: BigInt(TG.online) } });
     const plan = await prisma.plan.findFirstOrThrow({ where: { name: { startsWith: TAG } } });
-    const sub = await prisma.subscription.create({ data: { userId: user.id, planId: plan.id, startsAt: new Date(now.getTime() - 28 * DAY), endsAt: new Date(now.getTime() + 2.5 * DAY) } });
+    const sub = await prisma.subscription.create({
+      data: { userId: user.id, planId: plan.id, startsAt: new Date(now.getTime() - 28 * DAY), endsAt: new Date(now.getTime() + 2.5 * DAY) },
+    });
 
     const sent: { chatId: bigint; text: string; url?: string }[] = [];
     const send = async (chatId: bigint, text: string, b?: { webAppUrl: string }) => void sent.push({ chatId, text, url: b?.webAppUrl });

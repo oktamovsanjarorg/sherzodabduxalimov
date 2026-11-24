@@ -26,7 +26,10 @@ export class AuthService {
 
     const user = await this.staff.upsertTelegramUser(tg, "app");
     if (user.isBlocked)
-      throw new UnauthorizedException({ code: ERROR_CODES.BLOCKED, message: user.blockedReason ? `Hisob bloklangan: ${user.blockedReason}` : "Hisob bloklangan" });
+      throw new UnauthorizedException({
+        code: ERROR_CODES.BLOCKED,
+        message: user.blockedReason ? `Hisob bloklangan: ${user.blockedReason}` : "Hisob bloklangan",
+      });
 
     const token = await this.jwt.signAsync({ sub: user.id, role: user.role });
     return { token, expiresIn: this.env.JWT_TTL, user: await this.users.me(user.id) };
