@@ -1,4 +1,5 @@
 import { request } from "node:https";
+import { locatePrompt, OCR_PROMPT, parseLocated, type LocatedPhrase } from "./handwriting";
 
 /**
  * Google Gemini: qo'lyozma varoq rasmlarini matnga aylantiradi (OCR).
@@ -41,15 +42,6 @@ function call(method: "GET" | "POST", path: string, apiKey: string, body?: objec
     req.end(data);
   });
 }
-
-export const OCR_PROMPT = `Bu rasmlarda o'quvchining qo'lda (ruchka bilan) yozgan o'zbek tilidagi essesi bor. Varoqlar tartib bilan berilgan.
-Vazifang: matnni AYNAN yozilganidek, so'zma-so'z ko'chirib ber.
-- Imlo, tinish belgisi va grammatik xatolarni TUZATMA: ular baholanadi, o'quvchi qanday yozgan bo'lsa shunday qoldir.
-- Lotin yozuvida yoz (o', g', sh, ch belgilarini o'quvchi yozgandek).
-- Xatboshilarni saqla. O'chirilgan (ustidan chizilgan) so'zlarni yozma.
-- O'qib bo'lmaydigan so'z o'rniga [?] qo'y.
-- Rasmda esse bo'lmasa, faqat NO_ESSAY deb yoz.
-Javobda faqat esse matni bo'lsin, boshqa hech qanday izoh yozma.`;
 
 /** Sozlangan model topilmasa (nomi o'zgargan), mavjud "flash" modellardan birini tanlaydi */
 async function pickModel(apiKey: string, preferred: string): Promise<string> {
@@ -118,15 +110,6 @@ export async function transcribeHandwriting(opts: { apiKey: string; model: strin
   });
 }
 
-export interface LocatedPhrase {
-  /** So'rovdagi tartib raqami */
-  i: number;
-  /** Varoq (0 dan) */
-  page: number;
-  /** [ymin, xmin, ymax, xmax], 0..1000 (Gemini formati) */
-  box: [number, number, number, number];
-}
-
 /**
  * Xato so'z/iboralarning qo'lyozma varoqdagi joyini topadi (AI belgilari uchun).
  * Topilmaganlari javobda bo'lmaydi.
@@ -138,33 +121,10 @@ export async function locatePhrases(opts: {
   phrases: string[];
 }): Promise<LocatedPhrase[]> {
   if (!opts.phrases.length) return [];
-  const list = opts.phrases.map((p, i) => `${i}: "${p}"`).join("\n");
-  const prompt = `Rasmlarda o'quvchining qo'lda yozgan o'zbekcha essesi bor (${opts.images.length} ta varoq, tartib bilan, 0 dan boshlab).
-Quyidagi so'z yoki iboralarning har birini qo'lyozmadan top (xatolari bilan yozilgan bo'lishi mumkin, aynan shunday qidir):
-${list}
-Har biri uchun bitta joy: matndagi BIRINCHI uchragan o'rni. Ramka faqat shu so'z(lar)ni qamrab olsin, butun qatorni emas.
-Javob faqat JSON massiv: [{"i": 0, "page": 0, "box_2d": [ymin, xmin, ymax, xmax]}] — koordinatalar 0..1000 (shu varoq o'lchamiga nisbatan).
-Topa olmaganingni javobga kiritma.`;
+  const prompt = locatePrompt(opts.images.length, opts.phrases);
   const raw = await generate(opts.apiKey, opts.model, {
     contents: [{ parts: [...imageParts(opts.images), { text: prompt }] }],
     generationConfig: { temperature: 0, maxOutputTokens: 4096, responseMimeType: "application/json" },
   });
-  let arr: unknown;
-  try {
-    arr = JSON.parse(raw.replace(/^```(json)?|```$/g, "").trim());
-  } catch {
-    return [];
-  }
-  if (!Array.isArray(arr)) return [];
-  const out: LocatedPhrase[] = [];
-  for (const x of arr as { i?: unknown; page?: unknown; box_2d?: unknown }[]) {
-    const b = x.box_2d;
-    if (typeof x.i !== "number" || !Array.isArray(b) || b.length !== 4 || !b.every((v) => typeof v === "number" && v >= 0 && v <= 1000)) continue;
-    const page = typeof x.page === "number" ? x.page : 0;
-    if (x.i < 0 || x.i >= opts.phrases.length || page < 0 || page >= opts.images.length) continue;
-    const [ymin, xmin, ymax, xmax] = b as number[];
-    if (ymax <= ymin || xmax <= xmin) continue;
-    out.push({ i: x.i, page, box: [ymin, xmin, ymax, xmax] });
-  }
-  return out;
+  return parseLocated(raw, opts.images.length, opts.phrases.length);
 }

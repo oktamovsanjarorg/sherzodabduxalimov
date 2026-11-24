@@ -1,5 +1,8 @@
 import { z } from "zod";
 
+/** .env qiymatidagi "# izoh" qismi olib tashlanadi; bo'sh qiymat — standart qiymat */
+const noComment = (v: unknown) => (typeof v === "string" ? v.split("#")[0].trim() || undefined : v);
+
 const schema = z.object({
   NODE_ENV: z.string().default("development"),
   API_PORT: z.coerce.number().default(4100),
@@ -26,8 +29,17 @@ const schema = z.object({
   // AI esse tekshiruvi. Qiymatdagi "# izoh" qismi olib tashlanadi (.env da shunday yozilgan bo'lishi mumkin)
   AI_PROVIDER: z.preprocess((v) => (typeof v === "string" ? v.split("#")[0].trim() : v), z.enum(["deepseek", "none"]).catch("none")).default("none"),
   DEEPSEEK_API_KEY: z.preprocess((v) => (typeof v === "string" ? v.split("#")[0].trim() || undefined : v), z.string().optional()),
-  DEEPSEEK_MODEL: z.string().default("deepseek-chat"),
-  // Qo'lyozma esseni o'qish (rasm -> matn). Bo'lmasa AI faqat yozilgan matnni tekshiradi
+  // Hisobotlar uchun tezkor model ("deepseek-chat" nomi 2026-07-24 da o'chirilgan)
+  DEEPSEEK_MODEL: z.preprocess(noComment, z.string().default("deepseek-flash")),
+  // Esse: OpenAI kaliti bo'lsa GPT qo'lyozmani o'qiydi, tahlil qiladi va xato topadi; DeepSeek qayta tekshiradi va taqriz yozadi.
+  // Kalit bo'lmasa hammasini DeepSeek bajaradi (GPT'ni o'chirish uchun kalitni olib tashlash yetadi).
+  OPENAI_API_KEY: z.preprocess(noComment, z.string().optional()),
+  OPENAI_MODEL: z.preprocess(noComment, z.string().default("gpt-6-luna")),
+  OPENAI_ESSAY_EFFORT: z.preprocess(noComment, z.enum(["none", "low", "medium", "high", "xhigh", "max"]).catch("medium").default("medium")),
+  // Esse uchun DeepSeek modeli, fikrlash rejimida (off | low | high | max)
+  DEEPSEEK_ESSAY_MODEL: z.preprocess(noComment, z.string().default("deepseek-flash")),
+  DEEPSEEK_ESSAY_EFFORT: z.preprocess(noComment, z.enum(["off", "low", "high", "max"]).catch("high").default("high")),
+  // OpenAI kaliti bo'lmagandagina ishlatiladi: qo'lyozma esseni o'qish. Ikkala kalit ham bo'lmasa AI faqat yozilgan matnni tekshiradi
   GEMINI_API_KEY: z.preprocess((v) => (typeof v === "string" ? v.split("#")[0].trim() || undefined : v), z.string().optional()),
   GEMINI_MODEL: z.string().default("gemini-3.8-flash"),
   // Mini App manzili: bot xabaridagi "Obunani uzaytirish" tugmasi uchun (bo'lmasa tugmasiz yuboriladi)

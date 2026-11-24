@@ -4,8 +4,7 @@
  */
 import { PrismaClient } from "@onatili/db";
 import { Queue, Worker } from "bullmq";
-import { gradeEssayDeepSeek } from "./ai/deepseek";
-import { locatePhrases, transcribeHandwriting } from "./ai/gemini";
+import { essayAi as essayAiSetup } from "./ai/essay/setup";
 import { ESSAY_AI_QUEUE, type EssayAiJob } from "./ai/queue";
 import { runSubscriptionReminders } from "./billing/reminders";
 import { gradeEssayJob, markEssayFailed } from "./essays/ai-runner";
@@ -148,24 +147,21 @@ async function essayImages(paths: string[]) {
   );
 }
 
-/** AI esse tekshiruvi (DeepSeek). Bir vaqtda 3 ta: API limitlari va xarajat nazorati uchun */
+/** AI esse tekshiruvi (GPT + DeepSeek, 4 bosqich: tahlil + savodxonlik → qayta tekshiruv → taqriz). Bir vaqtda 3 ta: API limitlari va xarajat nazorati uchun */
 const essayAi = new Worker<EssayAiJob>(
   ESSAY_AI_QUEUE,
   async (job) => {
-    if (env.AI_PROVIDER !== "deepseek" || !env.DEEPSEEK_API_KEY) throw new Error("AI o'chirilgan");
-    const key = env.DEEPSEEK_API_KEY;
+    const ai = essayAiSetup(env);
+    if (!ai) throw new Error("AI o'chirilgan");
+    const { read, locate } = ai;
     const total = await gradeEssayJob(
       prisma,
       job.data.essayId,
-      (topic, text, handwritten) => gradeEssayDeepSeek({ apiKey: key, model: env.DEEPSEEK_MODEL, topic, text, handwritten }),
+      ai.grade,
       (chatId, text, button) => notifyQueue.add("send", { chatId: String(chatId), text, button }),
       env.MINIAPP_URL,
-      env.GEMINI_API_KEY
-        ? async (paths) => transcribeHandwriting({ apiKey: env.GEMINI_API_KEY!, model: env.GEMINI_MODEL, images: await essayImages(paths) })
-        : undefined,
-      env.GEMINI_API_KEY
-        ? async (paths, phrases) => locatePhrases({ apiKey: env.GEMINI_API_KEY!, model: env.GEMINI_MODEL, images: await essayImages(paths), phrases })
-        : undefined,
+      read && (async (paths) => read(await essayImages(paths))),
+      locate && (async (paths, phrases) => locate(await essayImages(paths), phrases)),
     );
     if (total !== null) console.log(`[essay-ai] ${job.data.essayId}: ${total} ball`);
   },

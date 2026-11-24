@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { normalize, parseFirstJson } from "../src/ai/deepseek";
+import { parseFirstJson } from "../src/ai/ask";
+import { normalize } from "../src/ai/deepseek";
 
 describe("AI javobini o'qish", () => {
   it("JSON'dan keyin yoki oldin ortiqcha matn bo'lsa ham birinchi obyekt olinadi", () => {

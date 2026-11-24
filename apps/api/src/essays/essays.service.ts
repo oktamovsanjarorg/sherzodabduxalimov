@@ -33,6 +33,7 @@ import {
 import { Queue } from "bullmq";
 import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
+import { essayAi } from "../ai/essay/setup";
 import { ESSAY_AI_QUEUE, type EssayAiJob } from "../ai/queue";
 import { BillingService, sniffImage } from "../billing/billing.service";
 import { AccessService } from "../access/access.service";
@@ -119,10 +120,10 @@ export class EssaysService implements OnModuleDestroy {
   }
 
   private get aiEnabled() {
-    return this.env.AI_PROVIDER === "deepseek" && !!this.env.DEEPSEEK_API_KEY;
+    return !!essayAi(this.env);
   }
   private get aiPhotoEnabled() {
-    return this.aiEnabled && !!this.env.GEMINI_API_KEY;
+    return !!essayAi(this.env)?.read;
   }
 
   // ---------------- Sozlama: ustoz tekshiruvi narxi ----------------

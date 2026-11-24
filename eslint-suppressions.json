@@ -240,11 +240,6 @@
       "count": 1
     }
   },
-  "apps/api/src/ai/deepseek.ts": {
-    "max-lines-per-function": {
-      "count": 1
-    }
-  },
   "apps/api/src/announce/announce-runner.ts": {
     "@typescript-eslint/no-non-null-assertion": {
       "count": 2
@@ -374,11 +369,6 @@
   "apps/api/src/voice/voice-runner.ts": {
     "max-lines-per-function": {
       "count": 1
-    }
-  },
-  "apps/api/src/worker.ts": {
-    "@typescript-eslint/no-non-null-assertion": {
-      "count": 2
     }
   },
   "apps/bot/src/main.ts": {
