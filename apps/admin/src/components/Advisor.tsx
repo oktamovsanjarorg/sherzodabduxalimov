@@ -1,7 +1,7 @@
-import { ADVICE_AREA_LABELS, type Advice, type AdviceArea } from "@onatili/shared";
+import { ADVICE_AREA_LABELS, ADVICE_SNOOZE_MS, type Advice, type AdviceArea } from "@onatili/shared";
 import { Activity, BookOpen, CalendarCheck, ChevronRight, GraduationCap, PenLine, Users, Wallet, X, type LucideIcon } from "lucide-react";
 import { Link } from "react-router-dom";
-import { useDismissed } from "../lib/dismiss";
+import { useDismissed, useReconcileDismissed } from "../lib/dismiss";
 
 export const LEVEL = {
   urgent: { dot: "bg-red-500", bar: "border-l-red-500", tag: "Shoshilinch", tagCls: "bg-red-50 text-red-700" },
@@ -19,7 +19,7 @@ export const AREA_ICON: Record<AdviceArea, LucideIcon> = {
   content: BookOpen,
 };
 
-/** Bitta tavsiya: nima (sarlavha), nega (faktlar), nima qilish (tugma). ✕ — bajarildi; son oshsa qaytadi */
+/** Bitta tavsiya: nima (sarlavha), nega (faktlar), nima qilish (tugma). ✕ — yashirish; son oshsa yoki 7 kunda hal bo'lmasa qaytadi */
 export function AdviceItem({ a, onHide, showArea = true }: { a: Advice; onHide: () => void; showArea?: boolean }) {
   const L = LEVEL[a.level];
   const Icon = AREA_ICON[a.area];
@@ -54,9 +54,15 @@ export function AdviceItem({ a, onHide, showArea = true }: { a: Advice; onHide: 
   );
 }
 
+/** Hal bo'lgan tavsiyaning «yashirilgan» belgisi olinadi. all — serverdan kelgan to'liq ro'yxat (filtrlanmagan) */
+export function useReconcileAdvice(all: Advice[] | undefined, scope: string) {
+  const prefix = `adv:${scope}:`;
+  useReconcileDismissed(all && Object.fromEntries(all.map((a) => [prefix + a.key, a.count])), (k) => k.startsWith(prefix));
+}
+
 /** Yashirish holati bilan tavsiyalar: shown — ko'rinadiganlar, gone — yashirilganlar */
 export function useAdvice(items: Advice[], scope: string) {
-  const { hidden, hide, restore } = useDismissed();
+  const { hidden, hide, restore } = useDismissed(ADVICE_SNOOZE_MS);
   const key = (a: Advice) => `adv:${scope}:${a.key}`;
   return {
     shown: items.filter((a) => !hidden(key(a), a.count)),

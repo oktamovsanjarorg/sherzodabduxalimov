@@ -4,7 +4,8 @@ import { BookOpen, ClipboardCheck, GraduationCap, Home, LogOut, MoreHorizontal, 
 import { useEffect, useRef } from "react";
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { api } from "../lib/api";
-import { useDismissed } from "../lib/dismiss";
+import { useDismissed, useReconcileDismissed } from "../lib/dismiss";
+import { COUNT_KEYS, todoCounts } from "../lib/todo";
 import { clearSession, loadSession } from "../lib/session";
 import { useTelegramBackButton } from "../lib/telegram";
 
@@ -29,6 +30,7 @@ export function useNavGroups(): NavGroup[] {
   const dash = useQuery({ queryKey: ["dashboard"], queryFn: api.dashboard, refetchInterval: 30_000 });
   // Bosh sahifada yashirilgan xabar menyuda ham raqam bilan chiqmaydi (yangi ish qo'shilsa qaytadi)
   const { hidden } = useDismissed();
+  useReconcileDismissed(dash.data && todoCounts(dash.data), (k) => COUNT_KEYS.has(k));
   const shown = (key: string, n?: number) => (n && !hidden(key, n) ? n : 0);
   const essays = shown("essays", dash.data?.pendingEssays);
   const people = shown("newStudents", dash.data?.newStudents) + shown("parents", dash.data?.pendingParents);
