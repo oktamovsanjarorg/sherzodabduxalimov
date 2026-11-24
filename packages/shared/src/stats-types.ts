@@ -119,6 +119,18 @@ export function dayLabel(isoDate: string): string {
   return `${d.getUTCDate()}-${months[d.getUTCMonth()]}, ${WEEKDAY_NAMES[d.getUTCDay()]}`;
 }
 
+/** Jadval matnini tizim qanday tushungani (admin formada ko'rsatiladi). ok=false — o'tib ketgan darslar eslatilmaydi */
+export function scheduleHint(schedule: string | null | undefined): { ok: boolean; text: string } {
+  if (!schedule?.trim()) return { ok: false, text: "Jadval yozilmasa, o'tib ketgan darslar eslatilmaydi" };
+  const { days, minutes } = parseSchedule(schedule);
+  if (!days) return { ok: false, text: "Kunlar tushunilmadi: o'tib ketgan darslar eslatilmaydi" };
+  // Hafta dushanbadan boshlanadi, yakshanba (0) oxirida
+  const week = [...days].sort((a, b) => ((a + 6) % 7) - ((b + 6) % 7));
+  const names = week.length === 7 ? "har kuni" : week.map((d) => WEEKDAY_NAMES[d]).join(", ");
+  const time = minutes === null ? "" : ` · ${String(Math.floor(minutes / 60)).padStart(2, "0")}:${String(minutes % 60).padStart(2, "0")}`;
+  return { ok: true, text: `Dars kunlari: ${names}${time}` };
+}
+
 // ---------------- To'lovlar tahlili (faqat ega) ----------------
 
 export type FollowUpKindName = "CALL" | "MESSAGE" | "PROMISE" | "REASON" | "BOT";

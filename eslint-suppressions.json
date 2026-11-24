@@ -12,11 +12,6 @@
       "count": 1
     }
   },
-  "apps/admin/src/components/GroupManager.tsx": {
-    "max-lines-per-function": {
-      "count": 1
-    }
-  },
   "apps/admin/src/components/Inbox.tsx": {
     "@typescript-eslint/no-non-null-assertion": {
       "count": 3
