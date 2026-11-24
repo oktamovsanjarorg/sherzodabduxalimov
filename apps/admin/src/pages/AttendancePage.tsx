@@ -7,7 +7,7 @@ import { Empty, NoMatch, PageHeader, SearchBox, Spinner, Segmented } from "../co
 import { matches } from "../lib/search";
 import { api, errMsg } from "../lib/api";
 import { useToast } from "../lib/toast";
-import { ParentState } from "../components/GroupManager";
+import { ParentState } from "../components/ParentState";
 
 /** Toshkent vaqti bo'yicha bugungi sana (UTC+5) */
 const todayTashkent = () => new Date(Date.now() + 5 * 3600_000).toISOString().slice(0, 10);
