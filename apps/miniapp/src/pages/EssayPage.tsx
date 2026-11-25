@@ -40,12 +40,17 @@ export function EssayPage() {
       const st = s.state.data?.status;
       return st === "AI_CHECKING" ? 4000 : st === "SUBMITTED" || (st === "AWAITING_PAYMENT" && s.state.data?.payment?.status === "PENDING") ? 20_000 : false;
     },
+    // Oyna orqaga o'tganda so'rov to'xtaydi — qaytganda darhol yangilansin
+    refetchOnWindowFocus: "always",
   });
   const set = (e: MyEssayDetail) => {
     qc.setQueryData(["essay", id], e);
     qc.invalidateQueries({ queryKey: ["essays"] });
   };
   const e = q.data;
+  // "Juda uzoq" faqat serverdan hozirgina kelgan javob bo'yicha: eski keshdagi AI_CHECKING tekshiruv tugamagan degani emas
+  const stuck =
+    e?.status === "AI_CHECKING" && !q.isFetching && Date.now() - q.dataUpdatedAt < 30_000 && Date.now() - new Date(e.createdAt).getTime() > 20 * 60_000;
   // Ustoz belgilagan bo'lsa — ustozniki, aks holda AI belgilari (taxminiy)
   const teacherAnno = e?.annotations && e.annotations.pages.some((p) => p.strokes.length || p.marks.length) ? e.annotations : null;
   const aiAnno = e?.reviews.find((r) => r.source === "AI")?.annotations ?? null;
@@ -75,10 +80,8 @@ export function EssayPage() {
               hint="Tekshirilgach bot orqali xabar keladi."
             />
           )}
-          {e.status === "AI_CHECKING" && Date.now() - new Date(e.createdAt).getTime() > 20 * 60_000 && (
-            <Failed e={{ ...e, error: "Tekshiruv juda uzoq cho'zildi. Qayta yuborib ko'ring." }} onChange={set} />
-          )}
-          {e.status === "AI_CHECKING" && Date.now() - new Date(e.createdAt).getTime() <= 20 * 60_000 && (
+          {stuck && <Failed e={{ ...e, error: "Tekshiruv juda uzoq cho'zildi. Qayta yuborib ko'ring." }} onChange={set} />}
+          {e.status === "AI_CHECKING" && !stuck && (
             <Waiting
               icon={<Loader2 size={36} className="mx-auto animate-spin text-brand" />}
               title={e.pages && !e.text ? "AI qo'lyozmani o'qimoqda…" : "AI tekshirmoqda…"}
