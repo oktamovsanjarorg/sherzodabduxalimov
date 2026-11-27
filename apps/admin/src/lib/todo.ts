@@ -1,4 +1,4 @@
-import { dayLabel } from "@onatili/shared";
+import { dayLabel, type Permission } from "@onatili/shared";
 import { AlertTriangle, CalendarCheck, CreditCard, FileText, Film, ShieldCheck, UserPlus, type LucideIcon } from "lucide-react";
 import type { AdminDashboard } from "./api";
 
@@ -26,8 +26,10 @@ export const todoCounts = (x: AdminDashboard): Record<string, number> => ({
 export const COUNT_KEYS = new Set(["payments", "expiring", "essays", "newStudents", "parents", "videosFailed", "videosProcessing"]);
 
 /** «Bugun» ro'yxati, muhimlik tartibida: bugungi dars davomati tepada, o'tgan kunlarniki kutayotgan odamlardan keyin */
-export function todoItems(x: AdminDashboard, isTeacher: boolean): TodoItem[] {
-  return [...todayAttendance(x), ...waiting(x, isTeacher), ...missedAttendance(x), ...videos(x)];
+/** can: xodim ruxsati — ruxsati yo'q bo'limning ishi ro'yxatda chiqmaydi */
+export function todoItems(x: AdminDashboard, can: (p: Permission) => boolean): TodoItem[] {
+  const att = can("GROUPS");
+  return [...(att ? todayAttendance(x) : []), ...waiting(x, can), ...(att ? missedAttendance(x) : []), ...(can("CONTENT") ? videos(x) : [])];
 }
 
 const todayAttendance = (x: AdminDashboard): TodoItem[] =>
@@ -54,14 +56,14 @@ const missedAttendance = (x: AdminDashboard): TodoItem[] =>
     hint: "Jadval bo'yicha dars kuni edi. Dars bo'lmagan bo'lsa — «Yashirish»",
   }));
 
-/** Ustozning javobini kutayotganlar. Pulga oidi faqat egaga */
-function waiting(x: AdminDashboard, isTeacher: boolean): TodoItem[] {
+/** Ustozning javobini kutayotganlar: har biri o'z ruxsati bilan */
+function waiting(x: AdminDashboard, can: (p: Permission) => boolean): TodoItem[] {
   const n = todoCounts(x);
-  const list: (TodoItem & { teacherOnly?: boolean })[] = [
+  const list: (TodoItem & { perm: Permission })[] = [
     {
       key: "payments",
       count: n.payments,
-      teacherOnly: true,
+      perm: "PAYMENTS",
       to: "/payments",
       tone: "amber",
       Icon: CreditCard,
@@ -71,7 +73,7 @@ function waiting(x: AdminDashboard, isTeacher: boolean): TodoItem[] {
     {
       key: "expiring",
       count: n.expiring,
-      teacherOnly: true,
+      perm: "PAYMENTS",
       to: "/payments?tab=SUBS",
       tone: "brand",
       Icon: CreditCard,
@@ -81,6 +83,7 @@ function waiting(x: AdminDashboard, isTeacher: boolean): TodoItem[] {
     {
       key: "essays",
       count: n.essays,
+      perm: "ESSAYS",
       to: x.pendingEssaysBy.hw ? "/essays?tab=hw" : "/essays?tab=mock",
       tone: "amber",
       Icon: FileText,
@@ -90,6 +93,7 @@ function waiting(x: AdminDashboard, isTeacher: boolean): TodoItem[] {
     {
       key: "newStudents",
       count: n.newStudents,
+      perm: "STUDENTS",
       to: "/students",
       tone: "amber",
       Icon: UserPlus,
@@ -99,6 +103,7 @@ function waiting(x: AdminDashboard, isTeacher: boolean): TodoItem[] {
     {
       key: "parents",
       count: n.parents,
+      perm: "PARENTS",
       to: "/students",
       tone: "amber",
       Icon: ShieldCheck,
@@ -106,7 +111,7 @@ function waiting(x: AdminDashboard, isTeacher: boolean): TodoItem[] {
       hint: "Raqamga qo'ng'iroq qilib tasdiqlang",
     },
   ];
-  return list.filter((i) => i.count > 0 && (isTeacher || !i.teacherOnly));
+  return list.filter((i) => i.count > 0 && can(i.perm)).map(({ perm: _p, ...i }) => i);
 }
 
 function videos(x: AdminDashboard): TodoItem[] {

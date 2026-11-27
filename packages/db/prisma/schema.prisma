@@ -16,6 +16,22 @@ enum Role {
   TEACHER
 }
 
+/// Yordamchi ruxsatlari (packages/shared/src/roles.ts PERMISSIONS bilan bir xil)
+enum Permission {
+  CONTENT
+  ESSAYS
+  EXTERNAL
+  STUDENTS
+  PARENTS
+  GROUPS
+  STATS
+  STUDENT_ACCESS
+  PAYMENTS
+  BILLING
+  ANNOUNCE
+  TRASH
+}
+
 enum StudyMode {
   ONLINE
   OFFLINE
@@ -32,6 +48,8 @@ model User {
   photoUrl      String?
   languageCode  String?
   role          Role      @default(STUDENT)
+  /// Faqat ASSISTANT uchun ma'noli: admin panelda qaysi bo'limlar ochiq. Ustozda doim hammasi
+  permissions   Permission[] @default([CONTENT, ESSAYS, EXTERNAL, STUDENTS, PARENTS, GROUPS, STATS])
   /// Ism-familiyani ustoz yozgan: Telegram'dan kirganda ustiga yozilmaydi
   nameLocked    Boolean   @default(false)
   isBlocked     Boolean   @default(false)
@@ -687,6 +705,8 @@ model LoginToken {
 model StaffInvite {
   username    String   @id // kichik harflarda, @ belgisisiz
   role        Role     @default(ASSISTANT)
+  /// Botga kirganda yordamchiga beriladigan ruxsatlar
+  permissions Permission[] @default([CONTENT, ESSAYS, EXTERNAL, STUDENTS, PARENTS, GROUPS, STATS])
   invitedById String?
   invitedBy   User?    @relation(fields: [invitedById], references: [id], onDelete: SetNull)
   createdAt   DateTime @default(now())

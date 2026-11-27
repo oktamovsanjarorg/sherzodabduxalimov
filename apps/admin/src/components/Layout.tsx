@@ -6,7 +6,7 @@ import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { api } from "../lib/api";
 import { useDismissed, useReconcileDismissed } from "../lib/dismiss";
 import { COUNT_KEYS, todoCounts } from "../lib/todo";
-import { clearSession, loadSession } from "../lib/session";
+import { can, clearSession, isOwner, loadSession, saveSession } from "../lib/session";
 import { useTelegramBackButton } from "../lib/telegram";
 
 interface NavGroup {
@@ -24,18 +24,30 @@ interface NavGroup {
   mobileOnly?: boolean;
 }
 
+type Sub = NonNullable<NavGroup["sub"]>[number];
+/** Ruxsat bo'lsagina bo'lim chiqadi */
+const only = (ok: boolean, item: Sub): Sub[] => (ok ? [item] : []);
+
 export function useNavGroups(): NavGroup[] {
-  const isTeacher = loadSession()?.user.role === "TEACHER";
+  const owner = isOwner();
   // Kutayotgan ota-ona so'rovlari soni: navigatsiya tugmasida ko'rsatiladi
   const dash = useQuery({ queryKey: ["dashboard"], queryFn: api.dashboard, refetchInterval: 30_000 });
   // Bosh sahifada yashirilgan xabar menyuda ham raqam bilan chiqmaydi (yangi ish qo'shilsa qaytadi)
   const { hidden } = useDismissed();
   useReconcileDismissed(dash.data && todoCounts(dash.data), (k) => COUNT_KEYS.has(k));
   const shown = (key: string, n?: number) => (n && !hidden(key, n) ? n : 0);
-  const essays = shown("essays", dash.data?.pendingEssays);
-  const people = shown("newStudents", dash.data?.newStudents) + shown("parents", dash.data?.pendingParents);
-  const payments = shown("payments", dash.data?.pendingPayments);
-  return [
+  const essays = can("ESSAYS") ? shown("essays", dash.data?.pendingEssays) : 0;
+  const people = (can("STUDENTS") ? shown("newStudents", dash.data?.newStudents) : 0) + (can("PARENTS") ? shown("parents", dash.data?.pendingParents) : 0);
+  const payments = can("PAYMENTS") ? shown("payments", dash.data?.pendingPayments) : 0;
+  // Pul va boshqaruv: ruxsatga qarab; xodimlar va zaxira faqat egada
+  const admin = [
+    ...only(can("PAYMENTS"), { to: "/payments", label: "To'lovlar", match: /^\/payments/, badge: payments || undefined }),
+    ...only(can("BILLING"), { to: "/billing", label: "Tariflar", match: /^\/billing/ }),
+    ...only(owner, { to: "/staff", label: "Xodimlar", match: /^\/staff/ }),
+    ...only(can("TRASH"), { to: "/trash", label: "Korzinka", match: /^\/trash/ }),
+    ...only(owner, { to: "/backups", label: "Zaxira", match: /^\/backups/ }),
+  ];
+  const groups: NavGroup[] = [
     {
       to: "/",
       label: "Asosiy",
@@ -43,8 +55,8 @@ export function useNavGroups(): NavGroup[] {
       match: /^\/($|stats|advisor)/,
       sub: [
         { to: "/", label: "Bugun", match: /^\/$/ },
-        { to: "/advisor", label: "Yordamchi", match: /^\/advisor/ },
-        { to: "/stats", label: "Statistika", match: /^\/stats/ },
+        ...only(can("STATS"), { to: "/advisor", label: "Yordamchi", match: /^\/advisor/ }),
+        ...only(can("STATS"), { to: "/stats", label: "Statistika", match: /^\/stats/ }),
       ],
     },
     {
@@ -53,55 +65,53 @@ export function useNavGroups(): NavGroup[] {
       Icon: BookOpen,
       // Ish tartibi bo'yicha: darslar → ularga testlar → testlar uchun savollar banki
       match: /^\/(content|lessons|questions|tests)/,
-      sub: [
-        { to: "/content", label: "Darslar", match: /^\/(content|lessons)/ },
-        { to: "/tests", label: "Testlar", match: /^\/tests/ },
-        { to: "/questions", label: "Savollar banki", match: /^\/questions/ },
-      ],
+      sub: can("CONTENT")
+        ? [
+            { to: "/content", label: "Darslar", match: /^\/(content|lessons)/ },
+            { to: "/tests", label: "Testlar", match: /^\/tests/ },
+            { to: "/questions", label: "Savollar banki", match: /^\/questions/ },
+          ]
+        : [],
     },
     {
       // O'quvchi ishini baholash: tekshiriladigan esselar va qog'ozda o'tkazilgan test natijalari
-      to: "/essays",
+      to: can("ESSAYS") ? "/essays" : "/external",
       label: "Baholash",
       Icon: ClipboardCheck,
       match: /^\/(essays|external)/,
       badge: essays || undefined,
       sub: [
-        { to: "/essays", label: "Esselar", match: /^\/essays/, badge: essays || undefined },
-        { to: "/external", label: "Offline testlar", match: /^\/external/ },
+        ...only(can("ESSAYS"), { to: "/essays", label: "Esselar", match: /^\/essays/, badge: essays || undefined }),
+        ...only(can("EXTERNAL"), { to: "/external", label: "Offline testlar", match: /^\/external/ }),
       ],
     },
     {
-      to: "/students",
+      to: can("STUDENTS") ? "/students" : can("GROUPS") ? "/attendance" : "/announcements",
       label: "O'quvchilar",
       Icon: GraduationCap,
       match: /^\/(students|attendance|parents|announcements)/,
       // Yangi kelganlar va ota-ona so'rovlari O'quvchilar sahifasining tepasida ko'rib chiqiladi
       badge: people || undefined,
       sub: [
-        { to: "/students", label: "O'quvchilar", match: /^\/(students|parents)/, badge: people || undefined },
-        { to: "/attendance", label: "Davomat", match: /^\/attendance/ },
-        ...(isTeacher ? [{ to: "/announcements", label: "E'lonlar", match: /^\/announcements/ }] : []),
+        ...only(can("STUDENTS"), { to: "/students", label: "O'quvchilar", match: /^\/(students|parents)/, badge: people || undefined }),
+        ...only(can("GROUPS"), { to: "/attendance", label: "Davomat", match: /^\/attendance/ }),
+        ...only(can("ANNOUNCE"), { to: "/announcements", label: "E'lonlar", match: /^\/announcements/ }),
       ],
     },
-    // Telefonda «Ko'proq»: bo'limlar ro'yxati va chiqish. Pul va xodimlar faqat egada
-    isTeacher
+    // Telefonda «Ko'proq»: bo'limlar ro'yxati va chiqish
+    admin.length
       ? {
           to: "/more",
           label: "Ko'proq",
           Icon: MoreHorizontal,
           match: /^\/(more|staff|payments|billing|trash|backups)/,
           badge: payments || undefined,
-          sub: [
-            { to: "/payments", label: "To'lovlar", match: /^\/payments/, badge: payments || undefined },
-            { to: "/billing", label: "Tariflar", match: /^\/billing/ },
-            { to: "/staff", label: "Xodimlar", match: /^\/staff/ },
-            { to: "/trash", label: "Korzinka", match: /^\/trash/ },
-            { to: "/backups", label: "Zaxira", match: /^\/backups/ },
-          ],
+          sub: admin,
         }
       : { to: "/more", label: "Ko'proq", Icon: MoreHorizontal, match: /^\/more/, mobileOnly: true },
   ];
+  // Ruxsat berilmagan guruhlar menyudan butunlay yo'qoladi
+  return groups.filter((g) => !g.sub || g.sub.length > 0);
 }
 
 function Badge({ n }: { n?: number }) {
@@ -120,9 +130,14 @@ export function Layout() {
     clearSession();
     navigate("/login");
   };
+  const s = loadSession()!;
+  // Ega ruxsatni o'zgartirsa, yordamchi qayta kirmasdan yangi menyuni ko'radi
+  const me = useQuery({ queryKey: ["me"], queryFn: api.me, refetchInterval: 60_000 });
+  const permsKey = (me.data ?? s.user).permissions?.join(",") ?? "";
+  // Render paytida saqlanadi: qayta o'rnatilgan sahifalar (Outlet key) yangi ruxsatni darhol o'qisin
+  if (me.data && permsKey !== (s.user.permissions?.join(",") ?? "")) saveSession({ ...s, user: me.data });
   const groups = useNavGroups();
   useTelegramBackButton();
-  const s = loadSession()!;
   const current = groups.find((g) => g.match.test(pathname)) ?? groups[0];
   // Telefonda faol bo'lim tugmasi ko'rinib tursin (Korzinka, Zaxira kabi oxirgilari ekran chetida qolmasin)
   const tabs = useRef<HTMLDivElement>(null);
@@ -225,13 +240,13 @@ export function Layout() {
 
       <div className="md:pl-60">
         <main className="mx-auto w-full min-w-0 max-w-6xl px-4 pb-28 pt-5 sm:px-8 sm:pt-8 md:pb-10">
-          <Outlet />
+          <Outlet key={permsKey} />
         </main>
       </div>
 
       {/* Telefon/planshet: pastki navigatsiya */}
       <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-surface/95 backdrop-blur md:hidden" style={{ paddingBottom: "var(--safe-bottom)" }}>
-        <ul className="grid grid-cols-5">
+        <ul className="grid" style={{ gridTemplateColumns: `repeat(${groups.length}, minmax(0, 1fr))` }}>
           {groups.map((g) => {
             const active = g.match.test(pathname);
             return (

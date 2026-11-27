@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { ROLES } from "./roles";
+import { PERMISSIONS, ROLES } from "./roles";
 
 export const authTelegramBody = z.object({ initData: z.string().min(1) });
 export type AuthTelegramBody = z.infer<typeof authTelegramBody>;
@@ -11,6 +11,8 @@ export const meSchema = z.object({
   username: z.string().nullable(),
   photoUrl: z.string().nullable(),
   role: z.enum(ROLES),
+  /** Admin panel ruxsatlari: ustozda hammasi, yordamchida berilgani */
+  permissions: z.array(z.enum(PERMISSIONS)).default([]),
   /** Telegram orqali tasdiqlangan telefon (request_contact) */
   phone: z.string().nullable(),
   /** O'quvchi uchun: ota-ona ulanganmi */

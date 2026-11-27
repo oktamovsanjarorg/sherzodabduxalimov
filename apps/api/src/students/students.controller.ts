@@ -2,28 +2,30 @@ import { Body, Controller, Delete, Get, HttpCode, Param, Patch, Post, Query, Use
 import { studentAccessInput, studentBlockInput, studentBulkInput, studentCreateInput, studentNameInput, studentUpdateInput } from "@onatili/shared";
 import { z } from "zod";
 import { parse } from "../admin/zod";
-import { CurrentUser, Public, Roles, type JwtUser } from "../auth/decorators";
+import { CurrentUser, Public, type JwtUser, Perm, can } from "../auth/decorators";
 import { InternalGuard } from "../staff/internal.guard";
 import { UsersService } from "../users/users.service";
 import { StudentsService } from "./students.service";
 
 /** Ustoz va yordamchi: o'quvchilar ro'yxati va kartasi. To'lov ma'lumotlari faqat egaga */
-@Roles("TEACHER", "ASSISTANT")
+@Perm("STUDENTS")
 @Controller("admin")
 export class StudentsController {
   constructor(private readonly svc: StudentsService) {}
 
-  @Get("roster") roster(@CurrentUser() u: JwtUser, @Query("groupId") groupId?: string, @Query("q") q?: string) {
-    return this.svc.roster({ groupId, q }, u.role === "TEACHER");
+  @Perm("STUDENTS", "EXTERNAL")
+  @Get("roster")
+  roster(@CurrentUser() u: JwtUser, @Query("groupId") groupId?: string, @Query("q") q?: string) {
+    return this.svc.roster({ groupId, q }, can(u, "PAYMENTS"));
   }
 
   /** O'quvchilar → Hammasi: botga kirgan hamma, umumiy holati bilan */
   @Get("users") users(@CurrentUser() u: JwtUser, @Query("q") q?: string) {
-    return this.svc.allUsers(q, u.role === "TEACHER");
+    return this.svc.allUsers(q, can(u, "PAYMENTS"));
   }
 
   /** Bitta o'quvchi ikki marta (botdagi + qo'lda kiritilgan). Birlashtirish faqat egada */
-  @Roles("TEACHER")
+  @Perm("STUDENT_ACCESS")
   @Get("students/duplicates")
   duplicates() {
     return this.svc.duplicates();
@@ -41,7 +43,7 @@ export class StudentsController {
   }
 
   /** Qaytarib bo'lmaydi: faqat ega */
-  @Roles("TEACHER")
+  @Perm("STUDENT_ACCESS")
   @Post("students/:id/link")
   @HttpCode(200)
   link(@CurrentUser() u: JwtUser, @Param("id") id: string, @Body() b: unknown) {
@@ -58,7 +60,7 @@ export class StudentsController {
   }
 
   @Get("students/:id") detail(@CurrentUser() u: JwtUser, @Param("id") id: string) {
-    return this.svc.detail(id, u.role === "TEACHER");
+    return this.svc.detail(id, can(u, "PAYMENTS"));
   }
 
   @Patch("students/:id") update(@CurrentUser() u: JwtUser, @Param("id") id: string, @Body() b: unknown) {
@@ -66,17 +68,17 @@ export class StudentsController {
   }
 
   @Delete("students/:id") remove(@CurrentUser() u: JwtUser, @Param("id") id: string, @Query("force") force?: string) {
-    return this.svc.remove(u.sub, id, { force: force === "1", isTeacher: u.role === "TEACHER" });
+    return this.svc.remove(u.sub, id, { force: force === "1", isTeacher: can(u, "STUDENT_ACCESS") });
   }
 
   /** Kirish rejimi va bloklash: faqat ega */
-  @Roles("TEACHER")
+  @Perm("STUDENT_ACCESS")
   @Patch("students/:id/access")
   access(@CurrentUser() u: JwtUser, @Param("id") id: string, @Body() b: unknown) {
     return this.svc.setAccess(u.sub, id, parse(studentAccessInput, b).mode);
   }
 
-  @Roles("TEACHER")
+  @Perm("STUDENT_ACCESS")
   @Post("students/:id/block")
   @HttpCode(200)
   block(@CurrentUser() u: JwtUser, @Param("id") id: string, @Body() b: unknown) {

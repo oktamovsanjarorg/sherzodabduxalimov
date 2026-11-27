@@ -7,7 +7,7 @@ import { Badge, Empty, Field, Modal, Spinner } from "../components/ui";
 import { errMsg } from "../lib/api";
 import { fmtShortDateTime } from "../lib/format";
 import { goldApi } from "../lib/gold-api";
-import { loadSession } from "../lib/session";
+import { isOwner } from "../lib/session";
 import { useToast } from "../lib/toast";
 
 /**
@@ -44,7 +44,7 @@ export function GoldSet() {
 
 function Progress({ s, onAdd }: { s: GoldList["summary"]; onAdd: () => void }) {
   const toast = useToast();
-  const isTeacher = loadSession()?.user.role === "TEACHER";
+  const isTeacher = isOwner();
   const exp = useMutation({
     mutationFn: goldApi.exportZip,
     onSuccess: (r) =>

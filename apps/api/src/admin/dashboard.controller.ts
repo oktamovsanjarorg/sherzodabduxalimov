@@ -1,5 +1,5 @@
 import { Controller, Get } from "@nestjs/common";
-import { CurrentUser, Roles, type JwtUser } from "../auth/decorators";
+import { CurrentUser, Roles, type JwtUser, can } from "../auth/decorators";
 import { PrismaService } from "../prisma/prisma.service";
 import { attendanceTodo } from "./attendance-todo";
 
@@ -33,7 +33,7 @@ export class DashboardController {
   @Get()
   async get(@CurrentUser() u: JwtUser): Promise<AdminDashboard> {
     // Pulga oid ko'rsatkichlar (cheklar, obunalar) faqat egaga; yordamchiga 0
-    const isTeacher = u.role === "TEACHER";
+    const isTeacher = can(u, "PAYMENTS");
     const now = new Date();
     // Hammasi parallel: dashboard har 30 soniyada yangilanadi
     const [pendingEssays, pendingHwEssays, pendingPayments, subEnds] = await Promise.all([

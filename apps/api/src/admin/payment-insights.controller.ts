@@ -15,7 +15,7 @@ import {
 import { FOLLOW_UP_LABELS, formatSum, monthLabel, type DebtorRow, type FollowUpKindName, type PaymentInsights } from "@onatili/shared";
 import { z } from "zod";
 import { deepseekText } from "../ai/deepseek";
-import { CurrentUser, Roles, type JwtUser } from "../auth/decorators";
+import { CurrentUser, type JwtUser, Perm } from "../auth/decorators";
 import { ENV, type Env } from "../config/env";
 import { PrismaService } from "../prisma/prisma.service";
 import { defaultMonthlyFee, effectiveFee } from "../billing/fee";
@@ -48,7 +48,7 @@ const followUpInput = z.object({
  * To'lovlar tahlili (faqat ega): shu oy kim to'lashi kerak edi, qancha tushdi, prognoz, kim to'lamayapti va
  * ular bilan qanday ishlanganini (qo'ng'iroq, va'da, sabab, bot eslatmasi). AI xulosa: DeepSeek, ismlarsiz.
  */
-@Roles("TEACHER")
+@Perm("PAYMENTS")
 @Controller("admin")
 export class PaymentInsightsController {
   constructor(

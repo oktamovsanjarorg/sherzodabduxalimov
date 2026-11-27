@@ -9,7 +9,7 @@ import { Inbox } from "../components/Inbox";
 import { Badge, Empty, Field, Modal, PageHeader, Spinner } from "../components/ui";
 import { api, errMsg } from "../lib/api";
 import { fmtDate, fmtShortDateTime, fmtYmd } from "../lib/format";
-import { loadSession } from "../lib/session";
+import { can, isOwner } from "../lib/session";
 import { useToast } from "../lib/toast";
 
 /** O'quvchilar: guruhni tanlaysiz, ro'yxat chiqadi, o'quvchini bossangiz hammasi bitta joyda */
@@ -26,7 +26,7 @@ export function StudentsPage() {
     placeholderData: (p) => p,
     enabled: !!groupId,
   });
-  const isTeacher = loadSession()?.user.role === "TEACHER";
+  const money = can("PAYMENTS");
   const active = groups.data?.filter((g) => g.isActive) ?? [];
   const setGroup = (g: string) => setParams(g ? { group: g } : {}, { replace: true });
   const toast = useToast();
@@ -43,7 +43,7 @@ export function StudentsPage() {
         subtitle="O'quvchilar, guruhlar va ota-onalar shu yerda. O'quvchini o'zingiz kiritsangiz ham bo'ladi: keyin u botda telefonini ulashsa, hisobi avtomatik bog'lanadi."
         actions={
           <>
-            {isTeacher && (
+            {isOwner() && (
               <button
                 className="btn-secondary"
                 disabled={exporting.isPending}
@@ -87,7 +87,7 @@ export function StudentsPage() {
         <input className="input pl-9" placeholder="Ism, @username yoki telefon" value={q} onChange={(e) => setQ(e.target.value)} />
       </div>
 
-      {!groupId && <AllUsers q={q.trim()} groups={groups.data ?? []} isTeacher={isTeacher} />}
+      {!groupId && <AllUsers q={q.trim()} groups={groups.data ?? []} />}
       {!!groupId && roster.isPending && <Spinner className="text-ink-4" />}
       {!!groupId && roster.data?.length === 0 && (
         <Empty
@@ -101,7 +101,7 @@ export function StudentsPage() {
           <p className="mb-2 text-xs text-ink-3">{roster.data.length} ta o'quvchi</p>
           <div className="card divide-y divide-line">
             {roster.data.map((r) => (
-              <Row key={r.studentId} r={r} isTeacher={isTeacher} showGroup={groupId === "none"} />
+              <Row key={r.studentId} r={r} money={money} showGroup={groupId === "none"} />
             ))}
           </div>
         </>
@@ -133,7 +133,7 @@ function Chip({ on, onClick, children }: { on: boolean; onClick: () => void; chi
   );
 }
 
-function Row({ r, isTeacher, showGroup }: { r: RosterRow; isTeacher: boolean; showGroup: boolean }) {
+function Row({ r, money, showGroup }: { r: RosterRow; money: boolean; showGroup: boolean }) {
   const navigate = useNavigate();
   const soon = r.subscriptionEndsAt && new Date(r.subscriptionEndsAt).getTime() < Date.now() + 5 * 86_400_000;
   return (
@@ -166,7 +166,7 @@ function Row({ r, isTeacher, showGroup }: { r: RosterRow; isTeacher: boolean; sh
         ) : (
           <Badge>ota-ona yo'q</Badge>
         )}
-        {isTeacher && r.paidThisMonth !== null && (r.paidThisMonth ? <Badge tone="green">shu oy to'lagan</Badge> : <Badge tone="red">qarzdor</Badge>)}
+        {money && r.paidThisMonth !== null && (r.paidThisMonth ? <Badge tone="green">shu oy to'lagan</Badge> : <Badge tone="red">qarzdor</Badge>)}
         {r.subscriptionEndsAt && <Badge tone={soon ? "amber" : "green"}>obuna {fmtDate(r.subscriptionEndsAt)} gacha</Badge>}
         {r.attendance30.total > 0 && (
           <Badge tone={r.attendance30.absent > r.attendance30.total / 3 ? "red" : "gray"}>

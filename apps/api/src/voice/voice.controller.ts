@@ -1,6 +1,6 @@
 import { Body, Controller, Get, Headers, Param, Post, Res } from "@nestjs/common";
 import type { FastifyReply } from "fastify";
-import { CurrentUser, Roles, type JwtUser } from "../auth/decorators";
+import { CurrentUser, type JwtUser, Perm } from "../auth/decorators";
 import { VoiceService } from "./voice.service";
 
 @Controller()
@@ -8,13 +8,13 @@ export class VoiceController {
   constructor(private readonly svc: VoiceService) {}
 
   /** Tana: xom audio baytlari (Content-Type: audio/webm, audio/mp4, audio/ogg, audio/mpeg ...) */
-  @Roles("TEACHER", "ASSISTANT")
+  @Perm("ESSAYS")
   @Post("admin/hw-essays/:id/voice")
   essay(@CurrentUser() u: JwtUser, @Param("id") id: string, @Body() body: unknown, @Headers("content-type") ct?: string) {
     return this.svc.forEssay(u.sub, id, body, ct);
   }
 
-  @Roles("TEACHER", "ASSISTANT")
+  @Perm("ESSAYS")
   @Post("admin/essays/:attemptId/:questionId/voice")
   attempt(
     @CurrentUser() u: JwtUser,

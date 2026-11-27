@@ -10,7 +10,7 @@ import {
   type PaymentStatusName,
 } from "@onatili/shared";
 import type { FastifyReply } from "fastify";
-import { CurrentUser, Roles, type JwtUser } from "../auth/decorators";
+import { CurrentUser, Roles, type JwtUser, Perm } from "../auth/decorators";
 import { parse } from "../admin/zod";
 import { BillingService } from "./billing.service";
 import { OfflineBillingService } from "./offline.service";
@@ -43,7 +43,7 @@ export class BillingController {
 }
 
 /** Ustoz (ega): to'lovlar, obunalar, tariflar, karta. Yordamchilar kira olmaydi. */
-@Roles("TEACHER")
+@Perm("PAYMENTS")
 @Controller("admin")
 export class AdminBillingController {
   constructor(private readonly svc: BillingService) {}
@@ -84,29 +84,39 @@ export class AdminBillingController {
     return this.svc.cancelSubscription(u.sub, id);
   }
 
-  @Get("plans") plans() {
+  @Perm("PAYMENTS", "BILLING")
+  @Get("plans")
+  plans() {
     return this.svc.adminPlans();
   }
 
-  @Post("plans") createPlan(@CurrentUser() u: JwtUser, @Body() b: unknown) {
+  @Perm("BILLING")
+  @Post("plans")
+  createPlan(@CurrentUser() u: JwtUser, @Body() b: unknown) {
     return this.svc.createPlan(u.sub, parse(planInput, b));
   }
 
-  @Patch("plans/:id") updatePlan(@CurrentUser() u: JwtUser, @Param("id") id: string, @Body() b: unknown) {
+  @Perm("BILLING")
+  @Patch("plans/:id")
+  updatePlan(@CurrentUser() u: JwtUser, @Param("id") id: string, @Body() b: unknown) {
     return this.svc.updatePlan(u.sub, id, parse(planInput.partial(), b));
   }
 
-  @Get("billing-settings") async card() {
+  @Perm("BILLING")
+  @Get("billing-settings")
+  async card() {
     return { card: await this.svc.card() };
   }
 
-  @Put("billing-settings") saveCard(@CurrentUser() u: JwtUser, @Body() b: unknown) {
+  @Perm("BILLING")
+  @Put("billing-settings")
+  saveCard(@CurrentUser() u: JwtUser, @Body() b: unknown) {
     return this.svc.saveCard(u.sub, parse(billingSettingsInput, b));
   }
 }
 
 /** Ustoz (ega): offline guruhlarning oylik to'lovlari */
-@Roles("TEACHER")
+@Perm("PAYMENTS")
 @Controller("admin/offline-payments")
 export class AdminOfflineBillingController {
   constructor(private readonly svc: OfflineBillingService) {}

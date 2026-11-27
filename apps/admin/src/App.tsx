@@ -1,7 +1,8 @@
 import { Navigate, Route, Routes } from "react-router-dom";
 import { AdvisorPage } from "./pages/AdvisorPage";
 import { Layout } from "./components/Layout";
-import { loadSession } from "./lib/session";
+import type { Permission } from "@onatili/shared";
+import { can, isOwner, loadSession } from "./lib/session";
 import { AttendancePage } from "./pages/AttendancePage";
 import { ContentPage } from "./pages/ContentPage";
 import { DashboardPage } from "./pages/DashboardPage";
@@ -27,12 +28,17 @@ import { AnnouncementsPage } from "./pages/AnnouncementsPage";
 import { AnnounceComposerPage } from "./pages/AnnounceComposerPage";
 import { AnnounceDetailPage } from "./pages/AnnounceDetailPage";
 
-function RequireAuth({ children, teacher }: { children: JSX.Element; teacher?: boolean }) {
-  const s = loadSession();
-  if (!s) return <Navigate to="/login" replace />;
-  if (teacher && s.user.role !== "TEACHER") return <Navigate to="/" replace />;
-  return children;
+function RequireAuth({ children }: { children: JSX.Element }) {
+  return loadSession() ? children : <Navigate to="/login" replace />;
 }
+
+/** Bo'lim ruxsati: yo'q bo'lsa bosh sahifaga. owner: faqat egada (xodimlar, zaxira) */
+function Gate({ children, perm, owner }: { children: JSX.Element; perm?: Permission; owner?: boolean }) {
+  const ok = owner ? isOwner() : perm ? can(perm) : true;
+  return ok ? children : <Navigate to="/" replace />;
+}
+
+const gated = (perm: Permission, el: JSX.Element) => <Gate perm={perm}>{el}</Gate>;
 
 export function App() {
   return (
@@ -46,92 +52,43 @@ export function App() {
         }
       >
         <Route index element={<DashboardPage />} />
-        <Route path="stats" element={<StatsPage />} />
-        <Route
-          path="trash"
-          element={
-            <RequireAuth teacher>
-              <TrashPage />
-            </RequireAuth>
-          }
-        />
-        <Route path="content" element={<ContentPage />} />
         <Route path="more" element={<MorePage />} />
-        <Route path="essays" element={<EssaysPage />} />
-        <Route path="essays/gold/:id" element={<GoldEssayPage />} />
-        <Route path="external" element={<ExternalTestsPage />} />
-        <Route path="external/:id" element={<ExternalTestPage />} />
-        <Route path="lessons/:id" element={<LessonEditorPage />} />
-        <Route path="questions" element={<QuestionsPage />} />
-        <Route path="tests" element={<TestsPage />} />
-        <Route path="tests/:id" element={<TestEditorPage />} />
-        <Route path="advisor" element={<AdvisorPage />} />
-        <Route path="students" element={<StudentsPage />} />
-        <Route path="students/:id" element={<StudentDetailPage />} />
-        <Route path="attendance" element={<AttendancePage />} />
-        <Route path="parents" element={<ParentsPage />} />
-        <Route
-          path="payments"
-          element={
-            <RequireAuth teacher>
-              <PaymentsPage />
-            </RequireAuth>
-          }
-        />
-        <Route
-          path="billing"
-          element={
-            <RequireAuth teacher>
-              <BillingSettingsPage />
-            </RequireAuth>
-          }
-        />
+        <Route path="stats" element={gated("STATS", <StatsPage />)} />
+        <Route path="advisor" element={gated("STATS", <AdvisorPage />)} />
+        <Route path="content" element={gated("CONTENT", <ContentPage />)} />
+        <Route path="lessons/:id" element={gated("CONTENT", <LessonEditorPage />)} />
+        <Route path="questions" element={gated("CONTENT", <QuestionsPage />)} />
+        <Route path="tests" element={gated("CONTENT", <TestsPage />)} />
+        <Route path="tests/:id" element={gated("CONTENT", <TestEditorPage />)} />
+        <Route path="essays" element={gated("ESSAYS", <EssaysPage />)} />
+        <Route path="essays/gold/:id" element={gated("ESSAYS", <GoldEssayPage />)} />
+        <Route path="external" element={gated("EXTERNAL", <ExternalTestsPage />)} />
+        <Route path="external/:id" element={gated("EXTERNAL", <ExternalTestPage />)} />
+        <Route path="students" element={gated("STUDENTS", <StudentsPage />)} />
+        <Route path="students/:id" element={gated("STUDENTS", <StudentDetailPage />)} />
+        <Route path="attendance" element={gated("GROUPS", <AttendancePage />)} />
+        <Route path="parents" element={gated("PARENTS", <ParentsPage />)} />
+        <Route path="payments" element={gated("PAYMENTS", <PaymentsPage />)} />
+        <Route path="billing" element={gated("BILLING", <BillingSettingsPage />)} />
+        <Route path="announcements" element={gated("ANNOUNCE", <AnnouncementsPage />)} />
+        <Route path="announcements/new" element={gated("ANNOUNCE", <AnnounceComposerPage />)} />
+        <Route path="announcements/:id/edit" element={gated("ANNOUNCE", <AnnounceComposerPage />)} />
+        <Route path="announcements/:id" element={gated("ANNOUNCE", <AnnounceDetailPage />)} />
+        <Route path="trash" element={gated("TRASH", <TrashPage />)} />
         <Route
           path="staff"
           element={
-            <RequireAuth teacher>
+            <Gate owner>
               <StaffPage />
-            </RequireAuth>
-          }
-        />
-        <Route
-          path="announcements"
-          element={
-            <RequireAuth teacher>
-              <AnnouncementsPage />
-            </RequireAuth>
-          }
-        />
-        <Route
-          path="announcements/new"
-          element={
-            <RequireAuth teacher>
-              <AnnounceComposerPage />
-            </RequireAuth>
-          }
-        />
-        <Route
-          path="announcements/:id/edit"
-          element={
-            <RequireAuth teacher>
-              <AnnounceComposerPage />
-            </RequireAuth>
-          }
-        />
-        <Route
-          path="announcements/:id"
-          element={
-            <RequireAuth teacher>
-              <AnnounceDetailPage />
-            </RequireAuth>
+            </Gate>
           }
         />
         <Route
           path="backups"
           element={
-            <RequireAuth teacher>
+            <Gate owner>
               <BackupsPage />
-            </RequireAuth>
+            </Gate>
           }
         />
       </Route>

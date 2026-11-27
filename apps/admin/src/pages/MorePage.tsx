@@ -2,28 +2,27 @@ import { ROLE_LABELS } from "@onatili/shared";
 import { Archive, BarChart3, Megaphone, ChevronRight, CreditCard, LogOut, Sparkles, Tags, Trash2, Users, UsersRound, type LucideIcon } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useNavGroups } from "../components/Layout";
-import { clearSession, loadSession } from "../lib/session";
+import { can, clearSession, isOwner, loadSession } from "../lib/session";
 
-type Item = { to: string; label: string; hint: string; Icon: LucideIcon; badge?: number };
+type Item = { to: string; label: string; hint: string; Icon: LucideIcon; badge?: number; ok: boolean };
 
 /** Telefondagi «Ko'proq»: pastki menyuga sig'magan bo'limlar va hisobdan chiqish */
 export function MorePage() {
   const navigate = useNavigate();
   const s = loadSession()!;
-  const isTeacher = s.user.role === "TEACHER";
   const more = useNavGroups().find((g) => g.to === "/more");
   const money: Item[] = [
-    { to: "/announcements", label: "E'lonlar", hint: "Hammaga yoki guruhga xabar yuborish", Icon: Megaphone },
-    { to: "/payments", label: "To'lovlar", hint: "Cheklar, obunalar, qarzdorlar", Icon: CreditCard, badge: more?.badge },
-    { to: "/billing", label: "Tariflar va karta", hint: "Narxlar, karta raqami, esse narxi", Icon: Tags },
-    { to: "/staff", label: "Xodimlar", hint: "Yordamchi qo'shish", Icon: Users },
-    { to: "/trash", label: "Korzinka", hint: "O'chirilganlarni tiklash", Icon: Trash2 },
-    { to: "/backups", label: "Zaxira nusxalar", hint: "Ma'lumotlar bazasi zaxirasi", Icon: Archive },
+    { to: "/announcements", label: "E'lonlar", hint: "Hammaga yoki guruhga xabar yuborish", Icon: Megaphone, ok: can("ANNOUNCE") },
+    { to: "/payments", label: "To'lovlar", hint: "Cheklar, obunalar, qarzdorlar", Icon: CreditCard, badge: more?.badge, ok: can("PAYMENTS") },
+    { to: "/billing", label: "Tariflar va karta", hint: "Narxlar, karta raqami, esse narxi", Icon: Tags, ok: can("BILLING") },
+    { to: "/staff", label: "Xodimlar", hint: "Yordamchi qo'shish va ruxsatlar", Icon: Users, ok: isOwner() },
+    { to: "/trash", label: "Korzinka", hint: "O'chirilganlarni tiklash", Icon: Trash2, ok: can("TRASH") },
+    { to: "/backups", label: "Zaxira nusxalar", hint: "Ma'lumotlar bazasi zaxirasi", Icon: Archive, ok: isOwner() },
   ];
   const work: Item[] = [
-    { to: "/advisor", label: "Yordamchi", hint: "Nima qilish kerak: aniq tavsiyalar", Icon: Sparkles },
-    { to: "/stats", label: "Statistika", hint: "Oy bo'yicha natija va davomat", Icon: BarChart3 },
-    { to: "/parents", label: "Ota-onalar", hint: "Ulangan ota-onalar ro'yxati", Icon: UsersRound },
+    { to: "/advisor", label: "Yordamchi", hint: "Nima qilish kerak: aniq tavsiyalar", Icon: Sparkles, ok: can("STATS") },
+    { to: "/stats", label: "Statistika", hint: "Oy bo'yicha natija va davomat", Icon: BarChart3, ok: can("STATS") },
+    { to: "/parents", label: "Ota-onalar", hint: "Ulangan ota-onalar ro'yxati", Icon: UsersRound, ok: can("PARENTS") },
   ];
   return (
     <div className="space-y-5">
@@ -35,8 +34,8 @@ export function MorePage() {
           <p className="text-sm text-ink-3">{ROLE_LABELS[s.user.role]}</p>
         </div>
       </div>
-      {isTeacher && <List title="Pul va boshqaruv" items={money} />}
-      <List title="Foydali" items={work} />
+      <List title="Pul va boshqaruv" items={money.filter((i) => i.ok)} />
+      <List title="Foydali" items={work.filter((i) => i.ok)} />
       <button
         className="btn-secondary w-full text-red-700"
         onClick={() => {
@@ -52,6 +51,7 @@ export function MorePage() {
 }
 
 function List({ title, items }: { title: string; items: Item[] }) {
+  if (!items.length) return null;
   return (
     <section>
       <h2 className="mb-2 px-1 text-xs font-bold uppercase tracking-[0.14em] text-ink-3">{title}</h2>

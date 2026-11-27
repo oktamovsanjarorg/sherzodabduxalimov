@@ -6,6 +6,7 @@ import { Link } from "react-router-dom";
 import { PayDialog } from "./PayDialog";
 import { api, errMsg } from "../lib/api";
 import { fmtDate } from "../lib/format";
+import { can } from "../lib/session";
 import { useToast } from "../lib/toast";
 import { Badge, ConfirmButton, Empty, Modal, Spinner } from "./ui";
 
@@ -38,7 +39,7 @@ function Steps({ u }: { u: AdminUserRow }) {
 }
 
 /** O'quvchilar → Hammasi: botga kirgan har bir kishi, umumiy holati va tezkor amallar. Davomat va boshqalar guruh ichida */
-export function AllUsers({ q, groups, isTeacher }: { q: string; groups: AdminGroup[]; isTeacher: boolean }) {
+export function AllUsers({ q, groups }: { q: string; groups: AdminGroup[] }) {
   const users = useQuery({ queryKey: ["users", q], queryFn: () => api.users(q), placeholderData: (p) => p });
   if (users.isPending) return <Spinner className="text-ink-4" />;
   if (!users.data?.length)
@@ -54,14 +55,15 @@ export function AllUsers({ q, groups, isTeacher }: { q: string; groups: AdminGro
       <p className="mb-2 text-xs text-ink-3">{users.data.length} ta foydalanuvchi</p>
       <div className="card divide-y divide-line">
         {users.data.map((u) => (
-          <Row key={u.userId} u={u} groups={groups} isTeacher={isTeacher} />
+          <Row key={u.userId} u={u} groups={groups} />
         ))}
       </div>
     </>
   );
 }
 
-function Row({ u, groups, isTeacher }: { u: AdminUserRow; groups: AdminGroup[]; isTeacher: boolean }) {
+function Row({ u, groups }: { u: AdminUserRow; groups: AdminGroup[] }) {
+  const money = can("PAYMENTS");
   const toast = useToast();
   const qc = useQueryClient();
   const [paying, setPaying] = useState(false);
@@ -127,7 +129,7 @@ function Row({ u, groups, isTeacher }: { u: AdminUserRow; groups: AdminGroup[]; 
                 ))}
             </select>
           ) : (
-            isTeacher &&
+            money &&
             !u.paid && (
               <button className="btn-secondary btn-sm h-9" disabled={busy} onClick={() => (u.group ? setPayOffline(true) : setPaying(true))}>
                 <Wallet size={14} /> Pul to'ladi
@@ -137,7 +139,7 @@ function Row({ u, groups, isTeacher }: { u: AdminUserRow; groups: AdminGroup[]; 
         </div>
       )}
       {/* O'quvchi kartasida ism yozib o'chiriladi; ota-onada natija va to'lov yo'q */}
-      {isTeacher && u.role === "PARENT" && u.studentId && (
+      {can("STUDENT_ACCESS") && u.role === "PARENT" && u.studentId && (
         <ConfirmButton label="O'chirilsinmi?" onConfirm={() => del.mutate()}>
           <Trash2 size={14} />
         </ConfirmButton>

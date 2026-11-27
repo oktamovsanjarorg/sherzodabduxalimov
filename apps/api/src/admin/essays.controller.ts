@@ -1,11 +1,11 @@
 import { Body, Controller, Get, HttpCode, Param, Post, Put, Query } from "@nestjs/common";
 import { z } from "zod";
 import { essayReviewInput, textMarkSchema } from "@onatili/shared";
-import { CurrentUser, Roles, type JwtUser } from "../auth/decorators";
+import { CurrentUser, type JwtUser, Perm } from "../auth/decorators";
 import { EssaysService } from "./essays.service";
 import { parse } from "./zod";
 
-@Roles("TEACHER", "ASSISTANT")
+@Perm("ESSAYS")
 @Controller("admin/essays")
 export class EssaysController {
   constructor(private readonly svc: EssaysService) {}

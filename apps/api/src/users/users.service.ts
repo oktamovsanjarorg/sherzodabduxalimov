@@ -1,5 +1,5 @@
 import { ConflictException, Injectable, NotFoundException } from "@nestjs/common";
-import { STAFF_ROLES, type Me, type StudentNameInput } from "@onatili/shared";
+import { STAFF_ROLES, effectivePermissions, type Me, type StudentNameInput } from "@onatili/shared";
 import { AccessService } from "../access/access.service";
 import { PrismaService } from "../prisma/prisma.service";
 
@@ -48,6 +48,7 @@ export class UsersService {
       username: user.username,
       photoUrl: user.photoUrl,
       role: user.role,
+      permissions: effectivePermissions(user.role, user.permissions),
       phone: user.phone,
       parentStatus,
       subscription: sub ? { planName: sub.plan.name, endsAt: sub.endsAt.toISOString() } : null,
