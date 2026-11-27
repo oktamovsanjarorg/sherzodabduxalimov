@@ -14,9 +14,11 @@ import { useToast } from "../lib/toast";
 import { EssayLog, EssayStats } from "./EssayInsights";
 import { GoldSet } from "./GoldSet";
 import { HwEssays } from "./HwEssays";
+import { OfflineEssays } from "./OfflineEssays";
 
 const SUBTITLES = {
   hw: "O'quvchi varoqqa yozib rasmini yuborgan va ustoz tekshiruvi uchun to'lagan esselar. Baho bot orqali o'quvchiga boradi.",
+  offline: "Qog'ozda o'tkazilgan Milliy testning yozma ishlari: varoqni suratga oling, AI taxminiy baho beradi, ballni siz tasdiqlaysiz.",
   mock: "Mock testlardagi esselar. Ball qo'yilgach, o'quvchiga umumiy natija va daraja bot orqali yuboriladi.",
   log: "Botda yuborilgan barcha esselar: kim yubordi, AI va ustoz qancha ball qo'ydi. Bosing: har band bo'yicha baho, xatolar va tavsiyalar.",
   stats: "Esselar soni, o'rtacha ball va o'quvchilar qaysi bandlarda zaif.",
@@ -46,13 +48,26 @@ export function EssaysPage() {
           [
             ["hw", <>Qo'lyozma{count(by?.hw)}</>],
             ["mock", <>Mock{count(by?.mock)}</>],
+            ["offline", "Offline"],
             ["log", "Barcha esselar"],
             ["stats", "Statistika"],
             ["gold", "Sinov to'plami"],
           ] as const
         }
       />
-      {source === "hw" ? <HwEssays /> : source === "mock" ? <MockEssays /> : source === "log" ? <EssayLog /> : source === "gold" ? <GoldSet /> : <EssayStats />}
+      {source === "hw" ? (
+        <HwEssays />
+      ) : source === "mock" ? (
+        <MockEssays />
+      ) : source === "offline" ? (
+        <OfflineEssays />
+      ) : source === "log" ? (
+        <EssayLog />
+      ) : source === "gold" ? (
+        <GoldSet />
+      ) : (
+        <EssayStats />
+      )}
     </>
   );
 }

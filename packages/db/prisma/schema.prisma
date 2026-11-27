@@ -761,6 +761,8 @@ model ExternalTest {
   importedBy    User?            @relation("ExternalTestImporter", fields: [importedById], references: [id], onDelete: SetNull)
   /// O'quvchi va ota-onalarga "natija tayyor" xabari oxirgi marta yuborilgan payt
   notifiedAt    DateTime?
+  /// Yozma ish mavzusi (vaziyat matni): offline esseni AI tekshirishi uchun
+  essayPrompt   String?
   results       ExternalResult[]
   createdAt     DateTime         @default(now())
   updatedAt     DateTime         @updatedAt
@@ -802,11 +804,44 @@ model ExternalResult {
   durationSec Int?
   /// "Natija tayyor" xabari shu o'quvchi (va ota-onasi)ga yuborilgan payt
   notifiedAt  DateTime?
+  /// Qog'ozdagi esse rasmi va AI taxminiy bahosi
+  essay       ExternalEssay?
   createdAt   DateTime        @default(now())
   updatedAt   DateTime        @updatedAt
 
   @@unique([testId, key])
   @@index([studentId])
+}
+
+enum ExternalEssayStatus {
+  DRAFT // varoqlar yuklanmoqda
+  CHECKING // AI navbatida yoki tekshirmoqda
+  CHECKED // AI taxminiy baho berdi: ustoz tasdig'ini kutadi
+  FAILED
+}
+
+/// Offline testning qog'ozdagi essesi: ustoz suratga oladi, AI o'qib taxminiy baho beradi.
+/// Yakuniy ball faqat ustoz tasdiqlaganda ExternalResult.essayScore ga yoziladi (AI hech qachon o'zi yozmaydi)
+model ExternalEssay {
+  id        String              @id @default(cuid())
+  resultId  String              @unique
+  result    ExternalResult      @relation(fields: [resultId], references: [id], onDelete: Cascade)
+  /// MEDIA_DIR ichidagi nisbiy yo'llar: essays/external/<testId>/<resultId>/<n>.jpg
+  imageUrls String[]
+  status    ExternalEssayStatus @default(DRAFT)
+  /// AI o'qigan matn (qayta urinishda qayta o'qilmaydi)
+  text      String?
+  /// Tekshiruvda ishlatilgan mavzu (keyin o'zgarsa ham shu baho qaysi mavzu bo'yicha ekani ko'rinadi)
+  prompt    String?
+  /// AI natijasi: { special, criteria, total, mistakes, tips, annotations, feedback, provider, analysis }
+  ai        Json?
+  error     String?
+  /// Texnik sabab (faqat xodimlarga)
+  aiError   String?
+  createdAt DateTime            @default(now())
+  updatedAt DateTime            @updatedAt
+
+  @@index([status])
 }
 
 enum AnnouncementStatus {

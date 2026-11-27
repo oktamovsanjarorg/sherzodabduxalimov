@@ -4,6 +4,8 @@ import { parse } from "../admin/zod";
 import { CurrentUser, type JwtUser, Perm } from "../auth/decorators";
 import { ExternalEssayService } from "./external-essay.service";
 import { ExternalService } from "./external.service";
+import { OfflineEssayController } from "./offline-essay.controller";
+import { OfflineEssayService } from "./offline-essay.service";
 
 // CSV: 300 o'quvchi x 200 savol ham 200 KB dan oshmaydi
 const csvBody = z.object({ fileName: z.string().max(200), title: z.string().max(200).nullish().default(null), content: z.string().min(1).max(2_000_000) });
@@ -15,6 +17,7 @@ export class AdminExternalController {
   constructor(
     private readonly svc: ExternalService,
     private readonly essays: ExternalEssayService,
+    private readonly offline: OfflineEssayService,
   ) {}
 
   /** Esse fayli (Excel/CSV): moslab qaytaradi, saqlamaydi */
@@ -57,8 +60,11 @@ export class AdminExternalController {
     return this.svc.sendNotices(u.sub, id);
   }
 
-  @Delete(":id") remove(@CurrentUser() u: JwtUser, @Param("id") id: string) {
-    return this.svc.remove(u.sub, id);
+  @Delete(":id") async remove(@CurrentUser() u: JwtUser, @Param("id") id: string) {
+    const r = await this.svc.remove(u.sub, id);
+    // Esse varoqlari rasmlari ham o'chadi (bazadagi yozuvlar kaskad bilan o'chgan)
+    await this.offline.removeFiles(id).catch(() => undefined);
+    return r;
   }
 }
 
@@ -78,5 +84,9 @@ export class MyExternalController {
 
 // Global: o'quvchi sahifasi va ota-ona ko'rinishi ham natijalarni oladi
 @Global()
-@Module({ controllers: [AdminExternalController, MyExternalController], providers: [ExternalService, ExternalEssayService], exports: [ExternalService] })
+@Module({
+  controllers: [AdminExternalController, MyExternalController, OfflineEssayController],
+  providers: [ExternalService, ExternalEssayService, OfflineEssayService],
+  exports: [ExternalService],
+})
 export class ExternalModule {}

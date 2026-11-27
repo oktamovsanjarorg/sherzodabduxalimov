@@ -276,11 +276,6 @@
       "count": 2
     }
   },
-  "apps/api/src/essays/ai-runner.ts": {
-    "max-lines-per-function": {
-      "count": 1
-    }
-  },
   "apps/api/src/essays/essay-stats.service.ts": {
     "max-lines-per-function": {
       "count": 1

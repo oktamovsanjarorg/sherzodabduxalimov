@@ -96,30 +96,38 @@ const SPECIAL_TIPS: Partial<Record<EssaySpecialKey, AiEssayResult["tips"]>> = {
   ONLY_INTRO: [{ focus: "parts", text: "Kirishdan keyin asosiy qism (ikki qarash, shaxsiy fikr, dalillar) va xulosani ham yozing.", example: null }],
 };
 
-/** Bitta esseni AI bilan baholaydi va natijani saqlaydi. Worker chaqiradi; testda grade soxta bo'ladi. */
-export async function gradeEssayJob(
-  prisma: PrismaClient,
-  essayId: string,
-  grade: GradeFn,
-  send: SendFn,
-  miniAppUrl: string | undefined,
-  read?: ReadFn,
-  locate?: LocateFn,
-) {
-  const e = await prisma.essay.findUnique({ where: { id: essayId }, include: { user: { select: { telegramId: true } } } });
-  if (!e || e.status !== "AI_CHECKING") return null; // o'chirilgan yoki allaqachon tekshirilgan
+/** AI tekshiruvi natijasi: saqlashga tayyor (ballni server hisoblagan) */
+export interface EssayAssessment {
+  special: EssaySpecialKey | null;
+  criteria: { key: string; label: string; score: number; max: number; comment: string | null }[];
+  total: number;
+  mistakes: AiEssayResult["mistakes"];
+  tips: AiEssayResult["tips"];
+  annotations: EssayAnnotations | null;
+  feedback: string | null;
+  provider: string | null;
+  analysis: object | null;
+}
+
+/**
+ * Bitta esseni tekshirish yadrosi (bot essesi ham, offline test essesi ham shu orqali):
+ * qo'lyozma bo'lsa o'qiydi (onRead bilan matn darhol saqlanadi), maxsus holatlarni server o'zi aniqlaydi,
+ * qolganini AI'ga beradi, ballni mezon bo'yicha hisoblaydi va xatolarni varoqda belgilaydi.
+ * null: varoqda esse topilmadi (NO_ESSAY_ERROR).
+ */
+export async function assessEssay(
+  e: { prompt: string; text: string | null; imageUrls: string[] },
+  deps: { grade: GradeFn; read?: ReadFn; locate?: LocateFn; onRead?: (text: string) => Promise<unknown> },
+): Promise<{ text: string; result: EssayAssessment } | null> {
   const handwritten = e.imageUrls.length > 0;
   let text = e.text;
   if (!text && handwritten) {
-    if (!read) throw new Error("Qo'lyozmani o'qish sozlanmagan");
-    const got = (await read(e.imageUrls)).trim();
-    if (!got || /^NO_ESSAY\b/.test(got) || (got.match(/\S+/g)?.length ?? 0) < 15) {
-      await prisma.essay.updateMany({ where: { id: essayId, status: "AI_CHECKING" }, data: { status: "AI_FAILED", error: NO_ESSAY_ERROR } });
-      return null;
-    }
+    if (!deps.read) throw new Error("Qo'lyozmani o'qish sozlanmagan");
+    const got = (await deps.read(e.imageUrls)).trim();
+    if (!got || /^NO_ESSAY\b/.test(got) || (got.match(/\S+/g)?.length ?? 0) < 15) return null;
     text = got;
-    // O'qilgan matn saqlanadi: qayta urinishda yana o'qilmaydi, o'quvchi va ustoz ham ko'radi
-    await prisma.essay.update({ where: { id: essayId }, data: { text } });
+    // O'qilgan matn saqlanadi: qayta urinishda yana o'qilmaydi, ustoz ham ko'radi
+    await deps.onRead?.(text);
   }
   if (!text) return null;
 
@@ -133,13 +141,50 @@ export async function gradeEssayJob(
         mistakes: [],
         tips: SPECIAL_TIPS[auto] ?? [],
       }
-    : await grade(e.prompt, text, handwritten);
+    : await deps.grade(e.prompt, text, handwritten);
   const special = (r.special ?? null) as EssaySpecialKey | null;
   const scored = rubricScore(special, r.criteria);
   const criteria = scored.criteria.map((c) => ({ ...c, comment: r.criteria.find((x) => x.key === c.key)?.comment ?? null }));
-  const total = scored.total;
   // Xatolarni varoqda (yoki matnda) belgilash — topilmasa ham baho saqlanadi
-  const annotations = await aiAnnotations(r.mistakes, { pages: handwritten ? e.imageUrls : [], text: handwritten ? null : text, locate }).catch(() => null);
+  const annotations = await aiAnnotations(r.mistakes, { pages: handwritten ? e.imageUrls : [], text: handwritten ? null : text, locate: deps.locate }).catch(
+    () => null,
+  );
+  return {
+    text,
+    result: {
+      special,
+      criteria,
+      total: scored.total,
+      mistakes: r.mistakes,
+      tips: r.tips.length ? r.tips : ((special ? SPECIAL_TIPS[special] : undefined) ?? []),
+      annotations,
+      feedback: r.feedback || null,
+      provider: "provider" in r ? ((r.provider as string | undefined) ?? null) : null,
+      analysis: "analysis" in r ? ((r.analysis as object | undefined) ?? null) : null,
+    },
+  };
+}
+
+/** Bitta esseni AI bilan baholaydi va natijani saqlaydi. Worker chaqiradi; testda grade soxta bo'ladi. */
+export async function gradeEssayJob(
+  prisma: PrismaClient,
+  essayId: string,
+  grade: GradeFn,
+  send: SendFn,
+  miniAppUrl: string | undefined,
+  read?: ReadFn,
+  locate?: LocateFn,
+) {
+  const e = await prisma.essay.findUnique({ where: { id: essayId }, include: { user: { select: { telegramId: true } } } });
+  if (!e || e.status !== "AI_CHECKING") return null; // o'chirilgan yoki allaqachon tekshirilgan
+  const done = await assessEssay(e, { grade, read, locate, onRead: (text) => prisma.essay.update({ where: { id: essayId }, data: { text } }) });
+  if (!done) {
+    if (!e.text && e.imageUrls.length)
+      await prisma.essay.updateMany({ where: { id: essayId, status: "AI_CHECKING" }, data: { status: "AI_FAILED", error: NO_ESSAY_ERROR } });
+    return null;
+  }
+  const r = done.result;
+  const total = r.total;
   // Holat va baho bitta tranzaksiyada: biri saqlanib, ikkinchisi saqlanmay qolishi (bahosiz "tekshirildi") mumkin emas
   const saved = await prisma.$transaction(async (tx) => {
     const { count } = await tx.essay.updateMany({ where: { id: essayId, status: "AI_CHECKING" }, data: { status: "AI_CHECKED", error: null } });
@@ -148,15 +193,15 @@ export async function gradeEssayJob(
       data: {
         essayId,
         source: "AI",
-        provider: "provider" in r ? (r.provider ?? null) : null,
-        criteria,
-        special,
+        provider: r.provider,
+        criteria: r.criteria,
+        special: r.special,
         mistakes: r.mistakes,
-        tips: r.tips.length ? r.tips : ((special ? SPECIAL_TIPS[special] : undefined) ?? undefined),
-        annotations: annotations ?? undefined,
-        analysis: "analysis" in r ? ((r.analysis as object | undefined) ?? undefined) : undefined,
+        tips: r.tips.length ? r.tips : undefined,
+        annotations: r.annotations ?? undefined,
+        analysis: r.analysis ?? undefined,
         totalScore: total,
-        feedback: r.feedback || null,
+        feedback: r.feedback,
       },
     });
     return true;
