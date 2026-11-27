@@ -141,7 +141,7 @@ describe("O'quvchilar: botsiz kiritish, ro'yxat, karta, hisobni bog'lash (e2e)",
 
   it("shaxsiy havola: yangi Telegram hisobi bog'lanadi; ishlatilgan havola boshqaga ishlamaydi", async () => {
     const madina = (await req("GET", `/admin/roster?q=${TAG}Madina`)).json()[0];
-    const code = (await req("GET", `/admin/students/${madina.studentId}`)).json().inviteUrl.split("s_")[1];
+    const code = (await req("GET", `/admin/students/${madina.studentId}`)).json().inviteUrl.split("start=s_")[1];
     expect((await internal("claim-student", { code, from: { id: TG.linkUser, first_name: "M" } })).json()).toMatchObject({
       status: "claimed",
       groupName: `${TAG} 1-guruh`,
@@ -153,7 +153,7 @@ describe("O'quvchilar: botsiz kiritish, ro'yxat, karta, hisobni bog'lash (e2e)",
     // Avval botga kirgan hisob havolani bossa: ikkalasi birlashadi
     await login(app, TG.existing, "Oldin");
     const jasur = (await req("GET", `/admin/roster?q=${TAG}Jasur`)).json()[0];
-    const c2 = (await req("GET", `/admin/students/${jasur.studentId}`)).json().inviteUrl.split("s_")[1];
+    const c2 = (await req("GET", `/admin/students/${jasur.studentId}`)).json().inviteUrl.split("start=s_")[1];
     expect((await internal("claim-student", { code: c2, from: { id: TG.existing, first_name: "Oldin" } })).json().status).toBe("claimed");
     const u = await prisma.user.findUniqueOrThrow({ where: { telegramId: BigInt(TG.existing) }, include: { student: true } });
     expect(u).toMatchObject({ firstName: `${TAG}Jasur`, student: { groupId } });
