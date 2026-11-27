@@ -5,9 +5,10 @@
 import { PrismaClient } from "@onatili/db";
 import { Queue, Worker } from "bullmq";
 import { essayAi as essayAiSetup } from "./ai/essay/setup";
-import { ESSAY_AI_QUEUE, type EssayAiJob } from "./ai/queue";
+import { ESSAY_AI_QUEUE, type AnyEssayAiJob } from "./ai/queue";
 import { runSubscriptionReminders } from "./billing/reminders";
 import { gradeEssayJob, markEssayFailed } from "./essays/ai-runner";
+import { gradeOfflineEssayJob, markOfflineEssayFailed } from "./external/offline-essay-runner";
 import { VOICE_QUEUE, type VoiceJob } from "./voice/queue";
 import { markVoiceFailed, processVoice } from "./voice/voice-runner";
 import { purgeExpiredTrash } from "./trash/trash.service";
@@ -134,7 +135,7 @@ const cron = new Worker(
 );
 cron.on("failed", (_job, err) => console.error("[cron] xato:", err.message));
 
-/** Esse varoqlari (faqat MEDIA_DIR/essays ichidan) */
+/** Esse varoqlari (faqat MEDIA_DIR/essays ichidan; offline test essesi essays/external da) */
 async function essayImages(paths: string[]) {
   const root = resolve(env.MEDIA_DIR, "essays");
   return Promise.all(
@@ -147,21 +148,34 @@ async function essayImages(paths: string[]) {
   );
 }
 
-/** AI esse tekshiruvi (GPT + DeepSeek, 4 bosqich: tahlil + savodxonlik → qayta tekshiruv → taqriz). Bir vaqtda 3 ta: API limitlari va xarajat nazorati uchun */
-const essayAi = new Worker<EssayAiJob>(
+/**
+ * AI esse tekshiruvi (GPT + DeepSeek, 4 bosqich: tahlil + savodxonlik → qayta tekshiruv → taqriz). Bir vaqtda 3 ta: API limitlari va xarajat nazorati uchun.
+ * Bot essesi ({essayId}) va offline test essesi ({externalEssayId}) bitta navbatda.
+ */
+const essayAi = new Worker<AnyEssayAiJob>(
   ESSAY_AI_QUEUE,
   async (job) => {
     const ai = essayAiSetup(env);
     if (!ai) throw new Error("AI o'chirilgan");
     const { read, locate } = ai;
+    const deps = {
+      grade: ai.grade,
+      read: read && (async (paths: string[]) => read(await essayImages(paths))),
+      locate: locate && (async (paths: string[], phrases: string[]) => locate(await essayImages(paths), phrases)),
+    };
+    if ("externalEssayId" in job.data) {
+      const total = await gradeOfflineEssayJob(prisma, job.data.externalEssayId, deps);
+      if (total !== null) console.log(`[essay-ai] offline ${job.data.externalEssayId}: ${total} ball (taxminiy)`);
+      return;
+    }
     const total = await gradeEssayJob(
       prisma,
       job.data.essayId,
-      ai.grade,
+      deps.grade,
       (chatId, text, button) => notifyQueue.add("send", { chatId: String(chatId), text, button }),
       env.MINIAPP_URL,
-      read && (async (paths) => read(await essayImages(paths))),
-      locate && (async (paths, phrases) => locate(await essayImages(paths), phrases)),
+      deps.read,
+      deps.locate,
     );
     if (total !== null) console.log(`[essay-ai] ${job.data.essayId}: ${total} ball`);
   },
@@ -170,11 +184,16 @@ const essayAi = new Worker<EssayAiJob>(
 );
 essayAi.on("failed", async (job, err) => {
   if (!job) return;
+  const last = job.attemptsMade >= (job.opts.attempts ?? 1);
+  if ("externalEssayId" in job.data) {
+    console.error(`[essay-ai] offline ${job.data.externalEssayId} xato (${job.attemptsMade}-urinish):`, err.message);
+    if (last) await markOfflineEssayFailed(prisma, job.data.externalEssayId, err.message).catch(() => {});
+    return;
+  }
   console.error(`[essay-ai] ${job.data.essayId} xato (${job.attemptsMade}-urinish):`, err.message);
-  if (job.attemptsMade >= (job.opts.attempts ?? 1)) await markEssayFailed(prisma, job.data.essayId, err.message).catch(() => {});
+  if (last) await markEssayFailed(prisma, job.data.essayId, err.message).catch(() => {});
 });
 
-/** Ustozning ovozli izohlari: o'girish (ffmpeg) va o'quvchiga Telegram ovozli xabari */
 const voice = new Worker<VoiceJob>(
   VOICE_QUEUE,
   async (job) => {
