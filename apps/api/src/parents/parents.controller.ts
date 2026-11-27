@@ -1,7 +1,7 @@
 import { BadRequestException, Body, Controller, Delete, Get, HttpCode, Param, Post, Query, UseGuards } from "@nestjs/common";
 import { z } from "zod";
 import { parse } from "../admin/zod";
-import { CurrentUser, Public, Roles, type JwtUser } from "../auth/decorators";
+import { CurrentUser, Public, type JwtUser, Perm } from "../auth/decorators";
 import { InternalGuard } from "../staff/internal.guard";
 import { ParentsService } from "./parents.service";
 
@@ -63,21 +63,21 @@ export class ParentsController {
   }
 
   // ---- admin ----
-  @Roles("TEACHER", "ASSISTANT")
+  @Perm("PARENTS")
   @Get("admin/parent-links")
   list(@Query("status") status?: string) {
     const s = status === "PENDING" || status === "APPROVED" || status === "REJECTED" ? status : undefined;
     return this.parents.list(s);
   }
 
-  @Roles("TEACHER", "ASSISTANT")
+  @Perm("PARENTS")
   @Post("admin/parent-links/:id/approve")
   @HttpCode(200)
   approve(@CurrentUser() u: JwtUser, @Param("id") id: string) {
     return this.parents.approve(u.sub, id);
   }
 
-  @Roles("TEACHER", "ASSISTANT")
+  @Perm("PARENTS")
   @Post("admin/parent-links/:id/reject")
   @HttpCode(200)
   reject(@CurrentUser() u: JwtUser, @Param("id") id: string, @Body() b: { reason?: unknown }) {
@@ -85,7 +85,7 @@ export class ParentsController {
     return this.parents.reject(u.sub, id, b.reason);
   }
 
-  @Roles("TEACHER", "ASSISTANT")
+  @Perm("PARENTS")
   @Delete("admin/parent-links/:id")
   removeLink(@CurrentUser() u: JwtUser, @Param("id") id: string) {
     return this.parents.remove(u.sub, id);

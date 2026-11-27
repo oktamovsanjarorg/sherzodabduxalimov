@@ -1,10 +1,10 @@
 import { Body, Controller, Delete, Get, HttpCode, Param, Patch, Post, Query } from "@nestjs/common";
 import { courseInput, lessonInput, passageInput, questionInput, reorderInput, testInput, topicInput } from "@onatili/shared";
-import { CurrentUser, Roles, type JwtUser } from "../auth/decorators";
+import { CurrentUser, type JwtUser, Perm } from "../auth/decorators";
 import { AdminContentService } from "./admin-content.service";
 import { parse } from "./zod";
 
-@Roles("TEACHER", "ASSISTANT")
+@Perm("CONTENT")
 @Controller("admin")
 export class AdminContentController {
   constructor(private readonly svc: AdminContentService) {}

@@ -1,4 +1,5 @@
-import { BadRequestException, Body, ForbiddenException, Controller, Delete, Get, HttpCode, Param, Post, UseGuards } from "@nestjs/common";
+import { BadRequestException, Body, ForbiddenException, Controller, Delete, Get, HttpCode, Param, Patch, Post, UseGuards } from "@nestjs/common";
+import { staffAddBody, staffPermissionsBody } from "@onatili/shared";
 import { z } from "zod";
 import { CurrentUser, Public, Roles, type JwtUser } from "../auth/decorators";
 import { InternalGuard } from "./internal.guard";
@@ -63,9 +64,26 @@ export class StaffController {
 
   @Roles("TEACHER")
   @Post("admin/staff")
-  add(@CurrentUser() user: JwtUser, @Body() body: { username?: unknown }) {
-    if (typeof body?.username !== "string") throw new BadRequestException("username kerak");
-    return this.staff.addAssistant(user.sub, body.username);
+  add(@CurrentUser() user: JwtUser, @Body() body: unknown) {
+    const p = staffAddBody.safeParse(body);
+    if (!p.success) throw new BadRequestException("username va ruxsatlar kerak");
+    return this.staff.addAssistant(user.sub, p.data.username, p.data.permissions);
+  }
+
+  @Roles("TEACHER")
+  @Patch("admin/staff/:id/permissions")
+  setPermissions(@CurrentUser() user: JwtUser, @Param("id") id: string, @Body() body: unknown) {
+    const p = staffPermissionsBody.safeParse(body);
+    if (!p.success) throw new BadRequestException("Ruxsatlar noto'g'ri");
+    return this.staff.setPermissions(user.sub, id, p.data.permissions);
+  }
+
+  @Roles("TEACHER")
+  @Patch("admin/invites/:username/permissions")
+  setInvitePermissions(@CurrentUser() user: JwtUser, @Param("username") username: string, @Body() body: unknown) {
+    const p = staffPermissionsBody.safeParse(body);
+    if (!p.success) throw new BadRequestException("Ruxsatlar noto'g'ri");
+    return this.staff.setInvitePermissions(user.sub, username, p.data.permissions);
   }
 
   @Roles("TEACHER")

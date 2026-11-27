@@ -15,7 +15,7 @@ import {
 } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import { loadSession } from "../lib/session";
+import { can } from "../lib/session";
 import { PaymentInsightsView } from "./PaymentInsights";
 import { PageHeader, Spinner, Segmented } from "../components/ui";
 import { api, errMsg } from "../lib/api";
@@ -36,7 +36,7 @@ const ddmm = (iso: string) => `${iso.slice(8, 10)}.${iso.slice(5, 7)}`;
 export function StatsPage() {
   const [month, setMonth] = useState(thisMonth());
   const [params, setParams] = useSearchParams();
-  const isTeacher = loadSession()?.user.role === "TEACHER";
+  const isTeacher = can("PAYMENTS");
   const tab = isTeacher && params.get("tab") === "pay" ? "pay" : "main";
   const q = useQuery({ queryKey: ["stats", month], queryFn: () => api.stats(month), enabled: tab === "main" });
   const current = month >= thisMonth();

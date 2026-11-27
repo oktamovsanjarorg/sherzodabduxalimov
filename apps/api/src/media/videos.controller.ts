@@ -1,13 +1,13 @@
 import { BadRequestException, Body, Controller, Delete, Get, HttpCode, Param, Post, Put, Query, Req } from "@nestjs/common";
 import type { FastifyRequest } from "fastify";
 import { z } from "zod";
-import { CurrentUser, Roles, type JwtUser } from "../auth/decorators";
+import { CurrentUser, type JwtUser, Perm } from "../auth/decorators";
 import { parse } from "../admin/zod";
 import { VideosService } from "./videos.service";
 
 const createBody = z.object({ filename: z.string().min(1).max(255), size: z.number().int().positive() });
 
-@Roles("TEACHER", "ASSISTANT")
+@Perm("CONTENT")
 @Controller("admin/videos")
 export class VideosController {
   constructor(private readonly videos: VideosService) {}

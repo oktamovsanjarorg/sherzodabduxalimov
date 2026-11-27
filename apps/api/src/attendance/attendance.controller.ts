@@ -2,15 +2,18 @@ import { Body, Controller, Delete, Get, HttpCode, Param, Patch, Post, Put, Query
 import { attendanceNotifyInput, attendanceSaveInput, groupInput } from "@onatili/shared";
 import { z } from "zod";
 import { parse } from "../admin/zod";
-import { CurrentUser, Roles, type JwtUser } from "../auth/decorators";
+import { CurrentUser, type JwtUser, Perm } from "../auth/decorators";
 import { AttendanceService } from "./attendance.service";
 
-@Roles("TEACHER", "ASSISTANT")
+@Perm("GROUPS")
 @Controller("admin")
 export class AttendanceController {
   constructor(private readonly svc: AttendanceService) {}
 
-  @Get("groups") groups() {
+  // Guruhlar ro'yxati filtr sifatida boshqa bo'limlarda ham kerak
+  @Perm("GROUPS", "STUDENTS", "PAYMENTS", "ANNOUNCE")
+  @Get("groups")
+  groups() {
     return this.svc.listGroups();
   }
   @Post("groups") create(@CurrentUser() u: JwtUser, @Body() b: unknown) {
@@ -33,7 +36,9 @@ export class AttendanceController {
     return this.svc.removeStudent(u.sub, id, sid);
   }
 
-  @Get("students") search(@Query("search") q = "") {
+  @Perm("GROUPS", "PAYMENTS")
+  @Get("students")
+  search(@Query("search") q = "") {
     return this.svc.searchStudents(q);
   }
 

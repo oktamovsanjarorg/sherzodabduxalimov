@@ -1,6 +1,6 @@
 import { BadRequestException, ForbiddenException, Inject, Injectable, NotFoundException, UnauthorizedException } from "@nestjs/common";
 import { JwtService, type JwtSignOptions } from "@nestjs/jwt";
-import { STAFF_ROLES, type AuthResponse, type RoleName } from "@onatili/shared";
+import { STAFF_ROLES, effectivePermissions, type AuthResponse, type Permission, type RoleName, type StaffList } from "@onatili/shared";
 import { createHash, randomBytes } from "node:crypto";
 import { ENV, type Env } from "../config/env";
 import { NotifyService, type Keyboard } from "../notify/notify.service";
@@ -108,7 +108,7 @@ export class StaffService {
       const invite = await this.prisma.staffInvite.findUnique({ where: { username: uname } });
       if (invite) {
         [user] = await this.prisma.$transaction([
-          this.prisma.user.update({ where: { id: user.id }, data: { role: invite.role } }),
+          this.prisma.user.update({ where: { id: user.id }, data: { role: invite.role, permissions: invite.permissions } }),
           this.prisma.staffInvite.delete({ where: { username: uname } }),
         ]);
       }
@@ -154,23 +154,28 @@ export class StaffService {
 
   // ---------------- Xodimlarni boshqarish (faqat TEACHER) ----------------
 
-  async list() {
+  async list(): Promise<StaffList> {
     const [staff, invites] = await Promise.all([
       this.prisma.user.findMany({
         where: { role: { in: ["TEACHER", "ASSISTANT"] } },
         orderBy: [{ role: "desc" }, { createdAt: "asc" }],
-        select: { id: true, firstName: true, lastName: true, username: true, role: true, createdAt: true },
+        select: { id: true, firstName: true, lastName: true, username: true, role: true, permissions: true, createdAt: true },
       }),
       this.prisma.staffInvite.findMany({ orderBy: { createdAt: "asc" } }),
     ]);
     return {
-      staff: staff.map((s) => ({ ...s, isOwner: this.isOwnerUsername(s.username) })),
-      invites: invites.map((i) => ({ username: i.username, role: i.role, createdAt: i.createdAt })),
+      staff: staff.map(({ createdAt: _c, ...s }) => ({
+        ...s,
+        role: s.role as "TEACHER" | "ASSISTANT",
+        permissions: effectivePermissions(s.role, s.permissions),
+        isOwner: this.isOwnerUsername(s.username),
+      })),
+      invites: invites.map((i) => ({ username: i.username, role: i.role, permissions: [...i.permissions], createdAt: i.createdAt.toISOString() })),
     };
   }
 
-  /** Yordamchi qo'shadi: username bo'yicha. Foydalanuvchi hali botga kirmagan bo'lsa, taklif saqlanadi. */
-  async addAssistant(actorId: string, rawUsername: string) {
+  /** Yordamchi qo'shadi: username bo'yicha, berilgan ruxsatlar bilan. Hali botga kirmagan bo'lsa, taklif saqlanadi. */
+  async addAssistant(actorId: string, rawUsername: string, permissions: Permission[]) {
     const username = normUsername(rawUsername);
     if (!/^[a-z0-9_]{4,32}$/.test(username)) throw new BadRequestException("Telegram username noto'g'ri");
     if (this.owners.has(username)) throw new BadRequestException("Bu foydalanuvchi allaqachon ega");
@@ -178,17 +183,34 @@ export class StaffService {
     const existing = await this.prisma.user.findFirst({ where: { username: { equals: username, mode: "insensitive" } } });
     if (existing) {
       if (existing.role === "TEACHER") throw new BadRequestException("Bu foydalanuvchi allaqachon ega");
-      await this.prisma.user.update({ where: { id: existing.id }, data: { role: "ASSISTANT" } });
-      await this.audit(actorId, "staff.add", existing.id, { username });
+      await this.prisma.user.update({ where: { id: existing.id }, data: { role: "ASSISTANT", permissions } });
+      await this.audit(actorId, "staff.add", existing.id, { username, permissions });
       return { status: "added" as const };
     }
     await this.prisma.staffInvite.upsert({
       where: { username },
-      update: { role: "ASSISTANT", invitedById: actorId },
-      create: { username, role: "ASSISTANT", invitedById: actorId },
+      update: { role: "ASSISTANT", permissions, invitedById: actorId },
+      create: { username, role: "ASSISTANT", permissions, invitedById: actorId },
     });
-    await this.audit(actorId, "staff.invite", null, { username });
+    await this.audit(actorId, "staff.invite", null, { username, permissions });
     return { status: "invited" as const };
+  }
+
+  /** Yordamchi ruxsatlarini almashtiradi. Egada ruxsat o'zgarmaydi (unda doim hammasi) */
+  async setPermissions(actorId: string, userId: string, permissions: Permission[]) {
+    const u = await this.prisma.user.findUnique({ where: { id: userId }, select: { role: true, username: true, permissions: true } });
+    if (!u || u.role !== "ASSISTANT") throw new NotFoundException("Yordamchi topilmadi");
+    await this.prisma.user.update({ where: { id: userId }, data: { permissions } });
+    await this.audit(actorId, "staff.permissions", userId, { username: u.username, from: u.permissions, to: permissions });
+    return { ok: true };
+  }
+
+  async setInvitePermissions(actorId: string, rawUsername: string, permissions: Permission[]) {
+    const username = normUsername(rawUsername);
+    const { count } = await this.prisma.staffInvite.updateMany({ where: { username }, data: { permissions } });
+    if (!count) throw new NotFoundException("Taklif topilmadi");
+    await this.audit(actorId, "staff.invite.permissions", null, { username, to: permissions });
+    return { ok: true };
   }
 
   async removeStaff(actorId: string, userId: string) {

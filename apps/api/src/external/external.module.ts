@@ -1,7 +1,7 @@
 import { Body, Controller, Delete, Get, Global, HttpCode, Module, Param, Patch, Post, Query } from "@nestjs/common";
 import { z } from "zod";
 import { parse } from "../admin/zod";
-import { CurrentUser, Roles, type JwtUser } from "../auth/decorators";
+import { CurrentUser, type JwtUser, Perm } from "../auth/decorators";
 import { ExternalEssayService } from "./external-essay.service";
 import { ExternalService } from "./external.service";
 
@@ -9,7 +9,7 @@ import { ExternalService } from "./external.service";
 const csvBody = z.object({ fileName: z.string().max(200), title: z.string().max(200).nullish().default(null), content: z.string().min(1).max(2_000_000) });
 
 /** Offline test natijalarini import qilish va tahlil: ustoz va yordamchi */
-@Roles("TEACHER", "ASSISTANT")
+@Perm("EXTERNAL")
 @Controller("admin/external-tests")
 export class AdminExternalController {
   constructor(

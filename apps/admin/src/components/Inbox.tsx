@@ -6,7 +6,7 @@ import { Link } from "react-router-dom";
 import { Badge, ConfirmButton } from "./ui";
 import { api, errMsg } from "../lib/api";
 import { fmtShortDateTime } from "../lib/format";
-import { loadSession } from "../lib/session";
+import { can } from "../lib/session";
 import { useToast } from "../lib/toast";
 import { LinkCard } from "../pages/ParentsPage";
 
@@ -17,7 +17,7 @@ import { LinkCard } from "../pages/ParentsPage";
 export function Inbox({ groups }: { groups: AdminGroup[] }) {
   const news = useQuery({ queryKey: ["newcomers"], queryFn: api.newcomers, refetchInterval: 30_000 });
   const parents = useQuery({ queryKey: ["parent-links", "PENDING"], queryFn: () => api.parentLinks("PENDING"), refetchInterval: 30_000 });
-  const isTeacher = loadSession()?.user.role === "TEACHER";
+  const isTeacher = can("STUDENT_ACCESS");
   const dups = useQuery({ queryKey: ["duplicates"], queryFn: api.duplicates, enabled: isTeacher, refetchInterval: 60_000 });
   const n = news.data?.length ?? 0;
   const p = parents.data?.length ?? 0;
@@ -113,7 +113,7 @@ function writeOpen(v: boolean) {
 function Newcomer({ s, groups }: { s: NewcomerRow; groups: AdminGroup[] }) {
   const toast = useToast();
   const qc = useQueryClient();
-  const isTeacher = loadSession()?.user.role === "TEACHER";
+  const isTeacher = can("STUDENT_ACCESS");
   const [groupId, setGroupId] = useState(groups[0]?.id ?? "");
   const done = (msg: string) => {
     toast(msg);

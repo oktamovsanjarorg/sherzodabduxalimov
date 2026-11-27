@@ -1,4 +1,4 @@
-import type { Me } from "@onatili/shared";
+import { hasPermission, type Me, type Permission } from "@onatili/shared";
 
 const KEY = "onatili-admin-session";
 
@@ -30,4 +30,15 @@ export function parseTtl(ttl: string): number {
   const m = /^(\d+)([smhd])$/.exec(ttl);
   if (!m) return 3600_000;
   return Number(m[1]) * { s: 1000, m: 60_000, h: 3600_000, d: 86_400_000 }[m[2] as "s" | "m" | "h" | "d"];
+}
+
+/** Joriy xodimda shu ruxsat bormi (ustozda doim bor). Asl tekshiruv backend'da, bu faqat ko'rsatish uchun */
+export function can(p: Permission): boolean {
+  const s = loadSession();
+  return !!s && hasPermission(s.user, p);
+}
+
+/** Ega (ustoz): xodimlar, zaxira, eksport faqat unda */
+export function isOwner(): boolean {
+  return loadSession()?.user.role === "TEACHER";
 }

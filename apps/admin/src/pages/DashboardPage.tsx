@@ -6,13 +6,12 @@ import { AdviceList, useReconcileAdvice } from "../components/Advisor";
 import { TodoList } from "../components/TodoList";
 import { Spinner } from "../components/ui";
 import { api, errMsg } from "../lib/api";
-import { loadSession } from "../lib/session";
+import { can, loadSession } from "../lib/session";
 import { todoItems } from "../lib/todo";
 
 export function DashboardPage() {
   const d = useQuery({ queryKey: ["dashboard"], queryFn: api.dashboard, refetchInterval: 30_000 });
   const name = loadSession()?.user.firstName ?? "";
-  const isTeacher = loadSession()?.user.role === "TEACHER";
 
   if (d.isPending) return <Spinner className="text-ink-4" />;
   if (d.isError) return <p className="text-sm text-red-600">{errMsg(d.error)}</p>;
@@ -25,29 +24,37 @@ export function DashboardPage() {
       </div>
 
       {/* Bugun nima qilish kerak */}
-      <TodoList items={todoItems(x, isTeacher)} />
+      <TodoList items={todoItems(x, can)} />
 
       {/* Yordamchi: eng muhim tavsiyalar (to'liq ro'yxat /advisor da) */}
-      <AdvisorTeaser />
+      {can("STATS") && <AdvisorTeaser />}
 
       {/* Tezkor amallar */}
-      <section>
-        <h2 className="label mb-2">Tezkor amallar</h2>
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-          <Quick to="/content" Icon={Plus} label="Dars qo'shish" />
-          <Quick to="/questions" Icon={LibraryBig} label="Savollar banki" />
-          <Quick to="/tests/new?type=MOCK" Icon={ClipboardList} label="Mock test" />
-          <Quick to="/attendance" Icon={CalendarCheck} label="Davomat" />
-        </div>
-      </section>
+      {(can("CONTENT") || can("GROUPS")) && (
+        <section>
+          <h2 className="label mb-2">Tezkor amallar</h2>
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+            {can("CONTENT") && (
+              <>
+                <Quick to="/content" Icon={Plus} label="Dars qo'shish" />
+                <Quick to="/questions" Icon={LibraryBig} label="Savollar banki" />
+                <Quick to="/tests/new?type=MOCK" Icon={ClipboardList} label="Mock test" />
+              </>
+            )}
+            {can("GROUPS") && <Quick to="/attendance" Icon={CalendarCheck} label="Davomat" />}
+          </div>
+        </section>
+      )}
 
       {/* Ko'rsatkichlar */}
       <section>
         <div className="mb-2 flex items-center justify-between">
           <h2 className="label">Ko'rsatkichlar</h2>
-          <Link to="/stats" className="tap flex items-center gap-1 text-sm font-bold text-brand hover:underline">
-            Batafsil statistika <ChevronRight size={15} />
-          </Link>
+          {can("STATS") && (
+            <Link to="/stats" className="tap flex items-center gap-1 text-sm font-bold text-brand hover:underline">
+              Batafsil statistika <ChevronRight size={15} />
+            </Link>
+          )}
         </div>
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
           <Stat

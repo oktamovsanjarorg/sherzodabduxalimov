@@ -5,7 +5,7 @@ import { AREA_ICON, AdviceItem, LEVEL, useAdvice, useReconcileAdvice } from "../
 import { Spinner } from "../components/ui";
 import { api, errMsg } from "../lib/api";
 import { fmtDateTime } from "../lib/format";
-import { loadSession } from "../lib/session";
+import { can } from "../lib/session";
 
 /** Bo'limlar tartibi: kundalik ish (pul, esse, davomat) tepada, sekin o'zgaradiganlar pastda */
 const AREAS: AdviceArea[] = ["payments", "essays", "attendance", "learning", "activity", "parents", "content"];
@@ -21,7 +21,7 @@ export function AdvisorPage() {
   if (q.isPending) return <Spinner className="text-ink-4" />;
   if (q.isError) return <p className="text-sm text-red-600">{errMsg(q.error)}</p>;
   const d = q.data;
-  const isTeacher = loadSession()?.user.role === "TEACHER";
+  const isTeacher = can("PAYMENTS");
   const areas = AREAS.filter((a) => isTeacher || a !== "payments");
   const urgent = adv.shown.filter((a) => a.level === "urgent");
   const rest = adv.shown.filter((a) => a.level !== "urgent");

@@ -1,5 +1,9 @@
 import type {
   PlatformAdvice,
+  Me,
+  Permission,
+  StaffAddInput,
+  StaffList,
   StudentAdvice,
   PaymentInsights,
   NewcomerRow,
@@ -111,11 +115,6 @@ export interface TrashRow {
   deletedBy: string | null;
   createdAt: string;
   purgeAt: string;
-}
-
-export interface StaffList {
-  staff: { id: string; firstName: string; lastName: string | null; username: string | null; role: "TEACHER" | "ASSISTANT"; isOwner: boolean }[];
-  invites: { username: string; role: string; createdAt: string }[];
 }
 
 export const api = {
@@ -350,7 +349,11 @@ export const api = {
     d: { points?: number; special?: string | null; criteria?: { key: string; score: number }[]; comment: string | null },
   ) => request<{ points: number; score: number }>(`/admin/essays/${attemptId}/${questionId}`, json("POST", d)),
   staff: () => request<StaffList>("/admin/staff"),
-  addStaff: (username: string) => request<{ status: "added" | "invited" }>("/admin/staff", json("POST", { username })),
+  me: () => request<Me>("/me"),
+  addStaff: (d: StaffAddInput) => request<{ status: "added" | "invited" }>("/admin/staff", json("POST", d)),
+  setStaffPermissions: (id: string, permissions: Permission[]) => request(`/admin/staff/${id}/permissions`, json("PATCH", { permissions })),
+  setInvitePermissions: (username: string, permissions: Permission[]) =>
+    request(`/admin/invites/${encodeURIComponent(username)}/permissions`, json("PATCH", { permissions })),
   removeStaff: (id: string) => request(`/admin/staff/${id}`, json("DELETE")),
   removeInvite: (username: string) => request(`/admin/invites/${encodeURIComponent(username)}`, json("DELETE")),
 };

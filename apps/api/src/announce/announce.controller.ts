@@ -1,10 +1,10 @@
 import { Body, Controller, Delete, Get, Headers, HttpCode, Param, Patch, Post, Res } from "@nestjs/common";
 import type { FastifyReply } from "fastify";
-import { CurrentUser, Roles, type JwtUser } from "../auth/decorators";
+import { CurrentUser, type JwtUser, Perm } from "../auth/decorators";
 import { AnnounceService } from "./announce.service";
 
 /** E'lonlar: ommaviy xabarlar (bot orqali). Faqat ustoz: hammaga yozish katta mas'uliyat */
-@Roles("TEACHER")
+@Perm("ANNOUNCE")
 @Controller("admin/announcements")
 export class AnnounceController {
   constructor(private readonly svc: AnnounceService) {}

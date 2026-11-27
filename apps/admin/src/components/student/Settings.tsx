@@ -4,14 +4,14 @@ import { Trash2 } from "lucide-react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { api, errMsg } from "../../lib/api";
-import { loadSession } from "../../lib/session";
+import { can } from "../../lib/session";
 import { useToast } from "../../lib/toast";
 import { Field, Modal } from "../ui";
 import { Section } from "./shared";
 
 /** Sozlamalar: guruh, boshlagan sana, ilovaga kirish, bloklash, o'chirish. Kirish va bloklash faqat egaga */
 export function StudentSettings({ s }: { s: StudentDetail }) {
-  const isTeacher = loadSession()?.user.role === "TEACHER";
+  const isTeacher = can("STUDENT_ACCESS");
   return (
     <div className="space-y-4">
       <Basics s={s} />

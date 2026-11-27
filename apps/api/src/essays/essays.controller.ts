@@ -3,7 +3,7 @@ import { ESSAY_STATS_PERIODS, createEssayInput, essayAnnotationsSchema, teacherE
 import type { FastifyReply } from "fastify";
 import { z } from "zod";
 import { parse } from "../admin/zod";
-import { CurrentUser, Roles, type JwtUser } from "../auth/decorators";
+import { CurrentUser, type JwtUser, Perm } from "../auth/decorators";
 import { EssayStatsService } from "./essay-stats.service";
 import { EssaysService } from "./essays.service";
 
@@ -62,7 +62,7 @@ export class EssaysController {
 }
 
 /** Ustoz va yordamchi: qo'lyozma esselarni baholash */
-@Roles("TEACHER", "ASSISTANT")
+@Perm("ESSAYS")
 @Controller("admin/hw-essays")
 export class AdminHwEssaysController {
   constructor(private readonly svc: EssaysService) {}
@@ -80,8 +80,8 @@ export class AdminHwEssaysController {
   }
 }
 
-/** Faqat ega: ustoz tekshiruvi narxi */
-@Roles("TEACHER")
+/** Ustoz tekshiruvi narxi: «Tariflar va narxlar» ruxsati */
+@Perm("BILLING")
 @Controller("admin/essay-settings")
 export class AdminEssaySettingsController {
   constructor(private readonly svc: EssaysService) {}
@@ -102,7 +102,7 @@ const period = (v?: string): EssayStatsPeriod => {
 };
 
 /** Ustoz va yordamchi: barcha erkin esselar (AI va ustoz) statistikasi va jurnali */
-@Roles("TEACHER", "ASSISTANT")
+@Perm("ESSAYS")
 @Controller("admin/essay-log")
 export class AdminEssayLogController {
   constructor(

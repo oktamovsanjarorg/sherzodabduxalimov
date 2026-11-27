@@ -1,6 +1,6 @@
 import { BadRequestException, Controller, Get, Query } from "@nestjs/common";
 import { MILLIY_LEVELS, type TeacherStats } from "@onatili/shared";
-import { CurrentUser, Roles, type JwtUser } from "../auth/decorators";
+import { CurrentUser, type JwtUser, Perm, can } from "../auth/decorators";
 import { PrismaService } from "../prisma/prisma.service";
 import { defaultMonthlyFee } from "../billing/fee";
 import { milliyOf, milliySelect } from "../tests/milliy";
@@ -25,7 +25,7 @@ const monthDate = (m: string) => new Date(`${m}-01T00:00:00Z`);
  * Ustoz statistikasi: tanlangan oy bo'yicha o'quvchilar, davomat, natijalar, esselar va kimga e'tibor kerakligi.
  * Daromad faqat egaga (yordamchi pulga oid ma'lumot ko'rmaydi).
  */
-@Roles("TEACHER", "ASSISTANT")
+@Perm("STATS")
 @Controller("admin/stats")
 export class StatsController {
   constructor(private readonly prisma: PrismaService) {}
@@ -196,7 +196,7 @@ export class StatsController {
       attention: attention.slice(0, 15),
       top,
       weeks: await this.weeks(now),
-      income: u.role === "TEACHER" ? await this.income(month, offline) : null,
+      income: can(u, "PAYMENTS") ? await this.income(month, offline) : null,
     };
   }
 

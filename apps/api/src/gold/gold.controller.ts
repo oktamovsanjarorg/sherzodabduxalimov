@@ -2,12 +2,12 @@ import { Body, Controller, Delete, Get, Param, ParseIntPipe, Post, Put, Res } fr
 import { goldCreateInput, goldFromEssayInput, goldRatingInput, goldTranscriptInput } from "@onatili/shared";
 import type { FastifyReply } from "fastify";
 import { parse } from "../admin/zod";
-import { CurrentUser, Roles, type JwtUser } from "../auth/decorators";
+import { CurrentUser, Roles, type JwtUser, Perm } from "../auth/decorators";
 import { GoldService } from "./gold.service";
 
 /** Esse AI o'lchovi uchun sinov to'plami: ustoz va yordamchi to'ldiradi, eksportni faqat ustoz oladi */
 @Controller("admin/gold")
-@Roles("TEACHER", "ASSISTANT")
+@Perm("ESSAYS")
 export class GoldController {
   constructor(private readonly svc: GoldService) {}
 
