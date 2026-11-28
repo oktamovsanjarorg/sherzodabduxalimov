@@ -3,13 +3,22 @@ import { offlineEssayCheckBody, offlineEssayConfirmBody, offlineEssayPromptBody 
 import type { FastifyReply } from "fastify";
 import { parse } from "../admin/zod";
 import { CurrentUser, type JwtUser, Perm } from "../auth/decorators";
+import { OfflineEssayReviewService } from "./offline-essay-review.service";
 import { OfflineEssayService } from "./offline-essay.service";
 
 /** Offline test essesi: varoq rasmi → AI taxminiy baho → ustoz tasdig'i. «Esselar» ruxsati */
 @Perm("ESSAYS")
 @Controller("admin/offline-essays")
 export class OfflineEssayController {
-  constructor(private readonly svc: OfflineEssayService) {}
+  constructor(
+    private readonly svc: OfflineEssayService,
+    private readonly reviews: OfflineEssayReviewService,
+  ) {}
+
+  /** AI va ustoz: ustoz baholagan esselar bo'yicha AI qanchalik adashadi */
+  @Get("agreement") agreement() {
+    return this.reviews.agreement();
+  }
 
   @Get("tests") tests() {
     return this.svc.tests();
@@ -45,8 +54,8 @@ export class OfflineEssayController {
     return res.header("Content-Type", r.mime).header("Cache-Control", "private, no-store").send(r.data);
   }
 
-  /** Ustoz tasdiqlagan yakuniy ball natijaga yoziladi */
+  /** Ustoz bahosi (12 band): yakuniy ball natijaga yoziladi */
   @Post(":resultId/confirm") @HttpCode(200) confirm(@CurrentUser() u: JwtUser, @Param("resultId") resultId: string, @Body() b: unknown) {
-    return this.svc.confirm(u.sub, resultId, parse(offlineEssayConfirmBody, b).score);
+    return this.reviews.confirm(u.sub, resultId, parse(offlineEssayConfirmBody, b));
   }
 }

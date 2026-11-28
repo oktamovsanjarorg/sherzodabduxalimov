@@ -7,6 +7,7 @@ export interface GoldExportEssay {
   topic: string;
   imageUrls: string[];
   transcript: string | null;
+  aiText: string | null;
   marks: unknown;
   ratings: { raterId: string; scores: unknown; special: string | null }[];
 }
@@ -14,7 +15,7 @@ export interface GoldExportEssay {
 const KEYS = ESSAY_RUBRIC.map((c) => c.key as string);
 
 /**
- * docs/ESSAY_AI_EVAL.md formatidagi zip: gold/<eNNN>/{topic.txt, 1.jpg.., transcript.txt}, gold/scores.csv.
+ * docs/ESSAY_AI_EVAL.md formatidagi zip: gold/<eNNN>/{topic.txt, 1.jpg.., transcript.txt, ai_text.txt?}, gold/scores.csv.
  * Ism va Telegram ma'lumoti kirmaydi: esse e001.., baholovchi U1, U2.. (har bir ustoz hamma joyda bir xil kod).
  */
 export async function buildGoldZip(files: GoldFiles, essays: GoldExportEssay[]): Promise<{ zip: Uint8Array; essays: number; skippedMarks: number }> {
@@ -34,6 +35,8 @@ export async function buildGoldZip(files: GoldFiles, essays: GoldExportEssay[]):
       skippedMarks += g.skipped;
       out[`gold/${code}/transcript.txt`] = strToU8(g.markup + "\n");
     }
+    // AI o'qigan matn: transcript.txt bilan solishtirib AI o'qish aniqligi o'lchanadi
+    if (e.aiText) out[`gold/${code}/ai_text.txt`] = strToU8(e.aiText + "\n");
     for (const r of e.ratings) {
       if (!raters.has(r.raterId)) raters.set(r.raterId, `U${raters.size + 1}`);
       const s = (r.scores ?? {}) as Record<string, number>;

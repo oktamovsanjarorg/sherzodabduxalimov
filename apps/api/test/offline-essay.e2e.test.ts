@@ -1,6 +1,6 @@
 import type { NestFastifyApplication } from "@nestjs/platform-fastify";
 import { PrismaClient } from "@onatili/db";
-import { NO_ESSAY_ERROR } from "@onatili/shared";
+import { ESSAY_RUBRIC, ESSAY_SPECIAL, NO_ESSAY_ERROR } from "@onatili/shared";
 import { Queue } from "bullmq";
 import { existsSync } from "node:fs";
 import { join } from "node:path";
@@ -21,6 +21,7 @@ const ENV_KEYS = ["AI_PROVIDER", "DEEPSEEK_API_KEY", "GEMINI_API_KEY"] as const;
 const savedEnv = Object.fromEntries(ENV_KEYS.map((k) => [k, process.env[k]]));
 
 const ESSAY = "Ona tilim mening faxrim. Men uni sevaman va asrayman. ".repeat(12);
+const bands = (v: number) => Object.fromEntries(ESSAY_RUBRIC.map((c) => [c.key, v]));
 const read = async () => ESSAY;
 const locate = async () => [];
 const grade = async () =>
@@ -46,6 +47,7 @@ describe("Offline test essesi: rasm → AI taxminiy baho → ustoz tasdig'i (e2e
   let H: Record<string, string>;
   let testId = "";
   let r1 = "";
+  let r2 = "";
   let r3 = "";
   const req = (method: "GET" | "POST" | "PUT" | "DELETE", url: string, payload?: object, headers = H) =>
     app.inject({ method, url: `/api${url}`, headers, payload });
@@ -62,7 +64,7 @@ describe("Offline test essesi: rasm → AI taxminiy baho → ustoz tasdig'i (e2e
     H = (await login(app, TG.owner, "Ega", OWNER)).headers;
     testId = (await prisma.externalTest.create({ data: { source: "CSV", code: CODE, title: "E2E Milliy", questionCount: 40 } })).id;
     r1 = (await result(testId, "name:ali", 60)).id;
-    await result(testId, "name:vali", 50);
+    r2 = (await result(testId, "name:vali", 50)).id;
     r3 = (await result(testId, "name:oddiy", null)).id;
   });
   afterAll(async () => {
@@ -118,19 +120,53 @@ describe("Offline test essesi: rasm → AI taxminiy baho → ustoz tasdig'i (e2e
     expect(await gradeOfflineEssayJob(prisma, e.id, { grade, read, locate })).toBeNull();
   });
 
-  it("ustoz tasdiqlaydi: ball natijaga yoziladi, AI taxmini audit'da qoladi", async () => {
-    expect((await req("POST", `/admin/offline-essays/${r1}/confirm`, { score: 18.3 })).statusCode).toBe(400);
-    const c = await req("POST", `/admin/offline-essays/${r1}/confirm`, { score: 18 });
+  it("ustoz 12 band bo'yicha baholaydi: ball serverda hisoblanadi, bandlar va AI taxmini o'lchov uchun saqlanadi", async () => {
+    const confirm = (resultId: string, body: object) => req("POST", `/admin/offline-essays/${resultId}/confirm`, body);
+    const agreement = async () => (await req("GET", "/admin/offline-essays/agreement")).json();
+    const before = await agreement();
+    // To'liq bo'lmagan yoki noto'g'ri qadamli baho qabul qilinmaydi
+    expect((await confirm(r1, { scores: { views: 1.5 } })).statusCode).toBe(400);
+    expect((await confirm(r1, { scores: bands(1.3) })).statusCode).toBe(400);
+
+    // Ustoz AI matnidagi bitta so'zni varoqdagidek tuzatgan
+    const fixed = ESSAY.trim().replace("faxrim.", "faxirim.");
+    const c = await confirm(r1, { scores: bands(1), transcript: fixed, score: 24 });
     expect(c.statusCode).toBe(200);
+    expect(c.json()).toMatchObject({ essayScore: 12, transcript: fixed, review: { total: 12, aiTotal: 1.5, reviewer: "Ega", special: null } });
     const r = await prisma.externalResult.findUniqueOrThrow({ where: { id: r1 } });
-    expect(r.essayScore).toBe(18);
+    expect(r.essayScore).toBe(12);
     expect(r.scaledScore).not.toBeNull();
+    expect((await essay()).review).toMatchObject({ total: 12, ai: { total: 1.5 } });
     const log = await prisma.auditLog.findFirst({ where: { action: "external.essay.confirm", entityId: testId }, orderBy: { createdAt: "desc" } });
-    expect(log?.meta).toMatchObject({ resultId: r1, score: 18, ai: 1.5 });
+    expect(log?.meta).toMatchObject({ resultId: r1, score: 12, ai: 1.5 });
+
+    const after = await agreement();
+    expect(after.count).toBe(before.count + 1);
+    expect(after.transcripts.count).toBe(before.transcripts.count + 1);
+    expect(after.transcripts.errors).toBe(before.transcripts.errors + 1);
+    expect(after.bands.find((b: { key: string }) => b.key === "views")).toBeTruthy();
+
+    // Maxsus holat: bandlarsiz, ball qoidadan; matn belgilanmagan — saqlanmaydi
+    const sp = (await confirm(r1, { special: "OFF_TOPIC", transcript: null })).json();
+    expect(sp).toMatchObject({ essayScore: ESSAY_SPECIAL.OFF_TOPIC.score, transcript: null, review: { special: "OFF_TOPIC", scores: {} } });
+
+    // Varog'i yo'q natija: ball yoziladi, solishtiruv yozuvi yaratilmaydi
+    const none = (await confirm(r2, { scores: bands(2) })).json();
+    expect(none).toMatchObject({ essayScore: 24, status: "NONE", review: null });
+    expect(await prisma.externalEssay.count({ where: { resultId: r2 } })).toBe(0);
+  });
+
+  it("yordamchi ham baholay oladi («Esselar» ruxsati bilan)", async () => {
+    await prisma.user.update({ where: { telegramId: BigInt(TG.helper) }, data: { permissions: ["ESSAYS"] } });
+    const A = (await login(app, TG.helper, "Yordamchi")).headers;
+    const c = await req("POST", `/admin/offline-essays/${r1}/confirm`, { scores: bands(1.5) }, A);
+    expect(c.statusCode).toBe(200);
+    expect(c.json().review).toMatchObject({ total: 18, reviewer: "Yordamchi" });
   });
 
   it("varoq qo'shilsa eski AI bahosi eskiradi; xato va «esse topilmadi» holatlari", async () => {
-    expect((await img(r1)).json()).toMatchObject({ status: "DRAFT", pages: 2, ai: null, text: null });
+    // Ustoz bahosi eski varoqlarga tegishli: solishtiruvdan chiqadi, natijadagi ball qoladi
+    expect((await img(r1)).json()).toMatchObject({ status: "DRAFT", pages: 2, ai: null, text: null, review: null, transcript: null, essayScore: 18 });
 
     await req("POST", `/admin/offline-essays/tests/${testId}/check`, { resultIds: [r1] });
     const e = await essay();

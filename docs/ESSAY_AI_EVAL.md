@@ -38,6 +38,9 @@ Har bir esse alohida papkada turadi: `eval-data/gold/<esse>/`.
 | `topic.txt`         | Topshiriq (vaziyat) matni                                                  |
 | `1.jpg`, `2.jpg`, … | Varoq rasmlari, tartib bilan. Faqat o'quvchi roziligi bilan                |
 | `transcript.txt`    | O'quvchi yozganini **aynan** ko'chirilgan matn, xatolari belgilangan holda |
+| `ai_text.txt`       | Ixtiyoriy: qo'lyozmani AI o'qigan matn (ustoz shundan boshlab tuzatgan)    |
+
+Qo'lyozmada ustoz matnni noldan yozmaydi: AI o'qigan matn tayyor turadi, ustoz varoqqa qarab faqat noto'g'ri o'qilgan joylarni tuzatadi. Xavfi bor: AI o'quvchining xatosini o'zi tuzatib yuborgan bo'lsa, ustoz buni sezmay qolishi mumkin. Shuning uchun ko'chirish oynasida ustozga aynan shu joylarni tekshirish eslatiladi.
 
 ### Xatolarni belgilash
 

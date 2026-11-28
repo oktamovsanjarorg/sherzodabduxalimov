@@ -80,7 +80,7 @@ function Progress({ s, onAdd }: { s: GoldList["summary"]; onAdd: () => void }) {
       </p>
       <ol className="list-decimal space-y-0.5 pl-5 text-sm text-ink-2">
         <li>Esseni qo'shing (botdagi yoki qog'ozdagi, o'quvchi roziligi bilan).</li>
-        <li>Varoqdagi matnni harfma-harf ko'chiring va xatolarni belgilang.</li>
+        <li>Matnni tekshiring: botdagi qo'lyozmani AI o'qib qo'ygan, varoqqa qarab faqat noto'g'risini tuzating. Keyin xatolarni belgilang.</li>
         <li>Ikki ustoz alohida baholaydi: bir-birining bahosi baholamaguncha ko'rinmaydi, AI bahosi umuman ko'rsatilmaydi.</li>
       </ol>
     </div>
