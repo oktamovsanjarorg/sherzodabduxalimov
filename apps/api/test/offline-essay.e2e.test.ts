@@ -163,12 +163,20 @@ describe("Offline test essesi: rasm → AI taxminiy baho → ustoz tasdig'i (e2e
     expect(mine).toMatchObject({
       essayScore: 12,
       essayComment: "Dalillarni ko'paytiring",
-      essayBandComments: [{ label: "Qarashlar va shaxsiy fikr", comment: "Fikr aniq" }],
+      essaySpecial: null,
     });
+    expect(mine.essayBands).toHaveLength(12);
+    expect(mine.essayBands[1]).toEqual({ label: "Qarashlar va shaxsiy fikr", score: 1, max: 2, comment: "Fikr aniq" });
+    expect(mine.essayBands[2].comment).toBeNull();
+    // Keyin «Esse ballari»da qo'lda boshqa ball yozilsa eski tahlil o'quvchiga ko'rsatilmaydi
+    await prisma.externalResult.update({ where: { id: r1 }, data: { essayScore: 20 } });
+    expect((await req("GET", `/me/external/${r1}`, undefined, S)).json()).toMatchObject({ essayBands: [], essayComment: null, essaySpecial: null });
+    await prisma.externalResult.update({ where: { id: r1 }, data: { essayScore: 12 } });
 
     // Maxsus holat: bandlarsiz, ball qoidadan; matn belgilanmagan — saqlanmaydi
     const sp = (await confirm(r1, { special: "OFF_TOPIC", transcript: null })).json();
     expect(sp).toMatchObject({ essayScore: ESSAY_SPECIAL.OFF_TOPIC.score, transcript: null, review: { special: "OFF_TOPIC", scores: {} } });
+    expect((await req("GET", `/me/external/${r1}`, undefined, S)).json()).toMatchObject({ essayBands: [], essaySpecial: ESSAY_SPECIAL.OFF_TOPIC.label });
 
     // Varog'i yo'q natija: ball yoziladi, solishtiruv yozuvi yaratilmaydi
     const none = (await confirm(r2, { scores: bands(2) })).json();

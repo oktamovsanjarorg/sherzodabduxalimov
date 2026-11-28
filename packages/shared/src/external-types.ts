@@ -163,8 +163,9 @@ export interface MyExternalResultDetail extends MyExternalResult {
   essayScore: number | null;
   /** Ustozning esse haqidagi izohi (offline esse baholanganda yozilgan) */
   essayComment: string | null;
-  /** Band ostidagi ustoz izohlari: band nomi va izoh */
-  essayBandComments: { label: string; comment: string }[];
+  /** Ustoz tasdiqlagan esse tahlili: 12 band (ball va izoh); maxsus holat bo'lsa uning nomi */
+  essayBands: { label: string; score: number; max: number; comment: string | null }[];
+  essaySpecial: string | null;
   /** Milliy sertifikat: har savoldan olingan ball (test bali taqsimoti) va bo'lim nomi */
   questions: { points: number; section: string | null }[] | null;
   wrong: number;

@@ -2,6 +2,7 @@ import { BadRequestException, Inject, Injectable, NotFoundException } from "@nes
 import { Prisma } from "@onatili/db";
 import {
   ESSAY_RUBRIC,
+  ESSAY_SPECIAL,
   NAME_MATCH_THRESHOLD,
   nameMatchScore,
   gradeMilliy,
@@ -27,6 +28,7 @@ import { ENV, type Env } from "../config/env";
 import { NotifyService } from "../notify/notify.service";
 import { esc } from "../notify/telegram";
 import { PrismaService } from "../prisma/prisma.service";
+import type { StoredReview } from "./offline-essay-runner";
 
 const rasch = (i: ExternalTestInput) => (i.rasch ?? Prisma.DbNull) as Prisma.InputJsonValue | typeof Prisma.DbNull;
 const fullName = (u: { firstName: string; lastName: string | null }) => [u.firstName, u.lastName].filter(Boolean).join(" ");
@@ -442,6 +444,15 @@ export class ExternalService {
     });
   }
 
+  /**
+   * O'quvchiga ko'rinadigan ustoz tahlili: faqat natijadagi esse bali aynan shu tahlildan bo'lsa.
+   * Baho olib tashlangan yoki keyin qo'lda boshqa ball yozilgan bo'lsa eski tahlil ko'rsatilmaydi.
+   */
+  private shownReview(essayScore: number | null, raw: unknown) {
+    const r = raw as StoredReview | null | undefined;
+    return r && essayScore != null && r.total === essayScore ? r : null;
+  }
+
   async myDetail(userId: string, resultId: string): Promise<MyExternalResultDetail> {
     const r = await this.prisma.externalResult.findFirst({
       where: { id: resultId, student: { userId } },
@@ -452,9 +463,7 @@ export class ExternalService {
     });
     if (!r) throw new NotFoundException("Natija topilmadi");
     const k = (await this.ranks([r.testId]))(r.testId, r.percent);
-    // Ustoz izohi faqat esse bahosi natijada turgan bo'lsa (baho olib tashlansa izoh ham ko'rinmaydi)
-    const review = r.essayScore != null ? (r.essay?.review as { comment?: string | null; comments?: Record<string, string> } | null) : null;
-    const essayBandComments = ESSAY_RUBRIC.flatMap((c) => (review?.comments?.[c.key] ? [{ label: c.label, comment: review.comments[c.key] }] : []));
+    const review = this.shownReview(r.essayScore, r.essay?.review);
     return {
       id: r.id,
       title: r.test.title,
@@ -472,7 +481,11 @@ export class ExternalService {
       testScore: r.testScore,
       essayScore: r.essayScore,
       essayComment: review?.comment ?? null,
-      essayBandComments,
+      essayBands:
+        review && !review.special
+          ? ESSAY_RUBRIC.map((c) => ({ label: c.label, score: review.scores[c.key] ?? 0, max: c.max, comment: review.comments?.[c.key] ?? null }))
+          : [],
+      essaySpecial: review?.special ? ESSAY_SPECIAL[review.special].label : null,
       questions: this.questionsOf(r.answers, r.testScore, r.test.rasch as unknown as ExternalRasch | null, r.test.sections as unknown as ExternalSection[]),
       wrong: r.wrong,
       blank: r.blank,
