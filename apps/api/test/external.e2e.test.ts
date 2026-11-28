@@ -1,6 +1,7 @@
 import type { NestFastifyApplication } from "@nestjs/platform-fastify";
 import { PrismaClient } from "@onatili/db";
 import { Queue } from "bullmq";
+import { strFromU8, unzipSync } from "fflate";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { redisConnection } from "../src/media/queue";
 import { NOTIFY_QUEUE, type NotifyJob } from "../src/notify/notify.service";
@@ -125,5 +126,20 @@ describe("Offline test natijalari: CSV import (e2e)", () => {
     await req("POST", "/admin/external-tests/csv/import", body);
     const again = (await req("GET", `/admin/external-tests/${im.id}`)).json().rows.find((r: { name: string }) => r.name === "Aziza");
     expect(again).toMatchObject({ essayScore: 17.5, scaledScore: total });
+
+    // Excel: barcha natijalar, Milliy ustunlari va bo'limlar; o'quvchiga yopiq
+    expect((await req("GET", `/admin/external-tests/${im.id}/results.xlsx`, undefined, A)).statusCode).toBe(403);
+    const x = await req("GET", `/admin/external-tests/${im.id}/results.xlsx`);
+    expect(x.statusCode).toBe(200);
+    expect(x.headers["content-disposition"]).toBe('attachment; filename="natijalar-2026-09-01.xlsx"');
+    const files = unzipSync(new Uint8Array(x.rawPayload));
+    const strings = strFromU8(files["xl/sharedStrings.xml"]);
+    for (const w of ["Aziza", "Bobur", "Umumiy ball", "Daraja", "O'qish savodxonligi", "Esse (24)"]) expect(strings).toContain(w);
+    const sheet = strFromU8(files["xl/worksheets/sheet1.xml"]);
+    // Sarlavha + 2 o'quvchi; Aziza birinchi (foizi yuqori), esse 17,5 son bo'lib turadi
+    expect(sheet.match(/<row /g)).toHaveLength(3);
+    expect(sheet).toContain("<v>17.5</v>");
+    // Umumiy ball bo'yicha: Aziza (esse bilan) birinchi qatorda
+    expect(sheet.indexOf("<v>17.5</v>")).toBeLessThan(sheet.indexOf('<row r="3"'));
   });
 });

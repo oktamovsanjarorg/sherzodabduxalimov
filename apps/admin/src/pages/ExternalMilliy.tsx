@@ -1,6 +1,7 @@
 import { formatScore, milliyTotal, questionPoints, sectionQuestions, type ExternalSection, type ExternalTestDetail } from "@onatili/shared";
 import { useState } from "react";
 import { Modal } from "../components/ui";
+import { CardImageButton } from "./ExternalShare";
 
 type Row = ExternalTestDetail["rows"][number];
 
@@ -102,7 +103,11 @@ export function ResultCardModal({ t, row, onClose }: { t: ExternalTestDetail; ro
     </div>
   );
   return (
-    <Modal title={row.student?.name ?? row.name} onClose={onClose}>
+    <Modal
+      title={row.student?.name ?? row.name}
+      onClose={onClose}
+      footer={<CardImageButton t={t} row={row} className="btn-primary w-full" label="Rasm qilib yuklab olish" />}
+    >
       <div className="rounded-xl border border-gold/40 bg-gold/5 p-4 text-sm">
         <p className="text-xs font-bold uppercase tracking-wide text-ink-3">{t.title}</p>
         <div className="mt-3 grid grid-cols-3 gap-2 text-center">
