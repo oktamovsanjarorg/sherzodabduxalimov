@@ -33,6 +33,10 @@ export const offlineEssayConfirmBody = z
     special: essaySpecialSchema.nullable().default(null),
     scores: z.record(z.string(), rubricStepSchema).default({}),
     transcript: z.string().max(20_000).nullable().default(null),
+    /** Ustoz izohi: o'quvchiga natijasida ko'rinadi */
+    comment: z.string().trim().max(3000).nullable().default(null),
+    /** Band ostidagi izohlar: kalit — band */
+    comments: z.record(z.string(), z.string().trim().max(1000)).default({}),
   })
   .refine((r) => r.special !== null || ESSAY_RUBRIC.every((c) => r.scores[c.key] !== undefined), "Hamma 12 bandni baholang");
 export type OfflineEssayConfirmInput = z.infer<typeof offlineEssayConfirmBody>;
@@ -107,6 +111,10 @@ export interface OfflineEssayTeacherReview {
   scores: Record<string, number>;
   total: number;
   aiTotal: number | null;
+  /** Ustoz izohi (o'quvchiga ko'rinadi) */
+  comment: string | null;
+  /** Band ostidagi izohlar */
+  comments: Record<string, string>;
   reviewer: string | null;
   reviewedAt: string;
 }

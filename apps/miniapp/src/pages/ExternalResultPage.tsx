@@ -142,6 +142,17 @@ function MilliyCard({ r }: { r: MyExternalResultDetail }) {
           Eng zaif bo'lim: <b>{weak.title}</b> · {weak.correct}/{weak.max}
         </p>
       )}
+      {(r.essayComment || r.essayBandComments.length > 0) && (
+        <div className="mt-3 space-y-2 rounded-xl bg-hint/10 px-3 py-2 text-sm">
+          <p className="text-xs font-bold text-hint">Ustoz izohi (esse)</p>
+          {r.essayComment && <p className="whitespace-pre-wrap">{r.essayComment}</p>}
+          {r.essayBandComments.map((b) => (
+            <p key={b.label} className="whitespace-pre-wrap">
+              <b>{b.label}:</b> {b.comment}
+            </p>
+          ))}
+        </div>
+      )}
       {f.essay75 == null && <p className="mt-2 text-xs text-hint">Esse bahosi qo'shilgach umumiy ball (test + yozma) / 2 bo'ladi.</p>}
       {!f.grade && f.scaledScore != null && <p className="mt-2 text-xs text-hint">Sertifikat 46 balldan boshlab beriladi.</p>}
     </div>

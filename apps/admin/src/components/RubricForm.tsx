@@ -3,9 +3,15 @@ import { ESSAY_RUBRIC, ESSAY_SPECIAL, RUBRIC_STEPS, rubricScore, type EssaySpeci
 export interface RubricValue {
   special: EssaySpecialKey | null;
   scores: Record<string, number | undefined>;
+  /** Ustozning band ostidagi izohi (o'quvchiga boradi) */
+  comments?: Record<string, string>;
 }
 
 export const emptyRubric = (): RubricValue => ({ special: null, scores: {} });
+
+/** Bo'sh bo'lmagan izohlar, faqat baholangan bandlar uchun */
+export const rubricComments = (v: RubricValue): Record<string, string> =>
+  Object.fromEntries(Object.entries(v.comments ?? {}).flatMap(([k, c]) => (c.trim() && v.scores[k] !== undefined ? [[k, c.trim()]] : [])));
 
 /** Hamma 12 band baholanganmi yoki maxsus holat tanlanganmi */
 export const rubricComplete = (v: RubricValue) => !!v.special || ESSAY_RUBRIC.every((c) => v.scores[c.key] !== undefined);
@@ -23,7 +29,18 @@ const fmt = (n: number) => String(n).replace(".", ",");
  * Rasmiy mezon (BBA): 12 band, har biri 2 / 1,5 / 1 / 0,5 / 0. Har bir ball tugmasi ostida mezondagi tavsif.
  * Yuqorida: esse tekshirilmaydigan holatlar (2 yoki 0 ball).
  */
-export function RubricForm({ value, onChange, aiHint }: { value: RubricValue; onChange: (v: RubricValue) => void; aiHint?: Record<string, number> }) {
+export function RubricForm({
+  value,
+  onChange,
+  aiHint,
+  comments = false,
+}: {
+  value: RubricValue;
+  onChange: (v: RubricValue) => void;
+  aiHint?: Record<string, number>;
+  /** Har band ostida izoh maydoni */
+  comments?: boolean;
+}) {
   let lastGroup = "";
   return (
     <div className="space-y-3">
@@ -78,6 +95,16 @@ export function RubricForm({ value, onChange, aiHint }: { value: RubricValue; on
                     );
                   })}
                 </div>
+                {comments && (
+                  <textarea
+                    rows={1}
+                    maxLength={1000}
+                    className="input mt-2 min-h-0 py-1.5 text-[16px] sm:text-sm"
+                    placeholder="Izoh (ixtiyoriy, o'quvchiga boradi)"
+                    value={value.comments?.[c.key] ?? ""}
+                    onChange={(e) => onChange({ ...value, comments: { ...value.comments, [c.key]: e.target.value } })}
+                  />
+                )}
               </div>
             </div>
           );

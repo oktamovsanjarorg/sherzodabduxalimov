@@ -161,6 +161,10 @@ export interface MyExternalResultDetail extends MyExternalResult {
   testScore: number | null;
   /** Yozma ish 24 ballik mezon bo'yicha (kiritilmagan bo'lsa null) */
   essayScore: number | null;
+  /** Ustozning esse haqidagi izohi (offline esse baholanganda yozilgan) */
+  essayComment: string | null;
+  /** Band ostidagi ustoz izohlari: band nomi va izoh */
+  essayBandComments: { label: string; comment: string }[];
   /** Milliy sertifikat: har savoldan olingan ball (test bali taqsimoti) va bo'lim nomi */
   questions: { points: number; section: string | null }[] | null;
   wrong: number;

@@ -1,5 +1,6 @@
 import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
 import {
+  ESSAY_RUBRIC,
   GOLD_MIN,
   essayAgreement,
   type RubricSnapshot,
@@ -46,6 +47,9 @@ export class OfflineEssayReviewService {
         scores: d.special ? {} : Object.fromEntries(rubric.criteria.map((c) => [c.key, c.score])),
         total: rubric.total,
         ai,
+        comment: d.comment || null,
+        // Faqat rubrikadagi bandlar uchun, bo'sh izohsiz
+        comments: d.special ? {} : Object.fromEntries(Object.entries(d.comments).filter(([k, c]) => c && ESSAY_RUBRIC.some((x) => x.key === k))),
       };
       // Tuzatilgan matn faqat AI o'qigan matn bo'lsa ma'noli (u bilan solishtiriladi)
       const transcript = r.essay.text && d.transcript?.trim() ? d.transcript : null;

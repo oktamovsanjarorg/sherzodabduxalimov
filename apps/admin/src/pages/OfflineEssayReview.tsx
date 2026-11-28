@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ImageOff, RotateCcw, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { AnnotationOverlay } from "../components/Annotate";
-import { RubricForm, emptyRubric, rubricComplete, rubricTotal, type RubricValue } from "../components/RubricForm";
+import { RubricForm, emptyRubric, rubricComments, rubricComplete, rubricTotal, type RubricValue } from "../components/RubricForm";
 import { ConfirmButton, Modal, Spinner } from "../components/ui";
 import { errMsg } from "../lib/api";
 import { fmtDateTime } from "../lib/format";
@@ -16,7 +16,7 @@ const EMPTY_PAGE: PageAnnotations = { strokes: [], marks: [] };
 /** Avval ustoz baholagan bo'lsa uning bahosi, aks holda AI bahosi bilan to'ldiriladi: ustoz faqat rozi bo'lmagan bandini o'zgartiradi */
 const initialRubric = (d: OfflineEssayDetail): RubricValue =>
   d.review
-    ? { special: d.review.special, scores: { ...d.review.scores } }
+    ? { special: d.review.special, scores: { ...d.review.scores }, comments: { ...d.review.comments } }
     : d.ai
       ? { special: (d.ai.special?.key as EssaySpecialKey | undefined) ?? null, scores: Object.fromEntries(d.ai.criteria.map((c) => [c.key, c.score])) }
       : emptyRubric();
@@ -42,6 +42,7 @@ function Body({ d, onChanged, onClose }: { d: OfflineEssayDetail; onChanged: () 
   const toast = useToast();
   const qc = useQueryClient();
   const [rubric, setRubric] = useState<RubricValue>(() => initialRubric(d));
+  const [comment, setComment] = useState(d.review?.comment ?? "");
   const [transcript, setTranscript] = useState<TranscriptValue>(() => ({ text: d.transcript ?? d.text ?? "", checked: !!d.transcript }));
   // Varoq o'chsa raqamlar suriladi: eski rasm keshda qolmasin
   const refresh = () => (
@@ -56,6 +57,8 @@ function Body({ d, onChanged, onClose }: { d: OfflineEssayDetail; onChanged: () 
         special: rubric.special,
         scores: rubric.special ? {} : definedScores(rubric),
         transcript: d.text && transcript.checked ? transcript.text : null,
+        comment: comment.trim() || null,
+        comments: rubric.special ? {} : rubricComments(rubric),
       }),
     onSuccess: () => (toast("Baho saqlandi va natijaga yozildi"), qc.invalidateQueries({ queryKey: ["offline-essay-agreement"] }), onChanged(), onClose()),
     onError: fail,
@@ -99,7 +102,14 @@ function Body({ d, onChanged, onClose }: { d: OfflineEssayDetail; onChanged: () 
         ) : (
           d.ai && <p className="text-xs text-ink-3">Bandlar AI bahosi bilan to'ldirildi. Rozi bo'lmagan bandingizni o'zgartiring.</p>
         )}
-        <RubricForm value={rubric} onChange={setRubric} aiHint={d.ai ? Object.fromEntries(d.ai.criteria.map((c) => [c.key, c.score])) : undefined} />
+        <RubricForm comments value={rubric} onChange={setRubric} aiHint={d.ai ? Object.fromEntries(d.ai.criteria.map((c) => [c.key, c.score])) : undefined} />
+        <textarea
+          className="input min-h-[90px] py-2 text-[16px] sm:text-sm"
+          placeholder="Izoh: umumiy xulosa va maslahat (o'quvchiga natijasida ko'rinadi)"
+          value={comment}
+          maxLength={3000}
+          onChange={(e) => setComment(e.target.value)}
+        />
         <button className="btn-primary w-full" disabled={!rubricComplete(rubric) || confirm.isPending} onClick={() => confirm.mutate()}>
           Saqlash: {formatScore(rubricTotal(rubric))}/24{d.essayScore != null ? ` (hozir ${formatScore(d.essayScore)})` : ""}
         </button>
