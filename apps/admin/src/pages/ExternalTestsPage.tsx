@@ -1,6 +1,6 @@
 import { MILLIY_LEVELS, RASCH_MIN_SAMPLE, type ExternalPreview, type ExternalTestDetail, formatScore } from "@onatili/shared";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ChevronRight, FileSpreadsheet, FileText, FileUp, Link2, PenLine, Send, Trash2, Trophy, Upload } from "lucide-react";
+import { ChevronRight, Download, FileSpreadsheet, FileText, FileUp, Link2, PenLine, Send, Trash2, Trophy, Upload } from "lucide-react";
 import { useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { Badge, Chips, ConfirmButton, Empty, Field, Modal, NoMatch, PageHeader, SearchBox, Segmented, Spinner } from "../components/ui";
@@ -10,6 +10,7 @@ import { fmtDate } from "../lib/format";
 import { useToast } from "../lib/toast";
 import { EssayModal } from "./ExternalEssayModal";
 import { RaschCard, ResultCardModal, questionsLabel } from "./ExternalMilliy";
+import { CardImageButton, ResultsShareModal } from "./ExternalShare";
 
 const tone = (p: number) => (p >= 80 ? "green" : p >= 60 ? "blue" : p >= 40 ? "amber" : "red");
 const HOW = { username: "username", name: "ism bo'yicha" } as const;
@@ -269,6 +270,7 @@ export function ExternalTestPage() {
   });
   const remove = useMutation({ mutationFn: () => api.externalDelete(id), onSuccess: () => (refresh(), navigate("/external")) });
   const [essayOpen, setEssayOpen] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
   if (q.isPending) return <Spinner className="text-ink-4" />;
   if (q.isError) return <p className="text-sm text-red-600">{errMsg(q.error)}</p>;
   const t = q.data;
@@ -296,6 +298,9 @@ export function ExternalTestPage() {
                 <PenLine size={15} /> Esse ballari{essays ? ` (${essays}/${t.participants})` : ""}
               </button>
             )}
+            <button className="btn-secondary" disabled={!t.participants} onClick={() => setShareOpen(true)}>
+              <Download size={15} /> Yuklab olish
+            </button>
             <button
               className="btn-primary"
               disabled={!waiting || notify.isPending}
@@ -387,6 +392,7 @@ export function ExternalTestPage() {
       <RaschCard t={t} />
       <Results t={t} onChanged={refresh} />
       {essayOpen && <EssayModal t={t} onClose={() => setEssayOpen(false)} onDone={refresh} />}
+      {shareOpen && <ResultsShareModal t={t} onClose={() => setShareOpen(false)} />}
     </div>
   );
 }
@@ -462,6 +468,7 @@ function Results({ t, onChanged }: { t: ExternalTestDetail; onChanged: () => voi
                   <span className="sm:hidden">Natija kartasi</span>
                 </button>
               )}
+              <CardImageButton t={t} row={r} className="btn-ghost btn-sm gap-1.5 px-2 sm:h-9 sm:w-9 sm:p-0" />
               <button
                 className="btn-ghost btn-sm gap-1.5 px-2 sm:h-9 sm:w-9 sm:p-0"
                 onClick={() => setLinking(r)}

@@ -1,4 +1,5 @@
-import { Body, Controller, Delete, Get, Global, HttpCode, Module, Param, Patch, Post, Query } from "@nestjs/common";
+import { Body, Controller, Delete, Get, Global, HttpCode, Module, Param, Patch, Post, Query, Res } from "@nestjs/common";
+import type { FastifyReply } from "fastify";
 import { z } from "zod";
 import { parse } from "../admin/zod";
 import { CurrentUser, type JwtUser, Perm } from "../auth/decorators";
@@ -7,6 +8,7 @@ import { ExternalService } from "./external.service";
 import { OfflineEssayController } from "./offline-essay.controller";
 import { OfflineEssayReviewService } from "./offline-essay-review.service";
 import { OfflineEssayService } from "./offline-essay.service";
+import { resultsXlsx } from "./results-xlsx";
 
 // CSV: 300 o'quvchi x 200 savol ham 200 KB dan oshmaydi
 const csvBody = z.object({ fileName: z.string().max(200), title: z.string().max(200).nullish().default(null), content: z.string().min(1).max(2_000_000) });
@@ -51,6 +53,16 @@ export class AdminExternalController {
 
   @Get(":id") detail(@Param("id") id: string) {
     return this.svc.detail(id);
+  }
+
+  /** Barcha natijalar Excel faylda (botda yo'q o'quvchilarga berish, chop etish) */
+  @Get(":id/results.xlsx") async resultsFile(@Param("id") id: string, @Res() res: FastifyReply) {
+    const { file, name } = resultsXlsx(await this.svc.detail(id));
+    return res
+      .header("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+      .header("Content-Disposition", `attachment; filename="${name}"`)
+      .header("Cache-Control", "private, no-store")
+      .send(file);
   }
 
   @Patch(":id/results/:rid") link(@CurrentUser() u: JwtUser, @Param("id") id: string, @Param("rid") rid: string, @Body() b: unknown) {
