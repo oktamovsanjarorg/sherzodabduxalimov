@@ -315,7 +315,7 @@ describe("Esse: AI (bepul) va ustoz (pullik, qo'lyozma) (e2e)", () => {
       });
     const e = await mk("AI_CHECKED");
     const busy = await mk("AI_CHECKING");
-    const body = { criteria: ESSAY_RUBRIC.map((c) => ({ key: c.key, score: 1.5 })), feedback: "Ustoz taqrizi" };
+    const body = { criteria: ESSAY_RUBRIC.map((c, i) => ({ key: c.key, score: 1.5, comment: i === 0 ? "Uslub yaxshi" : null })), feedback: "Ustoz taqrizi" };
     const audio = Buffer.concat([Buffer.from([0x1a, 0x45, 0xdf, 0xa3]), Buffer.alloc(4000, 3)]);
     const voice = () =>
       app.inject({ method: "POST", url: `/api/admin/hw-essays/${e.id}/voice`, headers: { ...H, "content-type": "audio/webm" }, payload: audio });
@@ -340,6 +340,7 @@ describe("Esse: AI (bepul) va ustoz (pullik, qo'lyozma) (e2e)", () => {
       ["AI", 12],
       ["TEACHER", 18],
     ]);
+    expect(d.reviews[1].criteria[0].comment).toBe("Uslub yaxshi"); // band ostidagi ustoz izohi o'quvchiga boradi
     expect((await req("GET", "/essays", undefined, S)).json().find((x: { id: string }) => x.id === e.id).score.total).toBe(18);
     expect((await req("GET", `/admin/essay-log/${e.id}`)).json().reviews).toHaveLength(2);
 

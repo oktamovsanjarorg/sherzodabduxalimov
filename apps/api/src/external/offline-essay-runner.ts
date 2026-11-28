@@ -23,6 +23,8 @@ export function offlineAiView(raw: unknown): OfflineEssayAi | null {
 export interface StoredReview extends RubricSnapshot {
   special: EssaySpecialKey | null;
   ai: RubricSnapshot | null;
+  comment?: string | null;
+  comments?: Record<string, string>;
 }
 
 export const aiSnapshot = (ai: OfflineEssayAi | null): RubricSnapshot | null =>
@@ -40,6 +42,8 @@ export function teacherReviewView(e: {
     scores: r.scores ?? {},
     total: r.total,
     aiTotal: r.ai?.total ?? null,
+    comment: r.comment ?? null,
+    comments: r.comments ?? {},
     reviewer: e.reviewedBy ? [e.reviewedBy.firstName, e.reviewedBy.lastName].filter(Boolean).join(" ") : null,
     reviewedAt: e.reviewedAt.toISOString(),
   };

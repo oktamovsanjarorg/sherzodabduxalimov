@@ -8,7 +8,7 @@ import {
   formatScore,
 } from "@onatili/shared";
 import { AnnotationOverlay, MarkCounts, PageAnnotator } from "../components/Annotate";
-import { RubricForm, emptyRubric, rubricComplete, rubricTotal, type RubricValue } from "../components/RubricForm";
+import { RubricForm, emptyRubric, rubricComments, rubricComplete, rubricTotal, type RubricValue } from "../components/RubricForm";
 import { VoicePlayer, VoiceRecorder } from "../components/VoiceRecorder";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Bot, ChevronRight, ImageOff, Pencil, PenLine, Phone } from "lucide-react";
@@ -183,9 +183,11 @@ function AiHint({ r }: { r: EssayReviewView }) {
   );
 }
 
-const toRubric = (r: EssayReviewView): RubricValue => ({
+// AI izohlari ustozniki emas: band izohlari faqat avvalgi ustoz bahosidan olinadi
+const toRubric = (r: EssayReviewView, withComments = false): RubricValue => ({
   special: (r.special?.key as RubricValue["special"]) ?? null,
   scores: Object.fromEntries(r.criteria.map((c) => [c.key, c.score])),
+  comments: withComments ? Object.fromEntries(r.criteria.flatMap((c) => (c.comment ? [[c.key, c.comment]] : []))) : {},
 });
 
 /** Ustoz bahosi. AI esse bo'lsa AI bahosi bilan to'ldiriladi: ustoz faqat rozi bo'lmagan bandini o'zgartiradi */
@@ -194,7 +196,7 @@ export function ReviewModal({ essay, onClose }: { essay: AdminHwEssay; onClose: 
   const qc = useQueryClient();
   const prev = essay.reviews.find((r) => r.source === "TEACHER");
   const ai = essay.reviews.find((r) => r.source === "AI");
-  const [rubric, setRubric] = useState<RubricValue>(() => (prev ? toRubric(prev) : essay.mode === "AI" && ai ? toRubric(ai) : emptyRubric()));
+  const [rubric, setRubric] = useState<RubricValue>(() => (prev ? toRubric(prev, true) : essay.mode === "AI" && ai ? toRubric(ai) : emptyRubric()));
   const [feedback, setFeedback] = useState(prev?.feedback ?? "");
   const [voice, setVoice] = useState<Blob | null>(null);
   const [anno, setAnno] = useState<EssayAnnotations>(() => ({
@@ -228,7 +230,7 @@ export function ReviewModal({ essay, onClose }: { essay: AdminHwEssay; onClose: 
     mutationFn: () =>
       api.reviewHwEssay(essay.id, {
         special: rubric.special,
-        criteria: Object.entries(rubric.scores).map(([key, score]) => ({ key, score: score ?? 0, comment: null })),
+        criteria: Object.entries(rubric.scores).map(([key, score]) => ({ key, score: score ?? 0, comment: rubricComments(rubric)[key] ?? null })),
         feedback: feedback.trim() || null,
       }),
     onSuccess: async (r) => {
@@ -311,7 +313,7 @@ export function ReviewModal({ essay, onClose }: { essay: AdminHwEssay; onClose: 
               Mezondagi "1–2 o'rinda", "3–4 o'rinda" bandlarini shunga qarab qo'ying. Bir xil xato takrorlansa — bitta.
             </p>
           </div>
-          <RubricForm value={rubric} onChange={setRubric} aiHint={ai ? Object.fromEntries(ai.criteria.map((c) => [c.key, c.score])) : undefined} />
+          <RubricForm comments value={rubric} onChange={setRubric} aiHint={ai ? Object.fromEntries(ai.criteria.map((c) => [c.key, c.score])) : undefined} />
           <textarea
             className="input min-h-[100px] py-2 text-sm"
             placeholder="Taqriz: umumiy xulosa va maslahat (o'quvchiga boradi)"

@@ -12,7 +12,7 @@ import { redisConnection } from "../src/media/queue";
 import { OWNER, createApp, login } from "./helpers";
 
 const prisma = new PrismaClient();
-const TG = { owner: 900001301, helper: 900001302 };
+const TG = { owner: 900001301, helper: 900001302, student: 900001303 };
 const CODE = "E2E-OFFLINE-ESSAY";
 const JPEG = Buffer.concat([Buffer.from([0xff, 0xd8, 0xff, 0xe0]), Buffer.alloc(300, 7)]);
 const MEDIA = process.env.E2E_MEDIA_DIR ?? "/tmp/onatili-e2e-media";
@@ -145,6 +145,26 @@ describe("Offline test essesi: rasm → AI taxminiy baho → ustoz tasdig'i (e2e
     expect(after.transcripts.count).toBe(before.transcripts.count + 1);
     expect(after.transcripts.errors).toBe(before.transcripts.errors + 1);
     expect(after.bands.find((b: { key: string }) => b.key === "views")).toBeTruthy();
+
+    // Ustoz izohi: umumiy va band ostida; o'quvchi natijasida ko'radi (begona band va bo'sh izoh saqlanmaydi)
+    const S = (await login(app, TG.student, "O'quvchi")).headers;
+    const sp0 = await prisma.studentProfile.findUniqueOrThrow({
+      where: { userId: (await prisma.user.findUniqueOrThrow({ where: { telegramId: BigInt(TG.student) } })).id },
+    });
+    await prisma.externalResult.update({ where: { id: r1 }, data: { studentId: sp0.id } });
+    const withComment = await confirm(r1, {
+      scores: bands(1),
+      transcript: fixed,
+      comment: " Dalillarni ko'paytiring ",
+      comments: { views: "Fikr aniq", bogus: "x", proofs: " " },
+    });
+    expect(withComment.json().review).toMatchObject({ comment: "Dalillarni ko'paytiring", comments: { views: "Fikr aniq" } });
+    const mine = (await req("GET", `/me/external/${r1}`, undefined, S)).json();
+    expect(mine).toMatchObject({
+      essayScore: 12,
+      essayComment: "Dalillarni ko'paytiring",
+      essayBandComments: [{ label: "Qarashlar va shaxsiy fikr", comment: "Fikr aniq" }],
+    });
 
     // Maxsus holat: bandlarsiz, ball qoidadan; matn belgilanmagan — saqlanmaydi
     const sp = (await confirm(r1, { special: "OFF_TOPIC", transcript: null })).json();

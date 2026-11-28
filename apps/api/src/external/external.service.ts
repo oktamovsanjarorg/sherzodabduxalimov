@@ -1,6 +1,7 @@
 import { BadRequestException, Inject, Injectable, NotFoundException } from "@nestjs/common";
 import { Prisma } from "@onatili/db";
 import {
+  ESSAY_RUBRIC,
   NAME_MATCH_THRESHOLD,
   nameMatchScore,
   gradeMilliy,
@@ -444,10 +445,16 @@ export class ExternalService {
   async myDetail(userId: string, resultId: string): Promise<MyExternalResultDetail> {
     const r = await this.prisma.externalResult.findFirst({
       where: { id: resultId, student: { userId } },
-      include: { test: { select: { title: true, subject: true, takenAt: true, questionCount: true, rasch: true, sections: true } } },
+      include: {
+        test: { select: { title: true, subject: true, takenAt: true, questionCount: true, rasch: true, sections: true } },
+        essay: { select: { review: true } },
+      },
     });
     if (!r) throw new NotFoundException("Natija topilmadi");
     const k = (await this.ranks([r.testId]))(r.testId, r.percent);
+    // Ustoz izohi faqat esse bahosi natijada turgan bo'lsa (baho olib tashlansa izoh ham ko'rinmaydi)
+    const review = r.essayScore != null ? (r.essay?.review as { comment?: string | null; comments?: Record<string, string> } | null) : null;
+    const essayBandComments = ESSAY_RUBRIC.flatMap((c) => (review?.comments?.[c.key] ? [{ label: c.label, comment: review.comments[c.key] }] : []));
     return {
       id: r.id,
       title: r.test.title,
@@ -464,6 +471,8 @@ export class ExternalService {
       participants: k.participants,
       testScore: r.testScore,
       essayScore: r.essayScore,
+      essayComment: review?.comment ?? null,
+      essayBandComments,
       questions: this.questionsOf(r.answers, r.testScore, r.test.rasch as unknown as ExternalRasch | null, r.test.sections as unknown as ExternalSection[]),
       wrong: r.wrong,
       blank: r.blank,
