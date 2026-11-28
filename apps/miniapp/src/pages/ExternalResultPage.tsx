@@ -142,19 +142,34 @@ function MilliyCard({ r }: { r: MyExternalResultDetail }) {
           Eng zaif bo'lim: <b>{weak.title}</b> · {weak.correct}/{weak.max}
         </p>
       )}
-      {(r.essayComment || r.essayBandComments.length > 0) && (
-        <div className="mt-3 space-y-2 rounded-xl bg-hint/10 px-3 py-2 text-sm">
-          <p className="text-xs font-bold text-hint">Ustoz izohi (esse)</p>
-          {r.essayComment && <p className="whitespace-pre-wrap">{r.essayComment}</p>}
-          {r.essayBandComments.map((b) => (
-            <p key={b.label} className="whitespace-pre-wrap">
-              <b>{b.label}:</b> {b.comment}
-            </p>
-          ))}
-        </div>
-      )}
+      <EssayAnalysis r={r} />
       {f.essay75 == null && <p className="mt-2 text-xs text-hint">Esse bahosi qo'shilgach umumiy ball (test + yozma) / 2 bo'ladi.</p>}
       {!f.grade && f.scaledScore != null && <p className="mt-2 text-xs text-hint">Sertifikat 46 balldan boshlab beriladi.</p>}
+    </div>
+  );
+}
+
+/** Ustoz tasdiqlagan esse tahlili: har band bali va izohi, umumiy izoh */
+function EssayAnalysis({ r }: { r: MyExternalResultDetail }) {
+  if (!r.essayBands.length && !r.essaySpecial && !r.essayComment) return null;
+  return (
+    <div className="mt-4">
+      <p className="mb-1 text-sm font-bold">Esse tahlili (ustoz)</p>
+      {r.essaySpecial && <p className="rounded-xl bg-danger/10 px-3 py-2 text-sm text-danger">{r.essaySpecial}</p>}
+      <div className="divide-y divide-hint/10">
+        {r.essayBands.map((b) => (
+          <div key={b.label} className="py-2 text-sm">
+            <div className="flex justify-between gap-4">
+              <span className="text-hint">{b.label}</span>
+              <span className={`shrink-0 font-bold tabular-nums ${b.score >= b.max ? "text-brand" : b.score <= b.max / 2 ? "text-danger" : ""}`}>
+                {formatScore(b.score)} / {b.max}
+              </span>
+            </div>
+            {b.comment && <p className="mt-1 whitespace-pre-wrap">{b.comment}</p>}
+          </div>
+        ))}
+      </div>
+      {r.essayComment && <p className="mt-2 whitespace-pre-wrap rounded-xl bg-hint/10 px-3 py-2 text-sm">{r.essayComment}</p>}
     </div>
   );
 }
