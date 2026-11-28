@@ -361,26 +361,29 @@ export class EssaysService implements OnModuleDestroy {
 
   async review(actorId: string, id: string, d: TeacherEssayReviewInput) {
     const e = await this.prisma.essay.findUnique({ where: { id }, include: { user: { select: { telegramId: true } } } });
-    if (!e || e.mode !== "TEACHER") throw new NotFoundException("Esse topilmadi");
-    if (e.status !== "SUBMITTED" && e.status !== "REVIEWED") throw new ConflictException("Esse hali to'lanmagan");
+    if (!e || e.status === "DRAFT") throw new NotFoundException("Esse topilmadi");
+    // AI esse: AI baholagandan keyin ustoz ham baholay oladi (oxirgi so'z ustozda). Holati o'zgarmaydi
+    const aiMode = e.mode === "AI";
+    if (aiMode && e.status !== "AI_CHECKED") throw new ConflictException("AI hali baholamagan: AI tekshiruvi tugagach baholang");
+    if (!aiMode && e.status !== "SUBMITTED" && e.status !== "REVIEWED") throw new ConflictException("Esse hali to'lanmagan");
     // Rasmiy mezon: 12 band (har biri 0..2) yoki maxsus holat (2 yoki 0 ball)
     if (!d.special && !d.criteria.length) throw new BadRequestException("Mezonning 12 bandi bo'yicha ball qo'ying");
     const r = rubricScore(d.special, d.criteria);
     const criteria = r.criteria.map((c) => ({ ...c, comment: d.criteria.find((x) => x.key === c.key)?.comment || null }));
     const total = r.total;
-    const first = e.status === "SUBMITTED";
+    const first = aiMode ? !(await this.prisma.essayReview.count({ where: { essayId: id, source: "TEACHER" } })) : e.status === "SUBMITTED";
     await this.prisma.$transaction([
       // Qayta baholansa: eski ustoz bahosi almashtiriladi
       this.prisma.essayReview.deleteMany({ where: { essayId: id, source: "TEACHER" } }),
       this.prisma.essayReview.create({
         data: { essayId: id, source: "TEACHER", reviewerId: actorId, criteria, special: d.special, totalScore: total, feedback: d.feedback },
       }),
-      this.prisma.essay.update({ where: { id }, data: { status: "REVIEWED" } }),
+      ...(aiMode ? [] : [this.prisma.essay.update({ where: { id }, data: { status: "REVIEWED" as const } })]),
     ]);
     await this.prisma.auditLog.create({ data: { actorId, action: "essay.review", entity: "Essay", entityId: id, meta: { total } } });
     await this.notify.sendWithButton(
       e.user.telegramId,
-      `📝 <b>Essengiz ${first ? "tekshirildi" : "qayta baholandi"}</b>\n«${esc(e.prompt.slice(0, 80))}»\nBall: <b>${formatScore(total)} / ${ESSAY_MAX_SCORE}</b>`,
+      `📝 <b>Essengiz${aiMode && first ? "ni ustoz ham tekshirdi" : first ? " tekshirildi" : " qayta baholandi"}</b>\n«${esc(e.prompt.slice(0, 80))}»\nBall: <b>${formatScore(total)} / ${ESSAY_MAX_SCORE}</b>`,
       this.env.MINIAPP_URL ? { text: "Natijani ko'rish", webAppUrl: `${this.env.MINIAPP_URL.replace(/\/$/, "")}/essays/${id}` } : undefined,
     );
     return { totalScore: total };

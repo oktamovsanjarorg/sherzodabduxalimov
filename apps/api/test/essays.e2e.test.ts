@@ -1,5 +1,6 @@
 import type { NestFastifyApplication } from "@nestjs/platform-fastify";
 import { PrismaClient } from "@onatili/db";
+import { ESSAY_RUBRIC } from "@onatili/shared";
 import { Queue } from "bullmq";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { normalize } from "../src/ai/deepseek";
@@ -296,5 +297,64 @@ describe("Esse: AI (bepul) va ustoz (pullik, qo'lyozma) (e2e)", () => {
     expect(v2.id).not.toBe(vid);
     expect(await prisma.voiceNote.count({ where: { essayId: e.id } })).toBe(1);
     expect((await req("GET", `/voice/${vid}`, undefined, S)).statusCode).toBe(404);
+  });
+
+  it("AI esseni ustoz ham baholaydi: ustoz bahosi asosiy bo'ladi, o'quvchiga boradi, AI bilan solishtiriladi", async () => {
+    const userId = (await prisma.user.findUniqueOrThrow({ where: { telegramId: BigInt(TG.student) } })).id;
+    const bands = (v: number) => ESSAY_RUBRIC.map((c) => ({ key: c.key, label: c.label, max: c.max, score: v, comment: null }));
+    const mk = (status: "AI_CHECKED" | "AI_CHECKING") =>
+      prisma.essay.create({
+        data: {
+          userId,
+          mode: "AI",
+          prompt: `Ustoz ham ${status}`,
+          text: TEXT,
+          status,
+          reviews: status === "AI_CHECKED" ? { create: { source: "AI", criteria: bands(1), totalScore: 12, provider: "test" } } : undefined,
+        },
+      });
+    const e = await mk("AI_CHECKED");
+    const busy = await mk("AI_CHECKING");
+    const body = { criteria: ESSAY_RUBRIC.map((c) => ({ key: c.key, score: 1.5 })), feedback: "Ustoz taqrizi" };
+    const audio = Buffer.concat([Buffer.from([0x1a, 0x45, 0xdf, 0xa3]), Buffer.alloc(4000, 3)]);
+    const voice = () =>
+      app.inject({ method: "POST", url: `/api/admin/hw-essays/${e.id}/voice`, headers: { ...H, "content-type": "audio/webm" }, payload: audio });
+    const agreement = async () => (await req("GET", "/admin/offline-essays/agreement")).json();
+    const before = await agreement();
+
+    // AI tugamagan essega va o'quvchiga ruxsat yo'q; ovozli izoh — faqat ustoz baholagandan keyin
+    expect((await req("POST", `/admin/hw-essays/${busy.id}/review`, body)).statusCode).toBe(409);
+    expect((await req("POST", `/admin/hw-essays/${e.id}/review`, body, S)).statusCode).toBe(403);
+    expect((await voice()).statusCode).toBe(409);
+
+    await notifyQ.obliterate({ force: true });
+    const r = await req("POST", `/admin/hw-essays/${e.id}/review`, body);
+    expect(r.json()).toEqual({ totalScore: 18 });
+    const texts = (await notifyQ.getJobs(["waiting", "delayed"])).map((j) => j.data.text);
+    expect(texts.some((t) => t.includes("ustoz ham tekshirdi") && t.includes("18 / 24"))).toBe(true);
+
+    // Holat o'zgarmaydi (AI esse), lekin o'quvchi ustoz bahosini ko'radi
+    const d = (await req("GET", `/essays/${e.id}`, undefined, S)).json();
+    expect(d.status).toBe("AI_CHECKED");
+    expect(d.reviews.map((x: { source: string; totalScore: number }) => [x.source, x.totalScore])).toEqual([
+      ["AI", 12],
+      ["TEACHER", 18],
+    ]);
+    expect((await req("GET", "/essays", undefined, S)).json().find((x: { id: string }) => x.id === e.id).score.total).toBe(18);
+    expect((await req("GET", `/admin/essay-log/${e.id}`)).json().reviews).toHaveLength(2);
+
+    // AI va ustoz solishtiruviga qo'shildi: AI har bandda 0,5 past
+    const after = await agreement();
+    expect(after.count).toBe(before.count + 1);
+    expect(after.lower).toBe(before.lower + 1);
+
+    // Qayta baholash: bitta ustoz bahosi qoladi, xabar «qayta baholandi»; endi ovozli izoh mumkin
+    expect((await req("POST", `/admin/hw-essays/${e.id}/review`, { ...body, criteria: body.criteria.map((c) => ({ ...c, score: 2 })) })).json()).toEqual({
+      totalScore: 24,
+    });
+    expect(await prisma.essayReview.count({ where: { essayId: e.id, source: "TEACHER" } })).toBe(1);
+    expect((await notifyQ.getJobs(["waiting", "delayed"])).some((j) => j.data.text.includes("qayta baholandi"))).toBe(true);
+    expect((await voice()).statusCode).toBe(201);
+    await prisma.essay.deleteMany({ where: { id: { in: [e.id, busy.id] } } });
   });
 });
