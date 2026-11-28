@@ -17,8 +17,7 @@ import { sniffImage } from "../billing/billing.service";
 import { ENV, type Env } from "../config/env";
 import { PrismaService } from "../prisma/prisma.service";
 import { redisConnection } from "../media/queue";
-import { ExternalEssayService } from "./external-essay.service";
-import { offlineAiView } from "./offline-essay-runner";
+import { offlineAiView, teacherReviewView } from "./offline-essay-runner";
 
 const MIME = { jpg: "image/jpeg", png: "image/png", webp: "image/webp" } as const;
 /** AI tekshirmoqda holatida shundan ko'p turib qolsa (vazifa yo'qolgan), qayta yuborish mumkin */
@@ -27,7 +26,7 @@ const fullName = (u: { firstName: string; lastName: string | null }) => [u.first
 
 /**
  * Offline testning qog'ozdagi essesi: ustoz suratga oladi, AI o'qib taxminiy baho beradi.
- * Yakuniy ball faqat ustoz tasdiqlaganda natijaga yoziladi (ExternalEssayService.set).
+ * Yakuniy ball faqat ustoz baholaganda natijaga yoziladi (OfflineEssayReviewService.confirm).
  */
 @Injectable()
 export class OfflineEssayService implements OnModuleDestroy {
@@ -35,7 +34,6 @@ export class OfflineEssayService implements OnModuleDestroy {
   private readonly queue: Queue<AnyEssayAiJob>;
   constructor(
     private readonly prisma: PrismaService,
-    private readonly scores: ExternalEssayService,
     @Inject(ENV) private readonly env: Env,
   ) {
     this.media = resolve(env.MEDIA_DIR);
@@ -128,7 +126,14 @@ export class OfflineEssayService implements OnModuleDestroy {
   private async result(resultId: string) {
     const r = await this.prisma.externalResult.findUnique({
       where: { id: resultId },
-      select: { id: true, testId: true, name: true, testScore: true, essayScore: true, essay: true },
+      select: {
+        id: true,
+        testId: true,
+        name: true,
+        testScore: true,
+        essayScore: true,
+        essay: { include: { reviewedBy: { select: { firstName: true, lastName: true } } } },
+      },
     });
     if (!r) throw new NotFoundException("Natija topilmadi");
     if (r.testScore == null) throw new BadRequestException("Bu test Milliy sertifikat shkalasida emas: esse qo'shib bo'lmaydi");
@@ -136,7 +141,19 @@ export class OfflineEssayService implements OnModuleDestroy {
   }
 
   /** Varoq qo'shish yoki olib tashlash avvalgi AI bahosini eskirtiradi: qayta tekshirish kerak bo'ladi */
-  private static readonly RESET = { status: "DRAFT" as const, text: null, ai: Prisma.DbNull, error: null, aiError: null, prompt: null };
+  // Ustoz bahosi va tuzatilgan matn ham: ular eski varoqlarga tegishli, AI bilan solishtiruvga o'tmasin (natijadagi ball qoladi)
+  private static readonly RESET = {
+    status: "DRAFT" as const,
+    text: null,
+    ai: Prisma.DbNull,
+    error: null,
+    aiError: null,
+    prompt: null,
+    transcript: null,
+    review: Prisma.DbNull,
+    reviewedById: null,
+    reviewedAt: null,
+  };
 
   async addPage(resultId: string, body: unknown): Promise<OfflineEssayDetail> {
     if (!Buffer.isBuffer(body) || !body.length) throw new BadRequestException("Rasm yuboring");
@@ -191,6 +208,8 @@ export class OfflineEssayService implements OnModuleDestroy {
       ai: e?.status === "CHECKED" ? offlineAiView(e.ai) : null,
       error: e?.error ?? null,
       essayScore: r.essayScore,
+      transcript: e?.transcript ?? null,
+      review: e ? teacherReviewView(e) : null,
     };
   }
 
@@ -231,15 +250,6 @@ export class OfflineEssayService implements OnModuleDestroy {
     }
     await this.audit(actorId, "external.essay.ai", testId, { count: ids.length });
     return { queued: ids.length };
-  }
-
-  /** Ustoz tasdiqlaydi: ball natijaga yoziladi. AI taxmini audit'da qoladi (AI va ustoz farqini keyin o'lchash uchun) */
-  async confirm(actorId: string, resultId: string, score: number) {
-    const r = await this.result(resultId);
-    const ai = r.essay?.status === "CHECKED" ? (offlineAiView(r.essay.ai)?.total ?? null) : null;
-    await this.scores.set(actorId, r.testId, [{ resultId, score }]);
-    await this.audit(actorId, "external.essay.confirm", r.testId, { resultId, score, ai });
-    return this.detail(resultId);
   }
 
   /** Test o'chirilganda varoq rasmlari ham o'chadi */

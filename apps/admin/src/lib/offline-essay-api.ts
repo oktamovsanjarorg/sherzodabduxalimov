@@ -1,4 +1,4 @@
-import type { OfflineEssayDetail, OfflineEssayTest, OfflineEssayTestDetail } from "@onatili/shared";
+import type { OfflineEssayAgreement, OfflineEssayConfirmInput, OfflineEssayDetail, OfflineEssayTest, OfflineEssayTestDetail } from "@onatili/shared";
 import { ApiError, json, request } from "./api";
 import { compressImage } from "./image";
 import { loadSession } from "./session";
@@ -23,5 +23,7 @@ export const offlineApi = {
     if (!res.ok) throw new ApiError(res.status, "Rasmni yuklab bo'lmadi");
     return URL.createObjectURL(await res.blob());
   },
-  confirm: (resultId: string, score: number) => request<OfflineEssayDetail>(`${base}/${resultId}/confirm`, json("POST", { score })),
+  /** Ustoz bahosi 12 band bo'yicha; transcript — varoq bilan solishtirilgan matn (yoki null) */
+  confirm: (resultId: string, d: OfflineEssayConfirmInput) => request<OfflineEssayDetail>(`${base}/${resultId}/confirm`, json("POST", d)),
+  agreement: () => request<OfflineEssayAgreement>(`${base}/agreement`),
 };

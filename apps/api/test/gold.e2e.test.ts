@@ -2,6 +2,8 @@ import type { NestFastifyApplication } from "@nestjs/platform-fastify";
 import { PrismaClient } from "@onatili/db";
 import { ESSAY_RUBRIC } from "@onatili/shared";
 import { strFromU8, unzipSync } from "fflate";
+import { mkdir, writeFile } from "node:fs/promises";
+import { join } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { OWNER, createApp, login } from "./helpers";
 
@@ -10,6 +12,7 @@ const TG = { owner: 900004001, assistant: 900004002, student: 900004003 };
 const TAG = "E2E-gold";
 const JPEG = Buffer.concat([Buffer.from([0xff, 0xd8, 0xff, 0xe0]), Buffer.alloc(300, 7)]);
 const TEXT = "Albatta bugun dust topish oson emas.";
+const MEDIA = process.env.E2E_MEDIA_DIR ?? "/tmp/onatili-e2e-media";
 const scores = (v: number) => Object.fromEntries(ESSAY_RUBRIC.map((c) => [c.key, v]));
 
 async function cleanup() {
@@ -58,6 +61,25 @@ describe("Esse sinov to'plami (e2e)", () => {
     const up = await app.inject({ method: "POST", url: `/api/admin/gold/${paper.id}/pages`, headers: { ...A, "content-type": "image/jpeg" }, payload: JPEG });
     expect(up.json()).toMatchObject({ pages: 1, transcript: null, fromBot: false });
     expect((await req("GET", `/admin/gold/${paper.id}/pages/0`)).rawPayload.equals(JPEG)).toBe(true);
+  });
+
+  it("botdagi qo'lyozma: AI o'qigan matn tayyor turadi, lekin ustoz saqlamaguncha ko'chirilgan sanalmaydi", async () => {
+    const hw = await prisma.essay.create({
+      data: { userId: studentId, prompt: `${TAG} qo'lyozma`, text: "AI o'qigan matn", imageUrls: [], status: "AI_CHECKED" },
+    });
+    const rel = `essays/${hw.id}/0.jpg`;
+    await mkdir(join(MEDIA, "essays", hw.id), { recursive: true });
+    await writeFile(join(MEDIA, rel), JPEG);
+    await prisma.essay.update({ where: { id: hw.id }, data: { imageUrls: [rel] } });
+    const g = (await req("POST", `/admin/gold/from-essay/${hw.id}`, { consent: true })).json();
+    expect(g).toMatchObject({ pages: 1, transcript: null, aiText: "AI o'qigan matn" });
+    const row = (await req("GET", "/admin/gold")).json().rows.find((r: { id: string }) => r.id === g.id);
+    expect(row.transcribed).toBe(false);
+    expect((await req("PUT", `/admin/gold/${g.id}/transcript`, { transcript: "AI o'qigan matn tuzatildi", marks: [] })).json()).toMatchObject({
+      transcript: "AI o'qigan matn tuzatildi",
+      aiText: "AI o'qigan matn",
+    });
+    await req("DELETE", `/admin/gold/${g.id}`);
   });
 
   it("baho mustaqil: boshqalarniki o'zi baholamaguncha ko'rinmaydi; zip faqat tayyor esselar, ismsiz", async () => {

@@ -1,6 +1,8 @@
 import { z } from "zod";
 import type { EssayAnnotations } from "./annotation-types";
-import { ESSAY_MAX_SCORE, MAX_ESSAY_PAGES, type EssayReviewView } from "./essay-types";
+import { ESSAY_RUBRIC, MAX_ESSAY_PAGES, type EssaySpecialKey, type EssayReviewView } from "./essay-types";
+import type { EssayAgreement } from "./essay-agreement";
+import { essaySpecialSchema, rubricStepSchema } from "./gold-types";
 
 /**
  * Offline (qog'ozda o'tkazilgan) test essesi: ustoz varoqni suratga oladi, AI o'qib taxminiy baho beradi,
@@ -22,14 +24,18 @@ export const offlineEssayPromptBody = z.object({
   prompt: z.string().trim().min(10, "Mavzuni to'liq yozing").max(4000),
 });
 
-/** Ustoz tasdiqlagan yakuniy ball (24 ballik, 0,5 qadam) */
-export const offlineEssayConfirmBody = z.object({
-  score: z
-    .number()
-    .min(0)
-    .max(ESSAY_MAX_SCORE)
-    .refine((x) => Math.round(x * 2) === x * 2, "Ball 0,5 qadam bilan"),
-});
+/**
+ * Ustoz bahosi: 12 band (yoki maxsus holat). Yakuniy ball serverda shu bandlardan hisoblanadi.
+ * transcript: AI o'qigan matnni ustoz varoq bilan solishtirib tuzatgani; null — solishtirilmagan.
+ */
+export const offlineEssayConfirmBody = z
+  .object({
+    special: essaySpecialSchema.nullable().default(null),
+    scores: z.record(z.string(), rubricStepSchema).default({}),
+    transcript: z.string().max(20_000).nullable().default(null),
+  })
+  .refine((r) => r.special !== null || ESSAY_RUBRIC.every((c) => r.scores[c.key] !== undefined), "Hamma 12 bandni baholang");
+export type OfflineEssayConfirmInput = z.infer<typeof offlineEssayConfirmBody>;
 
 /** AI'ga yuborish: tanlanganlar yoki (bo'sh bo'lsa) varog'i bor, hali tekshirilmaganlarning hammasi */
 export const offlineEssayCheckBody = z.object({ resultIds: z.array(z.string()).max(500).default([]) });
@@ -90,4 +96,25 @@ export interface OfflineEssayDetail {
   ai: OfflineEssayAi | null;
   error: string | null;
   essayScore: number | null;
+  /** Ustoz tuzatgan matn (AI o'qigani bilan solishtirilgan) */
+  transcript: string | null;
+  review: OfflineEssayTeacherReview | null;
+}
+
+/** Ustozning saqlangan bahosi. aiTotal — ustoz baholagan paytdagi AI bahosi (keyin AI qayta tekshirsa ham o'zgarmaydi) */
+export interface OfflineEssayTeacherReview {
+  special: EssaySpecialKey | null;
+  scores: Record<string, number>;
+  total: number;
+  aiTotal: number | null;
+  reviewer: string | null;
+  reviewedAt: string;
+}
+
+/** «AI va ustoz»: ustoz baholagan offline esselar bo'yicha AI qanchalik adashadi */
+export interface OfflineEssayAgreement extends EssayAgreement {
+  /** Bundan kam esse bo'lsa xulosa chiqarilmaydi */
+  min: number;
+  /** AI o'qigan matnni ustoz varoq bilan solishtirgan esselar: errors — AI noto'g'ri o'qigan so'zlar */
+  transcripts: { count: number; words: number; errors: number };
 }

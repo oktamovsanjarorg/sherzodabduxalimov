@@ -38,21 +38,21 @@ enum StudyMode {
 }
 
 model User {
-  id            String    @id @default(cuid())
+  id            String       @id @default(cuid())
   /// Ustoz qo'lda kiritgan o'quvchida null: botga kirganda (telefon yoki shaxsiy havola orqali) bog'lanadi
-  telegramId    BigInt?   @unique
+  telegramId    BigInt?      @unique
   username      String?
   firstName     String
   lastName      String?
   phone         String?
   photoUrl      String?
   languageCode  String?
-  role          Role      @default(STUDENT)
+  role          Role         @default(STUDENT)
   /// Faqat ASSISTANT uchun ma'noli: admin panelda qaysi bo'limlar ochiq. Ustozda doim hammasi
   permissions   Permission[] @default([CONTENT, ESSAYS, EXTERNAL, STUDENTS, PARENTS, GROUPS, STATS])
   /// Ism-familiyani ustoz yozgan: Telegram'dan kirganda ustiga yozilmaydi
-  nameLocked    Boolean   @default(false)
-  isBlocked     Boolean   @default(false)
+  nameLocked    Boolean      @default(false)
+  isBlocked     Boolean      @default(false)
   /// Bloklash sababi (foydalanuvchiga ko'rsatiladi)
   blockedReason String?
   /// Telegram hisobi birinchi marta ulangan payt (botga kirgan yoki shaxsiy havolani bosgan)
@@ -61,34 +61,35 @@ model User {
   lastBotAt     DateTime?
   /// Ilovani (Mini App) oxirgi marta ochgan payt
   lastAppAt     DateTime?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
 
-  student               StudentProfile?
-  parentLinks           ParentLink[]            @relation("ParentOf")
-  parentLinksReviewed   ParentLink[]            @relation("ParentLinkReviewer")
-  attempts              Attempt[]
-  essays                Essay[]
-  essayReviews          EssayReview[]           @relation("Reviewer")
-  subscriptions         Subscription[]
-  payments              Payment[]
-  paymentsReviewed      Payment[]               @relation("PaymentReviewer")
-  attendanceMarked      Attendance[]            @relation("AttendanceMarker")
-  externalTestsImported ExternalTest[]          @relation("ExternalTestImporter")
-  offlinePaymentsMarked OfflinePayment[]        @relation("OfflinePaymentMarker")
-  voiceNotes            VoiceNote[]             @relation("VoiceAuthor")
-  lessonProgress        LessonProgress[]
-  auditLogs             AuditLog[]
-  loginTokens           LoginToken[]
-  videos                Video[]
-  invitesSent           StaffInvite[]
-  followUpsWritten      PaymentFollowUp[]       @relation("FollowUpAuthor")
-  trialUses             TrialUse[]
-  announcements         Announcement[]          @relation("AnnouncementAuthor")
-  announcementsReceived AnnouncementRecipient[]
-  goldCreated           GoldEssay[]             @relation("GoldCreator")
-  goldTranscribed       GoldEssay[]             @relation("GoldTranscriber")
-  goldRatings           GoldRating[]            @relation("GoldRater")
+  student                StudentProfile?
+  parentLinks            ParentLink[]            @relation("ParentOf")
+  parentLinksReviewed    ParentLink[]            @relation("ParentLinkReviewer")
+  attempts               Attempt[]
+  essays                 Essay[]
+  essayReviews           EssayReview[]           @relation("Reviewer")
+  subscriptions          Subscription[]
+  payments               Payment[]
+  paymentsReviewed       Payment[]               @relation("PaymentReviewer")
+  attendanceMarked       Attendance[]            @relation("AttendanceMarker")
+  externalTestsImported  ExternalTest[]          @relation("ExternalTestImporter")
+  offlinePaymentsMarked  OfflinePayment[]        @relation("OfflinePaymentMarker")
+  voiceNotes             VoiceNote[]             @relation("VoiceAuthor")
+  lessonProgress         LessonProgress[]
+  auditLogs              AuditLog[]
+  loginTokens            LoginToken[]
+  videos                 Video[]
+  invitesSent            StaffInvite[]
+  followUpsWritten       PaymentFollowUp[]       @relation("FollowUpAuthor")
+  trialUses              TrialUse[]
+  announcements          Announcement[]          @relation("AnnouncementAuthor")
+  announcementsReceived  AnnouncementRecipient[]
+  goldCreated            GoldEssay[]             @relation("GoldCreator")
+  goldTranscribed        GoldEssay[]             @relation("GoldTranscriber")
+  goldRatings            GoldRating[]            @relation("GoldRater")
+  externalEssaysReviewed ExternalEssay[]         @relation("ExternalEssayReviewer")
 }
 
 enum TrialKind {
@@ -703,13 +704,13 @@ model LoginToken {
 
 /// Hali botga kirmagan odamni username bo'yicha yordamchi qilib qo'yish
 model StaffInvite {
-  username    String   @id // kichik harflarda, @ belgisisiz
-  role        Role     @default(ASSISTANT)
+  username    String       @id // kichik harflarda, @ belgisisiz
+  role        Role         @default(ASSISTANT)
   /// Botga kirganda yordamchiga beriladigan ruxsatlar
   permissions Permission[] @default([CONTENT, ESSAYS, EXTERNAL, STUDENTS, PARENTS, GROUPS, STATS])
   invitedById String?
-  invitedBy   User?    @relation(fields: [invitedById], references: [id], onDelete: SetNull)
-  createdAt   DateTime @default(now())
+  invitedBy   User?        @relation(fields: [invitedById], references: [id], onDelete: SetNull)
+  createdAt   DateTime     @default(now())
 }
 
 /// Korzinka: o'chirilgan narsa va u bilan birga o'chgan barcha bog'liq yozuvlar (jadval -> qatorlar, JSON).
@@ -823,25 +824,33 @@ enum ExternalEssayStatus {
 /// Offline testning qog'ozdagi essesi: ustoz suratga oladi, AI o'qib taxminiy baho beradi.
 /// Yakuniy ball faqat ustoz tasdiqlaganda ExternalResult.essayScore ga yoziladi (AI hech qachon o'zi yozmaydi)
 model ExternalEssay {
-  id        String              @id @default(cuid())
-  resultId  String              @unique
-  result    ExternalResult      @relation(fields: [resultId], references: [id], onDelete: Cascade)
+  id           String              @id @default(cuid())
+  resultId     String              @unique
+  result       ExternalResult      @relation(fields: [resultId], references: [id], onDelete: Cascade)
   /// MEDIA_DIR ichidagi nisbiy yo'llar: essays/external/<testId>/<resultId>/<n>.jpg
-  imageUrls String[]
-  status    ExternalEssayStatus @default(DRAFT)
+  imageUrls    String[]
+  status       ExternalEssayStatus @default(DRAFT)
   /// AI o'qigan matn (qayta urinishda qayta o'qilmaydi)
-  text      String?
+  text         String?
   /// Tekshiruvda ishlatilgan mavzu (keyin o'zgarsa ham shu baho qaysi mavzu bo'yicha ekani ko'rinadi)
-  prompt    String?
+  prompt       String?
   /// AI natijasi: { special, criteria, total, mistakes, tips, annotations, feedback, provider, analysis }
-  ai        Json?
-  error     String?
+  ai           Json?
+  error        String?
   /// Texnik sabab (faqat xodimlarga)
-  aiError   String?
-  createdAt DateTime            @default(now())
-  updatedAt DateTime            @updatedAt
+  aiError      String?
+  /// Ustoz AI o'qigan matnni varoq bilan solishtirib tuzatgani (AI o'qishi qanchalik to'g'riligini o'lchash uchun)
+  transcript   String?
+  /// Ustoz bahosi 12 band bo'yicha va shu paytda ko'ringan AI bahosi: { special, criteria, total, ai }
+  review       Json?
+  reviewedById String?
+  reviewedBy   User?               @relation("ExternalEssayReviewer", fields: [reviewedById], references: [id], onDelete: SetNull)
+  reviewedAt   DateTime?
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
 
   @@index([status])
+  @@index([reviewedAt])
 }
 
 enum AnnouncementStatus {
@@ -915,6 +924,8 @@ model GoldEssay {
   imageUrls       String[]
   /// O'quvchi yozganini aynan ko'chirilgan matn
   transcript      String?
+  /// Qo'lyozmani AI o'qigan matn: ustoz shundan boshlab tuzatadi, farqi AI o'qish aniqligini ko'rsatadi
+  aiText          String?
   /// Matndagi xatolar [{start,end,type,note}] — note: to'g'ri shakli
   marks           Json         @default("[]")
   transcribedById String?

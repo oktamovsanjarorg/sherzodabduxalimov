@@ -11,11 +11,13 @@ import { GoldImage } from "./GoldEssayPage";
 
 /**
  * Ko'chirish: varoqdagi matn harfma-harf (xatolari bilan), keyin xatolar belgilanadi.
+ * Qo'lyozmada AI o'qigan matn tayyor turadi: ustoz qayta yozmaydi, faqat tuzatadi.
  * Belgi matndagi o'ringa bog'langan, shuning uchun matn o'zgarsa belgilar o'chadi.
  */
 export function GoldTranscribe({ g, onSaved }: { g: GoldDetail; onSaved: (g: GoldDetail) => void }) {
   const toast = useToast();
-  const [text, setText] = useState(g.transcript ?? "");
+  const [text, setText] = useState(g.transcript ?? g.aiText ?? "");
+  const fromAi = !g.transcript && !!g.aiText;
   const [marks, setMarks] = useState<TextMark[]>(g.marks);
   const [editing, setEditing] = useState(!g.transcript);
   const save = useMutation({
@@ -39,10 +41,17 @@ export function GoldTranscribe({ g, onSaved }: { g: GoldDetail; onSaved: (g: Gol
       <div className="space-y-3">
         {editing ? (
           <>
-            <p className="rounded-lg bg-surface-2 p-3 text-sm text-ink-2">
-              Varoqdagi matnni <b>aynan</b> yozing: imlo va tinish belgisi xatolarini tuzatmang. Xatoboshilarni saqlang. O'qib bo'lmaydigan so'z o'rniga{" "}
-              <code>[?]</code> qo'ying. O'quvchi o'zi o'chirgan so'zni yozmang.
-            </p>
+            {fromAi ? (
+              <p className="rounded-lg bg-sky-50 p-3 text-sm text-sky-900">
+                Matnni AI o'qib qo'ydi, qayta yozmang. Varoqqa qarab faqat AI noto'g'ri o'qigan so'zlarni tuzating. Eng muhimi: AI o'quvchining imlo yoki vergul
+                xatosini o'zi «tuzatib» yuborgan joylarni varoqdagidek qaytaring. <code>[?]</code> — AI o'qiy olmagan so'z: o'rniga varoqdagini yozing.
+              </p>
+            ) : (
+              <p className="rounded-lg bg-surface-2 p-3 text-sm text-ink-2">
+                Varoqdagi matnni <b>aynan</b> yozing: imlo va tinish belgisi xatolarini tuzatmang. Xatoboshilarni saqlang. O'qib bo'lmaydigan so'z o'rniga{" "}
+                <code>[?]</code> qo'ying. O'quvchi o'zi o'chirgan so'zni yozmang.
+              </p>
+            )}
             <textarea
               className="input min-h-[40vh] font-mono lg:min-h-[50vh] text-[16px] leading-relaxed sm:text-[15px]"
               value={text}
@@ -65,7 +74,7 @@ export function GoldTranscribe({ g, onSaved }: { g: GoldDetail; onSaved: (g: Gol
                 save.mutate({ transcript: text, marks: keep }, { onSuccess: () => setEditing(false) });
               }}
             >
-              <Save size={16} /> Saqlash va xatolarni belgilash
+              <Save size={16} /> {fromAi ? "Varoq bilan solishtirdim: saqlash" : "Saqlash va xatolarni belgilash"}
             </button>
           </>
         ) : (

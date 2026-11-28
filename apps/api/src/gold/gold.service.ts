@@ -89,6 +89,7 @@ export class GoldService {
       transcript: e.transcript,
       marks: (e.marks as TextMark[]) ?? [],
       transcribedBy: e.transcribedBy ? fullName(e.transcribedBy) : null,
+      aiText: e.aiText,
       myRating: mine ? ratingView(mine, me) : null,
       // Mustaqil baho: o'zi baholamaguncha boshqalarniki ko'rinmaydi
       others: mine ? others.map((r) => ratingView(r, me)) : null,
@@ -111,8 +112,16 @@ export class GoldService {
     const handwritten = essay.imageUrls.length > 0;
     if (!handwritten && !essay.text?.trim()) throw new BadRequestException("Essening matni ham, rasmi ham yo'q");
     const e = await this.prisma.goldEssay.create({
-      // Qo'lyozmada AI o'qigan matn olinmaydi: ustoz rasmdan o'zi ko'chiradi (AI xatosi o'lchovga o'tmasin)
-      data: { essayId, topic: essay.prompt, consent: true, createdById: me, transcript: handwritten ? null : essay.text },
+      // Qo'lyozma: AI o'qigan matn tayyor turadi, ustoz varoqqa qarab faqat tuzatadi. Ko'chirilgan deb sanalmaydi,
+      // ustoz saqlamaguncha (AI xatosi o'lchovga tekshirilmay o'tmasin). AI matni bilan farqi — AI o'qish aniqligi
+      data: {
+        essayId,
+        topic: essay.prompt,
+        consent: true,
+        createdById: me,
+        transcript: handwritten ? null : essay.text,
+        aiText: handwritten ? essay.text?.trim() || null : null,
+      },
     });
     if (handwritten) {
       const imageUrls = await this.files.copyFromEssay(e.id, essay.imageUrls);

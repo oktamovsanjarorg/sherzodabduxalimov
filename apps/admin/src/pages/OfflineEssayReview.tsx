@@ -6,16 +6,22 @@ import { AnnotationOverlay } from "../components/Annotate";
 import { RubricForm, emptyRubric, rubricComplete, rubricTotal, type RubricValue } from "../components/RubricForm";
 import { ConfirmButton, Modal, Spinner } from "../components/ui";
 import { errMsg } from "../lib/api";
+import { fmtDateTime } from "../lib/format";
 import { offlineApi } from "../lib/offline-essay-api";
 import { useToast } from "../lib/toast";
+import { OfflineTranscript, type TranscriptValue } from "./OfflineTranscript";
 
 const EMPTY_PAGE: PageAnnotations = { strokes: [], marks: [] };
 
-/** AI bahosi bilan oldindan to'ldiriladi: ustoz faqat rozi bo'lmagan bandini o'zgartiradi */
-const fromAi = (ai: OfflineEssayAi | null): RubricValue =>
-  ai
-    ? { special: (ai.special?.key as EssaySpecialKey | undefined) ?? null, scores: Object.fromEntries(ai.criteria.map((c) => [c.key, c.score])) }
-    : emptyRubric();
+/** Avval ustoz baholagan bo'lsa uning bahosi, aks holda AI bahosi bilan to'ldiriladi: ustoz faqat rozi bo'lmagan bandini o'zgartiradi */
+const initialRubric = (d: OfflineEssayDetail): RubricValue =>
+  d.review
+    ? { special: d.review.special, scores: { ...d.review.scores } }
+    : d.ai
+      ? { special: (d.ai.special?.key as EssaySpecialKey | undefined) ?? null, scores: Object.fromEntries(d.ai.criteria.map((c) => [c.key, c.score])) }
+      : emptyRubric();
+
+const definedScores = (v: RubricValue) => Object.fromEntries(Object.entries(v.scores).filter((x): x is [string, number] => x[1] !== undefined));
 
 /** Bitta offline esse: varoqlar (AI belgilari bilan), AI taxmini va ustoz tasdig'i */
 export function OfflineEssayReview({ resultId, onClose, onChanged }: { resultId: string; onClose: () => void; onChanged: () => void }) {
@@ -35,7 +41,8 @@ export function OfflineEssayReview({ resultId, onClose, onChanged }: { resultId:
 function Body({ d, onChanged, onClose }: { d: OfflineEssayDetail; onChanged: () => void; onClose: () => void }) {
   const toast = useToast();
   const qc = useQueryClient();
-  const [rubric, setRubric] = useState<RubricValue>(() => fromAi(d.ai));
+  const [rubric, setRubric] = useState<RubricValue>(() => initialRubric(d));
+  const [transcript, setTranscript] = useState<TranscriptValue>(() => ({ text: d.transcript ?? d.text ?? "", checked: !!d.transcript }));
   // Varoq o'chsa raqamlar suriladi: eski rasm keshda qolmasin
   const refresh = () => (
     qc.removeQueries({ queryKey: ["offline-essay-page", d.resultId] }),
@@ -44,8 +51,13 @@ function Body({ d, onChanged, onClose }: { d: OfflineEssayDetail; onChanged: () 
   );
   const fail = (e: unknown) => toast(errMsg(e), "error");
   const confirm = useMutation({
-    mutationFn: () => offlineApi.confirm(d.resultId, rubricTotal(rubric)),
-    onSuccess: () => (toast("Ball natijaga yozildi"), onChanged(), onClose()),
+    mutationFn: () =>
+      offlineApi.confirm(d.resultId, {
+        special: rubric.special,
+        scores: rubric.special ? {} : definedScores(rubric),
+        transcript: d.text && transcript.checked ? transcript.text : null,
+      }),
+    onSuccess: () => (toast("Baho saqlandi va natijaga yozildi"), qc.invalidateQueries({ queryKey: ["offline-essay-agreement"] }), onChanged(), onClose()),
     onError: fail,
   });
   const recheck = useMutation({ mutationFn: () => offlineApi.check(d.testId, [d.resultId]), onSuccess: refresh, onError: fail });
@@ -72,13 +84,7 @@ function Body({ d, onChanged, onClose }: { d: OfflineEssayDetail; onChanged: () 
         ))}
       </div>
       {d.ai && <AiSummary ai={d.ai} />}
-      {d.text && (
-        <details className="rounded-lg border border-line p-3 text-sm">
-          <summary className="cursor-pointer font-bold">AI o'qigan matn</summary>
-          <p className="mt-2 whitespace-pre-line text-ink-2">{d.text}</p>
-          <p className="mt-2 text-xs text-ink-3">[?] — AI o'qiy olmagan so'z (xato deb sanalmaydi).</p>
-        </details>
-      )}
+      {d.text && <OfflineTranscript aiText={d.text} value={transcript} onChange={setTranscript} />}
       {(d.status === "FAILED" || d.status === "CHECKED") && (
         <button className="btn-secondary btn-sm" disabled={recheck.isPending} onClick={() => recheck.mutate()}>
           <RotateCcw size={14} /> AI qayta tekshirsin
@@ -86,10 +92,16 @@ function Body({ d, onChanged, onClose }: { d: OfflineEssayDetail; onChanged: () 
       )}
       <section className="space-y-3 border-t border-line pt-4">
         <h3 className="font-extrabold">Sizning bahoyingiz</h3>
-        {d.ai && <p className="text-xs text-ink-3">Bandlar AI bahosi bilan to'ldirildi. Rozi bo'lmagan bandingizni o'zgartiring.</p>}
+        {d.review ? (
+          <p className="text-xs text-ink-3">
+            Baholagan: {d.review.reviewer ?? "—"} · {fmtDateTime(d.review.reviewedAt)}. O'zgartirsangiz yangi baho saqlanadi.
+          </p>
+        ) : (
+          d.ai && <p className="text-xs text-ink-3">Bandlar AI bahosi bilan to'ldirildi. Rozi bo'lmagan bandingizni o'zgartiring.</p>
+        )}
         <RubricForm value={rubric} onChange={setRubric} aiHint={d.ai ? Object.fromEntries(d.ai.criteria.map((c) => [c.key, c.score])) : undefined} />
         <button className="btn-primary w-full" disabled={!rubricComplete(rubric) || confirm.isPending} onClick={() => confirm.mutate()}>
-          Tasdiqlash: {formatScore(rubricTotal(rubric))}/24{d.essayScore != null ? ` (hozir ${formatScore(d.essayScore)})` : ""}
+          Saqlash: {formatScore(rubricTotal(rubric))}/24{d.essayScore != null ? ` (hozir ${formatScore(d.essayScore)})` : ""}
         </button>
       </section>
     </div>

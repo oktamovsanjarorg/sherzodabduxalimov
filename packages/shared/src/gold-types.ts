@@ -27,8 +27,10 @@ export const goldTranscriptInput = z.object({
 });
 export type GoldTranscriptInput = z.infer<typeof goldTranscriptInput>;
 
-const specialKey = z.enum(Object.keys(ESSAY_SPECIAL) as [EssaySpecialKey, ...EssaySpecialKey[]]);
-const step = z.number().refine((n) => (RUBRIC_STEPS as readonly number[]).includes(n), "Ball 0, 0.5, 1, 1.5 yoki 2");
+export const essaySpecialSchema = z.enum(Object.keys(ESSAY_SPECIAL) as [EssaySpecialKey, ...EssaySpecialKey[]]);
+export const rubricStepSchema = z.number().refine((n) => (RUBRIC_STEPS as readonly number[]).includes(n), "Ball 0, 0.5, 1, 1.5 yoki 2");
+const specialKey = essaySpecialSchema;
+const step = rubricStepSchema;
 
 export const goldRatingInput = z
   .object({
@@ -78,6 +80,8 @@ export interface GoldDetail {
   transcript: string | null;
   marks: TextMark[];
   transcribedBy: string | null;
+  /** Qo'lyozmani AI o'qigan matn: ko'chirish shundan boshlanadi (ustoz faqat tuzatadi) */
+  aiText: string | null;
   /** Mening bahom (bo'lsa) */
   myRating: GoldRatingView | null;
   /** Boshqalarning bahosi faqat o'zim baholagandan keyin ko'rinadi (mustaqil baho) */

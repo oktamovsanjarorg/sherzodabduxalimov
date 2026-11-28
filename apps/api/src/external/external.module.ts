@@ -5,6 +5,7 @@ import { CurrentUser, type JwtUser, Perm } from "../auth/decorators";
 import { ExternalEssayService } from "./external-essay.service";
 import { ExternalService } from "./external.service";
 import { OfflineEssayController } from "./offline-essay.controller";
+import { OfflineEssayReviewService } from "./offline-essay-review.service";
 import { OfflineEssayService } from "./offline-essay.service";
 
 // CSV: 300 o'quvchi x 200 savol ham 200 KB dan oshmaydi
@@ -86,7 +87,7 @@ export class MyExternalController {
 @Global()
 @Module({
   controllers: [AdminExternalController, MyExternalController, OfflineEssayController],
-  providers: [ExternalService, ExternalEssayService, OfflineEssayService],
+  providers: [ExternalService, ExternalEssayService, OfflineEssayService, OfflineEssayReviewService],
   exports: [ExternalService],
 })
 export class ExternalModule {}

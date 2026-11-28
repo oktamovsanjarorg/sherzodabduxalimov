@@ -7,6 +7,7 @@ import { errMsg } from "../lib/api";
 import { fmtDate } from "../lib/format";
 import { offlineApi } from "../lib/offline-essay-api";
 import { useToast } from "../lib/toast";
+import { OfflineAgreement } from "./OfflineAgreement";
 import { OfflineEssayReview } from "./OfflineEssayReview";
 
 const TONE = { NONE: "gray", DRAFT: "blue", CHECKING: "amber", CHECKED: "brand", FAILED: "red" } as const;
@@ -28,6 +29,7 @@ export function OfflineEssays() {
   const id = picked ?? tests.data[0].id;
   return (
     <div className="space-y-4">
+      <OfflineAgreement />
       <div>
         <label className="label" htmlFor="offline-test">
           Test
