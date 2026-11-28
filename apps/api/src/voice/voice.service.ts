@@ -48,11 +48,15 @@ export class VoiceService implements OnModuleDestroy {
     await this.queue.close();
   }
 
-  /** Erkin (qo'lyozma) esse: ustoz baholagandan keyin */
+  /** Erkin esse (ustoz yoki AI tekshiruvi): ustoz baholagandan keyin */
   async forEssay(actorId: string, essayId: string, body: unknown, contentType: string | undefined): Promise<VoiceView> {
-    const e = await this.prisma.essay.findUnique({ where: { id: essayId }, select: { status: true, voice: true } });
+    const e = await this.prisma.essay.findUnique({
+      where: { id: essayId },
+      select: { status: true, voice: true, _count: { select: { reviews: { where: { source: "TEACHER" } } } } },
+    });
     if (!e) throw new NotFoundException("Esse topilmadi");
-    if (e.status !== "REVIEWED") throw new ConflictException("Avval esseni baholang");
+    // Ustoz bahosi bo'lsin: ustoz esse (REVIEWED) yoki ustoz ham baholagan AI esse
+    if (e.status !== "REVIEWED" && !e._count.reviews) throw new ConflictException("Avval esseni baholang");
     return this.save(actorId, body, contentType, e.voice, { essayId });
   }
 

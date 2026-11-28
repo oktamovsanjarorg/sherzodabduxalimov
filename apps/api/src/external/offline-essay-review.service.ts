@@ -1,5 +1,13 @@
 import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
-import { GOLD_MIN, essayAgreement, rubricScore, wordChanges, type OfflineEssayAgreement, type OfflineEssayConfirmInput } from "@onatili/shared";
+import {
+  GOLD_MIN,
+  essayAgreement,
+  type RubricSnapshot,
+  rubricScore,
+  wordChanges,
+  type OfflineEssayAgreement,
+  type OfflineEssayConfirmInput,
+} from "@onatili/shared";
 import type { Prisma } from "@onatili/db";
 import { PrismaService } from "../prisma/prisma.service";
 import { ExternalEssayService } from "./external-essay.service";
@@ -58,16 +66,20 @@ export class OfflineEssayReviewService {
     return this.offline.detail(resultId);
   }
 
-  /** Ustoz baholagan barcha offline esselar: AI umumiy ball va bandlarda qanchalik adashadi, matnni qanchalik to'g'ri o'qiydi */
+  /**
+   * Ustoz baholagan barcha esselar (offline va botdagi): AI umumiy ball va bandlarda qanchalik adashadi,
+   * qo'lyozmani qanchalik to'g'ri o'qiydi (faqat offline: ustoz matnni tuzatgan bo'lsa)
+   */
   async agreement(): Promise<OfflineEssayAgreement> {
     const rows = await this.prisma.externalEssay.findMany({
       where: { reviewedAt: { not: null } },
       select: { review: true, text: true, transcript: true },
     });
-    const pairs = rows.flatMap((e) => {
+    const pairs: { ai: RubricSnapshot; teacher: RubricSnapshot }[] = rows.flatMap((e) => {
       const r = e.review as StoredReview | null;
       return r?.ai ? [{ ai: r.ai, teacher: r }] : [];
     });
+    pairs.push(...(await this.botPairs()));
     const transcripts = { count: 0, words: 0, errors: 0 };
     for (const e of rows) {
       if (!e.text || !e.transcript) continue;
@@ -77,5 +89,23 @@ export class OfflineEssayReviewService {
       transcripts.errors += w.errors;
     }
     return { ...essayAgreement(pairs), min: GOLD_MIN, transcripts };
+  }
+
+  /** Botdagi esselar: AI bahosi ham, ustoz bahosi ham bor */
+  private async botPairs(): Promise<{ ai: RubricSnapshot; teacher: RubricSnapshot }[]> {
+    const essays = await this.prisma.essay.findMany({
+      where: { AND: [{ reviews: { some: { source: "AI" } } }, { reviews: { some: { source: "TEACHER" } } }] },
+      select: { reviews: { select: { source: true, special: true, criteria: true, totalScore: true } } },
+    });
+    const snap = (r: { special: string | null; criteria: unknown; totalScore: number }): RubricSnapshot => ({
+      special: r.special,
+      scores: Object.fromEntries(((r.criteria ?? []) as { key: string; score: number }[]).map((c) => [c.key, c.score])),
+      total: r.totalScore,
+    });
+    return essays.flatMap((e) => {
+      const ai = e.reviews.find((r) => r.source === "AI");
+      const teacher = e.reviews.find((r) => r.source === "TEACHER");
+      return ai && teacher ? [{ ai: snap(ai), teacher: snap(teacher) }] : [];
+    });
   }
 }

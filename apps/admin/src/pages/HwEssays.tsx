@@ -11,7 +11,8 @@ import { AnnotationOverlay, MarkCounts, PageAnnotator } from "../components/Anno
 import { RubricForm, emptyRubric, rubricComplete, rubricTotal, type RubricValue } from "../components/RubricForm";
 import { VoicePlayer, VoiceRecorder } from "../components/VoiceRecorder";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ChevronRight, ImageOff, Pencil, PenLine, Phone } from "lucide-react";
+import { Bot, ChevronRight, ImageOff, Pencil, PenLine, Phone } from "lucide-react";
+import { Link } from "react-router-dom";
 import { useState } from "react";
 import { Badge, Empty, Modal, NoMatch, SearchBox, Spinner, Chips } from "../components/ui";
 import { matches } from "../lib/search";
@@ -28,6 +29,7 @@ export function HwEssays() {
   const shown = (list.data ?? []).filter((e) => matches(q, e.student.name, e.student.username, e.student.phone, e.prompt));
   return (
     <>
+      <AiWaiting />
       <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <Chips
           value={tab}
@@ -146,6 +148,23 @@ function PageImage({ id, n, anno, onSave }: { id: string; n: number; anno: PageA
 
 const countMarksTotal = (a: EssayAnnotations) => Object.values(countMarks(a)).reduce((x, y) => x + y, 0);
 
+/** AI baholagan, ustoz hali ko'rmagan esselar: ustoz ham baholay oladi (oxirgi so'z ustozda) */
+function AiWaiting() {
+  const q = useQuery({ queryKey: ["essay-log", 30, "AI", ""], queryFn: () => api.essayLog(30, "AI", "") });
+  const n = q.data?.filter((r) => r.ai && !r.teacher).length ?? 0;
+  if (!n) return null;
+  return (
+    <Link
+      to="/essays?tab=log&mode=UNGRADED"
+      className="mb-4 flex items-center gap-3 rounded-xl border border-brand/30 bg-brand-soft p-3 text-sm font-semibold text-brand hover:bg-brand-soft/70"
+    >
+      <Bot size={18} className="shrink-0" />
+      <span className="flex-1">AI baholagan {n} ta esse (30 kun) ustoz bahosini kutmoqda: tekshirib, o'zingiz ham baholang</span>
+      <ChevronRight size={16} className="shrink-0" />
+    </Link>
+  );
+}
+
 function AiHint({ r }: { r: EssayReviewView }) {
   return (
     <details className="rounded-lg border border-sky-200 bg-sky-50 p-3 text-sm">
@@ -164,16 +183,18 @@ function AiHint({ r }: { r: EssayReviewView }) {
   );
 }
 
-function ReviewModal({ essay, onClose }: { essay: AdminHwEssay; onClose: () => void }) {
+const toRubric = (r: EssayReviewView): RubricValue => ({
+  special: (r.special?.key as RubricValue["special"]) ?? null,
+  scores: Object.fromEntries(r.criteria.map((c) => [c.key, c.score])),
+});
+
+/** Ustoz bahosi. AI esse bo'lsa AI bahosi bilan to'ldiriladi: ustoz faqat rozi bo'lmagan bandini o'zgartiradi */
+export function ReviewModal({ essay, onClose }: { essay: AdminHwEssay; onClose: () => void }) {
   const toast = useToast();
   const qc = useQueryClient();
   const prev = essay.reviews.find((r) => r.source === "TEACHER");
   const ai = essay.reviews.find((r) => r.source === "AI");
-  const [rubric, setRubric] = useState<RubricValue>(() =>
-    prev
-      ? { special: (prev.special?.key as RubricValue["special"]) ?? null, scores: Object.fromEntries(prev.criteria.map((c) => [c.key, c.score])) }
-      : emptyRubric(),
-  );
+  const [rubric, setRubric] = useState<RubricValue>(() => (prev ? toRubric(prev) : essay.mode === "AI" && ai ? toRubric(ai) : emptyRubric()));
   const [feedback, setFeedback] = useState(prev?.feedback ?? "");
   const [voice, setVoice] = useState<Blob | null>(null);
   const [anno, setAnno] = useState<EssayAnnotations>(() => ({
@@ -214,8 +235,7 @@ function ReviewModal({ essay, onClose }: { essay: AdminHwEssay; onClose: () => v
       // Ovozli izoh baholash saqlangandan keyin yuboriladi (server shuni talab qiladi)
       if (voice) await api.uploadHwVoice(essay.id, voice).catch((e) => toast(`Baho saqlandi, lekin ovoz yuborilmadi: ${errMsg(e)}`, "error"));
       toast(`Saqlandi: ${formatScore(r.totalScore)}/${ESSAY_MAX_SCORE}${voice ? " · ovozli izoh bilan" : ""}. O'quvchiga yuborildi`);
-      qc.invalidateQueries({ queryKey: ["hw-essays"] });
-      qc.invalidateQueries({ queryKey: ["dashboard"] });
+      for (const k of ["hw-essays", "dashboard", "essay-detail", "essay-log", "offline-essay-agreement"]) qc.invalidateQueries({ queryKey: [k] });
       onClose();
     },
     onError: (e) => toast(errMsg(e), "error"),

@@ -9,11 +9,13 @@ import {
   formatScore,
 } from "@onatili/shared";
 import { useQuery } from "@tanstack/react-query";
-import { Bot, ChevronRight, ImageOff, Search, UserCheck } from "lucide-react";
+import { Bot, ChevronRight, ImageOff, PenLine, Search, UserCheck } from "lucide-react";
 import { useState } from "react";
 import { Badge, Chips, Empty, Modal, Spinner } from "../components/ui";
 import { api } from "../lib/api";
 import { GoldAddButton } from "./GoldAdd";
+import { ReviewModal } from "./HwEssays";
+import { OfflineAgreement } from "./OfflineAgreement";
 import { fmtDateTime, fmtShortDateTime } from "../lib/format";
 
 const PERIODS = [
@@ -299,12 +301,22 @@ function StudentEssaysModal({
 
 export function EssayLog() {
   const [days, setDays] = useState<EssayStatsPeriod>(30);
-  const [mode, setMode] = useState<"" | "AI" | "TEACHER">("");
+  // «Qo'lyozma» bo'limidagi eslatmadan kelinsa: darhol ustoz baholamaganlar
+  const [mode, setMode] = useState<"" | "AI" | "TEACHER" | "UNGRADED">(() =>
+    new URLSearchParams(location.search).get("mode") === "UNGRADED" ? "UNGRADED" : "",
+  );
   const [q, setQ] = useState("");
   const [open, setOpen] = useState<string | null>(null);
-  const list = useQuery({ queryKey: ["essay-log", days, mode, q.trim()], queryFn: () => api.essayLog(days, mode, q.trim()), placeholderData: (p) => p });
+  const server = mode === "UNGRADED" ? "AI" : mode;
+  const list = useQuery({ queryKey: ["essay-log", days, server, q.trim()], queryFn: () => api.essayLog(days, server, q.trim()), placeholderData: (p) => p });
+  // «Ustoz baholamagan»: AI baholagan, ustoz hali ko'rmagan esselar
+  const rows = mode === "UNGRADED" ? list.data?.filter((r) => r.ai && !r.teacher) : list.data;
   return (
     <>
+      <div className="mb-4 space-y-3">
+        <OfflineAgreement />
+        <p className="text-sm text-ink-3">AI baholagan esseni oching va «Baholash»ni bosing: bahoyingiz o'quvchiga boradi va AI bilan solishtiriladi.</p>
+      </div>
       <Period value={days} onChange={setDays} />
       <div className="mb-4 flex flex-wrap items-center gap-2">
         <div className="relative min-w-[220px] flex-1 sm:max-w-sm">
@@ -318,17 +330,18 @@ export function EssayLog() {
             [
               ["ALL", "Hammasi"],
               ["AI", "AI"],
+              ["UNGRADED", "Ustoz baholamagan"],
               ["TEACHER", "Ustoz"],
             ] as const
           }
         />
       </div>
       {list.isPending && <Spinner className="text-ink-4" />}
-      {list.data?.length === 0 && <Empty title="Esse topilmadi" hint="Davrni kengaytiring yoki qidiruvni o'zgartiring." />}
-      {list.data && list.data.length > 0 && (
+      {rows?.length === 0 && <Empty title="Esse topilmadi" hint="Davrni kengaytiring yoki qidiruvni o'zgartiring." />}
+      {rows && rows.length > 0 && (
         <>
-          <p className="mb-2 text-xs text-ink-3">{list.data.length === 300 ? "Oxirgi 300 ta esse" : `${list.data.length} ta esse`}</p>
-          <LogList rows={list.data} onOpen={setOpen} />
+          <p className="mb-2 text-xs text-ink-3">{list.data?.length === 300 ? `Oxirgi 300 tadan ${rows.length} ta esse` : `${rows.length} ta esse`}</p>
+          <LogList rows={rows} onOpen={setOpen} />
         </>
       )}
       {open && <EssayDetailModal id={open} onClose={() => setOpen(null)} />}
@@ -385,11 +398,25 @@ function LogList({ rows, onOpen, hideStudent }: { rows: AdminEssayLogRow[]; onOp
 
 function EssayDetailModal({ id, onClose }: { id: string; onClose: () => void }) {
   const q = useQuery({ queryKey: ["essay-detail", id], queryFn: () => api.essayDetail(id) });
+  const [grading, setGrading] = useState(false);
   const e = q.data;
   const ai = e?.reviews.find((r) => r.source === "AI");
   const teacher = e?.reviews.find((r) => r.source === "TEACHER");
+  // AI baholagan esseni ustoz ham baholaydi (oxirgi so'z ustozda); ustoz esselari «Qo'lyozma» bo'limida
+  const canGrade = e?.mode === "AI" && e.status === "AI_CHECKED";
+  if (e && grading) return <ReviewModal essay={e} onClose={() => setGrading(false)} />;
+  const footer = e && (
+    <>
+      {(e.pages > 0 || e.text) && <GoldAddButton essayId={e.id} />}
+      {canGrade && (
+        <button className="btn-primary" onClick={() => setGrading(true)}>
+          <PenLine size={15} /> {teacher ? "Qayta baholash" : "Baholash"}
+        </button>
+      )}
+    </>
+  );
   return (
-    <Modal wide title={e ? e.student.name : "Esse"} onClose={onClose} footer={e && (e.pages > 0 || e.text) ? <GoldAddButton essayId={e.id} /> : undefined}>
+    <Modal wide title={e ? e.student.name : "Esse"} onClose={onClose} footer={footer}>
       {q.isPending && <Spinner className="text-ink-4" />}
       {e && (
         <div className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
